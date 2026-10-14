@@ -31,7 +31,14 @@ export { KeyVaultSecrets, createSecretsFromEnv } from "./secrets/keyvault";
 export { prisma, type PrismaClient } from "./db/client";
 
 export { LOG_KEYS, createLogger, log, type LogFields, type LogKey, type Logger } from "./log";
-export { PII_PROPERTY_NAMES, startTelemetry, stripPii, trackEvent } from "./telemetry";
+export {
+  PII_PROPERTY_NAMES,
+  piiLogRecordProcessor,
+  piiSpanProcessor,
+  startTelemetry,
+  stripPii,
+  trackEvent,
+} from "./telemetry";
 
 export {
   DOSING_ALLOW_LIST,
