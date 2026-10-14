@@ -26,7 +26,7 @@ The operating model for building Frejsi with agent teams is `docs/agent-workflow
 reviews, what the owner decides. The pieces live in the repo:
 
 - `.claude/agents/` — `planner`, `implementer`, `spec-guardian`, `reviewer`, `copy-reviewer`, `triage`.
-- `.claude/workflows/` — `plan-to-issues`, `build-lanes`, `ship-milestone`, `review-pr`, `housekeeping` (run with the Workflow tool).
+- `.claude/workflows/` — `plan-to-issues`, `build-lanes`, `ship-milestone`, `review-pr`, `housekeeping-sweep` (run with the Workflow tool).
 - `.claude/skills/` — `/create-issues`, `/start-milestone`, `/release`, `/gate-pr`, `/land`, `/housekeeping`: the procedures around them.
 - `.github/workflows/ci.yml` — the fast suite, the only required check. `release.yml` — the only path to production, on a `vX.Y.Z` tag. `housekeeping.yml` — daily background triage and cleanup, outside PR CI.
 - `.github/copilot-instructions.md` — the one set of review rules, shared by Codex, Copilot and the gate agents.

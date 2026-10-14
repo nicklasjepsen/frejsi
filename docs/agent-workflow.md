@@ -172,7 +172,7 @@ line.
 ```
 
 The skills under `.claude/skills/` are the procedures; the workflow scripts under `.claude/workflows/`
-(`plan-to-issues`, `build-lanes`, `ship-milestone`, `review-pr`, `housekeeping`) are what they run. A skill never
+(`plan-to-issues`, `build-lanes`, `ship-milestone`, `review-pr`, `housekeeping-sweep`) are what they run. A skill never
 creates worktrees, issues, tags or PRs before showing the plan and getting an OK.
 
 ## 9. What agents must never do
@@ -206,5 +206,5 @@ and twelve hours is soon enough for triage.
   `needs-owner` or `security` and any failed release. That issue is the owner's inbox.
 
 Lane PRs and lane branches are never touched by housekeeping; the lane or `/start-milestone` owns
-them. The same procedure runs in an interactive session as the `housekeeping` workflow, with the
+them. The same procedure runs in an interactive session as the `housekeeping-sweep` workflow, with the
 sweeps in parallel.

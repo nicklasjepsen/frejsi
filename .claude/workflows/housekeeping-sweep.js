@@ -1,5 +1,5 @@
 export const meta = {
-  name: 'housekeeping',
+  name: 'housekeeping-sweep',
   description: 'Interactive, parallel version of the housekeeping skill: triage untouched issues and PRs, merge green Dependabot minors, mark stale PRs, delete fully merged branches, fix milestone hygiene, and refresh the "Waiting on the owner" issue. The daily background run is the housekeeping GitHub Actions workflow.',
   whenToUse: 'From an interactive session when the owner asks for housekeeping now. Pass { today: "YYYY-MM-DD" } as args. The daily run on GitHub follows the skill without this script.',
   phases: [
