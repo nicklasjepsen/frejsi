@@ -4,14 +4,10 @@ title = "frejsi"
 [extend]
 useDefault = true
 
+# No path is exempt: a real credential in .env.example, a fixture or a design export must fail
+# the scan. Only the placeholder shapes themselves are allowed.
 [allowlist]
-description = "Placeholders and hand-written fixtures"
-paths = [
-  '''^\.env\.example$''',
-  '''^fixtures/''',
-  '''^pnpm-lock\.yaml$''',
-  '''^docs/design/''',
-]
+description = "Placeholder values"
 regexes = [
   '''<[a-z0-9-]+>''',
   '''password=<local-sa-password>''',
