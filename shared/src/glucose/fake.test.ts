@@ -45,6 +45,14 @@ describe("FakeGlucoseSource", () => {
     await expect(source.fetchSince(now)).resolves.toEqual([]);
   });
 
+  it("never reaches further back than 24 hours, so an empty space does not get years of readings", async () => {
+    const source = new FakeGlucoseSource({ now: () => now });
+    const readings = await source.fetchSince(new Date(0));
+    expect(readings).toHaveLength(288);
+    expect(Date.parse(readings[0]?.ts ?? "")).toBeGreaterThan(now.getTime() - 24 * 60 * 60 * 1000);
+    expect(Date.parse(readings.at(-1)?.ts ?? "")).toBe(now.getTime());
+  });
+
   it("moves: the trend is not flat all day", async () => {
     const source = new FakeGlucoseSource({ now: () => now });
     const readings = await source.fetchSince(new Date("2026-10-15T00:00:00.000Z"));

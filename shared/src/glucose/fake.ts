@@ -2,6 +2,8 @@ import type { ProbeResult, Reading, Trend } from "../schemas/glucose";
 import type { GlucoseSource } from "./types";
 
 const FIVE_MINUTES = 5 * 60 * 1000;
+/** Like a real adapter's `maxCount`: a day is the most one call returns, however old `since` is. */
+const MAX_WINDOW_MS = 24 * 60 * 60 * 1000;
 
 /** Dexcom's trend thresholds in mg/dL per minute, converted to mmol/L per minute. */
 function trendFromSlope(mmolPerMinute: number): Trend {
@@ -39,8 +41,9 @@ export class FakeGlucoseSource implements GlucoseSource {
 
   fetchSince(since: Date): Promise<Reading[]> {
     const end = this.now().getTime();
+    const start = Math.max(since.getTime(), end - MAX_WINDOW_MS);
     const readings: Reading[] = [];
-    let t = Math.floor(since.getTime() / FIVE_MINUTES) * FIVE_MINUTES + FIVE_MINUTES;
+    let t = Math.floor(start / FIVE_MINUTES) * FIVE_MINUTES + FIVE_MINUTES;
     for (; t <= end; t += FIVE_MINUTES) {
       const mmol = Math.round(curve(t) * 10) / 10;
       const slope = (curve(t) - curve(t - FIVE_MINUTES)) / 5;
