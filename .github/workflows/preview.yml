@@ -8,6 +8,12 @@ name: preview
 # A preview carries no database and no secrets: screens show their empty states. It needs the
 # `preview` environment with a federated credential for
 # repo:<owner>/<repo>:environment:preview (infra/README.md, owner step 3).
+#
+# Two jobs on purpose. `build` runs the PR's code (install scripts, the Next.js build) with nothing
+# but read access and no environment; `deploy` holds the OIDC permission and the `preview`
+# environment and only moves the artifact. The PR's code never runs in the job that can mint an
+# Azure token. The environment's own protection rules (Settings → Environments → preview) are the
+# place to restrict who may deploy at all.
 
 on:
   pull_request:
@@ -20,23 +26,20 @@ concurrency:
 
 permissions:
   contents: read
-  id-token: write
-  pull-requests: write
 
 env:
   AZURE_RESOURCE_GROUP: frejsi
   ENVIRONMENT_NAME: pr${{ github.event.pull_request.number }}
 
 jobs:
-  deploy:
+  build:
     if: >-
       github.event.action != 'closed' && github.event.action != 'unlabeled'
       && contains(github.event.pull_request.labels.*.name, 'preview')
     runs-on: ubuntu-latest
-    timeout-minutes: 20
-    environment:
-      name: preview
-      url: ${{ steps.hostname.outputs.url }}
+    timeout-minutes: 15
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -51,6 +54,34 @@ jobs:
           NEXT_PUBLIC_APP_VERSION: ${{ env.ENVIRONMENT_NAME }}-${{ github.event.pull_request.head.sha }}
         run: pnpm --filter ./web build
 
+      # The standalone Next.js build; `.next` is a hidden directory.
+      - uses: actions/upload-artifact@v4
+        with:
+          name: preview-${{ env.ENVIRONMENT_NAME }}-${{ github.event.pull_request.head.sha }}
+          include-hidden-files: true
+          path: web/.next
+          retention-days: 3
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      id-token: write
+      pull-requests: write
+    environment:
+      name: preview
+      url: ${{ steps.hostname.outputs.url }}
+    steps:
+      # The checkout is data for the upload (staticwebapp.config.json, public/, package.json); no
+      # install and no build run here.
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: preview-${{ env.ENVIRONMENT_NAME }}-${{ github.event.pull_request.head.sha }}
+          path: web/.next
+
       - uses: azure/login@v2
         with:
           client-id: ${{ vars.AZURE_CLIENT_ID }}
@@ -63,6 +94,7 @@ jobs:
           NAME=$(az resource list -g "$AZURE_RESOURCE_GROUP" --resource-type Microsoft.Web/staticSites --query "[0].name" -o tsv)
           test -n "$NAME" || { echo "::error::no Static Web App in $AZURE_RESOURCE_GROUP; has the first release run?"; exit 1; }
           TOKEN=$(az staticwebapp secrets list -g "$AZURE_RESOURCE_GROUP" -n "$NAME" --query properties.apiKey -o tsv)
+          test -n "$TOKEN" || { echo "::error::$NAME has no deployment token"; exit 1; }
           echo "::add-mask::$TOKEN"
           echo "name=$NAME" >> "$GITHUB_OUTPUT"
           echo "token=$TOKEN" >> "$GITHUB_OUTPUT"
@@ -110,6 +142,9 @@ jobs:
       || (github.event.action == 'unlabeled' && github.event.label.name == 'preview')
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    permissions:
+      contents: read
+      id-token: write
     environment: preview
     steps:
       - uses: azure/login@v2
