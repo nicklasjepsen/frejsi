@@ -23,7 +23,9 @@ describe("poller build", () => {
 
   it("declares every external as a runtime dependency so dist/ can resolve it on the Function App", () => {
     for (const name of externals) {
-      expect(pkg.dependencies, `${name} is --external but not in dependencies`).toHaveProperty(name);
+      expect(pkg.dependencies, `${name} is --external but not in dependencies`).toHaveProperty(
+        name,
+      );
     }
   });
 
