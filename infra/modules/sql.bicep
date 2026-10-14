@@ -5,6 +5,11 @@
 // infra/deploy.sh can create the application's SQL login with a password it generates once and
 // stores in Key Vault. Bicep never holds a password: the server is created Entra-only (which lets
 // the SQL admin login be omitted) and the child resource below turns SQL authentication back on.
+//
+// `administrators` in the server body counts at create time only (the ARM reference: on an update
+// it is ignored). It stays there because it is what allows a server without a SQL admin password;
+// the `administrators` child resource is the supported update path and carries the same identity,
+// so a redeploy with a new deploy principal takes effect.
 
 param location string
 param tags object
@@ -34,13 +39,26 @@ resource server 'Microsoft.Sql/servers@2023-08-01' = {
   }
 }
 
+resource entraAdmin 'Microsoft.Sql/servers/administrators@2023-08-01' = {
+  parent: server
+  name: 'ActiveDirectory'
+  properties: {
+    administratorType: 'ActiveDirectory'
+    login: entraAdminLogin
+    sid: deployer().objectId
+    tenantId: deployer().tenantId
+  }
+}
+
 // SQL authentication on, for the application login deploy.sh creates (Prisma has no Entra auth).
+// After the admin: the two are server-level operations that must not run at the same time.
 resource sqlAuthentication 'Microsoft.Sql/servers/azureADOnlyAuthentications@2023-08-01' = {
   parent: server
   name: 'Default'
   properties: {
     azureADOnlyAuthentication: false
   }
+  dependsOn: [entraAdmin]
 }
 
 // "Allow Azure services and resources to access this server": the Function App and the Static Web
