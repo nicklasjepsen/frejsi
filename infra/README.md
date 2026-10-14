@@ -97,10 +97,11 @@ In this order. Everything after step 5 is one tap or one DNS record.
    (`xxxx.azurestaticapps.net`) and create a CNAME `frejsi.jepsen.ninja → <default hostname>` at the
    DNS provider. If the provider cannot CNAME (apex domains), use the TXT record the portal's
    "Custom domains" page shows instead. Then set the repository variable `CUSTOM_DOMAIN` to
-   `frejsi.jepsen.ninja` and redeploy the same tag with `workflow_dispatch` on `release.yml`: the
-   infra job adds the domain (CNAME validation needs the record to exist first, which is why the
-   domain is conditional on the variable) and `deploy.sh` sets `APP_ORIGIN` to it. The certificate is
-   issued and renewed by Static Web Apps.
+   `frejsi.jepsen.ninja` and redeploy the same tag with `workflow_dispatch` on `release.yml`, with
+   the **infra** box ticked (a changed variable is invisible to the file diff that otherwise decides
+   whether the infra job runs): the infra job adds the domain (CNAME validation needs the record to
+   exist first, which is why the domain is conditional on the variable) and `deploy.sh` sets
+   `APP_ORIGIN` to it. The certificate is issued and renewed by Static Web Apps.
 8. **Key Vault read access for yourself.** Give your own user Key Vault Secrets User on the vault
    (`kv-frejsi-<suffix>`), or use the portal's Secrets page, for the next step.
 9. **Read `bootstrap-token` once** and bootstrap the first space (`docs/operations.md`, task 10):

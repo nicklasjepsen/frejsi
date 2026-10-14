@@ -19,6 +19,10 @@ on:
       tag:
         description: Existing tag to redeploy (rollback)
         required: true
+      infra:
+        description: Also run the infra job (after changing a repository variable such as CUSTOM_DOMAIN; the Bicep files need not have changed)
+        type: boolean
+        default: false
 
 concurrency:
   group: release
@@ -62,9 +66,11 @@ jobs:
 
       - name: Did infra change since the previous release?
         id: infra
+        # Also true when a redeploy asks for it: the parameters come from repository variables, which
+        # a file diff cannot see (README step 7, the custom domain).
         run: |
           PREV=$(git tag -l 'v[0-9]*' --sort=-v:refname | grep -v "^$TAG$" | head -1 || true)
-          if [ -z "$PREV" ] || git diff --name-only "$PREV" "$TAG" -- infra/ | grep -q .; then
+          if [ "${{ github.event.inputs.infra }}" = "true" ] || [ -z "$PREV" ] || git diff --name-only "$PREV" "$TAG" -- infra/ | grep -q .; then
             echo "changed=true" >> "$GITHUB_OUTPUT"
           else
             echo "changed=false" >> "$GITHUB_OUTPUT"
