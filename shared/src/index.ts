@@ -46,3 +46,27 @@ export {
   findDosingVocabulary,
   type DosingFinding,
 } from "./dosing-vocabulary";
+
+export {
+  DexcomShareCredential,
+  DexcomShareError,
+  DexcomShareSource,
+  parseCredential,
+  serializeCredential,
+  type DexcomShareSourceOptions,
+  type FetchLike,
+} from "./glucose/dexcom-share/index";
+export {
+  FAILURES_BEFORE_DISCONNECTED,
+  FIRST_RUN_MINUTES,
+  WINDOW_MINUTES,
+  runPollCycle,
+  sinceFor,
+  type PollCycleDeps,
+  type PollCycleOptions,
+  type PollDb,
+  type PollOutcomeCode,
+  type PollSpaceRow,
+  type SourceFactory,
+  type SpaceOutcome,
+} from "./glucose/poll-cycle";
