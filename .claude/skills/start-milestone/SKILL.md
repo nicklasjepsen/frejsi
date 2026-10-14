@@ -8,7 +8,8 @@ description: Start a Frejsi milestone release and take it to production: list wh
 A milestone is a release. This skill starts its remaining work as parallel lanes and, when they are
 all merged, releases it. Nothing is created before the owner says OK to the split.
 
-Run from the repository root of a clean checkout on `main`.
+Run from the repository root of a clean checkout on `main`, in the main session: the Workflow tool
+and the project subagent types are not available inside a subagent (`docs/agent-workflow.md` §11).
 
 ## 1. See what the milestone owes
 
