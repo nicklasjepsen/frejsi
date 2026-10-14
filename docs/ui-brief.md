@@ -1,0 +1,47 @@
+# Frejsi — UI brief (for Claude Design)
+
+Design the UI first, then hand the result to Claude Code for implementation. Read `docs/superpowers/specs/2026-10-14-frejsi-design.md` for the full model; this file is the designer's cut.
+
+## What it is
+
+A phone-first web app (PWA) for one person with diabetes and the people around them. Two jobs, fast: **"how many carbs is this?"** and **"what did that meal do to my glucose?"**
+
+## Who uses it
+
+| Persona | Mode | Needs |
+|---|---|---|
+| **The subject, child (9)** | `simpleMode` | Pictures, not words. Big targets. Pick "my lunchbox" in two taps. See her own number with an arrow. Press "ask an adult" when unsure. Never sees unverified numbers. |
+| **The subject, adult** | normal | Everything a carer can do, on their own data. |
+| **Carer** (parent, partner, grandparent) | normal | Scan a barcode in the shop. Log a meal by voice. Verify foods with one tick. Open a meal and see the next 3 hours of glucose under it. Get a push when the child asks for help. |
+| **Owner** (parent/admin) | normal | Invite people with a QR code, manage devices, connect the glucose source, turn AI on/off. |
+| **Viewer** (teacher, after-school club) | read-only | Today's meals and carb totals. **No glucose, ever.** |
+
+## Modes
+
+- **`simpleMode`** is a per-person setting, not a role. It changes the whole shell: fewer screens, larger type, photos first, verified-only content, "ask an adult" instead of edit.
+- Light and dark, system-driven.
+- Languages: Danish first, English from day one. Numbers in mmol/L by default, mg/dL selectable per space.
+
+## Screens (v1)
+
+1. **Now** — current glucose with trend arrow and age ("6.2 ↗ · 3 min ago"); last meal; a short sparkline of the last 3 hours. In `simpleMode`: the number, the arrow, and one big button "I'm eating".
+2. **Log a meal** — three entry points of equal weight: **scan** (barcode), **say it** (voice/text), **pick** (own library with photos, favourites, "my lunchbox"). Then: portions as chips ("1 slice", "½ slice", "weigh it"), running carb total, confirm. Optional photo. Optional "bolus given now" tap (carers only).
+3. **Meal detail** — the meal on top, the glucose curve for −1 h to +4 h below with the meal and bolus marked; the same dish's previous curves faintly behind. AI insight as one sentence, clearly labelled as observation.
+4. **Library** — the space's foods with photos; search (semantic); unverified items marked; tick to verify. Edit portions. "Send correction to Open Food Facts".
+5. **History** — days as a scrollable timeline of meals over the glucose curve; weekly summary with the generated "questions for the clinic".
+6. **People** — members and roles; invite (QR + link); devices per person; remove.
+7. **Settings** — glucose source (connect Dexcom Share / Nightscout / manual; status), AI (on/off, provider), units, language, `simpleMode` per person.
+8. **Invite landing** — "Hi Susanne, you've been invited to Freja's space" → register a passkey.
+
+## Hard constraints the design must respect
+
+- A glucose value is never shown without its age.
+- Viewers never see glucose anywhere — not in history, not in meal detail.
+- AI estimates are always labelled "approx." and visibly unverified.
+- There is no insulin anywhere in the UI except the single "bolus given now" timestamp tap for carers. No units, no suggestions.
+- Everything must work one-handed on a phone; the child's flow must work with gloves off in a school corridor in under 20 seconds.
+- Must look like a calm health tool, not a fitness app — no streaks, no confetti, no red for a high reading (highs and lows are information, not failure).
+
+## Tone
+
+Warm, plain, unhurried. Danish copy should sound like a kind nurse, not a startup.
