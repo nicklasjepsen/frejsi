@@ -6,7 +6,7 @@ description: Background triage and cleanup for Frejsi, run daily by the housekee
 # housekeeping
 
 The procedure is written so one headless session can run it top to bottom with `gh` and no
-questions. In an interactive session the `housekeeping` workflow (`.claude/workflows/housekeeping.js`)
+questions. In an interactive session the `housekeeping-sweep` workflow (`.claude/workflows/housekeeping-sweep.js`)
 runs the same steps with the sweeps in parallel; use it when the Workflow tool is available, otherwise
 follow the steps below. Today's date comes from the prompt (unattended) or from `date -I`.
 
