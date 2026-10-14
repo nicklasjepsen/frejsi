@@ -1,0 +1,65 @@
+#!/usr/bin/env bash
+# Fake `az` for infra/test/deploy.test.mjs. Logs every call to $FAKE_LOG and answers the queries
+# deploy.sh makes with fictional values. Nothing here is a real resource, key or address.
+set -euo pipefail
+printf 'az %s\n' "$*" >> "$FAKE_LOG"
+
+arg() { # arg <flag> -> value following the flag, or empty
+  local prev=""
+  for a in "${ARGS[@]}"; do
+    if [ "$prev" = "$1" ]; then printf '%s' "$a"; return; fi
+    prev="$a"
+  done
+}
+ARGS=("$@")
+cmd="${1:-} ${2:-} ${3:-}"
+query="$(arg --query)"
+
+case "$cmd" in
+  "resource list "*)
+    case "$(arg --resource-type)" in
+      Microsoft.KeyVault/vaults) echo kv-frejsi-abc ;;
+      Microsoft.Sql/servers) echo sql-frejsi-abc ;;
+      Microsoft.SignalRService/webPubSub) echo wps-frejsi-abc ;;
+      Microsoft.Web/sites) echo frejsi-poller-abc ;;
+      Microsoft.Web/staticSites) echo frejsi ;;
+      Microsoft.Insights/components) echo appi-frejsi ;;
+      *) echo "fake az: unknown resource type $(arg --resource-type)" >&2; exit 3 ;;
+    esac ;;
+  "keyvault secret list") for s in ${FAKE_EXISTING_SECRETS:-}; do echo "$s"; done ;;
+  "keyvault secret show")
+    if [ -f "$FAKE_LOG_DIR/secret-$(arg -n)" ]; then cat "$FAKE_LOG_DIR/secret-$(arg -n)"; echo; exit 0; fi
+    case "$(arg -n)" in
+      database-url) echo 'sqlserver://sql-frejsi-abc.database.windows.net:1433;database=frejsi;user=frejsi_app;password=FAKEDBPASSWORD;encrypt=true' ;;
+      web-pubsub-connection-string) echo 'Endpoint=https://wps-frejsi-abc.webpubsub.azure.com;AccessKey=FAKEWPSKEY;Version=1.0;' ;;
+      bootstrap-token) echo FAKEBOOTSTRAPTOKEN ;;
+      *) echo "fake az: unknown secret $(arg -n)" >&2; exit 3 ;;
+    esac ;;
+  "keyvault secret set") cp "$(arg --file)" "$FAKE_LOG_DIR/secret-$(arg -n)" ;;
+  "sql server show") echo sql-frejsi-abc.database.windows.net ;;
+  "sql server firewall-rule") : ;;
+  "rest --method post") echo 'Endpoint=https://wps-frejsi-abc.webpubsub.azure.com;AccessKey=FAKEWPSKEY;Version=1.0;' ;;
+  "rest --method put")
+    body="$(arg --body)"
+    case "$(arg --url)" in
+      *staticSites/*/config/appsettings*) cp "${body#@}" "$FAKE_LOG_DIR/swa-appsettings.json" ;;
+      *) echo "fake az: unexpected PUT $(arg --url)" >&2; exit 3 ;;
+    esac ;;
+  "resource show "*)
+    case "$query" in
+      properties.hostName) echo wps-frejsi-abc.webpubsub.azure.com ;;
+      properties.ConnectionString) echo 'InstrumentationKey=00000000-0000-0000-0000-000000000000;IngestionEndpoint=https://westeurope-0.in.applicationinsights.azure.com/' ;;
+      *) echo "fake az: unknown resource show query $query" >&2; exit 3 ;;
+    esac ;;
+  "functionapp config appsettings")
+    if [ "${4:-}" = list ]; then echo 'https://stfrejsiabc.blob.core.windows.net/function-releases/poller.zip?sv=FAKESAS'; fi ;;
+  "functionapp deployment source") test -s "$(arg --src)" || { echo "fake az: zip missing" >&2; exit 3; } ;;
+  "functionapp function keys")
+    n=$(cat "$FAKE_LOG_DIR/keys-attempts" 2>/dev/null || echo 0); n=$((n + 1)); echo "$n" > "$FAKE_LOG_DIR/keys-attempts"
+    if [ "$n" -le "${FAKE_FUNCTION_KEY_RETRIES:-0}" ]; then echo "fake az: function not found yet" >&2; exit 3; fi
+    echo FAKEFUNCTIONKEY ;;
+  "functionapp show "*) echo frejsi-poller-abc.azurewebsites.net ;;
+  "staticwebapp show "*) echo happy-sea-0abc.1.azurestaticapps.net ;;
+  "staticwebapp secrets list") echo FAKESWATOKEN ;;
+  *) echo "fake az: unexpected command: $*" >&2; exit 3 ;;
+esac

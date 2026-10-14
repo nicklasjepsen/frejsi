@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+# Fake pnpm: records the arguments and the DATABASE_URL it saw; fails when FAKE_FAIL_AT=migrate.
+set -euo pipefail
+printf 'pnpm %s\n' "$*" >> "$FAKE_LOG"
+printf '%s\n' "${DATABASE_URL:-}" > "$FAKE_LOG_DIR/pnpm-database-url"
+if [ "${FAKE_FAIL_AT:-}" = migrate ]; then echo "fake pnpm: migration failed" >&2; exit 7; fi

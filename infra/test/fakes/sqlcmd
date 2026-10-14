@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+# Fake sqlcmd: records the arguments and the SQL it was given.
+set -euo pipefail
+printf 'sqlcmd %s\n' "$*" >> "$FAKE_LOG"
+n=$(cat "$FAKE_LOG_DIR/sqlcmd-count" 2>/dev/null || echo 0); n=$((n + 1)); echo "$n" > "$FAKE_LOG_DIR/sqlcmd-count"
+prev=""
+for a in "$@"; do
+  if [ "$prev" = "-i" ]; then cp "$a" "$FAKE_LOG_DIR/sqlcmd-$n.sql"; fi
+  prev="$a"
+done
