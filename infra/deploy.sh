@@ -86,7 +86,10 @@ SQL_FQDN="$(az sql server show -g "$RG" -n "$SQL_SERVER" --query fullyQualifiedD
 log "Key Vault $KEY_VAULT, SQL $SQL_SERVER, Web PubSub $WEB_PUBSUB, Function App $FUNCTION_APP, Static Web App $STATIC_WEB_APP"
 
 # --- Secret helpers: values go through files, never command lines or stdout ----------------------
-secret_exists() { az keyvault secret list --vault-name "$KEY_VAULT" --query "[].name" -o tsv | grep -qx "$1"; }
+# The names are listed once, with an assignment: a failed listing stops the script here. Inside an
+# `if` it would read as "absent" and the SQL branch would rotate the live application password.
+EXISTING_SECRETS="$(az keyvault secret list --vault-name "$KEY_VAULT" --query "[].name" -o tsv)"
+secret_exists() { printf '%s\n' "$EXISTING_SECRETS" | grep -qx "$1"; }
 secret_read() { az keyvault secret show --vault-name "$KEY_VAULT" -n "$1" --query value -o tsv; }
 secret_write_from_file() { az keyvault secret set --vault-name "$KEY_VAULT" -n "$1" --file "$2" --encoding utf-8 >/dev/null; }
 # secret_to_file <name> <file>: the secret's value into a mode-600 file. A failed or empty read stops

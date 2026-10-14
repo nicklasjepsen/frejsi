@@ -186,3 +186,12 @@ test('an empty Key Vault secret is an error, not an empty app setting', () => {
   assert.match(r.output, /web-pubsub-connection-string/);
   assert.ok(!r.calls.some((c) => /^az rest --method put/.test(c)), 'the SWA settings were PUT with an empty value');
 });
+
+test('a failed Key Vault listing stops the deploy; it never counts as "secret absent"', () => {
+  // Otherwise the SQL branch would generate a new password and ALTER LOGIN the live application login.
+  const r = runDeploy({ env: { FAKE_EXISTING_SECRETS: 'database-url web-pubsub-connection-string bootstrap-token', FAKE_FAIL_AT: 'secret-list' } });
+  assert.notEqual(r.status, 0);
+  assert.equal(r.calls.filter((c) => c.startsWith('sqlcmd')).length, 0, 'a login was created or altered');
+  assert.equal(r.calls.filter((c) => /keyvault secret set/.test(c)).length, 0);
+  assert.ok(!r.calls.some((c) => /firewall-rule create/.test(c)), 'the deploy went on after the failure');
+});
