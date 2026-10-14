@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="da">
+<head>
+<meta charset="utf-8">
+<title>Farve – vælg pr. person</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,500;6..72,600&family=Atkinson+Hyperlegible:wght@400;700&display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#5A6A3B}a:hover{color:#3F4C28}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; background: #F6F1E8; color: #2B2622; font-family: 'Atkinson Hyperlegible', system-ui, sans-serif; display: flex; flex-direction: column; overflow: hidden">
+
+  <div style="display: flex; align-items: center; justify-content: space-between; padding: 56px 16px 0 12px">
+    <a href="Indstillinger-Telefon.dc.html" aria-label="Tilbage" style="width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; border-radius: 50%; text-decoration: none; color: #6E6458"><svg width="22" height="22" viewBox="0 0 20 20" aria-hidden="true"><path d="M13 4 L7 10 L13 16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"></path></svg></a>
+    <h1 style="margin: 0; font-family: Newsreader, Georgia, serif; font-size: 24px; font-weight: 600">Farve</h1>
+    <div style="width: 44px"></div>
+  </div>
+
+  <div style="margin: 12px 24px 0 24px; font-size: 14px; color: #6E6458; line-height: 1.45">Hver person vælger sin egen farve. Den ændrer kun udseendet – aldrig hvad et tal betyder.</div>
+
+  <div style="margin: 16px 24px 0 24px; display: flex; gap: 8px">
+    <button type="button" aria-pressed="true" style="display: flex; align-items: center; gap: 8px; height: 40px; padding: 0 12px 0 6px; border-radius: 999px; border: 2px solid #5B3F73; background: #EAE3EF; color: #432C57; font-family: inherit; font-size: 14px; font-weight: 700; cursor: pointer"><span style="width: 28px; height: 28px; border-radius: 50%; background: #D9CDB8; display: flex; align-items: center; justify-content: center; font-size: 12px; color: #5A4E3C">A</span>Alma</button>
+    <button type="button" style="display: flex; align-items: center; gap: 8px; height: 40px; padding: 0 12px 0 6px; border-radius: 999px; border: 1px solid #E7DFD0; background: #FFFCF6; color: #2B2622; font-family: inherit; font-size: 14px; cursor: pointer"><span style="width: 28px; height: 28px; border-radius: 50%; background: #CFD8B8; display: flex; align-items: center; justify-content: center; font-size: 12px; color: #3F4C28">J</span>Jonas (dig)</button>
+  </div>
+
+  <div style="margin: 16px 24px 0 24px; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px">
+    <button type="button" aria-label="Oliven" style="display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 6px 0 8px 0; border-radius: 16px; border: 2px solid transparent; background: transparent; font-family: inherit; font-size: 12px; color: #2B2622; cursor: pointer">
+      <span style="width: 52px; height: 52px; border-radius: 50%; background: #5A6A3B; display: block"></span>
+      <span>Oliven</span>
+    </button>
+    <button type="button" aria-label="Blomme" aria-pressed="true" style="display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 6px 0 8px 0; border-radius: 16px; border: 2px solid #5B3F73; background: #EAE3EF; font-family: inherit; font-size: 12px; font-weight: 700; color: #432C57; cursor: pointer">
+      <span style="width: 52px; height: 52px; border-radius: 50%; background: #5B3F73; display: flex; align-items: center; justify-content: center"><svg width="24" height="24" viewBox="0 0 34 34" aria-hidden="true"><path d="M8 18 L14 24 L26 10" fill="none" stroke="#F6F1E8" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"></path></svg></span>
+      <span>Blomme</span>
+    </button>
+    <button type="button" aria-label="Hav" style="display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 6px 0 8px 0; border-radius: 16px; border: 2px solid transparent; background: transparent; font-family: inherit; font-size: 12px; color: #2B2622; cursor: pointer">
+      <span style="width: 52px; height: 52px; border-radius: 50%; background: #3B5F7E; display: block"></span>
+      <span>Hav</span>
+    </button>
+    <button type="button" aria-label="Skov" style="display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 6px 0 8px 0; border-radius: 16px; border: 2px solid transparent; background: transparent; font-family: inherit; font-size: 12px; color: #2B2622; cursor: pointer">
+      <span style="width: 52px; height: 52px; border-radius: 50%; background: #2F6B5E; display: block"></span>
+      <span>Skov</span>
+    </button>
+    <button type="button" aria-label="Granat" style="display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 6px 0 8px 0; border-radius: 16px; border: 2px solid transparent; background: transparent; font-family: inherit; font-size: 12px; color: #2B2622; cursor: pointer">
+      <span style="width: 52px; height: 52px; border-radius: 50%; background: #7A3A4B; display: block"></span>
+      <span>Granat</span>
+    </button>
+  </div>
+
+  <div style="margin: 20px 24px 0 24px; font-size: 13px; color: #6E6458">Sådan ser det ud for Alma</div>
+
+  <div style="margin: 8px 24px 0 24px; background: #FFFCF6; border-radius: 20px; padding: 18px 20px; display: flex; flex-direction: column; gap: 14px; box-shadow: 0 1px 0 #E7DFD0">
+    <div style="display: flex; align-items: center; justify-content: space-between">
+      <div style="display: flex; align-items: center; gap: 12px">
+        <div style="font-size: 56px; line-height: 0.95; font-weight: 700; letter-spacing: -0.04em; font-variant-numeric: tabular-nums">6,2</div>
+        <svg width="30" height="30" viewBox="0 0 40 40" role="img" aria-label="stiger langsomt"><path d="M10 30 L30 10 M16 10 H30 V24" fill="none" stroke="#5B3F73" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+      </div>
+      <div style="display: flex; align-items: center; gap: 6px; font-size: 13px; color: #6E6458"><div style="width: 8px; height: 8px; border-radius: 50%; background: #5B3F73"></div><div>forbundet</div></div>
+    </div>
+    <svg viewBox="0 0 302 60" width="302" height="60" role="img" aria-label="Eksempel på kurve">
+      <rect x="0" y="16" width="302" height="28" fill="#5B3F73" opacity="0.12"></rect>
+      <line x1="0" y1="16" x2="302" y2="16" stroke="#B9AE98" stroke-width="1" stroke-dasharray="3 4"></line>
+      <line x1="0" y1="44" x2="302" y2="44" stroke="#B9AE98" stroke-width="1" stroke-dasharray="3 4"></line>
+      <line x1="12" y1="6" x2="12" y2="54" stroke="#C4674A" stroke-width="1.5"></line>
+      <polyline points="0,34 25,30 50,24 75,20 100,22 125,28 150,32 175,36 200,40 225,42 250,41 275,38 296,36" fill="none" stroke="#2B2622" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"></polyline>
+      <circle cx="296" cy="36" r="4" fill="#2B2622"></circle>
+    </svg>
+    <div style="display: flex; align-items: center; justify-content: center; height: 48px; border-radius: 16px; background: #5B3F73; color: #F6F1E8; font-size: 16px; font-weight: 700">Jeg spiser nu</div>
+  </div>
+
+  <div style="margin: 14px 24px 0 24px; font-size: 12px; color: #6E6458; line-height: 1.45">Måltider er altid teglrøde, og tallet er altid sort – uanset farve. Alma kan også selv skifte under Mere.</div>
+
+  <div style="flex: 1"></div>
+
+  <div style="display: flex; justify-content: space-around; align-items: flex-start; padding: 10px 8px 28px 8px; border-top: 1px solid #E7DFD0; background: #F6F1E8">
+    <a href="Main.dc.html" style="display: flex; flex-direction: column; align-items: center; gap: 4px; width: 64px; min-height: 48px; text-decoration: none; color: #6E6458; font-size: 12px"><svg width="26" height="26" viewBox="0 0 26 26" aria-hidden="true"><circle cx="13" cy="13" r="9" fill="none" stroke="currentColor" stroke-width="2.2"></circle><circle cx="13" cy="13" r="3" fill="currentColor"></circle></svg><div>Nu</div></a>
+    <a href="Log-Telefon.dc.html" style="display: flex; flex-direction: column; align-items: center; gap: 4px; width: 64px; min-height: 48px; text-decoration: none; color: #6E6458; font-size: 12px"><svg width="26" height="26" viewBox="0 0 26 26" aria-hidden="true"><path d="M13 5 V21 M5 13 H21" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"></path></svg><div>Måltid</div></a>
+    <a href="Bibliotek-Telefon.dc.html" style="display: flex; flex-direction: column; align-items: center; gap: 4px; width: 64px; min-height: 48px; text-decoration: none; color: #6E6458; font-size: 12px"><svg width="26" height="26" viewBox="0 0 26 26" aria-hidden="true"><path d="M5 6 H12 Q13 6 13 7 V21 Q13 20 12 20 H5 Z M21 6 H14 Q13 6 13 7 V21 Q13 20 14 20 H21 Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"></path></svg><div>Mad</div></a>
+    <a href="Historik-Telefon.dc.html" style="display: flex; flex-direction: column; align-items: center; gap: 4px; width: 64px; min-height: 48px; text-decoration: none; color: #6E6458; font-size: 12px"><svg width="26" height="26" viewBox="0 0 26 26" aria-hidden="true"><circle cx="13" cy="13" r="9" fill="none" stroke="currentColor" stroke-width="2.2"></circle><path d="M13 8 V13 L16.5 15.5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"></path></svg><div>Historik</div></a>
+    <a href="Indstillinger-Telefon.dc.html" aria-current="page" style="display: flex; flex-direction: column; align-items: center; gap: 4px; width: 64px; min-height: 48px; text-decoration: none; color: #3F4C28; font-size: 12px; font-weight: 700"><svg width="26" height="26" viewBox="0 0 26 26" aria-hidden="true"><circle cx="6" cy="13" r="2" fill="currentColor"></circle><circle cx="13" cy="13" r="2" fill="currentColor"></circle><circle cx="20" cy="13" r="2" fill="currentColor"></circle></svg><div>Mere</div></a>
+  </div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

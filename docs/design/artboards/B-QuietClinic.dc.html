@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="da">
+<head>
+<meta charset="utf-8">
+<title>Nu – Quiet clinic</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#2F62A3}a:hover{color:#224A7C}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; background: #F7F8FA; color: #1C2229; font-family: 'IBM Plex Sans', system-ui, sans-serif; display: flex; flex-direction: column; overflow: hidden">
+
+  <div style="display: flex; align-items: center; justify-content: space-between; padding: 56px 20px 12px 20px; border-bottom: 1px solid #E2E6EB; background: #FFFFFF">
+    <div style="display: flex; flex-direction: column; gap: 2px">
+      <div style="font-size: 13px; color: #5B6470">Alma · Dexcom G7</div>
+      <div style="font-size: 20px; font-weight: 600">Lige nu</div>
+    </div>
+    <div style="display: flex; align-items: center; gap: 6px; font-size: 13px; color: #5B6470; border: 1px solid #E2E6EB; border-radius: 999px; padding: 6px 10px">
+      <div style="width: 8px; height: 8px; border-radius: 50%; background: #2F62A3"></div>
+      <div>Forbundet</div>
+    </div>
+  </div>
+
+  <div style="margin: 16px 20px 0 20px; background: #FFFFFF; border: 1px solid #E2E6EB; border-radius: 10px; padding: 20px; display: flex; flex-direction: column; gap: 12px">
+    <div style="display: flex; align-items: baseline; gap: 10px">
+      <div style="font-size: 88px; line-height: 0.95; font-weight: 400; letter-spacing: -0.04em; font-variant-numeric: tabular-nums">6,2</div>
+      <div style="display: flex; flex-direction: column; gap: 2px">
+        <svg width="34" height="34" viewBox="0 0 34 34" role="img" aria-label="stiger langsomt"><path d="M8 26 L26 8 M14 8 H26 V20" fill="none" stroke="#2F62A3" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+        <div style="font-size: 14px; color: #5B6470">mmol/L</div>
+      </div>
+    </div>
+    <div style="display: flex; justify-content: space-between; font-size: 14px; color: #5B6470">
+      <div>Målt for 3 min. siden</div>
+      <div>Stiger langsomt</div>
+    </div>
+  </div>
+
+  <div style="margin: 12px 20px 0 20px; background: #FFFFFF; border: 1px solid #E2E6EB; border-radius: 10px; padding: 16px 16px 12px 16px; display: flex; flex-direction: column; gap: 8px">
+    <div style="display: flex; justify-content: space-between; font-size: 13px; color: #5B6470">
+      <div style="font-weight: 600; color: #1C2229">Seneste 3 timer</div>
+      <div>Mål 4–10 mmol/L</div>
+    </div>
+    <svg viewBox="0 0 318 120" width="318" height="120" role="img" aria-label="Glukose de seneste 3 timer">
+      <line x1="0" y1="40" x2="290" y2="40" stroke="#C7CED6" stroke-width="1" stroke-dasharray="3 4"></line>
+      <line x1="0" y1="100" x2="290" y2="100" stroke="#C7CED6" stroke-width="1" stroke-dasharray="3 4"></line>
+      <text x="296" y="44" font-size="11" fill="#5B6470" font-family="IBM Plex Sans, system-ui, sans-serif">10</text>
+      <text x="296" y="104" font-size="11" fill="#5B6470" font-family="IBM Plex Sans, system-ui, sans-serif">4</text>
+      <line x1="10" y1="20" x2="10" y2="110" stroke="#1C2229" stroke-width="1" opacity="0.5"></line>
+      <polyline points="0,66 24,57 48,48 72,44 97,49 121,58 145,67 169,76 193,83 217,86 241,85 266,81 288,78" fill="none" stroke="#2F62A3" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"></polyline>
+      <circle cx="288" cy="78" r="4" fill="#2F62A3"></circle>
+    </svg>
+    <div style="display: flex; justify-content: space-between; font-size: 12px; color: #5B6470; font-variant-numeric: tabular-nums">
+      <div>12:10 måltid</div>
+      <div>13:00</div>
+      <div>14:00</div>
+      <div>15:13</div>
+    </div>
+  </div>
+
+  <div style="margin: 12px 20px 0 20px; background: #FFFFFF; border: 1px solid #E2E6EB; border-radius: 10px; display: flex; flex-direction: column">
+    <div style="padding: 12px 16px 8px 16px; font-size: 13px; color: #5B6470; font-weight: 600; border-bottom: 1px solid #E2E6EB">Sidste måltid</div>
+    <a href="#meal" style="display: flex; align-items: center; gap: 12px; padding: 12px 16px; text-decoration: none; color: #1C2229">
+      <div style="width: 48px; height: 48px; border-radius: 8px; background: #E8ECF1; display: flex; align-items: center; justify-content: center; font-size: 11px; color: #5B6470; flex-shrink: 0">foto</div>
+      <div style="display: flex; flex-direction: column; gap: 2px; flex: 1">
+        <div style="font-size: 16px; font-weight: 500">Rugbrød med ost og et æble</div>
+        <div style="font-size: 14px; color: #5B6470; font-variant-numeric: tabular-nums">12:10 · 48 g kulhydrat · Jonas</div>
+      </div>
+      <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><path d="M6 3 L12 9 L6 15" fill="none" stroke="#5B6470" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+    </a>
+  </div>
+
+  <div style="flex: 1"></div>
+
+  <div style="padding: 0 20px 12px 20px">
+    <button type="button" style="width: 100%; height: 52px; border: 0; border-radius: 10px; background: #2F62A3; color: #FFFFFF; font-family: inherit; font-size: 16px; font-weight: 600; cursor: pointer">Log måltid</button>
+  </div>
+
+  <div style="display: flex; justify-content: space-around; align-items: flex-start; padding: 8px 8px 26px 8px; border-top: 1px solid #E2E6EB; background: #FFFFFF">
+    <a href="#nu" aria-current="page" style="display: flex; flex-direction: column; align-items: center; gap: 4px; width: 64px; min-height: 48px; text-decoration: none; color: #2F62A3; font-size: 11px; font-weight: 600">
+      <svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5" fill="none" stroke="currentColor" stroke-width="1.8"></circle><circle cx="12" cy="12" r="2.5" fill="currentColor"></circle></svg>
+      <div>Nu</div>
+    </a>
+    <a href="#log" style="display: flex; flex-direction: column; align-items: center; gap: 4px; width: 64px; min-height: 48px; text-decoration: none; color: #5B6470; font-size: 11px">
+      <svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4 V20 M4 12 H20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"></path></svg>
+      <div>Måltid</div>
+    </a>
+    <a href="#mad" style="display: flex; flex-direction: column; align-items: center; gap: 4px; width: 64px; min-height: 48px; text-decoration: none; color: #5B6470; font-size: 11px">
+      <svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5 H11 Q12 5 12 6 V20 Q12 19 11 19 H4 Z M20 5 H13 Q12 5 12 6 V20 Q12 19 13 19 H20 Z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"></path></svg>
+      <div>Mad</div>
+    </a>
+    <a href="#historik" style="display: flex; flex-direction: column; align-items: center; gap: 4px; width: 64px; min-height: 48px; text-decoration: none; color: #5B6470; font-size: 11px">
+      <svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5" fill="none" stroke="currentColor" stroke-width="1.8"></circle><path d="M12 7 V12 L15.5 14.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"></path></svg>
+      <div>Historik</div>
+    </a>
+    <a href="#mere" style="display: flex; flex-direction: column; align-items: center; gap: 4px; width: 64px; min-height: 48px; text-decoration: none; color: #5B6470; font-size: 11px">
+      <svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1.8" fill="currentColor"></circle><circle cx="12" cy="12" r="1.8" fill="currentColor"></circle><circle cx="19" cy="12" r="1.8" fill="currentColor"></circle></svg>
+      <div>Mere</div>
+    </a>
+  </div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>
