@@ -105,12 +105,22 @@ test('first release: creates the SQL login and the Web PubSub secret once, migra
   assert.equal(swa.APP_ORIGIN, 'https://happy-sea-0abc.1.azurestaticapps.net');
   assert.equal(swa.NEXT_PUBLIC_APP_VERSION, 'v0.1.0');
   const swaPut = r.calls.findIndex((c) => /^az rest --method put .*config\/appsettings/.test(c));
-  for (const line of r.calls.filter((c) => /^(az|pnpm|sqlcmd) /.test(c))) {
+  // Every command line the script runs, docker and curl included: no secret on any of them.
+  for (const line of r.calls) {
     for (const marker of [password, ...SECRET_MARKERS]) assert.ok(!line.includes(marker), `${marker} on a command line: ${line}`);
   }
   const upload = r.calls.find((c) => /^docker run/.test(c));
   assert.match(upload, /staticappsclient/);
   assert.match(upload, /--skipAppBuild true/);
+  // The deployment token reaches the container through a mode-600 env file, never docker's argv.
+  assert.match(upload, /--env-file \S+/);
+  assert.match(upload, /--apiToken "\$SWA_TOKEN"/, 'the token is expanded inside the container, not by the host shell');
+  assert.equal(readFileSync(path.join(r.logDir, 'docker-env-file-mode'), 'utf8').trim(), '600');
+  assert.match(readFileSync(path.join(r.logDir, 'docker-env-file'), 'utf8'), /^SWA_TOKEN=FAKESWATOKEN$/m);
+  // The runner-IP lookup is bounded: no external call without a timeout.
+  const ip = r.calls.find((c) => /^curl .*api\.ipify\.org/.test(c));
+  assert.match(ip, /--max-time \d+/);
+  assert.match(ip, /--retry \d+/);
   assert.ok(swaPut >= 0 && swaPut < r.calls.indexOf(upload), 'settings before upload');
   assert.match(r.githubOutput, /^app_origin=https:\/\/happy-sea-0abc\.1\.azurestaticapps\.net$/m);
 });
@@ -152,4 +162,27 @@ test('waits for the source-connect function key to exist', () => {
   const r = runDeploy({ env: { FAKE_EXISTING_SECRETS: 'database-url web-pubsub-connection-string bootstrap-token', FAKE_FUNCTION_KEY_RETRIES: '2', DEPLOY_RETRY_SLEEP: '0' } });
   assert.equal(r.status, 0, r.output);
   assert.equal(r.calls.filter((c) => /functionapp function keys list/.test(c)).length, 3);
+});
+
+test('a failed listKeys stops the deploy; no empty Web PubSub secret is written', () => {
+  const r = runDeploy({ env: { FAKE_EXISTING_SECRETS: 'database-url bootstrap-token', FAKE_FAIL_AT: 'wps-listkeys' } });
+  assert.notEqual(r.status, 0);
+  assert.ok(!r.calls.some((c) => /keyvault secret set .*web-pubsub-connection-string/.test(c)), r.calls.join('\n'));
+  assert.ok(!existsSync(path.join(r.logDir, 'secret-web-pubsub-connection-string')), 'an empty secret was written');
+  assert.ok(!r.calls.some((c) => /firewall-rule create/.test(c)), 'the deploy went on after the failure');
+});
+
+test('a failed Key Vault read stops the deploy before the web settings are replaced', () => {
+  const r = runDeploy({ env: { FAKE_EXISTING_SECRETS: 'database-url web-pubsub-connection-string bootstrap-token', FAKE_FAIL_AT: 'secret-show:bootstrap-token' } });
+  assert.notEqual(r.status, 0);
+  assert.match(r.output, /bootstrap-token/);
+  assert.ok(!r.calls.some((c) => /^az rest --method put/.test(c)), 'the SWA settings were PUT after a failed read');
+  assert.ok(!existsSync(path.join(r.logDir, 'swa-appsettings.json')));
+});
+
+test('an empty Key Vault secret is an error, not an empty app setting', () => {
+  const r = runDeploy({ env: { FAKE_EXISTING_SECRETS: 'database-url web-pubsub-connection-string bootstrap-token', FAKE_SECRET_READS_EMPTY: 'web-pubsub-connection-string' } });
+  assert.notEqual(r.status, 0);
+  assert.match(r.output, /web-pubsub-connection-string/);
+  assert.ok(!r.calls.some((c) => /^az rest --method put/.test(c)), 'the SWA settings were PUT with an empty value');
 });
