@@ -43,6 +43,12 @@ test('bicep build, lint and build-params succeed with no warnings', () => {
   assert.equal(values.parameters.alertEmail.value, 'alerts@example.invalid');
 });
 
+test('baseName is bounded so every generated name fits its Azure limit', () => {
+  const max = template.parameters.baseName.maxLength;
+  assert.ok(max <= 7, `kv-<baseName>-<13-char suffix> must fit Key Vault's 24 characters; maxLength is ${max}`);
+  assert.ok(template.parameters.baseName.minLength >= 3);
+});
+
 test('main.bicep is a module list: parameters, modules and outputs only, no resources', () => {
   const src = readFileSync(path.join(infraDir, 'main.bicep'), 'utf8');
   assert.doesNotMatch(src, /^\s*resource\s/m, 'main.bicep declares a resource; put it in modules/');
@@ -156,9 +162,12 @@ test('bootstrap-token is a newGuid() parameter default; no other secret is gener
 test('alert: no reading.stored for 35 minutes, to an action group with the alertEmail parameter', () => {
   const [rule] = byType('Microsoft.Insights/scheduledQueryRules');
   const p = props(rule);
-  assert.equal(p.windowSize, 'PT35M');
+  // Azure Monitor accepts only fixed window sizes; the 35 minutes live in the query.
+  assert.ok(['PT45M', 'PT1H'].includes(p.windowSize), `unsupported windowSize ${p.windowSize}`);
+  assert.equal(p.evaluationFrequency, 'PT5M');
   const crit = p.criteria.allOf[0];
   assert.match(crit.query, /customEvents/);
+  assert.match(crit.query, /ago\(35m\)/);
   assert.match(crit.query, /reading\.stored/);
   assert.equal(crit.operator, 'LessThan');
   assert.equal(crit.threshold, 1);

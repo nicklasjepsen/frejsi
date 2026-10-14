@@ -114,8 +114,9 @@ never anywhere else.
 
 Frejsi is one person's data on one person's subscription. A fork gets its own copy like this:
 
-1. Fork the repository. In your fork, keep `baseName` as it is or change it in `main.bicepparam`
-   (names stay globally unique through a suffix derived from the resource group id).
+1. Fork the repository. In your fork, keep `baseName` as it is or set it in `main.bicepparam`
+   (at most 7 characters; names stay globally unique through a suffix derived from the resource
+   group id).
 2. Do steps 1–5 above in your own Azure subscription and GitHub repository, with your own
    repository name in the federated credential subjects (`repo:<you>/<fork>:environment:...`). Create
    the two environments `production-infra` and `production` in the fork (Settings → Environments),

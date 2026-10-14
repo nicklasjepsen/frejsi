@@ -13,9 +13,9 @@ targetScope = 'resourceGroup'
 @description('Azure region for every resource; the resource group\'s own region by default.')
 param location string = resourceGroup().location
 
-@description('Short name used in resource names. Forks may change it; names stay globally unique through the suffix.')
+@description('Short name used in resource names. Forks may change it; names stay globally unique through the suffix. At most 7 characters: kv-<name>-<13-char suffix> must fit Key Vault\'s 24.')
 @minLength(3)
-@maxLength(12)
+@maxLength(7)
 param baseName string = 'frejsi'
 
 @description('Address that receives the "no reading for 35 minutes" alert. Passed from the ALERT_EMAIL repository variable; never in the repository.')
