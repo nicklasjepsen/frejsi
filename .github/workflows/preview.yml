@@ -1,0 +1,126 @@
+name: preview
+
+# Opt-in preview environments (docs/agent-workflow.md section 4, rule 6): add the label `preview` to a
+# PR and this workflow deploys the web build to a Static Web App preview environment named after the
+# PR, with APP_ORIGIN set to the preview hostname (plan section 7). Removing the label or closing
+# the PR deletes the environment. Never required, never blocking.
+#
+# A preview carries no database and no secrets: screens show their empty states. It needs the
+# `preview` environment with a federated credential for
+# repo:<owner>/<repo>:environment:preview (infra/README.md, owner step 3).
+
+on:
+  pull_request:
+    branches: [main]
+    types: [labeled, unlabeled, synchronize, reopened, closed]
+
+concurrency:
+  group: preview-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  id-token: write
+  pull-requests: write
+
+env:
+  AZURE_RESOURCE_GROUP: frejsi
+  ENVIRONMENT_NAME: pr${{ github.event.pull_request.number }}
+
+jobs:
+  deploy:
+    if: >-
+      github.event.action != 'closed' && github.event.action != 'unlabeled'
+      && contains(github.event.pull_request.labels.*.name, 'preview')
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment:
+      name: preview
+      url: ${{ steps.hostname.outputs.url }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+
+      - name: Build the web app
+        env:
+          NEXT_PUBLIC_APP_VERSION: ${{ env.ENVIRONMENT_NAME }}-${{ github.event.pull_request.head.sha }}
+        run: pnpm --filter ./web build
+
+      - uses: azure/login@v2
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Find the Static Web App and its deployment token
+        id: swa
+        run: |
+          NAME=$(az resource list -g "$AZURE_RESOURCE_GROUP" --resource-type Microsoft.Web/staticSites --query "[0].name" -o tsv)
+          test -n "$NAME" || { echo "::error::no Static Web App in $AZURE_RESOURCE_GROUP; has the first release run?"; exit 1; }
+          TOKEN=$(az staticwebapp secrets list -g "$AZURE_RESOURCE_GROUP" -n "$NAME" --query properties.apiKey -o tsv)
+          echo "::add-mask::$TOKEN"
+          echo "name=$NAME" >> "$GITHUB_OUTPUT"
+          echo "token=$TOKEN" >> "$GITHUB_OUTPUT"
+
+      - name: Deploy to the preview environment
+        uses: Azure/static-web-apps-deploy@v1
+        with:
+          azure_static_web_apps_api_token: ${{ steps.swa.outputs.token }}
+          action: upload
+          app_location: web
+          output_location: ''
+          skip_app_build: true
+          skip_api_build: true
+          deployment_environment: ${{ env.ENVIRONMENT_NAME }}
+
+      - name: Preview hostname
+        id: hostname
+        run: |
+          HOST=$(az staticwebapp environment list -g "$AZURE_RESOURCE_GROUP" -n "${{ steps.swa.outputs.name }}" \
+            --query "[?buildId=='$ENVIRONMENT_NAME'].hostname | [0]" -o tsv)
+          test -n "$HOST" || { echo "::error::preview environment $ENVIRONMENT_NAME has no hostname"; exit 1; }
+          echo "host=$HOST" >> "$GITHUB_OUTPUT"
+          echo "url=https://$HOST" >> "$GITHUB_OUTPUT"
+
+      - name: APP_ORIGIN for the preview environment
+        env:
+          NEXT_PUBLIC_APP_VERSION: ${{ env.ENVIRONMENT_NAME }}-${{ github.event.pull_request.head.sha }}
+        run: |
+          SWA_ID=$(az resource show -g "$AZURE_RESOURCE_GROUP" -n "${{ steps.swa.outputs.name }}" --resource-type Microsoft.Web/staticSites --query id -o tsv)
+          jq -n --arg origin "https://${{ steps.hostname.outputs.host }}" --arg version "$NEXT_PUBLIC_APP_VERSION" \
+            '{ properties: { APP_ORIGIN: $origin, NEXT_PUBLIC_APP_VERSION: $version } }' > settings.json
+          az rest --method put --url "https://management.azure.com${SWA_ID}/builds/${ENVIRONMENT_NAME}/config/appsettings?api-version=2024-04-01" \
+            --body @settings.json --output none
+
+      - name: Comment the preview URL on the PR
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          BODY="Preview for ${{ github.event.pull_request.head.sha }}: ${{ steps.hostname.outputs.url }} (no database; remove the \`preview\` label to delete it)"
+          gh pr comment "${{ github.event.pull_request.number }}" --body "$BODY"
+
+  remove:
+    if: >-
+      github.event.action == 'closed'
+      || (github.event.action == 'unlabeled' && github.event.label.name == 'preview')
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: preview
+    steps:
+      - uses: azure/login@v2
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+      - name: Delete the preview environment if it exists
+        run: |
+          NAME=$(az resource list -g "$AZURE_RESOURCE_GROUP" --resource-type Microsoft.Web/staticSites --query "[0].name" -o tsv)
+          test -n "$NAME" || exit 0
+          if az staticwebapp environment list -g "$AZURE_RESOURCE_GROUP" -n "$NAME" --query "[?buildId=='$ENVIRONMENT_NAME']" -o tsv | grep -q .; then
+            az staticwebapp environment delete -g "$AZURE_RESOURCE_GROUP" -n "$NAME" --environment-name "$ENVIRONMENT_NAME" --yes
+          fi
