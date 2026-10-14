@@ -1,4 +1,4 @@
-import { HttpError, type SessionContext } from "@frejsi/shared";
+import { HttpError, type EmitFn, type SessionContext } from "@frejsi/shared";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
@@ -12,11 +12,13 @@ import {
 
 const cookieJar = new Map<string, string>();
 
-/** The rows the mocked `prisma` export of @frejsi/shared serves to requireRole(). */
+/** The rows and the `emit` the mocked @frejsi/shared serves to requireRole(). */
 const shared = vi.hoisted(() => {
-  const rows: { id: string }[] = [];
+  const rows: Row[] = [];
+  const emitted: unknown[][] = [];
   return {
     rows,
+    emitted,
     prisma: {
       session: {
         findUnique: ({ where }: { where: { id: string } }) =>
@@ -25,11 +27,16 @@ const shared = vi.hoisted(() => {
       },
       user: { update: () => Promise.resolve(null) },
     },
+    emit: (...args: unknown[]) => {
+      emitted.push(args);
+      return Promise.resolve({});
+    },
   };
 });
 vi.mock("@frejsi/shared", async (importOriginal) => ({
   ...(await importOriginal<Record<string, unknown>>()),
   prisma: shared.prisma,
+  emit: shared.emit,
 }));
 vi.mock("next/headers", () => ({
   cookies: () =>
@@ -70,6 +77,11 @@ function caught(fn: () => unknown): unknown {
 
 function fakeDb(rows: Row[]) {
   const touches: { session: Date[]; user: Date[] } = { session: [], user: [] };
+  const emitted: [string, string, unknown][] = [];
+  const emit = ((spaceId: string, type: string, payload: unknown) => {
+    emitted.push([spaceId, type, payload]);
+    return Promise.resolve({});
+  }) as EmitFn;
   const db = {
     session: {
       findUnique: ({ where }: { where: { id: string } }) =>
@@ -88,7 +100,7 @@ function fakeDb(rows: Row[]) {
       },
     },
   } as unknown as SessionDb;
-  return { db, touches };
+  return { db, touches, emit, emitted };
 }
 
 const alive = (): Row => ({
@@ -128,8 +140,8 @@ beforeEach(() => {
 describe("getSession", () => {
   it("returns the SessionContext for a valid frejsi_session cookie", async () => {
     cookieJar.set(SESSION_COOKIE, "sess-1");
-    const { db } = fakeDb([alive()]);
-    await expect(getSession({ db, now: () => minutes(1) })).resolves.toEqual(expected);
+    const { db, emit } = fakeDb([alive()]);
+    await expect(getSession({ db, emit, now: () => minutes(1) })).resolves.toEqual(expected);
   });
 
   it("returns null without a cookie, for an unknown id and for an expired session", async () => {
@@ -144,19 +156,36 @@ describe("getSession", () => {
 
 describe("loadSession", () => {
   it("touches lastSeenAt and lastSeen at most once per hour", async () => {
-    const { db, touches } = fakeDb([alive()]);
-    await loadSession("sess-1", { db, now: () => minutes(10) });
-    await loadSession("sess-1", { db, now: () => minutes(59) });
+    const { db, emit, touches } = fakeDb([alive()]);
+    await loadSession("sess-1", { db, emit, now: () => minutes(10) });
+    await loadSession("sess-1", { db, emit, now: () => minutes(59) });
     expect(touches.session).toEqual([]);
     expect(touches.user).toEqual([]);
 
-    await loadSession("sess-1", { db, now: () => minutes(60) });
-    await loadSession("sess-1", { db, now: () => minutes(90) });
+    await loadSession("sess-1", { db, emit, now: () => minutes(60) });
+    await loadSession("sess-1", { db, emit, now: () => minutes(90) });
     expect(touches.session).toEqual([minutes(60)]);
     expect(touches.user).toEqual([minutes(60)]);
 
-    await loadSession("sess-1", { db, now: () => minutes(125) });
+    await loadSession("sess-1", { db, emit, now: () => minutes(125) });
     expect(touches.session).toEqual([minutes(60), minutes(125)]);
+  });
+
+  it("emits member.updated to every space of the user when lastSeen changes, and only then", async () => {
+    // People shows "Sidst set", so the touch is a space-visible member write (CLAUDE.md: every
+    // write emits). The session row is device bookkeeping and emits nothing.
+    const { db, emit, emitted } = fakeDb([alive()]);
+    await loadSession("sess-1", { db, emit, now: () => minutes(30) });
+    expect(emitted).toEqual([]);
+
+    await loadSession("sess-1", { db, emit, now: () => minutes(60) });
+    expect(emitted).toEqual([
+      ["s1", "member.updated", { userId: "u1" }],
+      ["s2", "member.updated", { userId: "u1" }],
+    ]);
+
+    await loadSession("sess-1", { db, emit, now: () => minutes(90) });
+    expect(emitted).toHaveLength(2);
   });
 });
 
@@ -183,10 +212,16 @@ describe("assertRole and requireRole", () => {
     expect(assertRole(expected, "s2")).toEqual({ session: expected, role: "viewer" });
   });
 
-  it("requireRole reads the cookie of the current request and the shared prisma client", async () => {
-    shared.rows.splice(0, shared.rows.length, alive());
+  it("requireRole reads the cookie of the current request and the shared prisma client and emit", async () => {
+    // lastSeenAt in the past, so this request is a touch and goes through the shared emit.
+    shared.rows.splice(0, shared.rows.length, { ...alive(), lastSeenAt: new Date(0) });
+    shared.emitted.splice(0, shared.emitted.length);
     cookieJar.set(SESSION_COOKIE, "sess-1");
     await expect(requireRole("s1", "carer")).resolves.toEqual({ session: expected, role: "carer" });
+    expect(shared.emitted.map((call) => call.slice(0, 2))).toEqual([
+      ["s1", "member.updated"],
+      ["s2", "member.updated"],
+    ]);
     await expect(requireRole("s-other")).rejects.toMatchObject({ status: 404, code: "not-found" });
     await expect(requireRole("s2", "owner")).rejects.toMatchObject({ status: 403 });
     cookieJar.clear();

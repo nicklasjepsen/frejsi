@@ -1,5 +1,13 @@
 import { cookies } from "next/headers";
-import { HttpError, prisma, SessionContext, type PrismaClient, type Role } from "@frejsi/shared";
+import {
+  emit as defaultEmit,
+  HttpError,
+  prisma,
+  SessionContext,
+  type EmitFn,
+  type PrismaClient,
+  type Role,
+} from "@frejsi/shared";
 
 export const SESSION_COOKIE = "frejsi_session";
 /** 90 days, as the cookie's Max-Age (plan §6). */
@@ -11,18 +19,22 @@ export type SessionDb = Pick<PrismaClient, "session" | "user">;
 
 export interface SessionDeps {
   db?: SessionDb;
+  emit?: EmitFn;
   now?: () => Date;
 }
 
 /**
  * Loads the session row and its user with memberships (plan §6). Returns null for an unknown or
- * expired session. `Session.lastSeenAt` and `User.lastSeen` are touched at most once per hour.
+ * expired session. `Session.lastSeenAt` and `User.lastSeen` are touched at most once per hour;
+ * People shows `lastSeen` as "Sidst set", so that touch is a member write and emits
+ * `member.updated` to every space of the user. The session row itself is device bookkeeping.
  */
 export async function loadSession(
   sessionId: string,
   deps: SessionDeps = {},
 ): Promise<SessionContext | null> {
   const db = deps.db ?? prisma;
+  const emit = deps.emit ?? defaultEmit;
   const now = deps.now ?? (() => new Date());
   const at = now();
 
@@ -35,6 +47,9 @@ export async function loadSession(
   if (at.getTime() - row.lastSeenAt.getTime() >= TOUCH_INTERVAL_MS) {
     await db.session.update({ where: { id: row.id }, data: { lastSeenAt: at } });
     await db.user.update({ where: { id: row.userId }, data: { lastSeen: at } });
+    for (const membership of row.user.memberships) {
+      await emit(membership.spaceId, "member.updated", { userId: row.userId });
+    }
   }
 
   return SessionContext.parse({
