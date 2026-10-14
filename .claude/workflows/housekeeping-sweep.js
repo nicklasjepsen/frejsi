@@ -9,6 +9,23 @@ export const meta = {
   ],
 }
 
+// Role agents: prefer the project subagent type (.claude/agents/<role>.md); if this session's registry
+// does not know it (agents added after the session started are not loaded until a restart), fall back
+// to a general-purpose agent told to read and follow that file.
+const callAgent = async (prompt, opts = {}) => {
+  if (!opts.agentType) return agent(prompt, opts)
+  try {
+    return await agent(prompt, opts)
+  } catch (e) {
+    if (!/not found/.test(String(e && e.message))) throw e
+    const { agentType, ...rest } = opts
+    return agent(
+      `You act as the "${agentType}" agent of this repository. First read .claude/agents/${agentType}.md and follow it exactly as your operating instructions, including its limits on what you may edit or run. Then do this:\n\n${prompt}`,
+      rest,
+    )
+  }
+}
+
 // args: { today: 'YYYY-MM-DD' (required; scripts cannot read the clock) }
 if (!args || !args.today) throw new Error('args.today (YYYY-MM-DD) is required')
 const today = args.today
@@ -26,7 +43,7 @@ const DONE_SCHEMA = {
 }
 
 phase('Sweep')
-const untriaged = await agent(
+const untriaged = await callAgent(
   `In ${repo}, list open issues and open pull requests that carry neither the label "triaged" nor the label "task" and whose author is not dependabot: ` +
   `\`gh issue list -R ${repo} --state open --limit 200 --json number,labels,author\` and \`gh pr list -R ${repo} --state open --limit 100 --json number,labels,author,headRefName\`. ` +
   `Exclude PRs on branches matching */gh-<n>-* (those are lanes). Return the numbers.`,
@@ -38,33 +55,33 @@ log(`${numbers.length} untriaged`)
 phase('Triage')
 const triaged = await pipeline(
   numbers,
-  (n) => agent(`Triage #${n} in ${repo}. Today is ${today}.`, { label: `triage:${n}`, phase: 'Triage', agentType: 'triage' }),
+  (n) => callAgent(`Triage #${n} in ${repo}. Today is ${today}.`, { label: `triage:${n}`, phase: 'Triage', agentType: 'triage' }),
 )
 
 // Cleanups are independent of each other and of triage; parallel() is a barrier only because the
 // report needs all of them, and they are all short.
 phase('Clean')
 const cleanups = await parallel([
-  () => agent(
+  () => callAgent(
     `Dependabot PRs in ${repo}: \`gh pr list -R ${repo} --author app/dependabot --state open --json number,title,statusCheckRollup,mergeable\`. ` +
     `For each whose title says a minor or patch bump (not a major, not "x.0.0" from a lower major) and whose checks are all green and mergeable: \`gh pr merge <n> -R ${repo} --rebase --auto\`. ` +
     `Never --admin. A major bump: add the label "needs-owner" and leave it. A red check: leave it, note it. Return what you did.`,
     { label: 'clean:dependabot', phase: 'Clean', schema: DONE_SCHEMA },
   ),
-  () => agent(
+  () => callAgent(
     `Stale pull requests in ${repo}, today ${today}: \`gh pr list -R ${repo} --state open --json number,title,updatedAt,isDraft,labels,author\`. ` +
     `A PR not updated for 14 days and not labelled "stale": add the label "stale" and one comment starting with "<!-- frejsi-stale -->" saying it will be closed by the owner if nothing happens in 7 days; never close it yourself. ` +
     `A PR labelled "stale" that was updated after the label: remove the label. Return what you did.`,
     { label: 'clean:stale', phase: 'Clean', schema: DONE_SCHEMA },
   ),
-  () => agent(
+  () => callAgent(
     `Branches of ${repo}, working in the repo root. \`git fetch -p -q origin\`. ` +
     `List remote branches other than main: \`git branch -r --format '%(refname:short)' | grep -v -e 'origin/main$' -e HEAD\`. ` +
     `For each: if \`git merge-base --is-ancestor <branch> origin/main\` succeeds (every commit is already on main) and no open PR has it as head (\`gh pr list -R ${repo} --head <name> --state open\`), delete it: \`git push origin --delete <name>\`. ` +
     `A branch with commits not on main is never deleted: report it with its last commit date and whether a PR exists. Return what you did.`,
     { label: 'clean:branches', phase: 'Clean', schema: DONE_SCHEMA },
   ),
-  () => agent(
+  () => callAgent(
     `Milestone hygiene in ${repo}, working in /home/nick/dev/frejsi with \`git fetch -q --tags origin\`. Milestones: \`gh api repos/${repo}/milestones?state=all --paginate --jq '.[] | {number,title,state,open_issues}'\`. ` +
     `1. An open issue in a closed milestone: move it to the lowest open vX.Y.Z milestone (\`gh issue edit <n> --milestone <title>\`) and comment once ("<!-- frejsi-milestone -->", moved from <old> because it was released without this) — or, if no open milestone exists, add the label "needs-owner" instead. ` +
     `2. A closed issue with no milestone that was closed by a merged PR (\`gh issue view <n> --json closedByPullRequestsReferences\`): find the merge commit, \`git tag --contains <sha> | sort -V | head -1\`; if a tag names a milestone, set that milestone on the issue so release notes are right. If no tag contains it yet, set the lowest open milestone. ` +
@@ -72,7 +89,7 @@ const cleanups = await parallel([
     `Return what you did.`,
     { label: 'clean:milestones', phase: 'Clean', schema: DONE_SCHEMA },
   ),
-  () => agent(
+  () => callAgent(
     `What waits on the owner in ${repo}, today ${today}: \`gh issue list -R ${repo} --label needs-owner --state open --json number,title,updatedAt\` and \`gh pr list -R ${repo} --label needs-owner --state open --json number,title,updatedAt,isDraft\`, plus the ones labelled "security". ` +
     `Also the latest release.yml run if it failed: \`gh run list -R ${repo} --workflow release.yml --limit 1 --json conclusion,url,displayTitle\`. ` +
     `Then keep the single pinned issue titled "Waiting on the owner" current as the housekeeping skill §6 describes (create and pin it if missing; replace its body with today's list or "Nothing. ${today}"). ` +

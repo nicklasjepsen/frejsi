@@ -9,6 +9,23 @@ export const meta = {
   ],
 }
 
+// Role agents: prefer the project subagent type (.claude/agents/<role>.md); if this session's registry
+// does not know it (agents added after the session started are not loaded until a restart), fall back
+// to a general-purpose agent told to read and follow that file.
+const callAgent = async (prompt, opts = {}) => {
+  if (!opts.agentType) return agent(prompt, opts)
+  try {
+    return await agent(prompt, opts)
+  } catch (e) {
+    if (!/not found/.test(String(e && e.message))) throw e
+    const { agentType, ...rest } = opts
+    return agent(
+      `You act as the "${agentType}" agent of this repository. First read .claude/agents/${agentType}.md and follow it exactly as your operating instructions, including its limits on what you may edit or run. Then do this:\n\n${prompt}`,
+      rest,
+    )
+  }
+}
+
 // args: { plan: 'docs/superpowers/plans/<file>.md', milestone: 'v0.2.0', repo?: 'nicklasjepsen/frejsi' }
 // Every issue carries the milestone: the milestone is the release, its title is the version.
 if (!args || !args.plan) throw new Error('args.plan (plan file path) is required')
@@ -62,7 +79,7 @@ const ISSUE_SCHEMA = {
 }
 
 phase('Plan')
-const plan = await agent(
+const plan = await callAgent(
   `Read the approved plan at ${args.plan} and emit the task list. Follow your rules: one task per PR, owns paths as specific as possible, testable acceptance criteria citing the spec section, decisions the owner has not made as kind "decision".`,
   { label: 'planner', phase: 'Plan', agentType: 'planner', schema: TASKS_SCHEMA },
 )
@@ -73,11 +90,11 @@ log(`${plan.tasks.length} tasks from ${args.plan}`)
 phase('Check')
 const taskText = JSON.stringify(plan.tasks, null, 1)
 const [collisions, coverage] = await parallel([
-  () => agent(
+  () => callAgent(
     `Here is a task list for Frejsi:\n${taskText}\n\nFind every pair of tasks that would run in the same wave (neither depends on the other, directly or transitively) and own the same path or a parent/child of the same path. Shared append-only files (pnpm-workspace.yaml, shared/src/index.ts, web/messages/*.json, infra/main.bicep) do not count. Also flag a task whose owns list is empty or is a whole package root (web/, poller/, shared/, infra/). Set ok=false if you find any.`,
     { label: 'critic:collisions', phase: 'Check', schema: CRITIC_SCHEMA },
   ),
-  () => agent(
+  () => callAgent(
     `Here is a task list derived from the plan ${args.plan}:\n${taskText}\n\nRead the plan. List every plan step, requirement or acceptance criterion that no task covers, and every task that is not in the plan. Then read CLAUDE.md's hard rules: for each task that touches glucose rendering, roles, AI, external sources or data writes, check that hardRules names the rule and a test. Set ok=false if anything is missing.`,
     { label: 'critic:coverage', phase: 'Check', schema: CRITIC_SCHEMA },
   ),
@@ -89,14 +106,14 @@ if (problems.length) {
 }
 
 phase('Issues')
-await agent(
+await callAgent(
   `Make sure milestone "${args.milestone}" exists in ${repo}: \`gh api repos/${repo}/milestones?state=all --jq '.[] | select(.title=="${args.milestone}") | .number'\`. ` +
   `If nothing is printed, create it: \`gh api -X POST repos/${repo}/milestones -f title="${args.milestone}" -f description="Release ${args.milestone} — plan: ${args.plan}"\`. Reply with the milestone number only.`,
   { label: 'milestone', phase: 'Issues' },
 )
 const created = await pipeline(
   plan.tasks,
-  (task) => agent(
+  (task) => callAgent(
     `Create a GitHub issue in ${repo} for this task, or skip it if one already exists.\n\n` +
     `Task:\n${JSON.stringify(task, null, 1)}\n\n` +
     `1. Check for a duplicate: \`gh issue list -R ${repo} --state all --search "${task.title.replace(/"/g, '')}" --json number,title\`. ` +

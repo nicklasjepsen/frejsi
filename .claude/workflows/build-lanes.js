@@ -10,6 +10,23 @@ export const meta = {
   ],
 }
 
+// Role agents: prefer the project subagent type (.claude/agents/<role>.md); if this session's registry
+// does not know it (agents added after the session started are not loaded until a restart), fall back
+// to a general-purpose agent told to read and follow that file.
+const callAgent = async (prompt, opts = {}) => {
+  if (!opts.agentType) return agent(prompt, opts)
+  try {
+    return await agent(prompt, opts)
+  } catch (e) {
+    if (!/not found/.test(String(e && e.message))) throw e
+    const { agentType, ...rest } = opts
+    return agent(
+      `You act as the "${agentType}" agent of this repository. First read .claude/agents/${agentType}.md and follow it exactly as your operating instructions, including its limits on what you may edit or run. Then do this:\n\n${prompt}`,
+      rest,
+    )
+  }
+}
+
 // args: {
 //   base: 'main', milestone?: 'v0.2.0',
 //   lanes: [{ name, issues: [n, ...], branch, worktree, owns: [...], shared: [...], migration: '0003' | null, notes }]
@@ -81,15 +98,15 @@ const results = await pipeline(
   args.lanes,
 
   // Build. The worktree already exists, so no isolation here.
-  (lane) => agent(briefFor(lane), { label: `build:${lane.name}`, phase: 'Build', agentType: 'implementer', schema: PR_SCHEMA }),
+  (lane) => callAgent(briefFor(lane), { label: `build:${lane.name}`, phase: 'Build', agentType: 'implementer', schema: PR_SCHEMA }),
 
   // Gate: three independent perspectives on the same PR. parallel() is right: the fix round needs all three.
   async (built, lane) => {
     if (!built || built.blocked) return { lane, built, gates: null }
     const [guardian, review, copy] = await parallel([
-      () => agent(gatePrompt('spec-guardian', built.pr), { label: `guardian:${lane.name}`, phase: 'Gate', agentType: 'spec-guardian', schema: GATE_SCHEMA }),
-      () => agent(gatePrompt('reviewer', built.pr), { label: `review:${lane.name}`, phase: 'Gate', agentType: 'reviewer', schema: GATE_SCHEMA }),
-      () => agent(gatePrompt('copy-reviewer', built.pr), { label: `copy:${lane.name}`, phase: 'Gate', agentType: 'copy-reviewer', schema: GATE_SCHEMA }),
+      () => callAgent(gatePrompt('spec-guardian', built.pr), { label: `guardian:${lane.name}`, phase: 'Gate', agentType: 'spec-guardian', schema: GATE_SCHEMA }),
+      () => callAgent(gatePrompt('reviewer', built.pr), { label: `review:${lane.name}`, phase: 'Gate', agentType: 'reviewer', schema: GATE_SCHEMA }),
+      () => callAgent(gatePrompt('copy-reviewer', built.pr), { label: `copy:${lane.name}`, phase: 'Gate', agentType: 'copy-reviewer', schema: GATE_SCHEMA }),
     ])
     return { lane, built, gates: { guardian, review, copy } }
   },
@@ -103,11 +120,11 @@ const results = await pipeline(
     if (!findings.length) return { ...state, final: 'green' }
 
     log(`${lane.name}: ${findings.length} findings, one fix round`)
-    const fixed = await agent(
+    const fixed = await callAgent(
       `${briefFor(lane)}\n\nThe PR #${built.pr} is open. Address every finding below in follow-up signed-off commits on the same branch, or reply in the PR thread with why not. Re-run the full checks before pushing.\n\n${JSON.stringify(findings, null, 1)}`,
       { label: `fix:${lane.name}`, phase: 'Fix', agentType: 'implementer', schema: PR_SCHEMA },
     )
-    const recheck = await agent(gatePrompt('spec-guardian', built.pr), { label: `guardian2:${lane.name}`, phase: 'Fix', agentType: 'spec-guardian', schema: GATE_SCHEMA })
+    const recheck = await callAgent(gatePrompt('spec-guardian', built.pr), { label: `guardian2:${lane.name}`, phase: 'Fix', agentType: 'spec-guardian', schema: GATE_SCHEMA })
     const final = recheck && recheck.verdict === 'pass' ? 'green-after-fix' : 'red-needs-owner'
     return { ...state, fixed, recheck, findings, final }
   },
@@ -117,11 +134,11 @@ const results = await pipeline(
     const { lane, built, final } = state
     if (final !== 'green' && final !== 'green-after-fix') {
       if (final === 'red-needs-owner' && built) {
-        await agent(`Label PR #${built.pr} of nicklasjepsen/frejsi with needs-owner and post one comment summarising the unresolved findings: ${JSON.stringify(state.findings || [])}`, { label: `flag:${lane.name}`, phase: 'Merge' })
+        await callAgent(`Label PR #${built.pr} of nicklasjepsen/frejsi with needs-owner and post one comment summarising the unresolved findings: ${JSON.stringify(state.findings || [])}`, { label: `flag:${lane.name}`, phase: 'Merge' })
       }
       return state
     }
-    const merge = await agent(
+    const merge = await callAgent(
       `You are the implementer for lane "${lane.name}" of Frejsi; your PR #${built.pr} has passed the gates. Merge it and keep main green:\n` +
       `1. Resolve every Codex review thread on the PR (reply with the fix commit or the reason, then resolve). If a thread raises a real defect, fix it first in a signed-off commit.\n` +
       `2. Wait for the ci check in the foreground: gh pr checks ${built.pr} --watch (bounded; if it is red, fix it, never skip).\n` +

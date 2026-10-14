@@ -224,12 +224,12 @@ Facts an agent needs that the docs of the tools do not say:
 - **A housekeeping run that ends after one turn at zero cost with `is_error: true`** is an API-level
   failure (auth, model, request), not a skill problem. The error text is in the run log because
   `show_full_output` is on; `terminal_reason` and `api_error_status` name it.
-- **Project subagent types and the Workflow tool exist only in the main session.** An agent spawned
-  with the Agent tool cannot resolve `spec-guardian` or the other `.claude/agents/` names and has no
-  Workflow tool. So `plan-to-issues`, `build-lanes`, `ship-milestone` and `review-pr` run from the
-  main session, and a subagent that needs a gate review spawns a general-purpose agent and points it
-  at the agent file (`.claude/agents/spec-guardian.md`) to follow. The v0.1.0 planning agent did
-  exactly that on 2026-10-14.
+- **Agent types added to `.claude/agents/` after a session started are not in that session's
+  registry**: the Agent tool and a workflow's `agentType` answer "agent type 'implementer' not
+  found" until a new session. The workflow scripts therefore go through `callAgent`, which tries the
+  project type and falls back to a general-purpose agent told to read and follow the role's file.
+  The Workflow tool itself is only available in the main session; a subagent that needs a gate review
+  spawns a general-purpose agent pointed at the agent file.
 - **The housekeeping run log is public.** Agents in it refer to issues by number and title only.
 - **Environments** `production-infra` (owner as required reviewer) and `production` accept
   deployments only from `v*` tags. Secrets present: `CLAUDE_CODE_OAUTH_TOKEN`, `CI_SQL_SA_PASSWORD`.

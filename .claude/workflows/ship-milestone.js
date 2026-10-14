@@ -8,6 +8,23 @@ export const meta = {
   ],
 }
 
+// Role agents: prefer the project subagent type (.claude/agents/<role>.md); if this session's registry
+// does not know it (agents added after the session started are not loaded until a restart), fall back
+// to a general-purpose agent told to read and follow that file.
+const callAgent = async (prompt, opts = {}) => {
+  if (!opts.agentType) return agent(prompt, opts)
+  try {
+    return await agent(prompt, opts)
+  } catch (e) {
+    if (!/not found/.test(String(e && e.message))) throw e
+    const { agentType, ...rest } = opts
+    return agent(
+      `You act as the "${agentType}" agent of this repository. First read .claude/agents/${agentType}.md and follow it exactly as your operating instructions, including its limits on what you may edit or run. Then do this:\n\n${prompt}`,
+      rest,
+    )
+  }
+}
+
 // args: { milestone: 'v0.2.0', base: 'main', lanes: [...] }  (same lanes shape as build-lanes)
 if (!args || !args.milestone || !/^v\d+\.\d+\.\d+$/.test(args.milestone)) throw new Error('args.milestone must look like v0.2.0')
 if (!Array.isArray(args.lanes) || !args.lanes.length) throw new Error('args.lanes is required')
@@ -35,7 +52,7 @@ if (unmerged.length) {
 }
 
 phase('Release')
-const release = await agent(
+const release = await callAgent(
   `Release milestone ${args.milestone} of nicklasjepsen/frejsi by following the "release" skill in .claude/skills/release/SKILL.md exactly: ` +
   `verify (milestone has zero open issues, no open PR carries it, main CI green, tag absent), tag origin/main, push the tag, watch release.yml to the end, and report. ` +
   `If the milestone still has open issues that no lane in this run owned, do not tag: set released=false and list them in summary. ` +
