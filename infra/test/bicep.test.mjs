@@ -167,19 +167,20 @@ test('Web PubSub Free with hub frejsi; Key Vault RBAC; Log Analytics + App Insig
 });
 
 test('roles: Function identity gets KV Secrets Officer and Web PubSub Service Owner; deployer gets KV Secrets Officer', () => {
-  const KV_SECRETS_OFFICER = 'b86a8fe4-44ce-4948-aee5-eccb2c155cd7';
-  const WPS_SERVICE_OWNER = '12cf5a90-567b-43ae-8102-96cf46c7d9b4';
+  // Public Azure built-in role definition IDs (the ARM reference lists them); not secrets.
+  const VAULT_OFFICER_ROLE = 'b86a8fe4-44ce-4948-aee5-eccb2c155cd7';
+  const WPS_OWNER_ROLE = '12cf5a90-567b-43ae-8102-96cf46c7d9b4';
   const assignments = byType('Microsoft.Authorization/roleAssignments').map((r) => ({
     role: resolve(r.resource.properties.roleDefinitionId, r.scope),
     principal: r.resource.properties.principalId,
     scope: r.resource.scope ?? '',
   }));
   const withRole = (id) => assignments.filter((a) => a.role.includes(id));
-  const kvOfficers = withRole(KV_SECRETS_OFFICER);
+  const kvOfficers = withRole(VAULT_OFFICER_ROLE);
   assert.equal(kvOfficers.length, 2, JSON.stringify(assignments, null, 2));
   assert.ok(kvOfficers.some((a) => /deployer\(\)\.objectId/.test(a.principal)), 'deploy principal is KV Secrets Officer');
   assert.ok(kvOfficers.some((a) => !/deployer\(\)/.test(a.principal)), 'function identity is KV Secrets Officer');
-  const wps = withRole(WPS_SERVICE_OWNER);
+  const wps = withRole(WPS_OWNER_ROLE);
   assert.equal(wps.length, 1);
   assert.ok(!/deployer\(\)/.test(wps[0].principal), 'Web PubSub Service Owner goes to the function identity');
 });
