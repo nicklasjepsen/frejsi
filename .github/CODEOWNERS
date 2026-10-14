@@ -1,2 +1,3 @@
-# The owner merges everything. Agents open PRs; they do not approve or merge.
+# The owner is notified of every PR. Lanes merge their own PR when the gates are green (rebase, never
+# --admin); nothing requires the owner's review to merge. See docs/agent-workflow.md §3.
 * @nicklasjepsen

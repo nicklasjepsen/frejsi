@@ -10,7 +10,7 @@ An open-source (AGPL-3.0) web app for one person with diabetes and the people ar
 
 - `docs/superpowers/specs/2026-10-14-frejsi-design.md` — the design spec. Sections 1–5 are approved by the owner; 6–9 are not designed yet. **Read it before doing anything.**
 - `docs/ui-brief.md` — brief for the UI design pass in Claude Design, which happens **before** implementation.
-- No code exists yet. No Azure resources exist yet.
+- No code exists yet. No Azure resources exist yet. The agent operating model, the GitHub pipeline (`ci`, `release`, `housekeeping`), branch protection on `main` and the two deployment environments are live; see `docs/agent-workflow.md` §4 and §11.
 
 ## Planned sequence
 
