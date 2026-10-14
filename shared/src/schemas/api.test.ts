@@ -16,6 +16,7 @@ describe("ApiError", () => {
       "source-bad-credentials",
       "source-unreachable",
       "validation",
+      "internal",
     ]);
   });
 
@@ -34,9 +35,11 @@ describe("HttpError", () => {
     });
   });
 
-  it("turns anything else into a 500 whose body carries nothing from the original error", () => {
+  it("turns anything else into a 500 `internal` whose body carries nothing from the original error", () => {
     const { status, body } = toApiError(new Error("Example Person's password is hunter2"));
     expect(status).toBe(500);
+    // Its own code, so the client shows "our side" copy rather than the validation copy.
+    expect(body.error.code).toBe("internal");
     expect(JSON.stringify(body)).not.toContain("hunter2");
   });
 });
