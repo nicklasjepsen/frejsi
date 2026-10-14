@@ -1,0 +1,29 @@
+{
+  "name": "@frejsi/poller",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Azure Functions app (Node 22): polls the glucose source every five minutes.",
+  "license": "AGPL-3.0-only",
+  "main": "dist/{index,functions/*}.js",
+  "scripts": {
+    "build": "esbuild src/index.ts --bundle --platform=node --target=node22 --format=cjs --outdir=dist --outbase=src --external:@prisma/client --external:.prisma/client --external:@azure/functions-core --external:applicationinsights --log-level=warning",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
+    "test": "vitest run --passWithNoTests",
+    "start": "func start",
+    "poll": "tsx src/cli.ts"
+  },
+  "dependencies": {
+    "@azure/functions": "4.16.5",
+    "@frejsi/shared": "workspace:*",
+    "@prisma/client": "6.19.3"
+  },
+  "devDependencies": {
+    "@types/node": "22.20.5",
+    "esbuild": "0.25.12",
+    "eslint": "9.39.5",
+    "tsx": "4.23.15",
+    "typescript": "5.9.3",
+    "vitest": "3.2.7"
+  }
+}

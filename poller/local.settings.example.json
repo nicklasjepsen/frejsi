@@ -1,0 +1,14 @@
+{
+  "IsEncrypted": false,
+  "Values": {
+    "AzureWebJobsStorage": "UseDevelopmentStorage=true",
+    "FUNCTIONS_WORKER_RUNTIME": "node",
+    "DATABASE_URL": "sqlserver://localhost:1433;database=frejsi;user=sa;password=<local-sa-password>;encrypt=true;trustServerCertificate=true",
+    "WEB_PUBSUB_ENDPOINT": "",
+    "WEB_PUBSUB_HUB": "frejsi",
+    "KEY_VAULT_URL": "",
+    "APPLICATIONINSIGHTS_CONNECTION_STRING": "",
+    "APP_VERSION": "dev",
+    "FAKE_GLUCOSE_SOURCE": "1"
+  }
+}

@@ -1,15 +1,13 @@
 name: ci
 
 # The fast suite, and the only required check on main (docs/agent-workflow.md §4).
-# Typecheck, lint, unit tests and the dosing-vocabulary test on the affected packages; AI evals only
-# when prompts or evals change. No deploy, no database, no browser, no Azure login. Target 5 minutes,
-# hard stop at 10. Anything slower belongs in release.yml.
+# Secrets scan, typecheck, lint, unit tests, the Prisma schema-vs-migration check and the
+# dosing-vocabulary test on the affected packages; AI evals only when prompts or evals change.
+# No deploy, no database, no browser, no Azure login. Target 5 minutes, hard stop at 10.
+# Anything slower belongs in release.yml.
 #
 # The same job runs on every push to main as a tripwire: merging deploys nothing, and nothing is
 # serialized, so lanes never queue behind each other.
-#
-# Until the scaffold lane lands a pnpm workspace, the job reports success with a notice so that the
-# required check exists and docs/config PRs can merge.
 
 on:
   pull_request:
@@ -28,61 +26,70 @@ jobs:
   ci:
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    env:
+      # Placeholder so `prisma validate` and `prisma migrate diff` can load the schema; nothing connects.
+      DATABASE_URL: "sqlserver://localhost:1433;database=frejsi;user=sa;password=placeholder;encrypt=true"
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
+      # No secrets in the repo (CLAUDE.md). Uses the repo's .gitleaks.toml; seconds.
+      - name: Secrets scan
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITLEAKS_ENABLE_SUMMARY: "false"
+
       - name: Classify the change
         id: changes
         run: |
-          if [ ! -f pnpm-workspace.yaml ]; then
-            echo "workspace=false" >> "$GITHUB_OUTPUT"
-            echo "::notice::No pnpm workspace yet; the fast suite has nothing to run."
-            exit 0
-          fi
-          echo "workspace=true" >> "$GITHUB_OUTPUT"
           BASE="${{ github.event.pull_request.base.sha || github.event.before }}"
           if [ -z "$BASE" ] || ! git cat-file -e "$BASE" 2>/dev/null; then BASE=$(git rev-parse HEAD~1 2>/dev/null || echo ""); fi
-          echo "base=$BASE" >> "$GITHUB_OUTPUT"
-          if [ -n "$BASE" ] && git diff --name-only "$BASE" HEAD | grep -Eq '^(evals/|web/src/ai/|shared/src/ai/)'; then
+          CHANGED=""
+          if [ -n "$BASE" ]; then CHANGED=$(git diff --name-only "$BASE" HEAD); fi
+          # A change outside the packages (root config, lock file, workflows) runs everything.
+          if [ -z "$BASE" ] || echo "$CHANGED" | grep -Evq '^(web|poller|shared)/'; then
+            echo "filter=" >> "$GITHUB_OUTPUT"
+          else
+            echo "filter=--filter ...[$BASE]" >> "$GITHUB_OUTPUT"
+          fi
+          if echo "$CHANGED" | grep -Eq '^(evals/|web/src/ai/|shared/src/ai/)'; then
             echo "evals=true" >> "$GITHUB_OUTPUT"
           else
             echo "evals=false" >> "$GITHUB_OUTPUT"
           fi
 
       - uses: pnpm/action-setup@v4
-        if: steps.changes.outputs.workspace == 'true'
 
       - uses: actions/setup-node@v4
-        if: steps.changes.outputs.workspace == 'true'
         with:
           node-version: 22
           cache: pnpm
 
       - name: Install
-        if: steps.changes.outputs.workspace == 'true'
         run: pnpm install --frozen-lockfile
 
       # Affected packages only: `...[<base>]` selects packages changed since the base and their
-      # dependents. On a push to main with no usable base, everything runs.
+      # dependents. With no usable base, or a change outside the packages, everything runs.
       - name: Typecheck, lint, unit tests
-        if: steps.changes.outputs.workspace == 'true'
         run: |
-          FILTER=""
-          if [ -n "${{ steps.changes.outputs.base }}" ]; then FILTER="--filter ...[${{ steps.changes.outputs.base }}]"; fi
-          pnpm -r $FILTER typecheck
-          pnpm -r $FILTER lint
-          pnpm -r $FILTER test
+          pnpm -r ${{ steps.changes.outputs.filter }} typecheck
+          pnpm -r ${{ steps.changes.outputs.filter }} lint
+          pnpm -r ${{ steps.changes.outputs.filter }} test
 
-      # The guardrail the spec names: a test asserts dosing vocabulary is absent from AI insight
-      # text and UI strings. It runs on every change, affected or not; it is seconds.
+      # The schema and the committed migration must agree; no database involved (plan task 1).
+      - name: Prisma schema matches the migration
+        run: pnpm --filter ./shared prisma:check
+
+      # The guardrail the spec names: a test asserts dosing vocabulary is absent from UI strings
+      # and schema keys. It runs on every change, affected or not; it is seconds.
+      # pnpm forwards a bare `--` to vitest, which then ignores the pattern; pass the flags directly.
       - name: Dosing vocabulary test
-        if: steps.changes.outputs.workspace == 'true'
-        run: pnpm --filter ./shared test -- --run --testNamePattern "dosing"
+        run: pnpm --filter ./shared test --run --testNamePattern "dosing"
 
       - name: AI evals (prompts or evals changed)
-        if: steps.changes.outputs.workspace == 'true' && steps.changes.outputs.evals == 'true'
+        if: steps.changes.outputs.evals == 'true'
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY_EVALS }}
         run: pnpm --filter ./evals test
