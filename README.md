@@ -25,3 +25,7 @@ Next.js on Azure Static Web Apps · Azure Functions poller · Azure SQL · Azure
 ## Licence
 
 [AGPL-3.0](LICENSE). Contributions welcome under the [DCO](CONTRIBUTING.md).
+
+## Deploy your own
+
+Bicep, one GitHub Action and a few repository variables: [`infra/README.md`](infra/README.md) has the resource list with costs, the owner's one-time steps and the fork walkthrough.
