@@ -53,6 +53,14 @@ Azure: owner's Proxus subscription, **dedicated resource group `frejsi`** (West 
 - Glucose sources and food sources are plugins behind interfaces (`GlucoseSource`, `FoodSource`). Nothing Danish is hard-coded.
 - Every write goes through `emit(spaceId, type, payload)` so it reaches the `events` table and Web PubSub.
 
+## The owner's vault
+
+Frejsi is the owner's personal project. Its note in the owner's SecondBrain vault is
+`90-personal/projects/Frejsi.md`, on the personal side. Never create a work-side note (`10-projects/`),
+never add it to the vault root's active-projects list, and never link it from a work-side note. A lane
+that wants to log something appends one row to that personal note's `## Log` table, or leaves it to
+the orchestrating session.
+
 ## Conventions
 
 - TypeScript strict everywhere. Zod schemas in `shared/` are the contract between web, poller and AI output.
