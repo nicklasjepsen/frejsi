@@ -15,6 +15,15 @@ ARGS=("$@")
 cmd="${1:-} ${2:-} ${3:-}"
 query="$(arg --query)"
 
+# Failure switches for the tests: FAKE_FAIL_AT=wps-listkeys makes the Web PubSub listKeys call fail,
+# FAKE_FAIL_AT=secret-show:<name> makes reading that Key Vault secret fail, and
+# FAKE_SECRET_READS_EMPTY=<name> makes that secret read back as an empty value.
+case "${FAKE_FAIL_AT:-}" in
+  wps-listkeys) [ "$cmd" = "rest --method post" ] && { echo "fake az: listKeys returned 503" >&2; exit 1; } ;;
+  secret-show:*) [ "$cmd" = "keyvault secret show" ] && [ "$(arg -n)" = "${FAKE_FAIL_AT#secret-show:}" ] && { echo "fake az: 429 throttled" >&2; exit 1; } ;;
+esac
+if [ "$cmd" = "keyvault secret show" ] && [ "$(arg -n)" = "${FAKE_SECRET_READS_EMPTY:-}" ]; then echo; exit 0; fi
+
 case "$cmd" in
   "resource list "*)
     case "$(arg --resource-type)" in
@@ -22,7 +31,7 @@ case "$cmd" in
       Microsoft.Sql/servers) echo sql-frejsi-abc ;;
       Microsoft.SignalRService/webPubSub) echo wps-frejsi-abc ;;
       Microsoft.Web/sites) echo frejsi-poller-abc ;;
-      Microsoft.Web/staticSites) echo frejsi ;;
+      Microsoft.Web/staticSites) echo frejsi-abc ;;
       Microsoft.Insights/components) echo appi-frejsi ;;
       *) echo "fake az: unknown resource type $(arg --resource-type)" >&2; exit 3 ;;
     esac ;;

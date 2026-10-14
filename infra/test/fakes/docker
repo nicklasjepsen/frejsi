@@ -2,3 +2,9 @@
 # Fake docker: records the arguments (the Static Web Apps upload container).
 set -euo pipefail
 printf 'docker %s\n' "$*" >> "$FAKE_LOG"
+# Record the env file the upload gets its token from, so the test can check it exists and is private.
+prev=""
+for a in "$@"; do
+  if [ "$prev" = "--env-file" ]; then stat -c '%a' "$a" > "$FAKE_LOG_DIR/docker-env-file-mode"; cp "$a" "$FAKE_LOG_DIR/docker-env-file"; fi
+  prev="$a"
+done

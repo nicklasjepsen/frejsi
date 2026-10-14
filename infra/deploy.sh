@@ -18,6 +18,10 @@
 #
 # Nothing secret is ever printed. Secrets travel through files with mode 600 or environment
 # variables, never through command lines, `echo` or `set -x`.
+#
+# Every value read from Azure is captured with a plain assignment (`x="$(az ...)"`), never with a
+# command substitution inside an argument or a process substitution: those hide a failed `az` from
+# `set -e`, and the script would go on with an empty value. Empty is always an error here.
 
 set -euo pipefail
 
@@ -85,6 +89,15 @@ log "Key Vault $KEY_VAULT, SQL $SQL_SERVER, Web PubSub $WEB_PUBSUB, Function App
 secret_exists() { az keyvault secret list --vault-name "$KEY_VAULT" --query "[].name" -o tsv | grep -qx "$1"; }
 secret_read() { az keyvault secret show --vault-name "$KEY_VAULT" -n "$1" --query value -o tsv; }
 secret_write_from_file() { az keyvault secret set --vault-name "$KEY_VAULT" -n "$1" --file "$2" --encoding utf-8 >/dev/null; }
+# secret_to_file <name> <file>: the secret's value into a mode-600 file. A failed or empty read stops
+# the script, so an app setting is never written as "".
+secret_to_file() {
+  local value
+  if ! value="$(secret_read "$1")" || [ -z "$value" ]; then
+    echo "::error::Key Vault secret $1 is empty or could not be read" >&2; exit 1
+  fi
+  ( umask 077; printf '%s' "$value" > "$2" )
+}
 
 # --- 2. One-time secrets --------------------------------------------------------------------------
 new_password() {
@@ -134,14 +147,22 @@ else
   log "Storing the Web PubSub connection string in Key Vault"
   WPS_ID="/subscriptions/$AZURE_SUBSCRIPTION_ID/resourceGroups/$RG/providers/Microsoft.SignalRService/webPubSub/$WEB_PUBSUB"
   WPS_FILE="$WORK/wps"
-  # $(...) drops the trailing newline, so the stored secret is the bare connection string.
-  ( umask 077; printf '%s' "$(az rest --method post --url "https://management.azure.com${WPS_ID}/listKeys?api-version=2024-03-01" \
-      --query primaryConnectionString -o tsv)" > "$WPS_FILE" )
+  # An assignment, so a failed listKeys stops the script instead of storing an empty secret that
+  # every later release would reuse. $(...) drops the trailing newline: the bare connection string.
+  WPS_CONNECTION="$(az rest --method post --url "https://management.azure.com${WPS_ID}/listKeys?api-version=2024-03-01" \
+      --query primaryConnectionString -o tsv)"
+  if [ -z "$WPS_CONNECTION" ]; then echo "::error::listKeys on $WEB_PUBSUB returned no connection string" >&2; exit 1; fi
+  ( umask 077; printf '%s' "$WPS_CONNECTION" > "$WPS_FILE" )
+  unset WPS_CONNECTION
   secret_write_from_file web-pubsub-connection-string "$WPS_FILE"
 fi
 
 # --- 3. Firewall rule for this runner, then the login (first time) and the migration -------------
-RUNNER_IP="$(curl -fsS https://api.ipify.org)"
+# Bounded: a hung lookup must fail fast, not sit until the job's timeout.
+RUNNER_IP="$(curl -fsS --max-time 10 --retry 3 --retry-delay 2 https://api.ipify.org)"
+if ! printf '%s' "$RUNNER_IP" | grep -Eq '^[0-9]{1,3}(\.[0-9]{1,3}){3}$'; then
+  echo "::error::could not determine the runner's IPv4 address" >&2; exit 1
+fi
 FIREWALL_RULE="github-runner-${GITHUB_RUN_ID:-local}-$(date +%s)"
 log "Opening SQL firewall rule $FIREWALL_RULE for this runner"
 az sql server firewall-rule create -g "$RG" --server "$SQL_SERVER" -n "$FIREWALL_RULE" \
@@ -156,6 +177,7 @@ fi
 
 log "Running Prisma migrations"
 DATABASE_URL="$(secret_read database-url)"
+if [ -z "$DATABASE_URL" ]; then echo "::error::Key Vault secret database-url is empty" >&2; exit 1; fi
 export DATABASE_URL
 pnpm --filter ./shared exec prisma migrate deploy
 unset DATABASE_URL
@@ -205,11 +227,16 @@ log "Writing app settings on $STATIC_WEB_APP (APP_ORIGIN=$APP_ORIGIN)"
 # This replaces the production environment's settings wholesale: deploy.sh owns them.
 SWA_ID="/subscriptions/$AZURE_SUBSCRIPTION_ID/resourceGroups/$RG/providers/Microsoft.Web/staticSites/$STATIC_WEB_APP"
 SWA_SETTINGS_FILE="$WORK/swa-appsettings.json"
+# Each secret is read into its own file first (a failed or empty read stops the script here, before
+# anything is replaced); a process substitution would hand jq an empty stream and carry on.
+secret_to_file database-url "$WORK/swa-database-url"
+secret_to_file bootstrap-token "$WORK/swa-bootstrap-token"
+secret_to_file web-pubsub-connection-string "$WORK/swa-wps"
 ( umask 077
   jq -n \
-    --rawfile databaseUrl <(secret_read database-url) \
-    --rawfile bootstrapToken <(secret_read bootstrap-token) \
-    --rawfile wpsConnection <(secret_read web-pubsub-connection-string) \
+    --rawfile databaseUrl "$WORK/swa-database-url" \
+    --rawfile bootstrapToken "$WORK/swa-bootstrap-token" \
+    --rawfile wpsConnection "$WORK/swa-wps" \
     --rawfile sourceConnectKey "$SOURCE_CONNECT_KEY_FILE" \
     --arg hub "$WEB_PUBSUB_HUB" \
     --arg sourceConnectUrl "https://$FUNCTION_HOST/api/source-connect" \
@@ -234,16 +261,21 @@ az rest --method put --url "https://management.azure.com${SWA_ID}/config/appsett
 # deployment client that the Azure/static-web-apps-deploy action wraps. Running the same container
 # keeps the whole deploy in this script.
 log "Uploading the web build $APP_VERSION to $STATIC_WEB_APP"
-SWA_TOKEN_FILE="$WORK/swa-token"
-( umask 077; az staticwebapp secrets list -g "$RG" -n "$STATIC_WEB_APP" --query properties.apiKey -o tsv > "$SWA_TOKEN_FILE" )
-SWA_TOKEN="$(cat "$SWA_TOKEN_FILE")"
-# The client writes its deployment health page into the app folder, so the mount is read-write.
-docker run --rm \
-  -v "$(pwd)/$WEB_DIR:/app" \
-  mcr.microsoft.com/appsvc/staticappsclient:stable \
-  /bin/staticsites/StaticSitesClient upload \
-    --app /app --outputLocation "" --skipAppBuild true --skipApiBuild true --apiToken "$SWA_TOKEN" --verbose false
+SWA_TOKEN="$(az staticwebapp secrets list -g "$RG" -n "$STATIC_WEB_APP" --query properties.apiKey -o tsv)"
+if [ -z "$SWA_TOKEN" ]; then echo "::error::$STATIC_WEB_APP has no deployment token" >&2; exit 1; fi
+# The token reaches the container through a mode-600 env file and is expanded by the container's
+# shell, so it is on no command line of this runner (docker's argv carries the literal $SWA_TOKEN).
+SWA_ENV_FILE="$WORK/swa.env"
+( umask 077; printf 'SWA_TOKEN=%s\n' "$SWA_TOKEN" > "$SWA_ENV_FILE" )
 unset SWA_TOKEN
+# The client writes its deployment health page into the app folder, so the mount is read-write.
+# shellcheck disable=SC2016 # $SWA_TOKEN is meant for the shell inside the container
+docker run --rm \
+  --env-file "$SWA_ENV_FILE" \
+  -v "$(pwd)/$WEB_DIR:/app" \
+  --entrypoint /bin/sh \
+  mcr.microsoft.com/appsvc/staticappsclient:stable \
+  -c 'exec /bin/staticsites/StaticSitesClient upload --app /app --outputLocation "" --skipAppBuild true --skipApiBuild true --apiToken "$SWA_TOKEN" --verbose false'
 
 if [ -n "${GITHUB_OUTPUT:-}" ]; then
   echo "app_origin=$APP_ORIGIN" >> "$GITHUB_OUTPUT"
