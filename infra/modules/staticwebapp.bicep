@@ -8,10 +8,13 @@
 param location string
 param tags object
 param baseName string
+param suffix string
 param customDomain string
 
+// The suffix keeps the name unique across installations, like every other public-facing resource:
+// a fork that keeps baseName would otherwise fail its first deployment on a taken name.
 resource site 'Microsoft.Web/staticSites@2024-04-01' = {
-  name: baseName
+  name: '${baseName}-${suffix}'
   location: location
   tags: tags
   sku: {

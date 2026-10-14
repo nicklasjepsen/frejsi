@@ -10,7 +10,8 @@ infra/
   main.bicep          the module list (append-only: a lane adds a module at the end, never reorders)
   main.bicepparam     parameters; per-installation values come from repository variables, not the file
   modules/            one file per concern: monitoring, keyvault, sql, webpubsub, functionapp, roles,
-                      staticwebapp, alerts
+                      staticwebapp, alerts; functionapp/appsettings.bicep merges the Function App's
+                      settings into the live ones instead of replacing them
   deploy.sh           what the `deploy` job runs after infra: secrets once, migrations, poller, web
   test/               node:test suite over the built ARM JSON and over deploy.sh against fake tools
 ```
@@ -47,7 +48,7 @@ No secret is ever in this repository, in a parameter file, in a log or on a comm
 | Web PubSub connection string | `deploy.sh`, once, from the resource's keys | Key Vault `web-pubsub-connection-string` | web app (app setting) |
 | `bootstrap-token` | Bicep, `newGuid()` parameter default; rotates on every infra deploy | Key Vault | web app (app setting); the owner reads it once (step 9) |
 | `glucose-<spaceId>` (Dexcom credential) | the Function App's `source-connect` trigger from Settings | Key Vault | the poller, through its managed identity |
-| Function App storage key, App Insights connection string | Azure | app settings | the Function App |
+| Function App storage key, App Insights connection string | Azure | app settings | the Function App (the Functions host on a Consumption plan needs a key-based `AzureWebJobsStorage`; the key never leaves Azure) |
 
 Why the deploy principal is the SQL server's Entra admin: Prisma cannot authenticate with Entra
 tokens, so the application needs a SQL login; Bicep must never hold a password; so the login is
@@ -156,12 +157,20 @@ plugins. Docker Compose for non-Azure hosting is planned for a later version (sp
    hand in the portal is replaced on the next release.
 7. Uploads the web build with the Static Web Apps deployment client (the container the
    `Azure/static-web-apps-deploy` action wraps; the SWA CLI does not support hybrid Next.js), with
-   `skipAppBuild`, because the release job has already built `web/.next/standalone`. The web build
-   script must copy `.next/static` and `public` into `.next/standalone`, as the Static Web Apps
-   docs for hybrid Next.js require.
+   `skipAppBuild`, because the release job has already built `web/.next/standalone`. The deployment
+   token reaches the container through a mode-600 env file, not docker's command line. The web
+   build script must copy `.next/static` and `public` into `.next/standalone`, as the Static Web
+   Apps docs for hybrid Next.js require.
 
-Bicep redeploys replace the Function App's settings, which is why `deploy.sh` sets the deploy-time
-ones again on every release and the release order is infra, then deploy.
+Every value the script reads from Azure is captured with a plain assignment and checked for empty,
+so a throttled or failing `az` call stops the release instead of storing an empty secret or writing
+an empty app setting (the tests cover both).
+
+A Bicep redeploy keeps the Function App settings `deploy.sh` wrote (`WEBSITE_RUN_FROM_PACKAGE`,
+`APP_VERSION`, `ENABLE_ORYX_BUILD`): `modules/functionapp/appsettings.bicep` reads the live settings
+with `list()` and merges Bicep's own into them, so the poller keeps running from its package while
+the deploy job is still on its way. `deploy.sh` sets the deploy-time ones again anyway; the release
+order stays infra, then deploy.
 
 ## Checking locally
 

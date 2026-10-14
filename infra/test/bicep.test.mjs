@@ -17,6 +17,7 @@ const UNTAGGABLE = new Set(
     'Microsoft.Authorization/roleAssignments',
     'Microsoft.Sql/servers/firewallRules',
     'Microsoft.Sql/servers/azureADOnlyAuthentications',
+    'Microsoft.Sql/servers/administrators',
     'Microsoft.SignalRService/webPubSub/hubs',
     'Microsoft.Web/staticSites/customDomains',
     'Microsoft.Web/sites/config',
@@ -53,6 +54,8 @@ test('main.bicep is a module list: parameters, modules and outputs only, no reso
   const src = readFileSync(path.join(infraDir, 'main.bicep'), 'utf8');
   assert.doesNotMatch(src, /^\s*resource\s/m, 'main.bicep declares a resource; put it in modules/');
   assert.ok((src.match(/^module\s/gm) ?? []).length >= 7, 'expected at least seven modules');
+  // Top-level module files are listed in main.bicep; a file in a subdirectory belongs to the module
+  // of the same name (modules/functionapp/appsettings.bicep is functionapp.bicep's).
   const modulesDir = path.join(infraDir, 'modules');
   const files = readdirSync(modulesDir).filter((f) => f.endsWith('.bicep'));
   for (const f of files) assert.match(src, new RegExp(`modules/${f.replace('.', '\\.')}`), `${f} is not in main.bicep`);
@@ -72,6 +75,8 @@ test('Static Web App Standard with the custom domain and no identity providers',
   const [swa] = byType('Microsoft.Web/staticSites');
   assert.ok(swa, 'no static site');
   assert.equal(resolve(swa.resource.sku, swa.scope).name, 'Standard');
+  // Globally unique like the other public-facing names: a fork that keeps baseName must not collide.
+  assert.match(resolve(swa.resource.name, swa.scope), /^frejsi-\[uniqueString\(resourceGroup\(\)\.id\)\]$/);
   const domains = byType('Microsoft.Web/staticSites/customDomains');
   assert.equal(domains.length, 1, 'expected one (conditional) custom domain resource');
   assert.ok(domains[0].resource.condition, 'custom domain must be conditional on the domain parameter');
@@ -89,7 +94,7 @@ test('Function App: Linux Consumption Y1, Node 22, its own storage account, sett
   const p = props(app);
   assert.equal(p.siteConfig.linuxFxVersion, 'Node|22');
   assert.equal(resolve(app.resource.identity, app.scope).type, 'SystemAssigned');
-  const settings = Object.fromEntries(p.siteConfig.appSettings.map((s) => [s.name, s.value]));
+  const settings = functionAppSettings();
   assert.match(settings.DATABASE_URL, /^@Microsoft\.KeyVault\(SecretUri=.*database-url/);
   // Outputs of the webpubsub and keyvault modules, never a hard-coded host.
   assert.match(settings.WEB_PUBSUB_ENDPOINT, /^https:\/\/\[reference\(.*'webpubsub'.*hostName/);
@@ -101,12 +106,43 @@ test('Function App: Linux Consumption Y1, Node 22, its own storage account, sett
   assert.equal(byType('Microsoft.Storage/storageAccounts').length, 1, 'one storage account (the poller); blob storage is v0.2.0');
 });
 
+test('a Bicep redeploy keeps the settings deploy.sh wrote (WEBSITE_RUN_FROM_PACKAGE, APP_VERSION)', () => {
+  // The site resource carries no appSettings list: a list there is the complete set and a redeploy
+  // would drop the package URL, leaving the poller without code until deploy.sh runs again.
+  const [app] = byType('Microsoft.Web/sites');
+  assert.ok(!('appSettings' in (app.resource.properties.siteConfig ?? {})), 'siteConfig.appSettings replaces every setting on redeploy');
+  // Instead a config/appsettings resource merges the live settings with Bicep's own.
+  const config = byType('Microsoft.Web/sites/config').find((r) => /appsettings/.test(resolve(r.resource.name, r.scope)));
+  assert.ok(config, 'no Microsoft.Web/sites/config appsettings resource');
+  assert.match(config.resource.properties, /^\[union\(parameters\('currentAppSettings'\), ?parameters\('appSettings'\)\)\]$/);
+  assert.match(config.scope.paramValues.currentAppSettings, /^\[list\(.*appsettings.*\)\.properties\]$/);
+  // Both parameters hold the storage key, so neither may land in the deployment history.
+  assert.equal(config.scope.template.parameters.currentAppSettings.type, 'secureObject');
+  assert.equal(config.scope.template.parameters.appSettings.type, 'secureObject');
+});
+
+/** The Function App's own settings: the appSettings parameter of the appsettings module, resolved. */
+function functionAppSettings() {
+  const config = byType('Microsoft.Web/sites/config').find((r) => /appsettings/.test(resolve(r.resource.name, r.scope)));
+  assert.ok(config, 'no Microsoft.Web/sites/config appsettings resource');
+  const settings = resolve(config.scope.paramValues.appSettings, config.scope.parent);
+  assert.equal(typeof settings, 'object', `appSettings did not resolve to an object: ${settings}`);
+  return settings;
+}
+
 test('Azure SQL: Entra admin is the deployer, Basic 5 DTU, Allow Azure services, no password in Bicep', () => {
   const [server] = byType('Microsoft.Sql/servers');
   const p = props(server);
   assert.equal(p.administrators.administratorType, 'ActiveDirectory');
   assert.match(server.resource.properties.administrators.sid, /deployer\(\)\.objectId/);
   assert.ok(!('administratorLoginPassword' in p), 'no SQL admin password in Bicep');
+  // The server body's `administrators` counts only at create time (ARM reference); the child
+  // resource is the supported update path, so a changed deploy principal is applied on redeploy.
+  const [admin] = byType('Microsoft.Sql/servers/administrators');
+  assert.ok(admin, 'no Microsoft.Sql/servers/administrators child resource');
+  assert.match(resolve(admin.resource.name, admin.scope), /ActiveDirectory/);
+  assert.match(admin.resource.properties.sid, /deployer\(\)\.objectId/);
+  assert.equal(admin.resource.properties.administratorType, 'ActiveDirectory');
   const adOnly = byType('Microsoft.Sql/servers/azureADOnlyAuthentications');
   assert.equal(adOnly.length, 1);
   assert.equal(props(adOnly[0]).azureADOnlyAuthentication, false, 'SQL auth must be allowed for the app login');

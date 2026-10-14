@@ -110,6 +110,7 @@ module staticWebApp 'modules/staticwebapp.bicep' = {
     location: location
     tags: tags
     baseName: baseName
+    suffix: suffix
     customDomain: customDomain
   }
 }

@@ -3,7 +3,14 @@
 // its system-assigned identity; nothing secret is in this file or in the deployment history.
 //
 // The package itself is deployed by infra/deploy.sh (zip, SCM_DO_BUILD_DURING_DEPLOYMENT=false,
-// APP_VERSION), which also restores the settings a Bicep redeploy replaces.
+// APP_VERSION). The settings it writes survive a Bicep redeploy: functionapp/appsettings.bicep merges
+// Bicep's settings into the live ones instead of replacing the list.
+//
+// AzureWebJobsStorage carries the storage account key on purpose: the Functions host on a Linux
+// Consumption plan needs a key-based connection for its own storage (run-from-package, timers,
+// locks). It is the one secret that does not go through Key Vault; the key never leaves Azure
+// (ARM resolves listKeys() at deployment time) and the storage account holds nothing but the host's
+// own files. Everything the application reads is a Key Vault reference.
 
 param location string
 param tags object
@@ -47,6 +54,19 @@ resource plan 'Microsoft.Web/serverfarms@2024-04-01' = {
   }
 }
 
+// Bicep's own settings. Not on the site resource: see functionapp/appsettings.bicep.
+var appSettings = {
+  AzureWebJobsStorage: 'DefaultEndpointsProtocol=https;AccountName=${storage.name};EndpointSuffix=${environment().suffixes.storage};AccountKey=${storage.listKeys().keys[0].value}'
+  FUNCTIONS_EXTENSION_VERSION: '~4'
+  FUNCTIONS_WORKER_RUNTIME: 'node'
+  SCM_DO_BUILD_DURING_DEPLOYMENT: 'false'
+  APPLICATIONINSIGHTS_CONNECTION_STRING: appInsightsConnectionString
+  DATABASE_URL: '@Microsoft.KeyVault(SecretUri=${keyVaultUri}secrets/database-url/)'
+  WEB_PUBSUB_ENDPOINT: 'https://${webPubSubHostName}'
+  WEB_PUBSUB_HUB: webPubSubHub
+  KEY_VAULT_URL: keyVaultUri
+}
+
 resource functionApp 'Microsoft.Web/sites@2024-04-01' = {
   name: '${baseName}-poller-${suffix}'
   location: location
@@ -65,45 +85,21 @@ resource functionApp 'Microsoft.Web/sites@2024-04-01' = {
       ftpsState: 'Disabled'
       minTlsVersion: '1.2'
       http20Enabled: true
-      appSettings: [
-        {
-          name: 'AzureWebJobsStorage'
-          value: 'DefaultEndpointsProtocol=https;AccountName=${storage.name};EndpointSuffix=${environment().suffixes.storage};AccountKey=${storage.listKeys().keys[0].value}'
-        }
-        {
-          name: 'FUNCTIONS_EXTENSION_VERSION'
-          value: '~4'
-        }
-        {
-          name: 'FUNCTIONS_WORKER_RUNTIME'
-          value: 'node'
-        }
-        {
-          name: 'SCM_DO_BUILD_DURING_DEPLOYMENT'
-          value: 'false'
-        }
-        {
-          name: 'APPLICATIONINSIGHTS_CONNECTION_STRING'
-          value: appInsightsConnectionString
-        }
-        {
-          name: 'DATABASE_URL'
-          value: '@Microsoft.KeyVault(SecretUri=${keyVaultUri}secrets/database-url/)'
-        }
-        {
-          name: 'WEB_PUBSUB_ENDPOINT'
-          value: 'https://${webPubSubHostName}'
-        }
-        {
-          name: 'WEB_PUBSUB_HUB'
-          value: webPubSubHub
-        }
-        {
-          name: 'KEY_VAULT_URL'
-          value: keyVaultUri
-        }
-      ]
     }
+  }
+}
+
+resource currentSettings 'Microsoft.Web/sites/config@2024-04-01' existing = {
+  parent: functionApp
+  name: 'appsettings'
+}
+
+module settings 'functionapp/appsettings.bicep' = {
+  name: 'functionapp-appsettings'
+  params: {
+    functionAppName: functionApp.name
+    currentAppSettings: currentSettings.list().properties
+    appSettings: appSettings
   }
 }
 
