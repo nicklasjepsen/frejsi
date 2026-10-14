@@ -55,6 +55,9 @@ Always add the label `triaged` last.
 
 ## Never
 
+Print an issue body, a comment or a security report in your output: the run log of the
+housekeeping workflow is public. Numbers, titles and labels only.
+
 Close, reopen, assign, edit the body, change the title, or remove someone else's label. Never set a
 milestone on a task or an enhancement. Never answer a security report in public.
 

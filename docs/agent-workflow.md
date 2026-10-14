@@ -98,8 +98,9 @@ The rules that keep merges flowing, in order of importance:
    infra scaffold task) deploys it to a Static Web App preview so the owner can look at a screen on a
    phone. Never required, never blocking.
 
-Branch protection on `main`: pull request required, required check `ci`, no required reviewers, no
-up-to-date requirement, linear history, auto-merge enabled, branches deleted on merge.
+Branch protection on `main` (live since 2026-10-14): pull request required, required check `ci`,
+conversations resolved, no required reviewers, no up-to-date requirement, linear history, no force
+pushes, auto-merge enabled, branches deleted on merge, rebase the only merge method.
 
 ## 5. Gates on every PR
 
@@ -208,3 +209,23 @@ and twelve hours is soon enough for triage.
 Lane PRs and lane branches are never touched by housekeeping; the lane or `/start-milestone` owns
 them. The same procedure runs in an interactive session as the `housekeeping-sweep` workflow, with the
 sweeps in parallel.
+
+## 11. Working on GitHub: what the first days taught
+
+Facts an agent needs that the docs of the tools do not say:
+
+- **`gh pr checks <n> --watch` right after `gh pr create`** can exit at once with "no checks
+  reported" before the `ci` check registers, and a merge chained after it is refused by branch
+  protection. Poll `gh pr checks <n> --json name,state` until `ci` is `SUCCESS`, then merge.
+- **The Claude Code GitHub action runs only the workflow file that is on `main`.** A run triggered
+  from a branch (`gh workflow run ... --ref <branch>`) is skipped with "workflow validation failed"
+  and reports success in two seconds. A change to `housekeeping.yml` must merge before it can be
+  tested; test with `gh workflow run housekeeping.yml --ref main`.
+- **A housekeeping run that ends after one turn at zero cost with `is_error: true`** is an API-level
+  failure (auth, model, request), not a skill problem. The error text is in the run log because
+  `show_full_output` is on; `terminal_reason` and `api_error_status` name it.
+- **The housekeeping run log is public.** Agents in it refer to issues by number and title only.
+- **Environments** `production-infra` (owner as required reviewer) and `production` accept
+  deployments only from `v*` tags. Secrets present: `CLAUDE_CODE_OAUTH_TOKEN`, `CI_SQL_SA_PASSWORD`.
+  Still to add with the infra lane: `ANTHROPIC_API_KEY_EVALS`, the `AZURE_*` repository variables.
+

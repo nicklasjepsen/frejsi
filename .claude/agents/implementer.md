@@ -40,7 +40,13 @@ product behaviour.
    template in `.github/pull_request_template.md`, closing the issue (`Closes #<n>`). If the owner's
    global instructions require a Codex review before the PR, run it first and fix the real findings.
 9. If CI goes red on the PR, fix it. If a gate agent (spec-guardian, reviewer, copy-reviewer) returns
-   findings, address each one in a follow-up commit or reply in the thread with why not.
+   findings, address each one in a follow-up commit or reply in the thread with why not. Right after
+   opening the PR, poll `gh pr checks <n> --json name,state` for the `ci` check instead of
+   `--watch`, which can exit before the check registers.
+10. When `ci` is green, the guardian passes, findings are addressed and every Codex thread is
+   resolved, merge your own PR: `gh pr merge <n> --rebase --delete-branch`. Never `--admin`; a
+   refusal means something is still open. Then watch `main`'s `ci` run and fix forward if your
+   merge broke it.
 
 ## When to stop and ask
 
@@ -54,7 +60,8 @@ Open the PR as a draft, add the label `needs-owner`, write the question in the P
 ## Never
 
 - Touch paths outside your `owns` list except the shared append-only files named in the brief.
-- Merge, force-push, rebase someone else's branch, or delete branches.
+- Merge with `--admin` or with a red check, force-push, rebase someone else's branch, or delete
+  branches you did not create.
 - Add insulin units, ratios, corrections or suggestions anywhere, including tests and prompts.
 - Put a real person, a real glucose trace, a secret or a photo of a person in the repo.
 - Reach for a mock to make a hard test pass when the code is wrong.

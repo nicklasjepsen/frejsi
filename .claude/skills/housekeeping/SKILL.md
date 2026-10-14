@@ -1,6 +1,6 @@
 ---
 name: housekeeping
-description: Background triage and cleanup for Frejsi, run daily by the housekeeping GitHub Actions workflow (not part of PR CI) and on demand. Triages untouched issues and PRs with the triage agent, merges green Dependabot minors, marks stale PRs, deletes fully merged branches, fixes milestone hygiene, and keeps one "Waiting on the owner" issue current. Use when the owner says "run housekeeping", "triage the backlog", "clean up branches", "what's waiting on me". Never closes an issue a person opened; never merges a lane PR.
+description: Background triage and cleanup for Frejsi, run twice daily by the housekeeping GitHub Actions workflow (not part of PR CI) and on demand. Triages untouched issues and PRs with the triage agent, merges green Dependabot minors, marks stale PRs, deletes fully merged branches, fixes milestone hygiene, and keeps one "Waiting on the owner" issue current. Use when the owner says "run housekeeping", "triage the backlog", "clean up branches", "what's waiting on me". Never closes an issue a person opened; never merges a lane PR.
 ---
 
 # housekeeping
@@ -86,6 +86,10 @@ Write the run summary to `$GITHUB_STEP_SUMMARY` when it exists (triage lines, ac
 otherwise print it. Nothing happened is one line.
 
 ## Limits
+
+- **The run log is public.** The workflow runs with full output on a public repo, so everything you
+  print, every command and every tool result, is readable by anyone. Refer to issues by number and
+  title only; never print an issue body, a comment, or anything from a `security` report.
 
 - Triage labels and comments once; it never closes, assigns, edits or retitles. The owner closes.
 - Lane PRs and lane branches (`*/gh-<n>-*` with an open PR) are never touched.
