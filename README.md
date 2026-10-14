@@ -2,7 +2,7 @@
 
 **Carb counting and live glucose, for a person with diabetes and the people around them.**
 
-Frejsi is a phone-first web app that answers two questions fast: *how many carbs is this?* and *what did that meal do to my glucose?* It was started for a nine-year-old with type 1 diabetes and her two households — but it is built for anyone with diabetes, with or without carers.
+Frejsi is a web app — on your phone for the moment you're eating, on your desktop for the evening you want to understand the week — that answers two questions fast: *how many carbs is this?* and *what did that meal do to my glucose?* It was started for a nine-year-old with type 1 diabetes and her two households — but it is built for anyone with diabetes, with or without carers.
 
 > **Status: design phase.** No code yet. The design spec lives in [`docs/superpowers/specs/2026-10-14-frejsi-design.md`](docs/superpowers/specs/2026-10-14-frejsi-design.md); the UI brief in [`docs/ui-brief.md`](docs/ui-brief.md).
 

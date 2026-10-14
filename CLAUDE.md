@@ -4,7 +4,7 @@
 
 ## What this is
 
-An open-source (AGPL-3.0) web app for one person with diabetes and the people around them: carb lookup (Danish products, barcodes, own dishes), a child-friendly `simpleMode`, and meals shown on the live glucose curve. Phone-first PWA. **It never computes or suggests insulin.**
+An open-source (AGPL-3.0) web app for one person with diabetes and the people around them: carb lookup (Danish products, barcodes, own dishes), a child-friendly `simpleMode`, and meals shown on the live glucose curve. **Mobile and desktop are both first-class** — installable PWA on phones for logging in the moment, a full desktop layout for review and admin; one responsive codebase, layouts designed per breakpoint. **It never computes or suggests insulin.**
 
 ## Where things stand
 

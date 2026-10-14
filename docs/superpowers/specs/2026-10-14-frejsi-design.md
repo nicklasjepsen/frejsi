@@ -8,7 +8,9 @@
 
 ## 0. Intent
 
-Frejsi is a web app for one person with diabetes and the people around them. It answers two questions, fast, on a phone: *"how many carbs is this?"* and *"what did that meal do to my glucose?"*
+Frejsi is a web app for one person with diabetes and the people around them. It answers two questions, fast: *"how many carbs is this?"* and *"what did that meal do to my glucose?"*
+
+**It is a first-class experience on both mobile and desktop** (owner, 2026-10-14). The phone is where meals are logged and barcodes scanned; the desktop is where a parent sits on a Sunday evening with the week's curves, cleans up the food library, prepares questions for the clinic, and manages people and devices. Same app, same URL, one responsive codebase — not a phone app stretched to a wide window, and not a desktop app squeezed onto a phone. Layouts are designed per breakpoint (see `docs/ui-brief.md`).
 
 It was started for a 9-year-old newly diagnosed with type 1 diabetes (Tandem pump, Dexcom G7) and her two households plus grandparents — but nothing in the model assumes a child. The same code serves an adult with their partner, or a person with no carers at all.
 
@@ -26,7 +28,7 @@ It was started for a 9-year-old newly diagnosed with type 1 diabetes (Tandem pum
 - **No insulin dosing.** Frejsi never computes, suggests or displays insulin units, ratios or corrections. Users look up carbs here and enter them in their pump/pen. Clinical and legal choice; enforced in code (see §5).
 - Does not replace the CGM app or the pump app.
 - No pump data in v1 (Tandem has no real-time API; must not block).
-- No native apps. Web app (PWA) only.
+- No native apps. Web app (installable PWA on phones; regular web app on desktop) only.
 
 ---
 
@@ -203,7 +205,12 @@ Results from 3–5 are stored in `foods` with `origin` and `verified: false`.
 
 ## 6. UI — *to be designed in Claude Design* (see `docs/ui-brief.md`)
 
-Not designed yet. The brief lists personas, modes, screens and constraints.
+Not designed yet. The brief lists personas, modes, screens and constraints. Requirements already fixed:
+
+- **Mobile and desktop are both primary.** Every screen has a phone layout and a desktop layout; the brief says which job each device is for. Minimum: 360 px phone, 1280 px desktop; tablet inherits whichever fits.
+- Barcode scanning uses the phone camera; on desktop the same field accepts a typed barcode or a USB scanner.
+- Keyboard navigation and shortcuts on desktop (search focus, next/previous meal, verify).
+- `simpleMode` applies on both; on desktop it is the same large, picture-first shell, not a different app.
 
 ## 7. Error handling and observability — *not yet designed*
 

@@ -4,7 +4,17 @@ Design the UI first, then hand the result to Claude Code for implementation. Rea
 
 ## What it is
 
-A phone-first web app (PWA) for one person with diabetes and the people around them. Two jobs, fast: **"how many carbs is this?"** and **"what did that meal do to my glucose?"**
+A web app for one person with diabetes and the people around them. Two jobs, fast: **"how many carbs is this?"** and **"what did that meal do to my glucose?"**
+
+**Design for mobile and desktop as equals.** They do different jobs:
+
+| Device | Job | Design consequence |
+|---|---|---|
+| **Phone** (360–430 px, installable PWA) | In the moment: look up, scan, log, check the number, "ask an adult". | One-handed, bottom navigation, camera, big targets, everything within two taps. |
+| **Desktop** (≥ 1280 px) | Reflection and admin: the week's curves side by side, cleaning up the library, verifying a batch of foods, preparing clinic questions, managing people and devices, connecting sources. | Multi-column layouts, persistent sidebar, keyboard shortcuts, dense tables where useful, curves wide enough to compare. A typed-barcode / USB-scanner field replaces the camera. |
+| **Tablet** | Either, depending on orientation. | Inherits whichever layout fits; no third design. |
+
+Deliver both layouts for every screen below. A desktop layout is not the phone layout centred in a wide window.
 
 ## Who uses it
 
@@ -39,7 +49,9 @@ A phone-first web app (PWA) for one person with diabetes and the people around t
 - Viewers never see glucose anywhere — not in history, not in meal detail.
 - AI estimates are always labelled "approx." and visibly unverified.
 - There is no insulin anywhere in the UI except the single "bolus given now" timestamp tap for carers. No units, no suggestions.
-- Everything must work one-handed on a phone; the child's flow must work with gloves off in a school corridor in under 20 seconds.
+- On the phone everything must work one-handed; the child's flow must work in a school corridor in under 20 seconds.
+- On desktop everything must be reachable by keyboard; the "verify a batch of foods" and "compare this dish's last five curves" flows are desktop-first and must not feel like a phone screen.
+- `simpleMode` exists on both devices and is the same shell — large, picture-first — not a different app.
 - Must look like a calm health tool, not a fitness app — no streaks, no confetti, no red for a high reading (highs and lows are information, not failure).
 
 ## Tone
