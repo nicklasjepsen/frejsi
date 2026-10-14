@@ -2,6 +2,9 @@
 // in 35 minutes. Sensor changes cause gaps of about 30 minutes, so 35 is the first value that means
 // something is wrong in the chain Dexcom -> poller -> database. The address is the `alertEmail`
 // parameter, passed from the ALERT_EMAIL repository variable; it is never in the repository.
+//
+// Azure Monitor only accepts fixed window sizes (5, 10, 15, 30, 45 minutes, 1 hour, ...), so the
+// rule looks back one hour and the query itself keeps the last 35 minutes.
 
 param location string
 param tags object
@@ -37,14 +40,14 @@ resource noReadings 'Microsoft.Insights/scheduledQueryRules@2023-03-15-preview' 
     severity: 2
     enabled: true
     evaluationFrequency: 'PT5M'
-    windowSize: 'PT35M'
+    windowSize: 'PT1H'
     scopes: [
       appInsightsId
     ]
     criteria: {
       allOf: [
         {
-          query: 'customEvents | where name == "reading.stored"'
+          query: 'customEvents | where timestamp > ago(35m) | where name == "reading.stored"'
           timeAggregation: 'Count'
           operator: 'LessThan'
           threshold: 1
