@@ -54,6 +54,5 @@ jobs:
             nobody can answer questions, so never ask one; when unsure, label needs-owner and move on.
             Write the run summary to $GITHUB_STEP_SUMMARY at the end.
           claude_args: >-
-            --model claude-sonnet-5-5
             --max-turns 80
             --allowedTools "Skill,Agent,Read,Glob,Grep,Bash(gh *),Bash(git fetch*),Bash(git branch*),Bash(git merge-base*),Bash(git tag*),Bash(git log*),Bash(git push origin --delete *),Bash(git status*),Bash(date*),Bash(cat*),Bash(echo*),Bash(printf*),Bash(jq*),Bash(sort*),Bash(head*),Bash(grep*),Bash(wc*)"
