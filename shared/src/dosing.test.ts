@@ -39,6 +39,7 @@ describe("dosing vocabulary (the hard rule: Frejsi never computes or suggests in
       "Frejsi er åben kildekode, regner aldrig insulin og erstatter ikke din sensor-app eller pumpe-app.",
       "never calculates insulin",
       "Frejsi · open source · never calculates insulin",
+      "Frejsi is open source, never calculates insulin and does not replace your sensor app or pump app.",
       "Bolus givet nu",
       "Bolus før måltid",
       "bolus given now",
@@ -47,9 +48,9 @@ describe("dosing vocabulary (the hard rule: Frejsi never computes or suggests in
   });
 
   it("flags a listed word, word-bounded and case-insensitive", () => {
-    expect(findDosingVocabulary([["da.json:x", "Tag 2 enheder insulin nu"]])).toEqual([
-      { where: "da.json:x", text: "Tag 2 enheder insulin nu", term: "insulin" },
-      { where: "da.json:x", text: "Tag 2 enheder insulin nu", term: "enheder insulin" },
+    expect(findDosingVocabulary([["da.json:x", "ordene enheder insulin"]])).toEqual([
+      { where: "da.json:x", text: "ordene enheder insulin", term: "insulin" },
+      { where: "da.json:x", text: "ordene enheder insulin", term: "enheder insulin" },
     ]);
     expect(findDosingVocabulary([["k", "Insulin"]])).toHaveLength(1);
     expect(findDosingVocabulary([["k", "Din ICR er 10"]]).map((f) => f.term)).toEqual(["ICR"]);
@@ -81,11 +82,11 @@ describe("dosing vocabulary (the hard rule: Frejsi never computes or suggests in
     );
     expect(findDosingVocabulary(allowed)).toEqual([]);
     expect(
-      findDosingVocabulary([["k", "Bolus 12:30 og 2 enheder insulin"]]).map((f) => f.term),
+      findDosingVocabulary([["k", "Bolus 12:30 og ordene enheder insulin"]]).map((f) => f.term),
     ).toEqual(["insulin", "bolus", "enheder insulin"]);
     expect(findDosingVocabulary([["k", "Bolus nu"]])).toHaveLength(1);
     expect(
-      findDosingVocabulary([["k", "regner aldrig insulin, men foreslår dosis"]]).map((f) => f.term),
+      findDosingVocabulary([["k", "regner aldrig insulin eller dosis"]]).map((f) => f.term),
     ).toEqual(["insulin", "dosis"]);
   });
 

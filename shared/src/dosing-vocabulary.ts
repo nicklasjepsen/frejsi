@@ -23,13 +23,18 @@ export const DOSING_WORDS = [
   "units of insulin",
 ] as const;
 
-/** Exactly these strings pass, plus the pattern `Bolus HH:MM`; nothing else. */
+/**
+ * Exactly these strings pass, plus the pattern `Bolus HH:MM`; nothing else. Each Danish string has
+ * its English counterpart so `en.json` can carry the same copy (plan §8, amended for the long
+ * sentence, which the plan listed in Danish only).
+ */
 export const DOSING_ALLOW_LIST = [
   "regner aldrig insulin",
   "Frejsi · åben kildekode · regner aldrig insulin",
   "Frejsi er åben kildekode, regner aldrig insulin og erstatter ikke din sensor-app eller pumpe-app.",
   "never calculates insulin",
   "Frejsi · open source · never calculates insulin",
+  "Frejsi is open source, never calculates insulin and does not replace your sensor app or pump app.",
   "Bolus givet nu",
   "Bolus før måltid",
   "bolus given now",
