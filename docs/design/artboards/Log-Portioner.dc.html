@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="da">
+<head>
+<meta charset="utf-8">
+<title>Log – portioner og bekræft</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,500;6..72,600&family=Atkinson+Hyperlegible:wght@400;700&display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#5A6A3B}a:hover{color:#3F4C28}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; background: #F6F1E8; color: #2B2622; font-family: 'Atkinson Hyperlegible', system-ui, sans-serif; display: flex; flex-direction: column; overflow: hidden">
+
+  <div style="display: flex; align-items: center; justify-content: space-between; padding: 56px 16px 0 12px">
+    <a href="Log-Telefon.dc.html" aria-label="Tilbage" style="width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; border-radius: 50%; text-decoration: none; color: #6E6458"><svg width="22" height="22" viewBox="0 0 20 20" aria-hidden="true"><path d="M13 4 L7 10 L13 16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"></path></svg></a>
+    <div style="display: flex; flex-direction: column; align-items: center">
+      <div style="font-family: Newsreader, Georgia, serif; font-size: 22px; font-weight: 600">Frokost</div>
+      <div style="font-size: 13px; color: #6E6458">I dag 12:10</div>
+    </div>
+    <a href="Main.dc.html" style="font-size: 15px; text-decoration: none; padding: 10px 4px">Annullér</a>
+  </div>
+
+  <div style="margin: 16px 24px 0 24px; background: #FFFCF6; border-radius: 20px; box-shadow: 0 1px 0 #E7DFD0; display: flex; flex-direction: column">
+    <div style="display: flex; align-items: center; gap: 12px; padding: 14px 16px; border-bottom: 1px solid #E7DFD0; background: #F3EEE3; border-radius: 20px 20px 0 0">
+      <div style="width: 44px; height: 44px; border-radius: 12px; background: #E4D8C3; display: flex; align-items: center; justify-content: center; font-size: 11px; color: #7A6B52; flex-shrink: 0">foto</div>
+      <div style="display: flex; flex-direction: column; gap: 3px; flex: 1; min-width: 0">
+        <div style="font-family: Newsreader, Georgia, serif; font-size: 18px; font-weight: 600; line-height: 1.15">Rugbrød, Schulstad Det Gode</div>
+        <div style="display: flex; align-items: center; gap: 6px; font-size: 12px; color: #6E6458">
+          <div>40 g pr. 100 g</div>
+          <div style="padding: 2px 8px; border-radius: 999px; background: #F6E3DB; color: #A3503A; font-weight: 700">Ikke tjekket</div>
+        </div>
+      </div>
+      <div style="font-size: 20px; font-weight: 700; font-variant-numeric: tabular-nums">36 g</div>
+    </div>
+    <div style="display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-bottom: 1px solid #E7DFD0">
+      <div style="width: 44px; height: 44px; border-radius: 12px; background: #E4D8C3; display: flex; align-items: center; justify-content: center; font-size: 11px; color: #7A6B52; flex-shrink: 0">foto</div>
+      <div style="display: flex; flex-direction: column; gap: 3px; flex: 1">
+        <div style="font-family: Newsreader, Georgia, serif; font-size: 18px; font-weight: 600; line-height: 1.15">Ost, skiveost</div>
+        <div style="font-size: 12px; color: #6E6458">1 skive</div>
+      </div>
+      <div style="font-size: 20px; font-weight: 700; font-variant-numeric: tabular-nums; color: #6E6458">0 g</div>
+    </div>
+    <div style="display: flex; align-items: center; gap: 12px; padding: 12px 16px">
+      <div style="width: 44px; height: 44px; border-radius: 12px; background: #E4D8C3; display: flex; align-items: center; justify-content: center; font-size: 11px; color: #7A6B52; flex-shrink: 0">foto</div>
+      <div style="display: flex; flex-direction: column; gap: 3px; flex: 1">
+        <div style="font-family: Newsreader, Georgia, serif; font-size: 18px; font-weight: 600; line-height: 1.15">Æble</div>
+        <div style="font-size: 12px; color: #6E6458">1 mellem</div>
+      </div>
+      <div style="font-size: 20px; font-weight: 700; font-variant-numeric: tabular-nums">14 g</div>
+    </div>
+  </div>
+
+  <div style="margin: 16px 24px 0 24px; display: flex; flex-direction: column; gap: 10px">
+    <div style="font-size: 15px; font-weight: 700">Hvor meget rugbrød?</div>
+    <div style="display: flex; flex-wrap: wrap; gap: 8px">
+      <button type="button" style="height: 46px; padding: 0 16px; border-radius: 999px; border: 1px solid #E7DFD0; background: #FFFCF6; color: #2B2622; font-family: inherit; font-size: 15px; cursor: pointer">½ skive · 9 g</button>
+      <button type="button" style="height: 46px; padding: 0 16px; border-radius: 999px; border: 1px solid #E7DFD0; background: #FFFCF6; color: #2B2622; font-family: inherit; font-size: 15px; cursor: pointer">1 skive · 18 g</button>
+      <button type="button" aria-pressed="true" style="height: 46px; padding: 0 16px; border-radius: 999px; border: 2px solid #5A6A3B; background: #E9ECDF; color: #3F4C28; font-family: inherit; font-size: 15px; font-weight: 700; cursor: pointer">2 skiver · 36 g</button>
+      <button type="button" style="height: 46px; padding: 0 16px; border-radius: 999px; border: 1px solid #E7DFD0; background: #FFFCF6; color: #2B2622; font-family: inherit; font-size: 15px; cursor: pointer">Vej det</button>
+    </div>
+  </div>
+
+  <div style="margin: 18px 24px 0 24px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px">
+    <button type="button" style="display: flex; align-items: center; justify-content: center; gap: 8px; height: 48px; border-radius: 14px; border: 1px solid #E7DFD0; background: #FFFCF6; color: #2B2622; font-family: inherit; font-size: 14px; cursor: pointer">
+      <svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><rect x="2" y="5" width="16" height="12" rx="3" fill="none" stroke="#5A6A3B" stroke-width="1.8"></rect><circle cx="10" cy="11" r="3" fill="none" stroke="#5A6A3B" stroke-width="1.8"></circle><path d="M7 5 L8 3 H12 L13 5" fill="none" stroke="#5A6A3B" stroke-width="1.8" stroke-linejoin="round"></path></svg>
+      <div>Tag et billede</div>
+    </button>
+    <button type="button" style="display: flex; align-items: center; justify-content: center; gap: 8px; height: 48px; border-radius: 14px; border: 1px solid #E7DFD0; background: #FFFCF6; color: #2B2622; font-family: inherit; font-size: 14px; cursor: pointer">
+      <svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="7.5" fill="none" stroke="#A3503A" stroke-width="1.8"></circle><path d="M10 6 V10 L13 12" fill="none" stroke="#A3503A" stroke-width="1.8" stroke-linecap="round"></path></svg>
+      <div>Bolus givet nu</div>
+    </button>
+  </div>
+  <div style="margin: 8px 24px 0 24px; font-size: 12px; color: #6E6458">"Bolus givet nu" gemmer kun tidspunktet, så det kan ses på kurven. Frejsi regner aldrig insulin.</div>
+
+  <div style="flex: 1"></div>
+
+  <div style="padding: 14px 24px 36px 24px; border-top: 1px solid #E7DFD0; background: #FFFCF6; display: flex; align-items: center; gap: 14px">
+    <div style="display: flex; flex-direction: column; flex: 1">
+      <div style="font-size: 13px; color: #6E6458">I alt</div>
+      <div style="font-size: 28px; font-weight: 700; font-variant-numeric: tabular-nums; line-height: 1.05">50 g <span style="font-size: 15px; font-weight: 400; color: #6E6458">kulhydrat</span></div>
+    </div>
+    <a href="Maaltid-Telefon.dc.html" style="display: flex; align-items: center; justify-content: center; height: 56px; padding: 0 26px; border-radius: 18px; background: #5A6A3B; color: #F6F1E8; font-size: 17px; font-weight: 700; text-decoration: none">Gem måltid</a>
+  </div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

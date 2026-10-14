@@ -1,0 +1,76 @@
+{
+  "v": 3,
+  "createdOnFiles": { "v": 1, "at": "2026-10-14T12:00:00Z" },
+  "title": "Frejsi UI",
+  "launch": { "view": "canvas", "page": "skaerme" },
+  "pages": [
+    { "id": "skaerme", "name": "Skærme" },
+    { "id": "retninger", "name": "Retninger" }
+  ],
+  "boards": {
+    "Main.dc.html": { "x": 0, "y": 0, "w": 390, "h": 844, "title": "Nu · telefon", "page": "skaerme" },
+    "Nu-Simpel.dc.html": { "x": 470, "y": 0, "w": 390, "h": 844, "title": "Nu · simpleMode", "page": "skaerme" },
+    "Nu-Moerk.dc.html": { "x": 940, "y": 0, "w": 390, "h": 844, "title": "Nu · mørk", "page": "skaerme" },
+    "Nu-Desktop.dc.html": { "x": 1410, "y": 0, "w": 1280, "h": 880, "title": "Nu · desktop", "page": "skaerme", "expand": "fill" },
+    "Nu-Simpel-Desktop.dc.html": { "x": 2770, "y": 0, "w": 1280, "h": 880, "title": "Nu · simpleMode desktop", "page": "skaerme", "expand": "fill" },
+
+    "Log-Telefon.dc.html": { "x": 0, "y": 1300, "w": 390, "h": 844, "title": "Log et måltid · telefon", "page": "skaerme" },
+    "Log-Portioner.dc.html": { "x": 470, "y": 1300, "w": 390, "h": 844, "title": "Log · portioner og bekræft", "page": "skaerme" },
+    "Log-Simpel.dc.html": { "x": 940, "y": 1300, "w": 390, "h": 844, "title": "Log · simpleMode", "page": "skaerme" },
+    "Log-Desktop.dc.html": { "x": 1410, "y": 1300, "w": 1280, "h": 880, "title": "Log et måltid · desktop", "page": "skaerme", "expand": "fill" },
+
+    "Maaltid-Telefon.dc.html": { "x": 0, "y": 2600, "w": 390, "h": 844, "title": "Måltid · telefon", "page": "skaerme" },
+    "Maaltid-Simpel.dc.html": { "x": 470, "y": 2600, "w": 390, "h": 844, "title": "Måltid · simpleMode · spørg en voksen", "page": "skaerme" },
+    "Maaltid-Desktop.dc.html": { "x": 940, "y": 2600, "w": 1280, "h": 920, "title": "Måltid · desktop · sammenlign", "page": "skaerme", "expand": "fill" },
+
+    "Bibliotek-Telefon.dc.html": { "x": 0, "y": 3900, "w": 390, "h": 844, "title": "Bibliotek · telefon", "page": "skaerme" },
+    "Bibliotek-Desktop.dc.html": { "x": 470, "y": 3900, "w": 1280, "h": 880, "title": "Bibliotek · desktop · godkend", "page": "skaerme", "expand": "fill" },
+
+    "Historik-Telefon.dc.html": { "x": 0, "y": 5200, "w": 390, "h": 844, "title": "Historik · telefon", "page": "skaerme" },
+    "Historik-Viewer.dc.html": { "x": 470, "y": 5200, "w": 390, "h": 844, "title": "I dag · ser med (viewer)", "page": "skaerme" },
+    "Historik-Desktop.dc.html": { "x": 940, "y": 5200, "w": 1280, "h": 1000, "title": "Historik · desktop · ugen", "page": "skaerme", "expand": "fill" },
+
+    "Personer-Telefon.dc.html": { "x": 0, "y": 6500, "w": 390, "h": 844, "title": "Personer · telefon", "page": "skaerme" },
+    "Personer-Desktop.dc.html": { "x": 470, "y": 6500, "w": 1280, "h": 880, "title": "Personer · desktop · invitér", "page": "skaerme", "expand": "fill" },
+
+    "Indstillinger-Telefon.dc.html": { "x": 0, "y": 7800, "w": 390, "h": 844, "title": "Indstillinger · telefon", "page": "skaerme" },
+    "Indstillinger-Desktop.dc.html": { "x": 470, "y": 7800, "w": 1280, "h": 900, "title": "Indstillinger · desktop", "page": "skaerme", "expand": "fill" },
+
+    "Invitation-Telefon.dc.html": { "x": 0, "y": 9100, "w": 390, "h": 844, "title": "Invitation · telefon", "page": "skaerme" },
+    "Invitation-Desktop.dc.html": { "x": 470, "y": 9100, "w": 1280, "h": 800, "title": "Invitation · desktop", "page": "skaerme", "expand": "fill" },
+
+    "Farve-Indstilling.dc.html": { "x": 0, "y": 10400, "w": 390, "h": 844, "title": "Farve · vælg pr. person", "page": "skaerme" },
+    "Farve-Nu-Blomme.dc.html": { "x": 470, "y": 10400, "w": 390, "h": 844, "title": "Nu · Blomme (Alma)", "page": "skaerme" },
+    "Farve-Nu-Hav.dc.html": { "x": 940, "y": 10400, "w": 390, "h": 844, "title": "Nu · Hav", "page": "skaerme" },
+    "Farve-Nu-Skov.dc.html": { "x": 1410, "y": 10400, "w": 390, "h": 844, "title": "Nu · Skov", "page": "skaerme" },
+    "Farve-Nu-Granat.dc.html": { "x": 1880, "y": 10400, "w": 390, "h": 844, "title": "Nu · Granat", "page": "skaerme" },
+
+    "B-QuietClinic.dc.html": { "x": 0, "y": 0, "w": 390, "h": 844, "title": "B · Quiet clinic (skitse)", "page": "retninger" },
+    "C-PictureBook.dc.html": { "x": 470, "y": 0, "w": 390, "h": 844, "title": "C · Picture book (skitse)", "page": "retninger" }
+  },
+  "order": [
+    "Main.dc.html", "Nu-Simpel.dc.html", "Nu-Moerk.dc.html", "Nu-Desktop.dc.html", "Nu-Simpel-Desktop.dc.html",
+    "Log-Telefon.dc.html", "Log-Portioner.dc.html", "Log-Simpel.dc.html", "Log-Desktop.dc.html",
+    "Maaltid-Telefon.dc.html", "Maaltid-Simpel.dc.html", "Maaltid-Desktop.dc.html",
+    "Bibliotek-Telefon.dc.html", "Bibliotek-Desktop.dc.html",
+    "Historik-Telefon.dc.html", "Historik-Viewer.dc.html", "Historik-Desktop.dc.html",
+    "Personer-Telefon.dc.html", "Personer-Desktop.dc.html",
+    "Indstillinger-Telefon.dc.html", "Indstillinger-Desktop.dc.html",
+    "Invitation-Telefon.dc.html", "Invitation-Desktop.dc.html",
+    "Farve-Indstilling.dc.html", "Farve-Nu-Blomme.dc.html", "Farve-Nu-Hav.dc.html", "Farve-Nu-Skov.dc.html", "Farve-Nu-Granat.dc.html",
+    "B-QuietClinic.dc.html", "C-PictureBook.dc.html"
+  ],
+  "notes": {
+    "r0": { "x": 0, "y": -300, "text": "Nu", "kind": "title1", "maxW": 4050, "page": "skaerme" },
+    "r1": { "x": 0, "y": 1000, "text": "Log et måltid", "kind": "title1", "maxW": 2690, "page": "skaerme" },
+    "r2": { "x": 0, "y": 2300, "text": "Måltid", "kind": "title1", "maxW": 2220, "page": "skaerme" },
+    "r3": { "x": 0, "y": 3600, "text": "Bibliotek", "kind": "title1", "maxW": 1750, "page": "skaerme" },
+    "r4": { "x": 0, "y": 4900, "text": "Historik", "kind": "title1", "maxW": 2220, "page": "skaerme" },
+    "r5": { "x": 0, "y": 6200, "text": "Personer", "kind": "title1", "maxW": 1750, "page": "skaerme" },
+    "r6": { "x": 0, "y": 7500, "text": "Indstillinger", "kind": "title1", "maxW": 1750, "page": "skaerme" },
+    "r7": { "x": 0, "y": 8800, "text": "Invitation", "kind": "title1", "maxW": 1750, "page": "skaerme" },
+    "r8": { "x": 0, "y": 10100, "text": "Farver · accent vælges pr. person (Oliven er standard, se rækken Nu)", "kind": "title1", "maxW": 2270, "page": "skaerme" },
+    "t1": { "x": 0, "y": -300, "text": "Tre retninger · A (Kitchen table) blev valgt og er bygget på siden Skærme", "kind": "title1", "maxW": 1330, "page": "retninger" }
+  },
+  "designSystems": []
+}

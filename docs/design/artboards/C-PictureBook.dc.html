@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="da">
+<head>
+<meta charset="utf-8">
+<title>Nu – Picture book</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;700;800&display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#176F7D}a:hover{color:#0F525D}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; background: #FFFBF2; color: #1E1B2E; font-family: Outfit, system-ui, sans-serif; display: flex; flex-direction: column; overflow: hidden">
+
+  <div style="display: flex; align-items: center; justify-content: space-between; padding: 56px 20px 0 20px">
+    <div style="display: flex; align-items: center; gap: 10px">
+      <div style="width: 44px; height: 44px; border-radius: 50%; background: #FFD98A; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 18px; color: #6A4A00">A</div>
+      <div style="font-size: 22px; font-weight: 800">Alma</div>
+    </div>
+    <div style="display: flex; align-items: center; gap: 8px; font-size: 15px; font-weight: 700; color: #176F7D; background: #DCEFF2; border-radius: 999px; padding: 8px 14px">
+      <div style="width: 10px; height: 10px; border-radius: 50%; background: #176F7D"></div>
+      <div>Forbundet</div>
+    </div>
+  </div>
+
+  <div style="margin: 20px 20px 0 20px; background: #176F7D; color: #FFFFFF; border-radius: 28px; padding: 22px 24px 20px 24px; display: flex; flex-direction: column; gap: 6px">
+    <div style="font-size: 17px; font-weight: 700; opacity: 0.85">Lige nu</div>
+    <div style="display: flex; align-items: center; gap: 12px">
+      <div style="font-size: 112px; line-height: 0.9; font-weight: 800; letter-spacing: -0.04em; font-variant-numeric: tabular-nums">6,2</div>
+      <svg width="56" height="56" viewBox="0 0 56 56" role="img" aria-label="stiger langsomt"><circle cx="28" cy="28" r="26" fill="#FFFFFF" opacity="0.18"></circle><path d="M16 40 L40 16 M24 16 H40 V32" fill="none" stroke="#FFFFFF" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+    </div>
+    <div style="font-size: 18px; font-weight: 700; opacity: 0.9">for 3 min. siden · stiger langsomt</div>
+  </div>
+
+  <div style="margin: 14px 20px 0 20px; background: #FFFFFF; border-radius: 28px; padding: 18px 20px 14px 20px; display: flex; flex-direction: column; gap: 8px; border: 2px solid #F1E8D6">
+    <div style="display: flex; justify-content: space-between; font-size: 15px; font-weight: 700; color: #5B5670">
+      <div>Seneste 3 timer</div>
+      <div>4–10 er fint</div>
+    </div>
+    <svg viewBox="0 0 306 100" width="306" height="100" role="img" aria-label="Glukose de seneste 3 timer">
+      <rect x="0" y="30" width="306" height="52" rx="12" fill="#DCEFF2"></rect>
+      <polyline points="0,56 25,48 50,40 75,36 100,41 126,50 151,58 176,66 201,72 226,75 251,74 276,71 296,68" fill="none" stroke="#176F7D" stroke-width="4.5" stroke-linejoin="round" stroke-linecap="round"></polyline>
+      <circle cx="296" cy="68" r="8" fill="#E9A23B" stroke="#FFFFFF" stroke-width="3"></circle>
+      <circle cx="10" cy="94" r="5" fill="#D9822B"></circle>
+    </svg>
+    <div style="display: flex; justify-content: space-between; font-size: 14px; font-weight: 700; color: #5B5670">
+      <div style="color: #A8601A">● måltid 12:10</div>
+      <div>nu</div>
+    </div>
+  </div>
+
+  <a href="#meal" style="margin: 14px 20px 0 20px; display: flex; align-items: center; gap: 14px; background: #FFFFFF; border-radius: 28px; padding: 12px 16px 12px 12px; text-decoration: none; color: #1E1B2E; border: 2px solid #F1E8D6">
+    <div style="width: 76px; height: 76px; border-radius: 20px; background: #FFE9BF; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; color: #8A6300; flex-shrink: 0">foto</div>
+    <div style="display: flex; flex-direction: column; gap: 4px; flex: 1">
+      <div style="font-size: 14px; font-weight: 700; color: #5B5670">Sidste måltid · 12:10</div>
+      <div style="font-size: 19px; font-weight: 800; line-height: 1.15">Rugbrød med ost og et æble</div>
+      <div style="font-size: 16px; font-weight: 700; color: #176F7D">48 g kulhydrat</div>
+    </div>
+  </a>
+
+  <div style="flex: 1"></div>
+
+  <div style="padding: 0 20px 14px 20px">
+    <button type="button" style="width: 100%; height: 64px; border: 0; border-radius: 22px; background: #E9A23B; color: #1E1B2E; font-family: inherit; font-size: 21px; font-weight: 800; cursor: pointer">Jeg spiser nu</button>
+  </div>
+
+  <div style="display: flex; justify-content: space-around; align-items: flex-start; padding: 12px 8px 28px 8px; background: #FFFBF2; border-top: 2px solid #F1E8D6">
+    <a href="#nu" aria-current="page" style="display: flex; flex-direction: column; align-items: center; gap: 4px; width: 66px; min-height: 52px; text-decoration: none; color: #176F7D; font-size: 13px; font-weight: 800">
+      <div style="width: 48px; height: 32px; border-radius: 16px; background: #DCEFF2; display: flex; align-items: center; justify-content: center"><svg width="26" height="26" viewBox="0 0 26 26" aria-hidden="true"><circle cx="13" cy="13" r="9" fill="none" stroke="currentColor" stroke-width="2.6"></circle><circle cx="13" cy="13" r="3.5" fill="currentColor"></circle></svg></div>
+      <div>Nu</div>
+    </a>
+    <a href="#log" style="display: flex; flex-direction: column; align-items: center; gap: 4px; width: 66px; min-height: 52px; text-decoration: none; color: #5B5670; font-size: 13px; font-weight: 700">
+      <div style="width: 48px; height: 32px; display: flex; align-items: center; justify-content: center"><svg width="26" height="26" viewBox="0 0 26 26" aria-hidden="true"><path d="M13 5 V21 M5 13 H21" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"></path></svg></div>
+      <div>Måltid</div>
+    </a>
+    <a href="#mad" style="display: flex; flex-direction: column; align-items: center; gap: 4px; width: 66px; min-height: 52px; text-decoration: none; color: #5B5670; font-size: 13px; font-weight: 700">
+      <div style="width: 48px; height: 32px; display: flex; align-items: center; justify-content: center"><svg width="26" height="26" viewBox="0 0 26 26" aria-hidden="true"><path d="M5 6 H12 Q13 6 13 7 V21 Q13 20 12 20 H5 Z M21 6 H14 Q13 6 13 7 V21 Q13 20 14 20 H21 Z" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round"></path></svg></div>
+      <div>Mad</div>
+    </a>
+    <a href="#historik" style="display: flex; flex-direction: column; align-items: center; gap: 4px; width: 66px; min-height: 52px; text-decoration: none; color: #5B5670; font-size: 13px; font-weight: 700">
+      <div style="width: 48px; height: 32px; display: flex; align-items: center; justify-content: center"><svg width="26" height="26" viewBox="0 0 26 26" aria-hidden="true"><circle cx="13" cy="13" r="9" fill="none" stroke="currentColor" stroke-width="2.6"></circle><path d="M13 8 V13 L16.5 15.5" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"></path></svg></div>
+      <div>Historik</div>
+    </a>
+    <a href="#mere" style="display: flex; flex-direction: column; align-items: center; gap: 4px; width: 66px; min-height: 52px; text-decoration: none; color: #5B5670; font-size: 13px; font-weight: 700">
+      <div style="width: 48px; height: 32px; display: flex; align-items: center; justify-content: center"><svg width="26" height="26" viewBox="0 0 26 26" aria-hidden="true"><circle cx="6" cy="13" r="2.4" fill="currentColor"></circle><circle cx="13" cy="13" r="2.4" fill="currentColor"></circle><circle cx="20" cy="13" r="2.4" fill="currentColor"></circle></svg></div>
+      <div>Mere</div>
+    </a>
+  </div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>
