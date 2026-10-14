@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+# Fake docker: records the arguments (the Static Web Apps upload container).
+set -euo pipefail
+printf 'docker %s\n' "$*" >> "$FAKE_LOG"

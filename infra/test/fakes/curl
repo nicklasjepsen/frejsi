@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+# Fake curl: answers the runner-IP lookup with a TEST-NET address.
+set -euo pipefail
+printf 'curl %s\n' "$*" >> "$FAKE_LOG"
+for a in "$@"; do case "$a" in https://api.ipify.org*) echo 203.0.113.7; exit 0 ;; esac; done
+echo "fake curl: unexpected url: $*" >&2; exit 3
