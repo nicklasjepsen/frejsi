@@ -1,0 +1,30 @@
+name: Bug
+description: Something does not behave as the spec says.
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: Steps, what you expected, what you saw. No real glucose values, names or photos; use fictional ones.
+    validations:
+      required: true
+  - type: input
+    id: where
+    attributes:
+      label: Where
+      placeholder: "Meal detail, simpleMode, iPhone Safari PWA"
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options: [web, poller, shared, infra, ai, docs, unsure]
+  - type: checkboxes
+    id: rules
+    attributes:
+      label: Does this touch a hard rule?
+      options:
+        - label: A glucose value showed without its age
+        - label: A viewer could see glucose
+        - label: Unverified data appeared in simpleMode or without a mark
+        - label: Anything resembling insulin dosing appeared

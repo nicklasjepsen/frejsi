@@ -1,0 +1,218 @@
+name: release
+
+# The only path to production (docs/agent-workflow.md §6). Runs on a pushed `vX.Y.Z` tag whose title
+# is a milestone with zero open issues, and on workflow_dispatch with an existing tag to redeploy it
+# (rollback). Verify → full suite → infra (owner approval only when infra changed; the Bicep diff in the
+# PR is the review, the approval is the gate, no what-if) → deploy → smoke → GitHub release →
+# milestone closed. A failed run creates no release; fix forward with the next patch.
+#
+# Deploy steps assume the infra scaffold lane has landed `infra/main.bicep`, OIDC federated credentials
+# for this repository, and the repository variables and environments listed in infra/README.md. Until
+# then the deploy job fails loudly rather than pretending.
+
+on:
+  push:
+    tags: ['v[0-9]+.[0-9]+.[0-9]+']
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing tag to redeploy (rollback)
+        required: true
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+  issues: write
+  id-token: write
+
+env:
+  TAG: ${{ github.event.inputs.tag || github.ref_name }}
+  AZURE_RESOURCE_GROUP: frejsi
+  AZURE_LOCATION: westeurope
+  PROD_URL: https://frejsi.jepsen.ninja
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      milestone_number: ${{ steps.ms.outputs.number }}
+      infra_changed: ${{ steps.infra.outputs.changed }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.TAG }}
+          fetch-depth: 0
+
+      - name: Tag is a milestone with no open issues
+        id: ms
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          MS=$(gh api "repos/${{ github.repository }}/milestones?state=all&per_page=100" --jq ".[] | select(.title==\"$TAG\")")
+          if [ -z "$MS" ]; then echo "::error::No milestone titled $TAG. A release is a milestone."; exit 1; fi
+          OPEN=$(echo "$MS" | jq -r .open_issues)
+          if [ "$OPEN" != "0" ] && [ -z "${{ github.event.inputs.tag }}" ]; then
+            echo "::error::Milestone $TAG still has $OPEN open issue(s)."; exit 1
+          fi
+          echo "number=$(echo "$MS" | jq -r .number)" >> "$GITHUB_OUTPUT"
+
+      - name: Did infra change since the previous release?
+        id: infra
+        run: |
+          PREV=$(git tag -l 'v[0-9]*' --sort=-v:refname | grep -v "^$TAG$" | head -1 || true)
+          if [ -z "$PREV" ] || git diff --name-only "$PREV" "$TAG" -- infra/ | grep -q .; then
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          fi
+
+  full-suite:
+    needs: verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    services:
+      sql:
+        image: mcr.microsoft.com/mssql/server:2022-latest
+        env:
+          ACCEPT_EULA: Y
+          MSSQL_SA_PASSWORD: ${{ secrets.CI_SQL_SA_PASSWORD }}
+        ports: ['1433:1433']
+        options: >-
+          --health-cmd "/opt/mssql-tools18/bin/sqlcmd -C -S localhost -U sa -P \"$MSSQL_SA_PASSWORD\" -Q 'SELECT 1' || exit 1"
+          --health-interval 10s --health-timeout 5s --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.TAG }}
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Unit, typecheck, lint
+        run: pnpm -r typecheck && pnpm -r lint && pnpm -r test
+      - name: Prisma integration tests
+        env:
+          DATABASE_URL: sqlserver://localhost:1433;database=frejsi_test;user=sa;password=${{ secrets.CI_SQL_SA_PASSWORD }};encrypt=true;trustServerCertificate=true
+        run: pnpm --filter ./shared test:integration
+      - name: AI evals
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY_EVALS }}
+        run: pnpm --filter ./evals test
+      - name: Production build
+        env:
+          NEXT_PUBLIC_APP_VERSION: ${{ env.TAG }}
+        run: pnpm -r build
+      - name: Playwright (simpleMode flows)
+        run: pnpm --filter ./web test:e2e
+      - uses: actions/upload-artifact@v4
+        with:
+          name: build-${{ env.TAG }}
+          path: |
+            web/.next
+            web/out
+            poller/dist
+          retention-days: 30
+
+  infra:
+    needs: [verify, full-suite]
+    if: needs.verify.outputs.infra_changed == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    # Required reviewer on this environment = the owner. One tap, only when infra changed.
+    environment: production-infra
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.TAG }}
+      - name: Infra must exist
+        run: test -f infra/main.bicep || { echo "::error::infra/main.bicep is missing; the infra scaffold lane has not landed."; exit 1; }
+      - uses: azure/login@v2
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+      - name: Deploy
+        run: az deployment group create --subscription "${{ vars.AZURE_SUBSCRIPTION_ID }}" -g "$AZURE_RESOURCE_GROUP" -f infra/main.bicep -p infra/main.bicepparam -n "release-$TAG"
+
+  deploy:
+    needs: [verify, full-suite, infra]
+    # Run when infra succeeded or was skipped (unchanged); never when it failed.
+    if: always() && needs.full-suite.result == 'success' && (needs.infra.result == 'success' || needs.infra.result == 'skipped')
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment:
+      name: production
+      url: ${{ env.PROD_URL }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.TAG }}
+      - name: Deploy scripts must exist
+        run: test -f infra/deploy.sh || { echo "::error::infra/deploy.sh is missing; the infra scaffold lane has not landed."; exit 1; }
+      - uses: actions/download-artifact@v4
+        with:
+          name: build-${{ env.TAG }}
+      - uses: azure/login@v2
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+      # infra/deploy.sh: run Prisma migrations, publish poller/dist to the Function App, publish the
+      # web build to the Static Web App. Written by the infra scaffold lane; this job only calls it.
+      - name: Migrate, deploy poller, deploy web
+        env:
+          AZURE_SUBSCRIPTION_ID: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+          APP_VERSION: ${{ env.TAG }}
+        run: bash infra/deploy.sh
+
+      - name: Smoke
+        run: |
+          for i in $(seq 1 20); do
+            BODY=$(curl -fsS "$PROD_URL/api/health" || true)
+            if echo "$BODY" | jq -e --arg v "$TAG" '.version == $v and .ok == true' >/dev/null 2>&1; then
+              echo "$BODY"; exit 0
+            fi
+            sleep 15
+          done
+          echo "::error::$PROD_URL/api/health never reported version $TAG"; exit 1
+
+  publish:
+    needs: [verify, deploy]
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.TAG }}
+          fetch-depth: 0
+      - name: Release notes from the milestone
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          {
+            echo "## $TAG"
+            echo
+            echo "Milestone: https://github.com/${{ github.repository }}/milestone/${{ needs.verify.outputs.milestone_number }}"
+            echo
+            echo "### Closed in this milestone"
+            gh issue list --milestone "$TAG" --state closed --limit 200 --json number,title,labels \
+              --jq '.[] | "- #\(.number) \(.title)" + (if any(.labels[]; .name=="needs-owner") then " (owner decision)" else "" end)'
+            echo
+            echo "Frejsi never computes or suggests insulin doses. Every value from an external source or AI stays unverified until a person ticks it."
+          } > notes.md
+          cat notes.md
+      - name: GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "$TAG" --verify-tag --title "$TAG" --notes-file notes.md --generate-notes
+      - name: Close the milestone
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh api -X PATCH "repos/${{ github.repository }}/milestones/${{ needs.verify.outputs.milestone_number }}" -f state=closed
