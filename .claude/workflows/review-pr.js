@@ -8,6 +8,23 @@ export const meta = {
   ],
 }
 
+// Role agents: prefer the project subagent type (.claude/agents/<role>.md); if this session's registry
+// does not know it (agents added after the session started are not loaded until a restart), fall back
+// to a general-purpose agent told to read and follow that file.
+const callAgent = async (prompt, opts = {}) => {
+  if (!opts.agentType) return agent(prompt, opts)
+  try {
+    return await agent(prompt, opts)
+  } catch (e) {
+    if (!/not found/.test(String(e && e.message))) throw e
+    const { agentType, ...rest } = opts
+    return agent(
+      `You act as the "${agentType}" agent of this repository. First read .claude/agents/${agentType}.md and follow it exactly as your operating instructions, including its limits on what you may edit or run. Then do this:\n\n${prompt}`,
+      rest,
+    )
+  }
+}
+
 if (!args || !args.pr) throw new Error('args.pr (PR number) is required')
 const pr = args.pr
 
@@ -47,7 +64,7 @@ const GATES = [
 
 const confirmed = await pipeline(
   GATES,
-  (g) => agent(
+  (g) => callAgent(
     `Run your ${g.lens} review on PR #${pr} of nicklasjepsen/frejsi (gh pr diff ${pr}). Return verdict and findings in the schema. Hard-rule failures from spec-guardian are never downgraded.`,
     { label: `find:${g.key}`, phase: 'Find', agentType: g.agentType, schema: FINDINGS_SCHEMA },
   ),
@@ -57,7 +74,7 @@ const confirmed = await pipeline(
     // Hard-rule fails are reported as-is: refuting them is the owner's call, not an agent's.
     if (g.key === 'guardian') return findings.map((f) => ({ ...f, from: g.key, verified: 'hard-rule' }))
     const judged = await parallel(findings.map((f) => async () => {
-      const votes = await parallel([0, 1].map((i) => () => agent(
+      const votes = await parallel([0, 1].map((i) => () => callAgent(
         `PR #${pr} of nicklasjepsen/frejsi. A ${g.lens} reviewer claims:\n${JSON.stringify(f, null, 1)}\n\n` +
         `Read the diff (gh pr diff ${pr}) and the surrounding code and try to refute this claim${i === 0 ? ' by showing the scenario cannot occur' : ' by showing the code already handles it or a test covers it'}. ` +
         `Default to refuted=true if you are not sure it is real.`,
