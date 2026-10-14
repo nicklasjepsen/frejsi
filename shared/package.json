@@ -1,0 +1,34 @@
+{
+  "name": "@frejsi/shared",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Contracts and domain logic shared by web and poller. No framework imports.",
+  "license": "AGPL-3.0-only",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./*": "./src/*.ts"
+  },
+  "scripts": {
+    "postinstall": "prisma generate",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
+    "test": "vitest run",
+    "prisma:check": "prisma validate && prisma migrate diff --from-empty --to-schema-datamodel prisma/schema.prisma --script | diff - prisma/migrations/0001_foundation/migration.sql"
+  },
+  "dependencies": {
+    "@azure/identity": "4.14.0",
+    "@azure/keyvault-secrets": "4.11.2",
+    "@azure/web-pubsub": "1.2.0",
+    "@prisma/client": "6.19.3",
+    "applicationinsights": "3.17.0",
+    "zod": "4.6.7"
+  },
+  "devDependencies": {
+    "@types/node": "22.20.5",
+    "eslint": "9.39.5",
+    "prisma": "6.19.3",
+    "typescript": "5.9.3",
+    "vitest": "3.2.7"
+  }
+}

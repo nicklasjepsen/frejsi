@@ -1,0 +1,18 @@
+# gitleaks runs in ci.yml on every PR and push to main (docs/superpowers/plans §8).
+title = "frejsi"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Placeholders and hand-written fixtures"
+paths = [
+  '''^\.env\.example$''',
+  '''^fixtures/''',
+  '''^pnpm-lock\.yaml$''',
+  '''^docs/design/''',
+]
+regexes = [
+  '''<[a-z0-9-]+>''',
+  '''password=<local-sa-password>''',
+]

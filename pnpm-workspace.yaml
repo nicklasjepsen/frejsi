@@ -1,0 +1,5 @@
+# Append-only: lanes add packages below, never reorder (docs/agent-workflow.md §3).
+packages:
+  - shared
+  - web
+  - poller
