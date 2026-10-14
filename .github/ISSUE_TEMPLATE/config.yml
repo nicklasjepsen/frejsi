@@ -1,0 +1,5 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Add a food source or glucose source for your country
+    url: https://github.com/nicklasjepsen/frejsi/blob/main/CONTRIBUTING.md
+    about: Plugins behind FoodSource and GlucoseSource are the project's main contribution hook. Open a task issue naming the source and read CONTRIBUTING.md first.

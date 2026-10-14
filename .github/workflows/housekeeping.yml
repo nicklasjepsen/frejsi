@@ -1,0 +1,59 @@
+name: housekeeping
+
+# Background triage and cleanup (docs/agent-workflow.md §10). Not part of PR CI and never a required
+# check. Twice a day and on demand, Claude Code runs the `housekeeping` skill headless: triage
+# untouched issues and PRs with the `triage` agent, merge green Dependabot minors, mark stale PRs,
+# delete fully merged branches, fix milestone hygiene, and rewrite the pinned "Waiting on the owner"
+# issue. It never closes an issue a person opened and never touches a lane PR or lane branch.
+#
+# No `issues: opened` trigger on purpose: the action refuses runs triggered by users without write
+# access unless `allowed_non_write_users` is set, which the docs mark as risky (the stranger's text
+# becomes the run's input). The schedule reaches every new issue within twelve hours instead.
+#
+# Auth: CLAUDE_CODE_OAUTH_TOKEN from `claude setup-token` (subscription), or swap the input for
+# `anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}`. The repo's .claude/settings.json deny list
+# (no --admin merges, no force, no tag deletes, no az) applies inside the run.
+
+on:
+  schedule:
+    - cron: '0 5,17 * * *'   # 07:00 and 19:00 Copenhagen in summer, an hour earlier in winter
+  workflow_dispatch:
+
+concurrency:
+  group: housekeeping
+  cancel-in-progress: false
+
+permissions:
+  contents: write        # delete fully merged branches
+  issues: write          # labels, comments, milestones, the owner issue
+  pull-requests: write   # labels, stale comments, dependabot auto-merge
+  actions: read          # read release.yml results for the owner digest
+  id-token: write        # the action's GitHub App auth
+
+jobs:
+  housekeeping:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Today
+        id: today
+        run: echo "date=$(date -u +%F)" >> "$GITHUB_OUTPUT"
+
+      - uses: anthropics/claude-code-action@v1
+        env:
+          GH_TOKEN: ${{ github.token }}
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          prompt: >-
+            Run the housekeeping skill (.claude/skills/housekeeping/SKILL.md) for nicklasjepsen/frejsi.
+            Today is ${{ steps.today.outputs.date }}. This is an unattended run on GitHub Actions:
+            nobody can answer questions, so never ask one; when unsure, label needs-owner and move on.
+            Write the run summary to $GITHUB_STEP_SUMMARY at the end.
+          claude_args: >-
+            --model claude-sonnet-5-5
+            --max-turns 80
+            --allowedTools "Skill,Agent,Read,Glob,Grep,Bash(gh *),Bash(git fetch*),Bash(git branch*),Bash(git merge-base*),Bash(git tag*),Bash(git log*),Bash(git push origin --delete *),Bash(git status*),Bash(date*),Bash(cat*),Bash(echo*),Bash(printf*),Bash(jq*),Bash(sort*),Bash(head*),Bash(grep*),Bash(wc*)"

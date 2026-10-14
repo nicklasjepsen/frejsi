@@ -1,0 +1,52 @@
+name: Task
+description: One unit of work that one agent builds as one pull request. Created by the plan-to-issues workflow or by hand.
+labels: [task]
+body:
+  - type: input
+    id: spec
+    attributes:
+      label: Spec
+      description: The spec section this implements, e.g. §3b, and the plan file.
+      placeholder: "§3b · docs/superpowers/plans/2026-10-20-glucose-live.md task 4"
+    validations:
+      required: true
+  - type: textarea
+    id: change
+    attributes:
+      label: Change
+      description: What exists when this is done, in two or three sentences. Behaviour, not implementation.
+    validations:
+      required: true
+  - type: textarea
+    id: owns
+    attributes:
+      label: Owns
+      description: Directories or files this task creates or changes, one per line, as specific as possible. Two open tasks never own the same path.
+      placeholder: |
+        shared/src/glucose/dexcom-share/
+        fixtures/dexcom/
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance
+      description: Three to seven testable behaviours. Each one gets a test next to the code.
+      placeholder: |
+        - [ ] fetchSince(since) returns readings newer than `since` in mmol/L with one decimal
+        - [ ] a SessionNotValid response renews the session once and retries
+        - [ ] a double run inserts nothing new (upsert on spaceId, ts)
+    validations:
+      required: true
+  - type: textarea
+    id: hard-rules
+    attributes:
+      label: Hard rules
+      description: Which rule from CLAUDE.md this touches and the test that proves it holds. "None" is fine.
+      placeholder: "Viewer never receives glucose → test: GET /api/spaces/:id/events as viewer contains no `reading` events"
+  - type: input
+    id: depends
+    attributes:
+      label: Depends on
+      description: Issue numbers this cannot start before, or "none".
+      placeholder: "#3, #5"

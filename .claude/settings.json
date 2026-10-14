@@ -1,0 +1,36 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(pnpm *)",
+      "Bash(node *)",
+      "Bash(git status*)",
+      "Bash(git diff*)",
+      "Bash(git log*)",
+      "Bash(git branch*)",
+      "Bash(git fetch*)",
+      "Bash(git worktree list*)",
+      "Bash(gh issue view*)",
+      "Bash(gh issue list*)",
+      "Bash(gh pr view*)",
+      "Bash(gh pr list*)",
+      "Bash(gh pr diff*)",
+      "Bash(gh pr checks*)",
+      "Bash(gh run list*)",
+      "Bash(gh run view*)",
+      "Bash(gh label list*)",
+      "Bash(gh api repos/nicklasjepsen/frejsi/milestones*)",
+      "Bash(gh release view*)",
+      "Bash(gh release list*)"
+    ],
+    "deny": [
+      "Bash(git push --force*)",
+      "Bash(git push -f*)",
+      "Bash(gh pr review --approve*)",
+      "Bash(az *)",
+      "Bash(gh pr merge --admin*)",
+      "Bash(git tag -d*)",
+      "Bash(git push --delete*)",
+      "Bash(git push origin :*)"
+    ]
+  }
+}

@@ -16,9 +16,25 @@ An open-source (AGPL-3.0) web app for one person with diabetes and the people ar
 
 1. **UI design in Claude Design** from `docs/ui-brief.md`. Output goes into `docs/design/` (exports, tokens, component list).
 2. **Implementation plan** via the `writing-plans` skill from the spec + design. Save under `docs/superpowers/plans/`.
-3. **Implement** plan by plan. TDD. Small PRs.
+3. **Implement** milestone by milestone. Each plan names a milestone (`vX.Y.Z`); `/create-issues` puts it on the board, `/start-milestone` builds it as 4–6 vertical-slice lanes and releases it. TDD.
 
 Do not skip to code before the plan exists and the owner has approved it.
+
+## Working with agents
+
+The operating model for building Frejsi with agent teams is `docs/agent-workflow.md`: who builds, who
+reviews, what the owner decides. The pieces live in the repo:
+
+- `.claude/agents/` — `planner`, `implementer`, `spec-guardian`, `reviewer`, `copy-reviewer`, `triage`.
+- `.claude/workflows/` — `plan-to-issues`, `build-lanes`, `ship-milestone`, `review-pr`, `housekeeping` (run with the Workflow tool).
+- `.claude/skills/` — `/create-issues`, `/start-milestone`, `/release`, `/gate-pr`, `/land`, `/housekeeping`: the procedures around them.
+- `.github/workflows/ci.yml` — the fast suite, the only required check. `release.yml` — the only path to production, on a `vX.Y.Z` tag. `housekeeping.yml` — daily background triage and cleanup, outside PR CI.
+- `.github/copilot-instructions.md` — the one set of review rules, shared by Codex, Copilot and the gate agents.
+
+A milestone is a release: its title is the version, every issue carries it, and the tag with the same
+name deploys production and creates the GitHub release. A lane owns only the paths its task names and
+merges itself when the gates are green; nothing deploys on merge; anything labelled `needs-owner` waits
+for the owner.
 
 ## Stack (decided)
 
@@ -42,4 +58,4 @@ Azure: owner's Proxus subscription, **dedicated resource group `frejsi`** (West 
 - TypeScript strict everywhere. Zod schemas in `shared/` are the contract between web, poller and AI output.
 - Conventional commits, DCO sign-off (`git commit -s`).
 - Tests next to code; fixtures for external APIs (Dexcom Share, OFF); AI evals under `evals/` run in CI.
-- Keep PRs small and reviewable by a human who is also a parent with little time.
+- One PR per lane, and a lane is a vertical slice (adapter + poller + API + screen), not a layer. The gate agents read every line; the owner reads the PR summary and the gate reports. PR CI stays under five minutes; anything slower runs at release.
