@@ -1,6 +1,9 @@
-# gitleaks false positives, one fingerprint per line (commit:path:rule:line). Each entry names a
-# public value that gitleaks mistook for a credential; a real secret is never listed here.
+# gitleaks false positives, one fingerprint per line. Each entry names a public value that gitleaks
+# mistook for a credential; a real secret is never listed here.
+#
+# Fingerprints are written without the commit (path:rule:line), because a rebase merge rewrites
+# commit SHAs and a commit-bound fingerprint stops matching on the push scan of main.
 
 # Key Vault Secrets Officer built-in role definition ID (public, in the ARM reference); the
 # constant was named KV_SECRETS_OFFICER, and "secret" next to a GUID matches generic-api-key.
-61e273838890363860abca7fc1caf3f90d6be055:infra/test/bicep.test.mjs:generic-api-key:128
+infra/test/bicep.test.mjs:generic-api-key:128
