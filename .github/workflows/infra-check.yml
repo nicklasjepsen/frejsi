@@ -1,0 +1,61 @@
+name: infra-check
+
+# Builds and lints the infrastructure on PRs that touch infra/** (plan section 10). No Azure login,
+# no deployment: `bicep build`, `bicep lint`, `bicep build-params`, `shellcheck infra/deploy.sh` and
+# the infra tests over the built ARM JSON and over deploy.sh against fake tools. Not a required
+# check; `ci` is the only required check on main (docs/agent-workflow.md section 4).
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'infra/**'
+      - '.github/workflows/infra-check.yml'
+
+concurrency:
+  group: infra-check-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  BICEP_VERSION: v0.48.1
+  # A placeholder so `bicep build-params` can read the variable; the real address is a repository
+  # variable read by release.yml and is never in the repository.
+  ALERT_EMAIL: alerts@example.invalid
+  CUSTOM_DOMAIN: ''
+
+jobs:
+  infra-check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install the Bicep CLI
+        run: |
+          curl -fsSL -o "$RUNNER_TEMP/bicep" "https://github.com/Azure/bicep/releases/download/$BICEP_VERSION/bicep-linux-x64"
+          chmod +x "$RUNNER_TEMP/bicep"
+          sudo mv "$RUNNER_TEMP/bicep" /usr/local/bin/bicep
+          bicep --version
+
+      - name: bicep build, lint, build-params (no warnings allowed)
+        run: |
+          set -o pipefail
+          bicep build infra/main.bicep --stdout 2> build.log > /dev/null
+          bicep lint infra/main.bicep 2> lint.log
+          bicep build-params infra/main.bicepparam --stdout 2> params.log > /dev/null
+          if grep -Eiq 'warning|error' build.log lint.log params.log; then
+            cat build.log lint.log params.log; echo "::error::bicep reported a warning or error"; exit 1
+          fi
+
+      - name: shellcheck infra/deploy.sh
+        run: shellcheck -S style infra/deploy.sh
+
+      - name: Infra tests (ARM JSON assertions, deploy.sh against fake az)
+        run: node --test 'infra/test/*.test.mjs'

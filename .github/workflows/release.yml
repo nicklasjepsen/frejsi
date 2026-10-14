@@ -1,14 +1,15 @@
 name: release
 
-# The only path to production (docs/agent-workflow.md §6). Runs on a pushed `vX.Y.Z` tag whose title
-# is a milestone with zero open issues, and on workflow_dispatch with an existing tag to redeploy it
-# (rollback). Verify → full suite → infra (owner approval only when infra changed; the Bicep diff in the
-# PR is the review, the approval is the gate, no what-if) → deploy → smoke → GitHub release →
+# The only path to production (docs/agent-workflow.md section 6). Runs on a pushed `vX.Y.Z` tag whose
+# title is a milestone with zero open issues, and on workflow_dispatch with an existing tag to redeploy
+# it (rollback). Verify → full suite → infra (owner approval only when infra changed; the Bicep diff in
+# the PR is the review, the approval is the gate, no what-if) → deploy → smoke → GitHub release →
 # milestone closed. A failed run creates no release; fix forward with the next patch.
 #
-# Deploy steps assume the infra scaffold lane has landed `infra/main.bicep`, OIDC federated credentials
-# for this repository, and the repository variables and environments listed in infra/README.md. Until
-# then the deploy job fails loudly rather than pretending.
+# Azure access: OIDC federated credentials on the environments `production-infra` and `production`,
+# repository variables AZURE_CLIENT_ID, AZURE_TENANT_ID, AZURE_SUBSCRIPTION_ID, ALERT_EMAIL and the
+# optional CUSTOM_DOMAIN (infra/README.md, "What the owner does once"). The infra job deploys
+# infra/main.bicep with infra/main.bicepparam; the deploy job calls infra/deploy.sh.
 
 on:
   push:
@@ -31,8 +32,7 @@ permissions:
 env:
   TAG: ${{ github.event.inputs.tag || github.ref_name }}
   AZURE_RESOURCE_GROUP: frejsi
-  AZURE_LOCATION: westeurope
-  PROD_URL: https://frejsi.jepsen.ninja
+  SQLCMD_VERSION: v1.8.2
 
 jobs:
   verify:
@@ -84,6 +84,9 @@ jobs:
         options: >-
           --health-cmd "/opt/mssql-tools18/bin/sqlcmd -C -S localhost -U sa -P \"$MSSQL_SA_PASSWORD\" -Q 'SELECT 1' || exit 1"
           --health-interval 10s --health-timeout 5s --health-retries 10
+    env:
+      # The Prisma integration tests and the Playwright run (its globalSetup migrates and seeds).
+      DATABASE_URL: sqlserver://localhost:1433;database=frejsi_test;user=sa;password=${{ secrets.CI_SQL_SA_PASSWORD }};encrypt=true;trustServerCertificate=true
     steps:
       - uses: actions/checkout@v4
         with:
@@ -97,10 +100,8 @@ jobs:
       - name: Unit, typecheck, lint
         run: pnpm -r typecheck && pnpm -r lint && pnpm -r test
       - name: Prisma integration tests
-        env:
-          DATABASE_URL: sqlserver://localhost:1433;database=frejsi_test;user=sa;password=${{ secrets.CI_SQL_SA_PASSWORD }};encrypt=true;trustServerCertificate=true
         run: pnpm --filter ./shared test:integration
-      - name: AI evals
+      - name: AI evals (no package until v0.4.0; exits 0)
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY_EVALS }}
         run: pnpm --filter ./evals test
@@ -109,13 +110,16 @@ jobs:
           NEXT_PUBLIC_APP_VERSION: ${{ env.TAG }}
         run: pnpm -r build
       - name: Playwright (simpleMode flows)
+        env:
+          FAKE_GLUCOSE_SOURCE: '1'
         run: pnpm --filter ./web test:e2e
+      # The standalone Next.js build and the poller bundle; `.next` is a hidden directory.
       - uses: actions/upload-artifact@v4
         with:
           name: build-${{ env.TAG }}
+          include-hidden-files: true
           path: |
             web/.next
-            web/out
             poller/dist
           retention-days: 30
 
@@ -126,61 +130,98 @@ jobs:
     timeout-minutes: 30
     # Required reviewer on this environment = the owner. One tap, only when infra changed.
     environment: production-infra
+    env:
+      # Read by infra/main.bicepparam through readEnvironmentVariable(); never committed.
+      ALERT_EMAIL: ${{ vars.ALERT_EMAIL }}
+      CUSTOM_DOMAIN: ${{ vars.CUSTOM_DOMAIN }}
     steps:
       - uses: actions/checkout@v4
         with:
           ref: ${{ env.TAG }}
-      - name: Infra must exist
-        run: test -f infra/main.bicep || { echo "::error::infra/main.bicep is missing; the infra scaffold lane has not landed."; exit 1; }
+      - name: Repository variables are set
+        run: |
+          test -n "${{ vars.AZURE_CLIENT_ID }}" || { echo "::error::repository variable AZURE_CLIENT_ID is not set (infra/README.md)"; exit 1; }
+          test -n "${{ vars.AZURE_TENANT_ID }}" || { echo "::error::repository variable AZURE_TENANT_ID is not set (infra/README.md)"; exit 1; }
+          test -n "${{ vars.AZURE_SUBSCRIPTION_ID }}" || { echo "::error::repository variable AZURE_SUBSCRIPTION_ID is not set (infra/README.md)"; exit 1; }
+          test -n "$ALERT_EMAIL" || { echo "::error::repository variable ALERT_EMAIL is not set; the 35-minute alert needs an address (infra/README.md)"; exit 1; }
       - uses: azure/login@v2
         with:
           client-id: ${{ vars.AZURE_CLIENT_ID }}
           tenant-id: ${{ vars.AZURE_TENANT_ID }}
           subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
-      - name: Deploy
-        run: az deployment group create --subscription "${{ vars.AZURE_SUBSCRIPTION_ID }}" -g "$AZURE_RESOURCE_GROUP" -f infra/main.bicep -p infra/main.bicepparam -n "release-$TAG"
+      - name: Deploy infra/main.bicep
+        # Two attempts: on the very first deployment the Key Vault role assignment the bootstrap-token
+        # secret depends on can take a minute to propagate; the deployment is idempotent.
+        run: |
+          for attempt in 1 2; do
+            if az deployment group create --subscription "${{ vars.AZURE_SUBSCRIPTION_ID }}" -g "$AZURE_RESOURCE_GROUP" \
+                 -f infra/main.bicep -p infra/main.bicepparam -n "release-$TAG-$attempt" --output none; then
+              exit 0
+            fi
+            echo "::warning::deployment attempt $attempt failed"
+            sleep 60
+          done
+          exit 1
 
   deploy:
     needs: [verify, full-suite, infra]
     # Run when infra succeeded or was skipped (unchanged); never when it failed.
     if: always() && needs.full-suite.result == 'success' && (needs.infra.result == 'success' || needs.infra.result == 'skipped')
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 25
     environment:
       name: production
-      url: ${{ env.PROD_URL }}
+      url: ${{ steps.deploy.outputs.app_origin }}
+    outputs:
+      app_origin: ${{ steps.deploy.outputs.app_origin }}
     steps:
       - uses: actions/checkout@v4
         with:
           ref: ${{ env.TAG }}
-      - name: Deploy scripts must exist
-        run: test -f infra/deploy.sh || { echo "::error::infra/deploy.sh is missing; the infra scaffold lane has not landed."; exit 1; }
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      # The workspace is needed for `prisma migrate deploy`; the builds come from the artifact.
+      - run: pnpm install --frozen-lockfile
       - uses: actions/download-artifact@v4
         with:
           name: build-${{ env.TAG }}
+          path: .
+      - name: sqlcmd (go-sqlcmd) for the one-time SQL login
+        run: |
+          if ! command -v sqlcmd >/dev/null; then
+            curl -fsSL -o "$RUNNER_TEMP/sqlcmd.tar.bz2" "https://github.com/microsoft/go-sqlcmd/releases/download/$SQLCMD_VERSION/sqlcmd-linux-amd64.tar.bz2"
+            tar -xjf "$RUNNER_TEMP/sqlcmd.tar.bz2" -C "$RUNNER_TEMP" sqlcmd
+            sudo mv "$RUNNER_TEMP/sqlcmd" /usr/local/bin/sqlcmd
+          fi
+          sqlcmd --version
       - uses: azure/login@v2
         with:
           client-id: ${{ vars.AZURE_CLIENT_ID }}
           tenant-id: ${{ vars.AZURE_TENANT_ID }}
           subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
-      # infra/deploy.sh: run Prisma migrations, publish poller/dist to the Function App, publish the
-      # web build to the Static Web App. Written by the infra scaffold lane; this job only calls it.
-      - name: Migrate, deploy poller, deploy web
+      - name: Secrets, migrations, poller, web (infra/deploy.sh)
+        id: deploy
         env:
           AZURE_SUBSCRIPTION_ID: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+          CUSTOM_DOMAIN: ${{ vars.CUSTOM_DOMAIN }}
           APP_VERSION: ${{ env.TAG }}
         run: bash infra/deploy.sh
 
       - name: Smoke
+        env:
+          APP_ORIGIN: ${{ steps.deploy.outputs.app_origin }}
         run: |
           for i in $(seq 1 20); do
-            BODY=$(curl -fsS "$PROD_URL/api/health" || true)
+            BODY=$(curl -fsS "$APP_ORIGIN/api/health" || true)
             if echo "$BODY" | jq -e --arg v "$TAG" '.version == $v and .ok == true' >/dev/null 2>&1; then
               echo "$BODY"; exit 0
             fi
             sleep 15
           done
-          echo "::error::$PROD_URL/api/health never reported version $TAG"; exit 1
+          echo "::error::$APP_ORIGIN/api/health never reported version $TAG"; exit 1
 
   publish:
     needs: [verify, deploy]
