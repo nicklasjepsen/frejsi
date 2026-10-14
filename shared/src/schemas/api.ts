@@ -1,6 +1,9 @@
 import { z } from "zod";
 
-/** Stable codes; the client translates them in da and en (plan §9). */
+/**
+ * Stable codes; the client translates them in da and en (plan §9). `internal` is a server fault:
+ * the plan's list plus this one, so the client never shows validation copy for a 500.
+ */
 export const ApiErrorCode = z.enum([
   "forbidden",
   "not-found",
@@ -11,6 +14,7 @@ export const ApiErrorCode = z.enum([
   "source-bad-credentials",
   "source-unreachable",
   "validation",
+  "internal",
 ]);
 export type ApiErrorCode = z.infer<typeof ApiErrorCode>;
 
@@ -33,12 +37,21 @@ export class HttpError extends Error {
 }
 
 /**
- * The body and status for any thrown value. Unknown errors become a 500 with a fixed message so
- * that nothing from the request or the stack reaches the client.
+ * The body and status for any thrown value. Unknown errors become a 500 `internal` with a fixed
+ * message so that nothing from the request or the stack reaches the client; the client shows its
+ * own translation by code.
  */
 export function toApiError(error: unknown): { status: number; body: ApiError } {
   if (error instanceof HttpError) {
     return { status: error.status, body: { error: { code: error.code, message: error.message } } };
   }
-  return { status: 500, body: { error: { code: "validation", message: "Something went wrong" } } };
+  return {
+    status: 500,
+    body: {
+      error: {
+        code: "internal",
+        message: "Something went wrong on our side. Try again in a moment.",
+      },
+    },
+  };
 }
