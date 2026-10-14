@@ -48,6 +48,10 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          # Full output in the run log: the action otherwise hides Claude's messages, and a run that
+          # ends after one turn with is_error:true says nothing about why. This repo is public, so
+          # the log shows only what the agent could already read on the public repo.
+          show_full_output: true
           prompt: >-
             Run the housekeeping skill (.claude/skills/housekeeping/SKILL.md) for nicklasjepsen/frejsi.
             Today is ${{ steps.today.outputs.date }}. This is an unattended run on GitHub Actions:
