@@ -126,3 +126,34 @@ describe("dosing vocabulary (the hard rule: Frejsi never computes or suggests in
     expect(findDosingVocabulary(messageStrings(files))).toEqual([]);
   });
 });
+
+it("dosing guard covers every AI prompt and accepted insight fixture without the UI allow-list", async () => {
+  const { assertNoDosing } = await import("./ai/guard");
+  const { MealInsight, WeekInsight } = await import("./schemas/ai");
+  const aiDir = path.join(import.meta.dirname, "ai");
+  const prompts = readdirSync(aiDir, { recursive: true })
+    .map(String)
+    .filter((file) => /^prompt.*\.ts$/.test(path.basename(file)) && !file.endsWith(".test.ts"))
+    .sort();
+  const walked: string[] = [];
+  const walk = (dir: string) => {
+    for (const entry of readdirSync(dir, { withFileTypes: true })) {
+      const file = path.join(dir, entry.name);
+      if (entry.isDirectory()) walk(file);
+      else if (/^prompt.*\.ts$/.test(entry.name) && !entry.name.endsWith(".test.ts")) {
+        walked.push(path.relative(aiDir, file));
+        assertNoDosing(readFileSync(file, "utf8"), file);
+      }
+    }
+  };
+  walk(aiDir);
+  expect(walked.sort()).toEqual(prompts);
+  const fixtures = path.resolve(import.meta.dirname, "../../fixtures/ai/insight");
+  const files = readdirSync(fixtures).filter((file) => file.endsWith(".json"));
+  expect(files).toEqual(expect.arrayContaining(["meal-da.json", "week-en.json"]));
+  for (const file of files) {
+    const value = JSON.parse(readFileSync(path.join(fixtures, file), "utf8")) as unknown;
+    expect(MealInsight.safeParse(value).success || WeekInsight.safeParse(value).success).toBe(true);
+    for (const [where, text] of messageStrings({ [file]: value })) assertNoDosing(text, where);
+  }
+});

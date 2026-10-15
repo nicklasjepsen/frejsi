@@ -10,14 +10,15 @@
     "./*": "./src/*.ts",
     "./photos": "./src/photos/index.ts",
     "./food": "./src/food/registry.ts",
-    "./stats": "./src/stats/index.ts"
+    "./stats": "./src/stats/index.ts",
+    "./ai": "./src/ai/index.ts"
   },
   "scripts": {
     "postinstall": "prisma generate",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
     "test": "vitest run",
-    "prisma:check": "prisma validate && prisma migrate diff --from-empty --to-schema-datamodel prisma/foundation.prisma --script | diff - prisma/migrations/0001_foundation/migration.sql && prisma migrate diff --from-schema-datamodel prisma/foundation.prisma --to-schema-datamodel prisma/schema.prisma --script | diff - prisma/migrations/0002_food/migration.sql",
+    "prisma:check": "prisma validate && prisma migrate diff --from-empty --to-schema-datamodel prisma/foundation.prisma --script | diff - prisma/migrations/0001_foundation/migration.sql && prisma migrate diff --from-schema-datamodel prisma/foundation.prisma --to-schema-datamodel prisma/food.prisma --script | diff - prisma/migrations/0002_food/migration.sql && prisma migrate diff --from-schema-datamodel prisma/food.prisma --to-schema-datamodel prisma/schema.prisma --script | diff - prisma/migrations/0003_ai/migration.sql",
     "test:integration": "vitest run --config test/integration/vitest.config.ts",
     "frida:import": "node --experimental-strip-types scripts/import-frida.ts"
   },

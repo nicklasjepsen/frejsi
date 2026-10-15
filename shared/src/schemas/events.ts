@@ -24,6 +24,11 @@ export const EventType = z.enum([
   "meal.updated",
   "meal.deleted",
   "readings.imported",
+  "insight.created",
+  "insight.updated",
+  "estimate.asked",
+  "push.subscribed",
+  "push.unsubscribed",
 ]);
 export type EventType = z.infer<typeof EventType>;
 
@@ -62,6 +67,21 @@ export const ReadingsImportedPayload = z.strictObject({
   to: z.iso.datetime(),
 });
 
+export const InsightCreatedPayload = z.strictObject({
+  insightId: z.string().min(1),
+  kind: z.enum(["meal", "week"]),
+  subjectKey: z.string().min(1).max(40),
+});
+export const InsightIdPayload = z.strictObject({ insightId: z.string().min(1) });
+export const EstimateAskedPayload = z.strictObject({
+  foodId: z.string().min(1),
+  byUserId: z.string().min(1),
+});
+export const PushSubscriptionPayload = z.strictObject({
+  userId: z.string().min(1),
+  spaceId: z.string().min(1),
+});
+
 /** One payload schema per type. `emit()` validates against this map before it writes. */
 export const EventPayloads = {
   reading: Reading,
@@ -82,6 +102,11 @@ export const EventPayloads = {
   "meal.updated": MealIdPayload,
   "meal.deleted": MealIdPayload,
   "readings.imported": ReadingsImportedPayload,
+  "insight.created": InsightCreatedPayload,
+  "insight.updated": InsightIdPayload,
+  "estimate.asked": EstimateAskedPayload,
+  "push.subscribed": PushSubscriptionPayload,
+  "push.unsubscribed": PushSubscriptionPayload,
 } as const satisfies Record<EventType, z.ZodType>;
 
 export type EventPayload<T extends EventType> = z.infer<(typeof EventPayloads)[T]>;
@@ -115,6 +140,11 @@ export const EventEnvelope = z.discriminatedUnion("type", [
   envelope("meal.updated"),
   envelope("meal.deleted"),
   envelope("readings.imported"),
+  envelope("insight.created"),
+  envelope("insight.updated"),
+  envelope("estimate.asked"),
+  envelope("push.subscribed"),
+  envelope("push.unsubscribed"),
 ]);
 export type EventEnvelope = z.infer<typeof EventEnvelope>;
 export type EventEnvelopeOf<T extends EventType> = Extract<EventEnvelope, { type: T }>;

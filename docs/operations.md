@@ -363,3 +363,34 @@ food deletion and the week's two reading queries. At 360/1280 px, Playwright che
 previous curves/table, portion editing with `meal.updated`, deletion, simpleMode detail, day/week
 history and the viewer's meal-only responses and 403s. Edits and deletion are restored through the
 API so the earlier release assertions retain their original data.
+
+## AI foundation (v0.4.0)
+
+The shared AI contracts and migration `0003_ai` reserve food vectors (1024 dimensions), cached
+insights and device push subscriptions. Applying the vector migration requires Azure SQL Database
+or SQL Server 2025. Release wiring and database compatibility checks belong to the adapter and
+release lanes; this foundation makes no Azure calls and enables no provider in production.
+
+`aiProviders({})` returns no adapters. `FAKE_AI_PROVIDER=1` registers a scripted `FakeAiProvider`
+under all three provider identifiers for local development and tests. It has no network transport;
+a script must supply answers, and an exhausted script returns `ai-unavailable`. Actual adapters,
+provider keys, the web factory, settings routes, service prompts, UI and push delivery are separate
+integration work. The unresolved provider and wording defaults are tracked in issue #72; they do
+not enable AI by themselves.
+
+`CappedAiProvider` defaults to 50 combined completion/photo attempts and 500 embedding attempts per
+space per local calendar day, using the space timezone (including daylight-saving changes). A null
+space, used for deployment-wide shared-cache work, always uses UTC. Callers can override the limits,
+including a 2000 embedding limit for cache backfill. Each completion in a tool loop counts separately;
+a tool loop executes at most eight tool calls in total. The wrapper validates structured output and guards
+every output string before returning it. `ai-rejected` means output validation or the vocabulary
+guard failed; `ai-unavailable` includes provider refusals and errors. Neither includes generated text.
+
+`AiCall` is content-free bookkeeping and intentionally does not emit events (plan decision 5).
+Its repository atomically reserves capacity in a serializable transaction before the provider is
+called, retrying transaction conflicts up to four times. Failed and capped attempts are recorded
+and count toward the day's attempt total; the usage count can therefore exceed the configured
+limit, while provider invocations cannot. A crash after reservation still consumes that attempt.
+There is no prompt, transcript, image, endpoint, token count or output in a call row. Space data
+writes by the following lanes still go through `emit()`; the new notifications carry identifiers
+only, never insight text or glucose.

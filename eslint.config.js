@@ -71,7 +71,122 @@ const glucoseFetchCallers = [
   "shared/src/glucose/**/test-server.ts",
 ];
 
+/** AI boundaries use a separate rule so every existing restriction remains active. */
+const aiBoundaryRule = {
+  meta: { type: "problem", schema: [] },
+  create(context) {
+    const file = context.filename.replaceAll("\\", "/");
+    const test = /\.test\.tsx?$/.test(file);
+    const aiFolder = /\/(shared|web)\/src\/ai\//.test(file);
+    const fakeConsumer =
+      test || /\/(seed|cli|registry)\.ts$/.test(file) || file.includes("/evals/");
+    const registryCaller =
+      test ||
+      file.includes("/evals/") ||
+      /\/web\/src\/ai\/provider\.ts$/.test(file) ||
+      /\/poller\/src\/functions\/(enrich-foods|weekly-insight)\.ts$/.test(file);
+    const service = /\/shared\/src\/ai\/(search|parse|estimate|insight)\//.test(file);
+    const infrastructure =
+      /\/shared\/src\/ai\/(capped|tool-loop)\.ts$/.test(file) ||
+      /\/shared\/src\/ai\/(anthropic|voyage|azure-openai|ollama)\//.test(file);
+    const registryNames = new Set(["aiProviders"]);
+    const registryNamespaces = new Set();
+    const name = (node) =>
+      node?.type === "Identifier" ? node.name : node?.type === "Literal" ? node.value : undefined;
+    const property = (node) =>
+      node?.type === "MemberExpression" ? name(node.property) : undefined;
+    const report = (node, message) => context.report({ node, message });
+    return {
+      ImportDeclaration(node) {
+        const source = String(node.source.value);
+        const names = node.specifiers.map((specifier) => name(specifier.imported));
+        if (
+          aiFolder &&
+          (names.some((value) =>
+            ["Reading", "readingsBetween", "HistoryRepository"].includes(value),
+          ) ||
+            /(^|\/)glucose(\/|$)/.test(source) ||
+            /insights\/week-input/.test(source) ||
+            /lib\/history/.test(source))
+        )
+          report(node, "Raw readings stay outside AI code; pass aggregate contracts only.");
+        if (
+          !fakeConsumer &&
+          (names.some((value) =>
+            [
+              "FakeAiProvider",
+              "MemoryAiCallRepository",
+              "MemoryInsightRepository",
+              "MemoryPushSubscriptionRepository",
+            ].includes(value),
+          ) ||
+            /(?:^|\/)ai\/fake(?:\.js)?$/.test(source) ||
+            (aiFolder && /^\.\/fake(?:\.js)?$/.test(source)))
+        )
+          report(
+            node,
+            "Fake and memory implementations are for tests, seed, CLI, registry and evals only.",
+          );
+        for (const specifier of node.specifiers) {
+          if (name(specifier.imported) === "aiProviders") registryNames.add(specifier.local.name);
+          if (specifier.type === "ImportNamespaceSpecifier")
+            registryNamespaces.add(specifier.local.name);
+        }
+        if (
+          /\/ai\/(anthropic|voyage|azure-openai|ollama)(\/|$)/.test(source) &&
+          !test &&
+          !/\/shared\/src\/ai\//.test(file)
+        )
+          report(node, "AI adapters are constructed through the registry only.");
+      },
+      MemberExpression(node) {
+        const prop = property(node);
+        if (aiFolder && prop === "reading")
+          report(node, "Raw readings stay outside AI code; pass aggregate contracts only.");
+        if (
+          property(node.object) === "aiCall" &&
+          /^(create|createMany|createManyAndReturn|upsert|update|updateMany|delete|deleteMany)$/.test(
+            prop,
+          ) &&
+          !file.endsWith("/shared/src/ai/calls-prisma.ts")
+        )
+          report(node, "PrismaAiCallRepository is the sole AiCall writer.");
+      },
+      CallExpression(node) {
+        const callee = node.callee;
+        const method = property(callee);
+        if (
+          !registryCaller &&
+          ((callee.type === "Identifier" && registryNames.has(callee.name)) ||
+            (method === "aiProviders" && registryNamespaces.has(name(callee.object))))
+        )
+          report(node, "Use the named registry callers: web provider factory, two timers, evals.");
+        if (
+          ["complete", "vision", "embed"].includes(method) &&
+          !test &&
+          !service &&
+          !infrastructure &&
+          !file.includes("/evals/")
+        ) {
+          const embedCaller =
+            method === "embed" &&
+            (/\/shared\/src\/food\/lookup\.ts$/.test(file) ||
+              /\/poller\/src\/functions\/enrich-foods\.ts$/.test(file));
+          if (!embedCaller)
+            report(node, "Call providers through AI services, not routes or timers.");
+        }
+      },
+    };
+  },
+};
+
 export const boundaries = [
+  {
+    name: "frejsi/boundaries/ai",
+    files: ["**/*.ts", "**/*.tsx", "**/*.mts", "**/*.cts"],
+    plugins: { "frejsi-ai": { rules: { boundaries: aiBoundaryRule } } },
+    rules: { "frejsi-ai/boundaries": "error" },
+  },
   {
     name: "frejsi/boundaries",
     files: ["**/*.ts", "**/*.tsx", "**/*.mts", "**/*.cts"],

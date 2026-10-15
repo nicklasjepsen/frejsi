@@ -28,6 +28,12 @@
     "barcode-invalid": "Tjek stregkoden og prøv igen.",
     "lookup-unavailable": "Madsøgning er ikke tilgængelig lige nu. Prøv igen eller skriv dine egne tal.",
     "import-unrecognised": "Det ligner ikke en eksportfil, Frejsi kender. Vælg CSV-filen fra Clarity og prøv igen.",
-    "import-empty": "Der var ingen målinger eller kulhydrater i filen."
+    "import-empty": "Der var ingen målinger eller kulhydrater i filen.",
+    "ai-disabled": "AI-hjælp er slået fra for dette rum.",
+    "ai-not-configured": "Denne AI-udbyder er ikke sat op her.",
+    "ai-cap-reached": "Dagens AI-kald er brugt op – prøv igen i morgen.",
+    "ai-unavailable": "AI-hjælp er ikke tilgængelig lige nu. Prøv igen senere.",
+    "ai-rejected": "AI-svaret kunne ikke bruges. Prøv igen.",
+    "push-not-configured": "Beskeder er ikke sat op her."
   }
 }

@@ -62,13 +62,22 @@ const viewFields = {
   favourite: z.boolean().default(false),
   updatedAt: z.iso.datetime(),
 };
-export const FoodView = z.strictObject({ ...viewFields, photo: FoodPhoto.optional() });
+export const FoodView = z.strictObject({
+  ...viewFields,
+  photo: FoodPhoto.optional(),
+  sourceName: z.string().max(200).optional(),
+  createdBy: z.strictObject({ id: z.string().min(1), name: z.string().min(1) }).optional(),
+  // Existing v0.3 consumers omit provenance; the AI library lane will populate it.
+  createdAt: z.iso.datetime().optional(),
+});
 export type FoodView = z.infer<typeof FoodView>;
 
 export const Food = z
   .strictObject({
     ...viewFields,
     spaceId: z.string().min(1).nullable(),
+    sourceName: z.string().max(200).nullish(),
+    embeddingModel: z.string().max(80).nullish(),
     nameSearch: z.string().min(1).max(200),
     sourceRef: z.string().min(1).max(64),
     photoKey: z.string().min(1).max(200).optional(),

@@ -23,6 +23,12 @@ export const ApiErrorCode = z.enum([
   "lookup-unavailable",
   "import-unrecognised",
   "import-empty",
+  "ai-disabled",
+  "ai-not-configured",
+  "ai-cap-reached",
+  "ai-unavailable",
+  "ai-rejected",
+  "push-not-configured",
 ]);
 export type ApiErrorCode = z.infer<typeof ApiErrorCode>;
 
