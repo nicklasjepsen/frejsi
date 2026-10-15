@@ -10,8 +10,12 @@ import {
   type AppLocale,
 } from "@/lib/i18n/routing";
 
-/** The session cookie name; the value is checked by `getSession()`, never here (plan §6). */
-const SESSION_COOKIE = "frejsi_session";
+/**
+ * The session cookie name, duplicated from `@/lib/auth/session` on purpose: that module imports
+ * Prisma, which cannot run on the edge. A test asserts the two stay equal. The value is checked
+ * by `getSession()`, never here (plan §6).
+ */
+export const SESSION_COOKIE = "frejsi_session";
 
 /** Pages a visitor reaches without a session: the invite landing and the returning sign-in. */
 const PUBLIC_PAGES = ["/welcome", "/invite"];

@@ -1,7 +1,7 @@
 {
   "name": "Frejsi",
   "short_name": "Frejsi",
-  "description": "Carb lookup and live glucose for one person with diabetes and the people around them.",
+  "description": "Kulhydrater og den aktuelle kurve for én person med diabetes og dem tæt på.",
   "id": "/",
   "start_url": "/",
   "scope": "/",

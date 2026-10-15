@@ -10,6 +10,8 @@ const read = (file: string) => readFileSync(path.join(publicDir, file), "utf8");
 interface Manifest {
   name: string;
   short_name: string;
+  description: string;
+  lang: string;
   start_url: string;
   display: string;
   icons: { src: string; sizes: string; type: string; purpose?: string }[];
@@ -23,6 +25,14 @@ describe("manifest.webmanifest (plan §6)", () => {
     expect(manifest.short_name).toBe("Frejsi");
     expect(manifest.display).toBe("standalone");
     expect(manifest.start_url).toBe("/");
+  });
+
+  it("is Danish-first: lang da and a Danish description for the install prompt", () => {
+    expect(manifest.lang).toBe("da");
+    expect(manifest.description).toMatch(/\S/);
+    // The manifest carries one language; the description must be in the declared one.
+    expect(manifest.description).not.toMatch(/\b(and|the|with|people)\b/);
+    expect(manifest.description).toMatch(/diabetes/);
   });
 
   it("lists 192 and 512 px icons that exist, one of them maskable", () => {
