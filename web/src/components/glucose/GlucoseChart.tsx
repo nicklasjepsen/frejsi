@@ -143,6 +143,14 @@ function Band({ g }: { g: Pick<ChartGeometry, "band" | "plotWidth" | "labelSize"
   );
 }
 
+/**
+ * The bolus marks are nested in an atomic `role="img"`, so their times go into the chart's own name
+ * ("… . Bolus 11:58"): a time only, never an amount.
+ */
+function withBoluses(label: string, boluses: readonly string[]): string {
+  return boluses.length === 0 ? label : `${label}. ${boluses.join(". ")}`;
+}
+
 function Segments({ segments }: { segments: readonly string[] }) {
   return segments.map((points, index) =>
     points.includes(" ") ? (
@@ -187,13 +195,14 @@ function CurveChart(props: SparklineChartProps | DayChartProps) {
           to: formatClock(props.to, props.timeZone),
           count: g.meals.length,
         }));
+  const bolusText = g.boluses.map((bolus) => log("bolus.at", { time: bolus.clock }));
   const svg = (
     <svg
       className={styles.chart}
       viewBox={`0 0 ${g.width} ${g.height}`}
       width="100%"
       role="img"
-      aria-label={label}
+      aria-label={withBoluses(label, bolusText)}
       data-variant={props.variant}
     >
       <Band g={g} />
@@ -213,8 +222,7 @@ function CurveChart(props: SparklineChartProps | DayChartProps) {
           key={bolus.mealId}
           className={styles.bolus}
           d={bolus.path}
-          role="img"
-          aria-label={log("bolus.at", { time: bolus.clock })}
+          aria-hidden="true"
           data-testid="bolus"
         />
       ))}
@@ -271,27 +279,40 @@ function MealChart(props: MealChartProps) {
     props.size === "desktop" && props.previous.length > 0
       ? t("aria.mealWithPrevious", { count: props.previous.length })
       : t("aria.meal");
+  const bolusText = g.bolus ? [log("bolus.at", { time: g.bolus.clock })] : [];
   return (
     <svg
       className={styles.chart}
       viewBox={`0 0 ${g.width} ${g.height}`}
       width="100%"
       role="img"
-      aria-label={label}
+      aria-label={withBoluses(label, bolusText)}
       data-variant="meal"
       data-size={props.size}
     >
       <Band g={g} />
       {g.previous.flatMap((segments, i) =>
-        segments.map((points, j) => (
-          <polyline
-            key={`${i}-${j}`}
-            className={styles.previousLine}
-            points={points}
-            opacity={g.previousOpacity}
-            data-testid="previous"
-          />
-        )),
+        segments.map((points, j) =>
+          points.includes(" ") ? (
+            <polyline
+              key={`${i}-${j}`}
+              className={styles.previousLine}
+              points={points}
+              opacity={g.previousOpacity}
+              data-testid="previous"
+            />
+          ) : (
+            <circle
+              key={`${i}-${j}`}
+              className={styles.previousPoint}
+              cx={Number(points.split(",")[0])}
+              cy={Number(points.split(",")[1])}
+              r="1.5"
+              opacity={g.previousOpacity}
+              data-testid="previous-point"
+            />
+          ),
+        ),
       )}
       <line
         className={styles.mealLine}
@@ -305,8 +326,7 @@ function MealChart(props: MealChartProps) {
         <path
           className={styles.bolus}
           d={g.bolus.path}
-          role="img"
-          aria-label={log("bolus.at", { time: g.bolus.clock })}
+          aria-hidden="true"
           data-testid="bolus"
         />
       )}

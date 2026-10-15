@@ -104,6 +104,13 @@ describe("PeakValue", () => {
     );
     expect(screen.getByText("efter 50 min")).toBeInTheDocument();
   });
+
+  it("says whole hours without minutes", () => {
+    mount(
+      <PeakValue peak={{ ...peak, ts: "2026-10-14T11:10:00.000Z" }} unit="mmol" timeZone={zone} />,
+    );
+    expect(screen.getByText("efter 1 t")).toBeInTheDocument();
+  });
 });
 
 describe("MealStatsTable", () => {

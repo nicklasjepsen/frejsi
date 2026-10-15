@@ -16,6 +16,7 @@ export function formatDuration(t: StatsT, totalMinutes: number, style: DurationS
   const rest = minutes % 60;
   if (style === "table") return t("duration.short", { hours, minutes: pad(rest) });
   if (hours === 0) return t("duration.minutes", { minutes: rest });
+  if (style === "long" && rest === 0) return t("duration.hours", { hours });
   return style === "short"
     ? t("duration.short", { hours, minutes: pad(rest) })
     : t("duration.hoursMinutes", { hours, minutes: pad(rest) });

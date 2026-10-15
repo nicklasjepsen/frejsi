@@ -177,6 +177,10 @@
   fill: var(--meal-marker);
 }
 
+.previousPoint {
+  fill: var(--text);
+}
+
 .bolus {
   fill: var(--meal-bolus-marker);
 }
