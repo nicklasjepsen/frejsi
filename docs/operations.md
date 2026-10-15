@@ -163,8 +163,9 @@ checks for the seeded names.
 
 For development, `pnpm --filter ./web seed` fills an empty database with the fictional space of the
 artboards ("Almas rum": Jonas and Mette as owners, Birthe as a carer, Alma as a carer in simpleMode,
-Lærke as a viewer, a day of fake readings) and prints one add-a-device link per person. It refuses to
-run with `NODE_ENV=production` and on a database that already has a space.
+Lærke as a viewer, fourteen local dates of fake readings) and prints one add-a-device link per
+person. Today stops at the seed clock. The fake returns at most 24 hours per daily cycle, so a
+25-hour autumn date can have an uncovered hour. It refuses to run with `NODE_ENV=production` and on a database that already has a space.
 
 ## Food sources and refreshing Frida
 
@@ -229,7 +230,8 @@ The food integration client reserves 12 connections so ten transactions can race
 Prisma's CPU-derived default pool can be smaller than the test's concurrency. Timeouts and service
 retries are unchanged.
 The seed adds nine fictional foods (two unverified imports, seven explicitly verified family foods)
-and today's three meals totalling 102 g. It refuses production and nonempty databases.
+and today's three meals totalling 102 g, plus four earlier occurrences of the lunch dish with
+varied portions and recorded times. It refuses production and nonempty databases.
 
 Build with `NEXT_PUBLIC_APP_VERSION=<tag> pnpm -r build`, then run
 `pnpm --filter ./web test:e2e` with the same version and `DATABASE_URL`. The harness recreates only
@@ -252,3 +254,29 @@ both JPEGs from the Blob fake, asserts orientation, 1200×1600 and 320×320 dime
 food deletion removes both. **No photo fallback is enabled**: a missing native binary fails release.
 This proves the Linux standalone artifact locally; the deployed Static Web Apps smoke remains the
 release pipeline's responsibility.
+
+## Meal curves and history statistics
+
+Definitions live in [the v0.3.0 plan §5](superpowers/plans/2026-10-15-v0.3.0-meals-on-the-curve.md#5-the-statistics-spec-54-deterministic-and-in-code)
+and the pure functions in `shared/src/stats/`. A meal chart spans one hour before to four hours
+after; its peak (earliest on a tie) and time in range use only the three hours after the meal.
+Time in range is time-weighted: a reading covers the interval to its successor only when that gap
+is at most 15 minutes, clipped to the window and now. Longer gaps and a final reading without a
+successor cover nothing. Week percentages divide by covered minutes; they are absent with no
+coverage. Weeks start Monday in the space's timezone. Earlier dishes match the set of item names,
+regardless of portions, retaining deleted foods' name snapshots.
+
+For **“Ingen målinger i dette tidsrum”**, first check the meal's date/time and the space timezone:
+the meal may predate the connected source or have no readings yet. Check the sensor and Dexcom app
+for a sensor change or warm-up, then follow [the 35-minute alert checks](#the-35-minute-alert).
+A sensor-change gap is uncovered time, never inferred time in range. Do not fill it with invented
+readings. The existing alert concerns new readings across the poller, not whether an old meal's
+window contains readings.
+
+`release.yml` is unchanged in v0.3.0. Its existing commands discover the extended SQL integration
+and browser suites; neither suite runs in PR CI. The seed checks fourteen local reading dates,
+gap-free events and one event per reading/meal. SQL checks inclusive windows, dish matches after
+food deletion and the week's two reading queries. At 360/1280 px, Playwright checks meal curves,
+previous curves/table, portion editing with `meal.updated`, deletion, simpleMode detail, day/week
+history and the viewer's meal-only responses and 403s. Edits and deletion are restored through the
+API so the earlier release assertions retain their original data.

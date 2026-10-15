@@ -1,7 +1,7 @@
 // `pnpm --filter ./web seed`: the fictional space of the artboards (plan §8, task 10) for local
 // development and the release e2e. Every row goes through the code the routes and the poller
 // use: the space and its first owner through the bootstrap, the others' memberships through
-// `addMember`, the source through the Settings route's `saveConnectedSource`, and a day of
+// `addMember`, the source through the Settings route's `saveConnectedSource`, and fourteen days of
 // readings through `runPollCycle` with `FakeGlucoseSource`. So every write has its event, and the
 // `events` table is exactly what a real space with that history would hold.
 //
@@ -58,6 +58,7 @@ export const SEED_PEOPLE = {
 export type SeedPersonKey = keyof typeof SEED_PEOPLE;
 
 /** Hand-written artboard foods: fictional nutrition, restricted-circulation barcode, no photos. */
+export const SEED_DISH = "Rugbrød med ost og et æble";
 export const SEED_BARCODE = "2000000000015";
 export const SEED_FOODS = [
   {
@@ -85,7 +86,14 @@ export const SEED_FOODS = [
       { label: "2 skiver", carbs: 36 },
     ],
   },
-  { name: "Æble", portions: [{ label: "1 stk", carbs: 14 }] },
+  {
+    name: "Æble",
+    portions: [
+      { label: "1 stk", carbs: 14 },
+      { label: "1 mellem", carbs: 14 },
+      { label: "½ mellem", carbs: 7 },
+    ],
+  },
   { name: "Banan", portions: [{ label: "1 stk", carbs: 23 }] },
   { name: "Mælk", portions: [{ label: "1 glas", carbs: 10 }] },
 ] as const;
@@ -114,6 +122,7 @@ export const SEED_NAMES: readonly string[] = [
   ...SEED_FOODS.map((food) => food.name),
   "Havregrød med æble",
   "et æble",
+  SEED_DISH,
   SEED_BARCODE,
 ];
 
@@ -198,17 +207,29 @@ export async function seed(options: SeedOptions = {}): Promise<SeededSpace> {
     deps,
   );
 
-  const [outcome] = await runPollCycle(
-    {
-      db,
-      sources: () => new FakeGlucoseSource({ now }),
-      emit: createEmit({ db, sink, now }),
-      now,
-    },
-    { spaceId },
-  );
-  if (outcome?.outcome !== "ok") {
-    throw new Error(`the poll cycle failed: ${outcome?.code ?? "no outcome"}`);
+  let readings = 0;
+  const at = now();
+  const today = localDate(at, SEED_SPACE.timezone);
+  // One cycle per local date, as specified. The fake's 24-hour cap can leave an
+  // uncovered hour on an autumn 25-hour date; sequence continuity is about events.
+  for (let daysAgo = 13; daysAgo >= 0; daysAgo--) {
+    const date = new Date(`${today}T12:00:00Z`);
+    date.setUTCDate(date.getUTCDate() - daysAgo);
+    const [, end] = dayRange(date.toISOString().slice(0, 10), SEED_SPACE.timezone);
+    const dayNow = () => new Date(Math.min(+end - 1, +at));
+    const [outcome] = await runPollCycle(
+      {
+        db,
+        sources: () => new FakeGlucoseSource({ now: dayNow }),
+        emit: createEmit({ db, sink, now: dayNow }),
+        now: dayNow,
+      },
+      { spaceId },
+    );
+    if (outcome?.outcome !== "ok") {
+      throw new Error(`the poll cycle failed: ${outcome?.code ?? "no outcome"}`);
+    }
+    readings += outcome.stored;
   }
 
   const session = (key: SeedPersonKey): SessionContext => ({
@@ -254,7 +275,34 @@ export async function seed(options: SeedOptions = {}): Promise<SeededSpace> {
     now,
     photos: null,
   };
-  const at = now();
+  // Earlier occurrences vary portions and timing, using exactly the route's emitting writer.
+  for (const [index, lead] of [15, 5, 0, 10].entries()) {
+    const earlier = new Date(`${today}T12:00:00Z`);
+    earlier.setUTCDate(earlier.getUTCDate() - (4 - index));
+    const ts = seedTime(earlier, 12, 10);
+    await createMeal(
+      spaceId,
+      session("jonas"),
+      {
+        ts,
+        note: SEED_DISH,
+        bolusTs: new Date(Date.parse(ts) - lead * 60_000).toISOString(),
+        items: [
+          {
+            foodId: foodId("Rugbrød med ost"),
+            name: "Rugbrød med ost",
+            portionLabel: index % 2 ? "2 skiver" : "1 skive",
+          },
+          {
+            foodId: foodId("Æble"),
+            name: "Æble",
+            portionLabel: index % 2 ? "½ mellem" : "1 mellem",
+          },
+        ],
+      },
+      mealDeps,
+    );
+  }
   await createMeal(
     spaceId,
     session("mette"),
@@ -279,6 +327,7 @@ export async function seed(options: SeedOptions = {}): Promise<SeededSpace> {
     {
       ts: seedTime(at, 12, 10),
       bolusTs: seedTime(at, 11, 58),
+      note: SEED_DISH,
       items: [
         {
           foodId: foodId("Rugbrød med ost"),
@@ -286,13 +335,13 @@ export async function seed(options: SeedOptions = {}): Promise<SeededSpace> {
           portionLabel: "2 skiver",
           carbs: 36,
         },
-        { name: "et æble", carbs: 14 },
+        { foodId: foodId("Æble"), name: "Æble", portionLabel: "1 mellem", carbs: 14 },
       ],
     },
     mealDeps,
   );
 
-  return { spaceId, people, ownerInviteUrl: boot.inviteUrl, readings: outcome.stored };
+  return { spaceId, people, ownerInviteUrl: boot.inviteUrl, readings };
 }
 
 /** A single-use add-a-device link for a seeded person, made by Jonas as People would. */

@@ -1,6 +1,7 @@
 // The viewer never receives glucose (spec §2, plan §8): Lærke signs in from an add-a-device link,
 // gets the viewer shell, and no page she can open draws a value or carries a reading over the
 // wire, whatever the API is asked.
+import { prisma } from "@frejsi/shared";
 import { expect, test } from "./test";
 
 import { inviteLink, navLabels, registerFromInvite, seededSpace } from "./support";
@@ -8,6 +9,8 @@ import { inviteLink, navLabels, registerFromInvite, seededSpace } from "./suppor
 const PAGES = [
   "/da/today",
   "/da/soon/earlier-days",
+  "/da/history",
+  "/da/history/week",
   "/da/now",
   "/da/settings",
   "/da/settings/colour",
@@ -31,6 +34,33 @@ const GLUCOSE = [
  */
 const READING_KEY = /mmol\\?"\s*:\s*(\\?")?\d/;
 
+const FORBIDDEN = new Set([
+  "mmol",
+  "mgdl",
+  "trend",
+  "reading",
+  "readings",
+  "glucose",
+  "peak",
+  "inRange",
+  "inRangePercent",
+  "stats",
+  "curve",
+  "bolusTs",
+  "bolusLead",
+  "bolusLeadMinutes",
+]);
+function assertMealOnly(value: unknown): void {
+  if (Array.isArray(value)) {
+    for (const item of value) assertMealOnly(item);
+  } else if (value !== null && typeof value === "object") {
+    for (const [key, item] of Object.entries(value)) {
+      expect(FORBIDDEN.has(key), key).toBe(false);
+      assertMealOnly(item);
+    }
+  }
+}
+
 test.use({ serviceWorkers: "block" });
 
 test("a viewer gets the viewer shell and no glucose on any page", async ({ page }) => {
@@ -42,6 +72,9 @@ test("a viewer gets the viewer shell and no glucose on any page", async ({ page 
     const type = response.headers()["content-type"] ?? "";
     if (/json|html|text\/x-component/.test(type)) {
       const text = await response.text();
+      if (type.includes("json") && new URL(response.url()).pathname.startsWith("/api/spaces/")) {
+        assertMealOnly(JSON.parse(text) as unknown);
+      }
       expect(text, response.url()).not.toMatch(READING_KEY);
       expect(text, response.url()).not.toMatch(
         /trend\\?"\s*:\s*\\?"(?:flat|up|down|double-up|double-down|up-slight|down-slight)/,
@@ -63,13 +96,23 @@ test("a viewer gets the viewer shell and no glucose on any page", async ({ page 
   await expect(page.getByTestId("day-total")).toHaveText(/102\s*g kulhydrat indtil nu/);
   await expect(page.getByTestId("day-list").getByTestId("meal-card")).toHaveCount(3);
   await expect(page.getByTestId("day-list")).toContainText("Havregrød med æble");
-  await expect(page.getByTestId("day-list")).toContainText("Rugbrød med ost og et æble");
+  await expect(page.getByTestId("day-list")).toContainText("Rugbrød med ost og Æble");
   const desktop = (page.viewportSize()?.width ?? 0) >= 1280;
   expect(await navLabels(page)).toEqual([
     "I dag",
     "Tidligere dage",
     desktop ? "Indstillinger" : "Mere",
   ]);
+
+  await page
+    .getByTestId(desktop ? "sidebar" : "phone-tabs")
+    .getByRole("link", { name: "Tidligere dage", exact: true })
+    .click();
+  await page.waitForURL(/\/da\/history$/);
+  const days = page.getByTestId("viewer-days");
+  await expect(days.getByRole("heading", { name: "Tidligere dage", exact: true })).toBeVisible();
+  await expect(days.locator("section").first().getByTestId("meal-card")).toHaveCount(3);
+  await expect(days.locator("section").first()).toContainText("Rugbrød med ost og Æble");
 
   for (const path of PAGES) {
     await page.goto(path);
@@ -81,11 +124,18 @@ test("a viewer gets the viewer shell and no glucose on any page", async ({ page 
   }
 
   // The API itself, not only the screens (§3b).
+  const meal = await prisma.meal.findFirstOrThrow({ where: { spaceId: space.spaceId } });
+  for (const route of [`meals/${meal.id}/curve`, "history/day", "history/week"]) {
+    const denied = await page.request.get(`/api/spaces/${space.spaceId}/${route}`);
+    expect(denied.status(), route).toBe(403);
+    assertMealOnly(await denied.json());
+  }
   const readings = await page.request.get(`/api/spaces/${space.spaceId}/readings?hours=24`);
   expect(readings.status()).toBe(403);
   const events = await page.request.get(`/api/spaces/${space.spaceId}/events?since=0`);
   expect(events.status()).toBe(200);
   const feed = (await events.json()) as { lastSeq: number; events: { type: string }[] };
+  assertMealOnly(feed);
   expect(feed.events.length).toBeGreaterThan(0);
   expect(feed.events.filter((event) => event.type === "reading")).toEqual([]);
   expect(feed.lastSeq).toBeGreaterThan(space.readings);

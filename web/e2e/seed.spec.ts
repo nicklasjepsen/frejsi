@@ -13,7 +13,7 @@ import { seededSpace } from "./support";
 
 test("the seeded space has a gap-free seq and one reading event per reading", async () => {
   const space = await seededSpace();
-  expect(space.readings).toBeGreaterThan(200);
+  expect(space.readings).toBeGreaterThan(13 * 288);
 
   const events = await prisma.event.findMany({
     where: { spaceId: space.spaceId },
