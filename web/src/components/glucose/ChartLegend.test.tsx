@@ -90,6 +90,32 @@ describe("ChartCaption (plan §7, decision 17)", () => {
     expect(screen.getByText("sidste måling for 4 min. siden")).toBeInTheDocument();
   });
 
+  it("takes the age from the newest reading the curve draws, not one outside its window", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-10-14T11:13:00.000Z"));
+    const { container } = mount(
+      <ChartCaption
+        readings={[
+          reading("2026-10-14T11:05:00.000Z"),
+          reading("2026-10-14T11:20:00.000Z"),
+          reading("2026-10-14T15:00:00.000Z"),
+        ]}
+        from={new Date("2026-10-14T09:10:00.000Z")}
+        to={new Date("2026-10-14T14:10:00.000Z")}
+      />,
+    );
+    expect(container.textContent).toBe("sidste måling for 8 min. siden");
+    cleanup();
+    const before = mount(
+      <ChartCaption
+        readings={[reading("2026-10-14T09:00:00.000Z")]}
+        from={new Date("2026-10-14T09:10:00.000Z")}
+        to={new Date("2026-10-14T14:10:00.000Z")}
+      />,
+    );
+    expect(before.container.textContent).toBe("");
+  });
+
   it("renders nothing when the window is over or has no reading", () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date("2026-10-14T20:00:00.000Z"));

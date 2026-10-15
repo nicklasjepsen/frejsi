@@ -26,10 +26,13 @@ export function ChartCaption({ readings, from, to }: ChartCaptionProps) {
   const now = useNow();
   const nowMs = now.getTime();
   if (nowMs < from.getTime() || nowMs > to.getTime()) return null;
-  const newest = readings.reduce<Reading | null>(
-    (best, r) => (best === null || r.ts > best.ts ? r : best),
-    null,
-  );
+  // Only a reading the curve draws: inside the window and not after now.
+  const fromMs = from.getTime();
+  const newest = readings.reduce<Reading | null>((best, r) => {
+    const t = new Date(r.ts).getTime();
+    if (t < fromMs || t > nowMs) return best;
+    return best === null || t > new Date(best.ts).getTime() ? r : best;
+  }, null);
   if (!newest) return null;
   return (
     <p className={styles.caption} data-testid="chart-caption">
