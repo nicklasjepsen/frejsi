@@ -150,7 +150,7 @@ jobs:
           test -n "${{ vars.AZURE_TENANT_ID }}" || { echo "::error::repository variable AZURE_TENANT_ID is not set (infra/README.md)"; exit 1; }
           test -n "${{ vars.AZURE_SUBSCRIPTION_ID }}" || { echo "::error::repository variable AZURE_SUBSCRIPTION_ID is not set (infra/README.md)"; exit 1; }
           test -n "$ALERT_EMAIL" || { echo "::error::repository variable ALERT_EMAIL is not set; the 35-minute alert needs an address (infra/README.md)"; exit 1; }
-      - uses: azure/login@v2
+      - uses: azure/login@v3
         with:
           client-id: ${{ vars.AZURE_CLIENT_ID }}
           tenant-id: ${{ vars.AZURE_TENANT_ID }}
@@ -203,7 +203,7 @@ jobs:
             sudo mv "$RUNNER_TEMP/sqlcmd" /usr/local/bin/sqlcmd
           fi
           sqlcmd --version
-      - uses: azure/login@v2
+      - uses: azure/login@v3
         with:
           client-id: ${{ vars.AZURE_CLIENT_ID }}
           tenant-id: ${{ vars.AZURE_TENANT_ID }}
