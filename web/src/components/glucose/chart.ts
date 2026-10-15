@@ -1,7 +1,7 @@
 // The geometry of the glucose curve (tokens.json#chart): time → x across the plot, mmol → y, the
 // target band, the curve split at gaps, the end dot and the time ticks. Pure, so the sparkline
 // and the day curve are tested as numbers.
-import { fromMmol, type GlucoseUnit, type Reading } from "@frejsi/shared";
+import type { GlucoseUnit, Reading } from "@frejsi/shared/schemas/index";
 
 import type { AppLocale } from "@/lib/i18n/routing";
 import { formatClock } from "@/lib/i18n/time";
@@ -148,9 +148,4 @@ function firstFullHour(from: Date, timeZone: string): number {
   const value = (type: string) => Number(parts.find((p) => p.type === type)?.value ?? "0");
   const intoHourMs = (value("minute") * 60 + value("second")) * 1000;
   return intoHourMs === 0 ? from.getTime() : from.getTime() - intoHourMs + 60 * 60 * 1000;
-}
-
-/** The unit label the chart header shows next to "Mål 4–10" on desktop. */
-export function unitOf(unit: GlucoseUnit, mmol: number): number {
-  return fromMmol(mmol, unit);
 }

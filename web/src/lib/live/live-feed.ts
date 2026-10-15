@@ -1,7 +1,12 @@
 // The client side of the live feed, without React: `LiveFeed` negotiates, connects, catches up
 // and polls (plan §5); `useLiveFeed` wraps it. Framework-free so the whole protocol is tested with
 // a fake socket and fake timers.
-import { EventEnvelope, type ApiErrorCode, type Reading, type SourceStatus } from "@frejsi/shared";
+import {
+  EventEnvelope,
+  type ApiErrorCode,
+  type Reading,
+  type SourceStatus,
+} from "@frejsi/shared/schemas/index";
 
 import {
   DEFAULT_WINDOW_HOURS,
@@ -100,6 +105,8 @@ export class LiveFeed {
   /** Bumped by every `start()` and `stop()`: async work from an earlier life bails out. */
   private generation = 0;
   private negotiating = false;
+  /** A window reload (`space.updated`) that has not succeeded yet; the tick retries it. */
+  private windowStale = false;
   private catchingUp = false;
   private catchUpAgain = false;
 
@@ -165,27 +172,31 @@ export class LiveFeed {
    * again so nothing received meanwhile is lost.
    */
   private async loadWindow(gen: number): Promise<void> {
-    let response: Response;
+    let body: unknown = null;
     try {
-      response = await this.fetchImpl(this.url("readings", { hours: String(this.hours) }));
+      const response = await this.fetchImpl(this.url("readings", { hours: String(this.hours) }));
+      if (this.cancelled(gen)) return;
+      if (response.status === 403 || response.status === 404) {
+        this.stop();
+        this.set({ error: response.status === 403 ? "forbidden" : "not-found", loaded: false });
+        return;
+      }
+      if (response.ok) body = await response.json();
     } catch {
-      if (!this.cancelled(gen)) this.startPolling();
-      return;
+      body = null;
     }
     if (this.cancelled(gen)) return;
-    if (response.status === 403 || response.status === 404) {
-      this.stop();
-      this.set({ error: response.status === 403 ? "forbidden" : "not-found", loaded: false });
-      return;
-    }
-    const parsed = response.ok ? ReadingsWindow.safeParse(await response.json()) : null;
-    if (this.cancelled(gen)) return;
+    const parsed = body === null ? null : ReadingsWindow.safeParse(body);
     if (!parsed?.success) {
-      this.startPolling();
+      // Retried on the timer: as the first load, or as a stale window while the socket stays up.
+      this.windowStale = true;
+      if (this.state.connection !== "live") this.startPolling();
+      else this.ensureTimer();
       return;
     }
     const window = parsed.data;
     const before = this.state;
+    this.windowStale = false;
     this.set({
       loaded: true,
       error: null,
@@ -196,7 +207,8 @@ export class LiveFeed {
       space: window.space,
     });
     if (before.loaded && before.lastSeq > window.lastSeq) void this.catchUp(gen);
-    this.connect(gen);
+    if (this.state.connection === "live") this.stopPolling();
+    else this.connect(gen);
   }
 
   /**
@@ -259,14 +271,19 @@ export class LiveFeed {
   }
 
   /**
-   * One tick while not live: reload the window if it never loaded; otherwise fetch events, drop a
-   * socket whose handshake has not finished since the last tick, and try to connect again.
+   * One tick: reload the window if it never loaded or a reload failed; otherwise, while not live,
+   * fetch events, drop a socket whose handshake has not finished since the last tick, and try to
+   * connect again.
    */
   private tick(): void {
     const gen = this.generation;
-    if (this.cancelled(gen) || this.state.connection === "live") return;
-    if (!this.state.loaded) {
+    if (this.cancelled(gen)) return;
+    if (!this.state.loaded || this.windowStale) {
       void this.loadWindow(gen);
+      return;
+    }
+    if (this.state.connection === "live") {
+      this.stopPolling();
       return;
     }
     if (this.socket) this.discardSocket();
@@ -365,6 +382,7 @@ export class LiveFeed {
         return;
       case "space.updated":
         // Unit, target range or timezone may have changed: the window carries them.
+        this.windowStale = true;
         void this.loadWindow(gen);
         return;
       default:
