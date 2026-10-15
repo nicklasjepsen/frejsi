@@ -559,7 +559,12 @@ export class LiveFeed {
       case "space.updated":
       case "member.updated":
       case "member.removed":
-        if (!this.withReadings) return;
+        if (!this.withReadings) {
+          // No window to reload, but the removal may be this member's own: taking the socket out
+          // of the group does not close it, so ask the server, whose refusal stops the feed.
+          if (envelope.type === "member.removed") void this.catchUp(gen);
+          return;
+        }
         // Unit, target range or timezone may have changed: the window carries them. A member
         // change may be this member's own downgrade or removal: the reload is then refused and the
         // feed stops (the server has already taken the socket out of the glucose group).
