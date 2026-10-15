@@ -1,6 +1,6 @@
 // Installability and the offline shell (spec §9, plan §8): the manifest and its icons are
 // served, and after a first visit the service worker answers a navigation without a network.
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./test";
 
 interface Manifest {
   name: string;

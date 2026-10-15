@@ -34,5 +34,8 @@ export default function globalSetup(): void {
     `IF DB_ID('${name}') IS NOT NULL BEGIN ALTER DATABASE [${name}] SET SINGLE_USER WITH ROLLBACK IMMEDIATE; DROP DATABASE [${name}]; END; CREATE DATABASE [${name}];`,
   );
   run(bin(SHARED, "prisma"), ["migrate", "deploy"], SHARED);
-  run("pnpm", ["seed"], WEB, { ...process.env, NODE_ENV: "development" });
+  run(bin(WEB, "tsx"), ["--require", path.join(WEB, "e2e/clock.cjs"), "scripts/seed.ts"], WEB, {
+    ...process.env,
+    NODE_ENV: "development",
+  });
 }

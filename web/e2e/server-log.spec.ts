@@ -2,7 +2,7 @@
 // seeded person or the space.
 import fs from "node:fs";
 
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./test";
 
 import { SEED_NAMES } from "../scripts/seed";
 import { SERVER_LOG } from "./env";
