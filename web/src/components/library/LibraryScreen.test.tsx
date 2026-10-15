@@ -355,3 +355,25 @@ describe("initial library filter (#122)", () => {
     expect(phone().getByText("Rugbrød, Eksempelbageriet")).toBeInTheDocument();
   });
 });
+
+describe("selected filters outside the default chips", () => {
+  it.each([
+    ["family", "Fra biblioteket", "From the library"],
+    ["manual", "Fra måltidsloggen", "From the meal log"],
+    ["favourites", "Favoritter", "Favourites"],
+    ["recent", "Spist for nylig", "Eaten recently"],
+    ["future-source", "Fra future-source", "From future-source"],
+  ])("represents %s with an active chip in both layouts and locales", async (filter, da, en) => {
+    for (const locale of ["da", "en"] as const) {
+      const view = mount(locale, filter);
+      for (const layout of [phone(), desktop()]) {
+        expect(layout.getByRole("button", { name: locale === "da" ? da : en })).toHaveAttribute(
+          "aria-pressed",
+          "true",
+        );
+      }
+      await waitFor(() => { expect(lists().at(-1)?.query).toEqual({ filter }); });
+      view.unmount();
+    }
+  });
+});

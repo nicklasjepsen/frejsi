@@ -1,4 +1,7 @@
+import "@testing-library/jest-dom/vitest";
+
 import type { SessionContext } from "@frejsi/shared";
+import { cleanup, render, screen, waitFor, within } from "@testing-library/react";
 import { isValidElement, type ReactElement } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
@@ -15,8 +18,11 @@ vi.mock("next/navigation", () => ({
     throw new Error(`redirect:${to}`);
   },
 }));
-vi.mock("@/components/library/LibraryScreen", () => ({ LibraryScreen: () => null }));
 vi.mock("@/components/library/FoodEditScreen", () => ({ FoodEditScreen: () => null }));
+
+import { artboardFoods, fakeFoodsApi } from "@/components/library/test-support";
+import { I18nProvider } from "@/lib/i18n/Provider";
+import { getMessages } from "@/lib/i18n/messages";
 
 import FoodPage from "./[foodId]/page";
 import NewFoodPage from "./new/page";
@@ -43,6 +49,8 @@ const pages = [
 ];
 
 afterEach(() => {
+  cleanup();
+  vi.unstubAllGlobals();
   mocks.session = null;
   mocks.shell = null;
 });
@@ -118,4 +126,34 @@ describe("library filter search parameter (#122)", () => {
       }),
     ).rejects.toThrow(`redirect:${target}`);
   });
+});
+
+it("resets the selected filter and foods on query-only navigation", async () => {
+  as(false, "carer");
+  const api = fakeFoodsApi(artboardFoods());
+  vi.stubGlobal("fetch", api.fetch);
+  const open = async (filter?: string) => (
+    <I18nProvider locale="da" messages={getMessages("da")}>
+      {await LibraryPage({ params, searchParams: Promise.resolve({ filter }) })}
+    </I18nProvider>
+  );
+  const view = render(await open("unverified"));
+  const phone = () => within(screen.getByTestId("library-phone"));
+  await waitFor(() => { expect(phone().getAllByTestId("food-row")).toHaveLength(3); });
+
+  view.rerender(await open());
+  await waitFor(() => { expect(phone().getAllByTestId("food-row")).toHaveLength(5); });
+  expect(phone().getByRole("button", { name: "Alle" })).toHaveAttribute("aria-pressed", "true");
+
+  view.rerender(await open("off"));
+  await waitFor(() => { expect(phone().getAllByTestId("food-row")).toHaveLength(1); });
+  expect(phone().getByRole("button", { name: "Fra Open Food Facts" })).toHaveAttribute(
+    "aria-pressed",
+    "true",
+  );
+  expect(api.callsTo("GET", /^foods$/).map((call) => call.query)).toEqual([
+    { filter: "unverified" },
+    { filter: "all" },
+    { filter: "off" },
+  ]);
 });

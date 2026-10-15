@@ -31,7 +31,12 @@ export function LibraryFilters({
 }) {
   const t = useTranslations("library");
   const text = useFoodText();
-  const fixed = layout === "phone" ? PHONE : DESKTOP;
+  // A deep-linked filter stays visible even when the artboard normally omits its chip.
+  const fixed = PHONE.filter(
+    (filter) => layout === "phone" || DESKTOP.includes(filter) || filter === value,
+  );
+  const activeOrigin = !PHONE.some((filter) => filter === value) && !origins.includes(value);
+  const visibleOrigins = activeOrigin ? [...origins, value] : origins;
   return (
     <div className={styles.filters} role="group" aria-label={t("filters")}>
       {fixed.map((filter) => (
@@ -48,7 +53,7 @@ export function LibraryFilters({
             : t(`filter.${filter}`)}
         </Chip>
       ))}
-      {origins.map((origin) => (
+      {visibleOrigins.map((origin) => (
         <Chip
           key={origin}
           pressed={value === origin}
