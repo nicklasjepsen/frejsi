@@ -54,17 +54,20 @@ describe("poller build", () => {
     expect(() => config.distDependencies({ dependencies: {} })).toThrow(/not a dependency/);
   });
 
-  it("resolves every external from where dist/index.js will run", () => {
-    // Node's lookup, by hand: `pnpm run` puts the hidden .pnpm/node_modules on NODE_PATH, which
-    // would make require.resolve pass here and fail on the Function App.
-    const resolvable = (name: string) => {
-      for (let dir = path.join(pollerDir, "dist"); ; dir = path.dirname(dir)) {
-        if (existsSync(path.join(dir, "node_modules", name, "package.json"))) return true;
-        if (dir === path.dirname(dir)) return false;
+  // Only a built dist/ can show it stands alone; without one there is nothing to check, and
+  // walking up to poller/node_modules would pass for the wrong reason.
+  const dist = path.join(pollerDir, "dist");
+  it.skipIf(!existsSync(dist))(
+    "installs every external inside dist/node_modules, where dist/index.js will run",
+    () => {
+      // Node's lookup, by hand and stopped at dist/: `pnpm run` puts the hidden .pnpm/node_modules on
+      // NODE_PATH, which would make require.resolve pass here and fail on the Function App.
+      for (const name of externals) {
+        expect(
+          existsSync(path.join(dist, "node_modules", name, "package.json")),
+          `${name} is not installed in poller/dist/node_modules`,
+        ).toBe(true);
       }
-    };
-    for (const name of externals) {
-      expect(resolvable(name), `${name} does not resolve from poller/dist`).toBe(true);
-    }
-  });
+    },
+  );
 });
