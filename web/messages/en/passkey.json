@@ -1,0 +1,6 @@
+{
+  "working": "One moment …",
+  "cancelled": "That didn't go through this time. Try again when you're ready.",
+  "unsupported": "This browser can't use passkeys. Try a newer browser, or open the link on your phone.",
+  "failed": "That didn't work this time. Try again in a moment."
+}

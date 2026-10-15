@@ -1,4 +1,4 @@
-import { readdirSync, readFileSync, existsSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import path from "node:path";
 
 import { describe, expect, it } from "vitest";
@@ -101,22 +101,28 @@ describe("dosing vocabulary (the hard rule: Frejsi never computes or suggests in
     expect(findDosingVocabulary(vocabulary)).toEqual([]);
   });
 
-  it("reads every string in web/messages/*.json", () => {
-    const strings = messageStrings({ "da.json": { a: { b: "Hej", c: ["x", "y"] } } });
+  it("reads every string in web/messages/<locale>/*.json", () => {
+    const strings = messageStrings({ "da/a.json": { b: "Hej", c: ["x", "y"] } });
     expect(strings).toEqual([
-      ["da.json:a.b", "Hej"],
-      ["da.json:a.c.0", "x"],
-      ["da.json:a.c.1", "y"],
+      ["da/a.json:b", "Hej"],
+      ["da/a.json:c.0", "x"],
+      ["da/a.json:c.1", "y"],
     ]);
   });
 
   it("finds no dosing vocabulary in the UI strings that exist today", () => {
     const files: Record<string, unknown> = {};
-    if (existsSync(messagesDir)) {
-      for (const file of readdirSync(messagesDir).filter((f) => f.endsWith(".json"))) {
-        files[file] = JSON.parse(readFileSync(path.join(messagesDir, file), "utf8")) as unknown;
+    for (const locale of readdirSync(messagesDir, { withFileTypes: true })) {
+      if (!locale.isDirectory()) continue;
+      const dir = path.join(messagesDir, locale.name);
+      for (const file of readdirSync(dir).filter((f) => f.endsWith(".json"))) {
+        files[`${locale.name}/${file}`] = JSON.parse(
+          readFileSync(path.join(dir, file), "utf8"),
+        ) as unknown;
       }
     }
+    // Both locales are read, namespace by namespace; an empty walk would pass vacuously.
+    expect(Object.keys(files)).toEqual(expect.arrayContaining(["da/app.json", "en/app.json"]));
     expect(findDosingVocabulary(messageStrings(files))).toEqual([]);
   });
 });

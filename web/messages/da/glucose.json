@@ -1,0 +1,37 @@
+{
+  "unit": {
+    "mmol": "mmol/L",
+    "mgdl": "mg/dL"
+  },
+  "noReadings": "Ingen målinger endnu",
+  "age": {
+    "justNow": "lige nu",
+    "minutes": "for {minutes} min. siden",
+    "hours": "for {hours, plural, one {# time} other {# timer}} {minutes} min. siden",
+    "wholeHours": "for {hours, plural, one {# time} other {# timer}} siden",
+    "overADay": "for mere end et døgn siden"
+  },
+  "trend": {
+    "double-up": "stiger hurtigt",
+    "single-up": "stiger",
+    "forty-five-up": "stiger langsomt",
+    "flat": "stabil",
+    "forty-five-down": "falder langsomt",
+    "single-down": "falder",
+    "double-down": "falder hurtigt",
+    "not-computable": "retning ukendt",
+    "rate-out-of-range": "ændrer sig hurtigt"
+  },
+  "target": "Mål {low}–{high}",
+  "targetWithUnit": "Mål {low}–{high} {unit}",
+  "last3h": "Seneste 3 timer",
+  "today": "I dag",
+  "chartLast3h": "Glukose de seneste 3 timer",
+  "chartToday": "Glukose i dag fra {from} til {to}",
+  "source": {
+    "connected": "{source} forbundet",
+    "lastReading": "{source} · sidste måling {time}",
+    "noReading": "{source} · ingen måling endnu",
+    "none": "Ingen glukosekilde valgt endnu"
+  }
+}

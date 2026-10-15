@@ -3,8 +3,8 @@ import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/re
 import { NextIntlClientProvider } from "next-intl";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { ReactNode } from "react";
-import da from "../../../messages/da.json";
-import en from "../../../messages/en.json";
+import da from "../../../messages/da";
+import en from "../../../messages/en";
 import { CarbAmount, FoodPhoto, PhotoPicker, PhotoTile, PortionChips, SearchField } from "./index";
 
 const mount = (children: ReactNode, locale = "da") =>

@@ -1,7 +1,7 @@
 "use client";
 
-import da from "../../messages/da.json";
-import en from "../../messages/en.json";
+import da from "../../messages/da";
+import en from "../../messages/en";
 
 import { stripLocale } from "@/lib/i18n/routing";
 

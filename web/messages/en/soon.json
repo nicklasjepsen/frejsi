@@ -1,0 +1,14 @@
+{
+  "title": "Coming in a later version",
+  "body": "This part of Frejsi isn't ready yet. Everything else works as it should.",
+  "backToNow": "Back to Now",
+  "feature": {
+    "meals": "Meals",
+    "food": "Food and library",
+    "history": "History",
+    "my-food": "My food",
+    "ask": "Ask an adult",
+    "today": "Today's meals",
+    "earlier-days": "Earlier days"
+  }
+}

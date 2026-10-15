@@ -64,8 +64,13 @@ Frejsi does the opposite:
   thousand lines. Fewer, larger PRs; the gate agents read every line so the owner does not have to.
 - **Each lane names the paths it owns.** Two lanes never own the same directory. Shared append-only
   files any lane may touch: `pnpm-workspace.yaml`, `shared/src/index.ts` (exports),
-  `web/messages/da.json` and `web/messages/en.json` (keys), `infra/main.bicep` (module list).
-  Append only; never reorder. This is what makes parallel lanes merge without conflicts.
+  `web/messages/da/index.ts` and `web/messages/en/index.ts` (one import and one key per namespace,
+  alphabetical), `infra/main.bicep` (module list). Append only; never reorder. This is what makes
+  parallel lanes merge without conflicts.
+- **UI strings live in one file per top-level namespace and locale**:
+  `web/messages/da/<namespace>.json` and `web/messages/en/<namespace>.json`. A new screen adds its
+  own namespace file in both locales (and its line in each `index.ts`) instead of appending to a
+  shared file; a lane edits an existing namespace file only when it owns that screen.
 - **Prisma migrations** are numbered in lane order; a lane renumbers to after `origin/main`'s highest
   before it merges.
 - **A lane merges itself** when CI is green, the guardian passes, reviewer and copy findings are

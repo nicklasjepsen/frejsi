@@ -1,0 +1,19 @@
+{
+  "main": "Main menu",
+  "now": "Now",
+  "meal": "Meal",
+  "food": "Food",
+  "history": "History",
+  "more": "More",
+  "logMeal": "Log a meal",
+  "library": "Library",
+  "people": "People",
+  "settings": "Settings",
+  "myFood": "My food",
+  "ask": "Ask",
+  "askAdult": "Ask an adult",
+  "today": "Today",
+  "earlierDays": "Earlier days",
+  "keyboardShortcuts": "Keyboard shortcuts",
+  "shortcutHint": "Shortcut: {key}"
+}
