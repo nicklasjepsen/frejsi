@@ -27,7 +27,7 @@ export function MealItems({
   onSelect?: (key: string) => void;
   onRemove: (key: string) => void;
   onPortion: (key: string, index: number) => void;
-  onGrams: (key: string, grams: number) => void;
+  onGrams: (key: string, grams: number | null) => void;
   desktop?: boolean;
 }) {
   const t = useTranslations("log");

@@ -11,7 +11,7 @@ export type Choice = { portion: number } | { grams: number };
 export interface DraftItem {
   key: string;
   name: string;
-  /** The library food, when the item came from a pick; null for a reopened snapshot. */
+  /** The library food; for a reopened item, null until it is found in the library again. */
   food: FoodView | null;
   choice: Choice | null;
   /** A reopened meal's stored item: name, portion and carbs as they were (§2 snapshot rule). */
@@ -40,9 +40,14 @@ export function addFood(draft: MealDraft, food: FoodView): MealDraft {
   return { ...draft, items: [...draft.items, item], nextKey: draft.nextKey + 1 };
 }
 
-const update = (draft: MealDraft, key: string, choice: Choice): MealDraft => ({
+/** A new choice replaces a reopened item's stored snapshot. */
+const update = (draft: MealDraft, key: string, choice: Choice | null): MealDraft => ({
   ...draft,
-  items: draft.items.map((item) => (item.key === key ? { ...item, choice } : item)),
+  items: draft.items.map((item) => {
+    if (item.key !== key) return item;
+    const { snapshot: _snapshot, ...rest } = item;
+    return { ...rest, choice };
+  }),
 });
 
 export const choosePortion = (draft: MealDraft, key: string, portion: number) =>
@@ -50,6 +55,27 @@ export const choosePortion = (draft: MealDraft, key: string, portion: number) =>
 
 export const chooseGrams = (draft: MealDraft, key: string, grams: number) =>
   update(draft, key, { grams });
+
+/** No valid quantity on screen (an emptied grams field): the meal cannot be saved yet. */
+export const clearChoice = (draft: MealDraft, key: string) => update(draft, key, null);
+
+/**
+ * A reopened item's food, found again in the library: its portions become choosable, and the
+ * stored portion is shown as chosen, while the snapshot stays what is saved until one is changed.
+ */
+export function relinkFood(draft: MealDraft, key: string, food: FoodView): MealDraft {
+  return {
+    ...draft,
+    items: draft.items.map((item) => {
+      if (item.key !== key || !item.snapshot || item.food) return item;
+      const index = food.portions.findIndex((p) => p.label === item.snapshot?.portionLabel);
+      const grams = item.snapshot.grams;
+      const choice: Choice | null =
+        index >= 0 ? { portion: index } : grams !== undefined ? { grams } : null;
+      return { ...item, food, choice };
+    }),
+  };
+}
 
 export const removeItem = (draft: MealDraft, key: string): MealDraft => ({
   ...draft,
@@ -88,6 +114,18 @@ export const isComplete = (draft: MealDraft): boolean =>
 
 function toItemInput(item: DraftItem): MealItemInput {
   const carbs = itemCarbs(item) ?? 0;
+  // An unchanged snapshot goes back as stored: with a food id the server would recompute it from
+  // the food as it is today (§2 snapshot rule).
+  if (item.snapshot) {
+    return {
+      name: item.name,
+      ...(item.snapshot.portionLabel !== undefined
+        ? { portionLabel: item.snapshot.portionLabel }
+        : {}),
+      ...(item.snapshot.grams !== undefined ? { grams: item.snapshot.grams } : {}),
+      carbs: item.snapshot.carbs,
+    };
+  }
   const label = portionLabel(item);
   const grams = itemGrams(item);
   return {

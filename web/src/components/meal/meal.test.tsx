@@ -159,7 +159,15 @@ describe("PortionSheet", () => {
     fireEvent.change(screen.getByRole("spinbutton", { name: "Gram" }), {
       target: { value: "35" },
     });
-    expect(grams).toHaveBeenCalledWith(35);
+    expect(grams).toHaveBeenLastCalledWith(35);
+    fireEvent.change(screen.getByRole("spinbutton", { name: "Gram" }), {
+      target: { value: "" },
+    });
+    expect(grams).toHaveBeenLastCalledWith(null);
+    fireEvent.change(screen.getByRole("spinbutton", { name: "Gram" }), {
+      target: { value: "9000" },
+    });
+    expect(grams).toHaveBeenLastCalledWith(null);
   });
 });
 
