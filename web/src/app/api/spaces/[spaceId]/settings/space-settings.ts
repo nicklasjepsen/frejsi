@@ -6,7 +6,11 @@ import {
   type GlucoseSourceType,
 } from "@frejsi/shared";
 
-import { definedOnly, type SpaceSettingsPatch } from "@/components/settings/contracts";
+import {
+  SourceView,
+  definedOnly,
+  type SpaceSettingsPatch,
+} from "@/components/settings/contracts";
 import { run, type AuthDeps } from "@/lib/auth/core";
 
 /** The Space columns the settings read; `targetLow/High` arrive as Prisma Decimals. */
@@ -21,15 +25,31 @@ export interface SpaceSettingsRow {
   lastReadingAt: Date | null;
 }
 
-/** The source type from the stored JSON, or null when there is none or it does not parse. */
-export function sourceTypeOf(glucoseSource: string | null): GlucoseSourceType | null {
+/** The stored source config, or null when there is none or it does not parse. */
+export function sourceConfigOf(glucoseSource: string | null): GlucoseSourceConfig | null {
   if (!glucoseSource) return null;
   try {
     const parsed = GlucoseSourceConfig.safeParse(JSON.parse(glucoseSource));
-    return parsed.success ? parsed.data.type : null;
+    return parsed.success ? parsed.data : null;
   } catch {
     return null;
   }
+}
+
+/** The source type from the stored JSON, or null when there is none or it does not parse. */
+export function sourceTypeOf(glucoseSource: string | null): GlucoseSourceType | null {
+  return sourceConfigOf(glucoseSource)?.type ?? null;
+}
+
+/** The `/source` view of the row: type, region and status; never the `secretRef`. */
+export function toSourceView(row: SpaceSettingsRow): SourceView {
+  const config = sourceConfigOf(row.glucoseSource);
+  return SourceView.parse({
+    type: config?.type ?? null,
+    region: config?.region ?? null,
+    status: row.sourceStatus,
+    lastReadingAt: row.lastReadingAt ? row.lastReadingAt.toISOString() : null,
+  });
 }
 
 /** The shared contract from the row: never the `secretRef`, never the raw JSON (plan §4). */
