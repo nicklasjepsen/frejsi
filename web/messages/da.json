@@ -291,12 +291,12 @@
     "addDevice": "+ Tilføj en enhed",
     "remove": "Fjern",
     "removeMember": "Fjern {name} fra rummet",
-    "confirmRemoveMember": "Fjern {name} fra rummet? Enhederne logges ud, og {name} kan kun komme ind igen med en ny invitation.",
+    "confirmRemoveMember": "Fjern {name} fra rummet? {name} mister adgangen til rummet og kan kun komme ind igen med en ny invitation.",
     "confirmRemoveDevice": "Fjern {device}? Den logges ud med det samme.",
     "confirm": "Ja, fjern",
     "cancel": "Fortryd",
     "deviceNotice": "Nyt telefonnummer eller ny telefon? Tilføj en enhed til personen her – det er den eneste vej ind. Ingen adgangskoder.",
-    "deviceNoticeDesktop": "Enheder: ny telefon = ny enhed, tilføjet via et »tilføj enhed«-link til den samme person. Det er den eneste vej ind og den eneste vej tilbage.",
+    "deviceNoticeDesktop": "Enheder: ny telefon = ny enhed, tilføjet via et »Tilføj en enhed«-link til den samme person. Det er den eneste vej ind og den eneste vej tilbage.",
     "ownerOnly": "Kun ejere kan invitere, skifte roller og fjerne personer og enheder.",
     "role": "Rolle",
     "roleCards": {
@@ -314,7 +314,7 @@
       "qr": "QR-kode til invitationen",
       "scanOrSend": "Lad {name} scanne koden, eller send linket.",
       "deviceScanOrSend": "Lad {name} scanne koden med den nye enhed, eller send linket til den.",
-      "validity": "Gælder i 7 dage · kan bruges én gang",
+      "validity": "Gælder i {days} dage · kan bruges én gang",
       "link": "Invitationslink",
       "copyLink": "Kopiér link",
       "copied": "Linket er kopieret",
@@ -325,6 +325,7 @@
       "revoke": "Træk tilbage",
       "pendingRow": "Invitation til {name}",
       "newDevice": "Ny enhed til {name}"
-    }
+    },
+    "notYet": "ikke endnu"
   }
 }
