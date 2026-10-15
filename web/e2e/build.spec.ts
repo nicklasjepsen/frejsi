@@ -1,5 +1,8 @@
 // The build check (release.yml): the built app's `/api/health` reports the version the release
 // built and deploys, says the database answers and that the seed's readings are fresh.
+// A static import: Playwright compiles an `await import()` inside a test to `require()`, and
+// `@frejsi/shared` ("type": "module") then fails with "exports is not defined" (v0.2.0 release run).
+import { inviteLink, registerFromInvite, seededSpace } from "./support";
 import { expect, test } from "./test";
 
 test("/api/health reports the release version", async ({ request }) => {
@@ -53,7 +56,6 @@ test("the isolated standalone app processes and deletes both photo sizes", async
   page,
   request,
 }) => {
-  const { inviteLink, registerFromInvite, seededSpace } = await import("./support");
   await registerFromInvite(page, await inviteLink("jonas"));
   await page.waitForURL(/\/da\/now$/);
   const { spaceId } = await seededSpace();
