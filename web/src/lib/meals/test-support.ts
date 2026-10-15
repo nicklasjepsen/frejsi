@@ -84,7 +84,10 @@ export function database() {
       },
       update: (args: {
         where: { id: string; spaceId: string };
-        data: Partial<Omit<Row, "items">> & { items?: { create: Item[]; deleteMany?: object } };
+        data: Partial<Omit<Row, "items" | "totalCarbs">> & {
+          totalCarbs?: number | { increment: number };
+          items?: { create: Item[]; deleteMany?: object };
+        };
         include: { items: { orderBy: { position: string } } };
       }) => {
         const row = rows.get(args.where.id);
@@ -94,6 +97,10 @@ export function database() {
         const next = {
           ...row,
           ...fields,
+          totalCarbs:
+            typeof fields.totalCarbs === "object"
+              ? row.totalCarbs + fields.totalCarbs.increment
+              : (fields.totalCarbs ?? row.totalCarbs),
           items: items ? [...(items.deleteMany ? [] : row.items), ...items.create] : row.items,
         };
         rows.set(row.id, next);

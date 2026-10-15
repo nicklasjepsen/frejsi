@@ -59,6 +59,11 @@ beforeEach(() => {
       Promise.resolve(
         rows.get(id)?.spaceId === spaceId ? structuredClone(rows.get(id) ?? null) : null,
       ),
+    lock: async (spaceId, id) => {
+      const row = await repo.find(spaceId, id);
+      if (!row) throw Object.assign(new Error("not-found"), { code: "not-found" });
+      return row;
+    },
     create: (data) => {
       const row = {
         ...structuredClone(data),

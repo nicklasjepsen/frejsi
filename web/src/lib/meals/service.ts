@@ -209,7 +209,7 @@ export async function updateMeal(
   const deps = mealDeps(overrides);
   const data = parsed(UpdateMealRequest, input);
   checkTimestamp(session, data);
-  const previous = await load(spaceId, id, deps);
+  await load(spaceId, id, deps);
   const { items: requested, photoDataUrl, ...fields } = data;
   const changes: MealChanges = { ...fields };
   if (requested) {
@@ -218,9 +218,12 @@ export async function updateMeal(
   }
   const key = photoDataUrl ? await upload(spaceId, id, photoDataUrl, deps) : undefined;
   if (key) changes.photoKey = key;
+  let displacedKey: string | undefined;
   let row: MealRecord;
   try {
     row = await deps.write(async (repo, emit) => {
+      const previous = await repo.lock(spaceId, id);
+      displacedKey = previous.photoKey;
       const saved = await repo.update(spaceId, id, changes);
       await emit(spaceId, "meal.updated", { mealId: id });
       return saved;
@@ -229,7 +232,7 @@ export async function updateMeal(
     await cleanup(key, deps);
     throw error;
   }
-  if (key) await cleanup(previous.photoKey, deps);
+  if (key) await cleanup(displacedKey, deps);
   return view(row, session.locale, deps);
 }
 export async function deleteMeal(
@@ -238,12 +241,13 @@ export async function deleteMeal(
   overrides: Partial<MealDeps> = {},
 ): Promise<void> {
   const deps = mealDeps(overrides);
-  const previous = await load(spaceId, id, deps);
-  await deps.write(async (repo, emit) => {
+  const displacedKey = await deps.write(async (repo, emit) => {
+    const previous = await repo.lock(spaceId, id);
     await repo.delete(spaceId, id);
     await emit(spaceId, "meal.deleted", { mealId: id });
+    return previous.photoKey;
   });
-  await cleanup(previous.photoKey, deps);
+  await cleanup(displacedKey, deps);
 }
 export async function setMealPhoto(
   spaceId: string,
@@ -254,11 +258,14 @@ export async function setMealPhoto(
 ): Promise<MealView> {
   const deps = mealDeps(overrides);
   if (!deps.photos) throw new HttpError(503, "photo-unavailable");
-  const previous = await load(spaceId, id, deps);
+  await load(spaceId, id, deps);
   const key = dataUrl === null ? undefined : await upload(spaceId, id, dataUrl, deps);
+  let displacedKey: string | undefined;
   let row: MealRecord;
   try {
     row = await deps.write(async (repo, emit) => {
+      const previous = await repo.lock(spaceId, id);
+      displacedKey = previous.photoKey;
       const saved = await repo.update(spaceId, id, { photoKey: key });
       await emit(spaceId, "meal.updated", { mealId: id });
       return saved;
@@ -267,6 +274,6 @@ export async function setMealPhoto(
     await cleanup(key, deps);
     throw error;
   }
-  await cleanup(previous.photoKey, deps);
+  await cleanup(displacedKey, deps);
   return view(row, session.locale, deps);
 }
