@@ -431,6 +431,37 @@ describe("?meal= reopens a saved meal", () => {
     });
   });
 
+  it("finds a stored item's food again so its portion can be changed", async () => {
+    api();
+    fake
+      .on("GET /api/spaces/s1/meals/m1", meal)
+      .on("PATCH /api/spaces/s1/meals/m1", meal)
+      .on("GET /api/spaces/s1/lookup", (call: { path: string }) =>
+        call.path.includes("Bageri")
+          ? lookup({ results: [{ source: "library", verified: false, food: pickedBread }] })
+          : lookup({ results: [] }),
+      );
+    mount({ mealId: "m1" });
+    const confirm = await screen.findByTestId("log-confirm");
+    const bread = await within(confirm).findByRole("button", { name: /^Rugbrød, Fiktivt Bageri/ });
+    await waitFor(() => {
+      expect(bread).toBeEnabled();
+    });
+    fireEvent.click(bread);
+    fireEvent.click(within(confirm).getByRole("button", { name: "1 skive · 18 g" }));
+    expect(screen.getByTestId("total-bar")).toHaveTextContent("32 g");
+    fireEvent.click(within(confirm).getByRole("button", { name: "Gem måltid" }));
+    await waitFor(() => {
+      expect(nav.push).toHaveBeenCalled();
+    });
+    expect(writes()[0]?.body).toMatchObject({
+      items: [
+        { foodId: "f-bread", name: "Rugbrød, Fiktivt Bageri", portionLabel: "1 skive", carbs: 18 },
+        { name: "Æble", portionLabel: "1 mellem", carbs: 14 },
+      ],
+    });
+  });
+
   it("deletes the meal with Slet måltid", async () => {
     api();
     fake.on("GET /api/spaces/s1/meals/m1", meal).on("DELETE /api/spaces/s1/meals/m1", null, 204);
@@ -564,6 +595,21 @@ describe("Log-Desktop", () => {
     await act(async () => {
       await Promise.resolve();
     });
+  });
+
+  it("never adds a stale highlighted row after the query changed", async () => {
+    api();
+    mount({ layout: "desktop" });
+    const field = screen.getByRole("searchbox", { name: "Søg mad eller skriv en stregkode" });
+    fireEvent.change(field, { target: { value: "rugbrød" } });
+    await screen.findByTestId("lookup-results");
+    fireEvent.keyDown(field, { key: "ArrowDown" });
+    fireEvent.change(field, { target: { value: "æble" } });
+    fireEvent.keyDown(field, { key: "Enter" });
+    await waitFor(() => {
+      expect(lookups().at(-1)).toBe("/api/spaces/s1/lookup?q=%C3%A6ble&remote=true");
+    });
+    expect(writes()).toEqual([]);
   });
 
   it("runs ?q= from the Now header on load", async () => {

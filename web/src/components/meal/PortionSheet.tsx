@@ -20,7 +20,8 @@ export function PortionSheet({
 }: {
   item: DraftItem;
   onPortion: (index: number) => void;
-  onGrams: (grams: number) => void;
+  /** Whole grams in range, or null while the field is empty or invalid. */
+  onGrams: (grams: number | null) => void;
   desktop?: boolean;
 }) {
   const t = useTranslations("log");
@@ -35,7 +36,7 @@ export function PortionSheet({
   const selectedIndex = choice && "portion" in choice ? choice.portion : undefined;
   const grams = choice && "grams" in choice ? choice.grams : undefined;
   const setGrams = (value: number | undefined) => {
-    if (value !== undefined && value >= 1 && value <= 5000) onGrams(value);
+    onGrams(value !== undefined && value >= 1 && value <= 5000 ? value : null);
   };
   return (
     <section className={styles.portionSheet} aria-label={t("portionQuestion", { name: food.name })}>

@@ -6,10 +6,12 @@ import {
   addFood,
   chooseGrams,
   choosePortion,
+  clearChoice,
   draftFromMeal,
   emptyDraft,
   isComplete,
   itemCarbs,
+  relinkFood,
   removeItem,
   toMealRequest,
   totalCarbs,
@@ -113,5 +115,39 @@ describe("the meal draft", () => {
   it("sends a cleared bolus tap on an edit as no bolusTs", () => {
     const draft = { ...addFood(emptyDraft(), lunchbox), bolusTs: null };
     expect(toMealRequest(draft, null)).not.toHaveProperty("bolusTs");
+  });
+
+  it("is incomplete again when a weighed quantity is cleared", () => {
+    let draft = addFood(emptyDraft(), apple);
+    const key = draft.items[0]?.key ?? "";
+    draft = chooseGrams(draft, key, 35);
+    expect(isComplete(draft)).toBe(true);
+    draft = clearChoice(draft, key);
+    expect(isComplete(draft)).toBe(false);
+    expect(totalCarbs(draft)).toBe(0);
+  });
+
+  it("relinks a reopened item to its food and keeps the snapshot until a portion is changed", () => {
+    const meal: MealView = {
+      id: "m1",
+      ts: "2026-10-14T10:10:00.000Z",
+      title: "x",
+      slot: "lunch",
+      totalCarbs: 36,
+      byUser: { id: "u1", name: "Jonas" },
+      items: [{ name: "Fictional rye bread", portionLabel: "2 slices", carbs: 35 }],
+    };
+    let draft = relinkFood(draftFromMeal(meal), "s1", bread);
+    expect(draft.items[0]?.choice).toEqual({ portion: 2 });
+    // The stored 35 g stays what is saved, although the food says 36 g today.
+    expect(totalCarbs(draft)).toBe(35);
+    expect(toMealRequest(draft, null).items).toEqual([
+      { name: "Fictional rye bread", portionLabel: "2 slices", carbs: 35 },
+    ]);
+    draft = choosePortion(draft, "s1", 1);
+    expect(totalCarbs(draft)).toBe(18);
+    expect(toMealRequest(draft, null).items).toEqual([
+      { foodId: "f-bread", name: "Fictional rye bread", portionLabel: "1 slice", carbs: 18 },
+    ]);
   });
 });

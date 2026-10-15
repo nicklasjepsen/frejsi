@@ -70,10 +70,11 @@ export function DesktopLog({ controller, spaceId, timeZone, userName, simpleMode
   const response = controller.response;
   const rowCount = response ? response.results.length + 1 : 0;
 
+  // A new answer or a changed query starts the highlight over: Enter never adds a stale row.
   useEffect(() => {
     setHighlighted(0);
     setMoved(false);
-  }, [response]);
+  }, [response, controller.query]);
 
   // `/` focuses the field; ⌘↩ or Ctrl+Enter saves the meal from anywhere on the screen.
   useEffect(() => {

@@ -26,9 +26,11 @@ import {
   addFood,
   chooseGrams,
   choosePortion,
+  clearChoice,
   draftFromMeal,
   emptyDraft,
   isComplete,
+  relinkFood,
   removeItem,
   toMealRequest,
   totalCarbs,
@@ -89,7 +91,8 @@ export function useLogController({
 }: LogControllerOptions) {
   const router = useRouter();
   const [query, setQuery] = useState(initialQuery ?? "");
-  const [response, setResponse] = useState<LookupResponse | null>(null);
+  /** The latest answer and the query (or barcode) it answers; a stale answer is never shown. */
+  const [answered, setAnswered] = useState<{ key: string; response: LookupResponse } | null>(null);
   /** The query whose all-sources (remote) answer is on screen; Enter then adds instead of searching. */
   const [submitted, setSubmitted] = useState<string | null>(null);
   const [lookupFailed, setLookupFailed] = useState(false);
@@ -115,22 +118,25 @@ export function useLogController({
   const onAddedRef = useRef(onAdded);
   onAddedRef.current = onAdded;
 
-  const runLookup = useCallback(async (run: (signal: AbortSignal) => Promise<LookupResponse>) => {
-    abort.current?.abort();
-    const controller = new AbortController();
-    abort.current = controller;
-    try {
-      const answer = await run(controller.signal);
-      if (controller.signal.aborted) return null;
-      setLookupFailed(false);
-      setResponse(answer);
-      return answer;
-    } catch (error) {
-      if (controller.signal.aborted) return null;
-      if (!(error instanceof DOMException && error.name === "AbortError")) setLookupFailed(true);
-      return null;
-    }
-  }, []);
+  const runLookup = useCallback(
+    async (key: string, run: (signal: AbortSignal) => Promise<LookupResponse>) => {
+      abort.current?.abort();
+      const controller = new AbortController();
+      abort.current = controller;
+      try {
+        const answer = await run(controller.signal);
+        if (controller.signal.aborted) return null;
+        setLookupFailed(false);
+        setAnswered({ key, response: answer });
+        return answer;
+      } catch (error) {
+        if (controller.signal.aborted) return null;
+        if (!(error instanceof DOMException && error.name === "AbortError")) setLookupFailed(true);
+        return null;
+      }
+    },
+    [],
+  );
 
   const addToMeal = useCallback((food: FoodView) => {
     setDraft((current) => {
@@ -164,9 +170,9 @@ export function useLogController({
   }, []);
 
   const runBarcode = useCallback(
-    async (code: string) => {
+    async (code: string, key: string = code) => {
       setBarcodeInvalid(false);
-      const answer = await runLookup((signal) => lookupBarcode(spaceId, code, signal));
+      const answer = await runLookup(key, (signal) => lookupBarcode(spaceId, code, signal));
       if (!answer) return "failed" as const;
       const first = answer.results[0];
       if (first) {
@@ -197,11 +203,11 @@ export function useLogController({
   const submit = useCallback(
     async (value: string) => {
       const code = asTypedBarcode(value);
-      if (code) return runBarcode(code);
+      if (code) return runBarcode(code, value.trim());
       const q = value.trim();
       if (!q) return "failed" as const;
       remoteFor.current = q;
-      const answer = await runLookup((signal) => lookupText(spaceId, q, true, signal));
+      const answer = await runLookup(q, (signal) => lookupText(spaceId, q, true, signal));
       if (answer) setSubmitted(q);
       return answer ? ("searched" as const) : ("failed" as const);
     },
@@ -214,14 +220,14 @@ export function useLogController({
     if (remoteFor.current !== q) remoteFor.current = null;
     if (!q) {
       abort.current?.abort();
-      setResponse(null);
+      setAnswered(null);
       setSubmitted(null);
       return;
     }
     if (submitted === q || asTypedBarcode(q)) return;
     const timer = setTimeout(() => {
       if (remoteFor.current === q) return;
-      void runLookup((signal) => lookupText(spaceId, q, false, signal));
+      void runLookup(q, (signal) => lookupText(spaceId, q, false, signal));
     }, TYPE_DEBOUNCE_MS);
     return () => {
       clearTimeout(timer);
@@ -256,8 +262,24 @@ export function useLogController({
     if (mealId) {
       getMeal(spaceId, mealId)
         .then((meal) => {
-          setDraft(draftFromMeal(meal));
+          const reopened = draftFromMeal(meal);
+          setDraft(reopened);
           setMealLoaded(true);
+          // Find each stored item's food in the library again so its portions can be changed;
+          // until one is, the item keeps its stored snapshot (§2).
+          for (const item of reopened.items) {
+            lookupText(spaceId, item.name, false)
+              .then((answer) => {
+                const match = answer.results.find(
+                  (result) => result.source === "library" && result.food.name === item.name,
+                );
+                if (match && isLibraryFood(match.food)) {
+                  const food = match.food;
+                  setDraft((current) => relinkFood(current, item.key, food));
+                }
+              })
+              .catch(() => undefined);
+          }
         })
         .catch(() => {
           setLoadFailed(true);
@@ -325,7 +347,7 @@ export function useLogController({
   return {
     query,
     setQuery,
-    response: query.trim() ? response : null,
+    response: answered?.key === query.trim() ? answered.response : null,
     submitted,
     lookupFailed,
     pickFailed,
@@ -354,8 +376,8 @@ export function useLogController({
     choosePortion: (key: string, index: number) => {
       setDraft((d) => choosePortion(d, key, index));
     },
-    chooseGrams: (key: string, grams: number) => {
-      setDraft((d) => chooseGrams(d, key, grams));
+    chooseGrams: (key: string, grams: number | null) => {
+      setDraft((d) => (grams === null ? clearChoice(d, key) : chooseGrams(d, key, grams)));
     },
     removeItem: (key: string) => {
       setDraft((d) => removeItem(d, key));
