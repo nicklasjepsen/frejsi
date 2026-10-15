@@ -1,0 +1,199 @@
+{
+  "weekStart": "2025-10-06",
+  "weekEnd": "2025-10-12",
+  "isoWeek": 41,
+  "isoYear": 2025,
+  "timezone": "Europe/Copenhagen",
+  "target": {
+    "low": 4,
+    "high": 10
+  },
+  "days": [
+    {
+      "date": "2025-10-06",
+      "mealCount": 3,
+      "totalCarbs": 112,
+      "inRangePercent": 82,
+      "curve": [
+        {
+          "ts": "2025-10-06T10:00:00Z",
+          "mmol": 6
+        },
+        {
+          "ts": "2025-10-06T10:05:00Z",
+          "mmol": 7
+        }
+      ],
+      "mealTimes": ["2025-10-06T10:10:00Z"]
+    },
+    {
+      "date": "2025-10-07",
+      "mealCount": 3,
+      "totalCarbs": 112,
+      "inRangePercent": 82,
+      "curve": [
+        {
+          "ts": "2025-10-07T10:00:00Z",
+          "mmol": 6
+        },
+        {
+          "ts": "2025-10-07T10:05:00Z",
+          "mmol": 7
+        }
+      ],
+      "mealTimes": ["2025-10-07T10:10:00Z"]
+    },
+    {
+      "date": "2025-10-08",
+      "mealCount": 3,
+      "totalCarbs": 112,
+      "inRangePercent": 82,
+      "curve": [
+        {
+          "ts": "2025-10-08T10:00:00Z",
+          "mmol": 6
+        },
+        {
+          "ts": "2025-10-08T10:05:00Z",
+          "mmol": 7
+        }
+      ],
+      "mealTimes": ["2025-10-08T10:10:00Z"]
+    },
+    {
+      "date": "2025-10-09",
+      "mealCount": 3,
+      "totalCarbs": 112,
+      "inRangePercent": 82,
+      "curve": [
+        {
+          "ts": "2025-10-09T10:00:00Z",
+          "mmol": 6
+        },
+        {
+          "ts": "2025-10-09T10:05:00Z",
+          "mmol": 7
+        }
+      ],
+      "mealTimes": ["2025-10-09T10:10:00Z"]
+    },
+    {
+      "date": "2025-10-10",
+      "mealCount": 3,
+      "totalCarbs": 112,
+      "inRangePercent": 82,
+      "curve": [
+        {
+          "ts": "2025-10-10T10:00:00Z",
+          "mmol": 6
+        },
+        {
+          "ts": "2025-10-10T10:05:00Z",
+          "mmol": 7
+        }
+      ],
+      "mealTimes": ["2025-10-10T10:10:00Z"]
+    },
+    {
+      "date": "2025-10-11",
+      "mealCount": 3,
+      "totalCarbs": 112,
+      "inRangePercent": 82,
+      "curve": [
+        {
+          "ts": "2025-10-11T10:00:00Z",
+          "mmol": 6
+        },
+        {
+          "ts": "2025-10-11T10:05:00Z",
+          "mmol": 7
+        }
+      ],
+      "mealTimes": ["2025-10-11T10:10:00Z"]
+    },
+    {
+      "date": "2025-10-12",
+      "mealCount": 3,
+      "totalCarbs": 112,
+      "inRangePercent": 82,
+      "curve": [
+        {
+          "ts": "2025-10-12T10:00:00Z",
+          "mmol": 6
+        },
+        {
+          "ts": "2025-10-12T10:05:00Z",
+          "mmol": 7
+        }
+      ],
+      "mealTimes": ["2025-10-12T10:10:00Z"]
+    }
+  ],
+  "numbers": {
+    "inRangePercent": 81,
+    "previousWeekInRangePercent": 76,
+    "belowPercent": 2,
+    "lowEpisodes": {
+      "count": 3,
+      "atNight": 3
+    },
+    "carbsPerDay": 116,
+    "mealCount": 23,
+    "bolusLead": {
+      "meanMinutes": 9,
+      "registered": 17,
+      "of": 23
+    }
+  },
+  "meals": [
+    {
+      "mealId": "meal-older",
+      "ts": "2025-10-07T10:10:00Z",
+      "title": "Fictional rye toast",
+      "totalCarbs": 50,
+      "bolusLeadMinutes": 12,
+      "stats": {
+        "peak": {
+          "mmol": 9.6,
+          "ts": "2025-10-07T11:15:00Z",
+          "minutesAfterMeal": 65
+        },
+        "inRange": {
+          "minutes": 180,
+          "coveredMinutes": 180,
+          "windowMinutes": 180,
+          "complete": true,
+          "belowMinutes": 0,
+          "aboveMinutes": 0
+        },
+        "bolusLeadMinutes": 12,
+        "readingCount": 37
+      }
+    },
+    {
+      "mealId": "meal-newer",
+      "ts": "2025-10-08T10:10:00Z",
+      "title": "Fictional rye toast",
+      "totalCarbs": 50,
+      "bolusLeadMinutes": 12,
+      "stats": {
+        "peak": {
+          "mmol": 9.6,
+          "ts": "2025-10-08T11:15:00Z",
+          "minutesAfterMeal": 65
+        },
+        "inRange": {
+          "minutes": 180,
+          "coveredMinutes": 180,
+          "windowMinutes": 180,
+          "complete": true,
+          "belowMinutes": 0,
+          "aboveMinutes": 0
+        },
+        "bolusLeadMinutes": 12,
+        "readingCount": 37
+      }
+    }
+  ],
+  "now": "2025-10-15T12:00:00Z"
+}

@@ -1,0 +1,118 @@
+/* Historik-Desktop and the plan's derived phone week. All colour comes from shell tokens. */
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  min-width: 0;
+  color: var(--text);
+}
+.loading {
+  min-height: 620px;
+  border-radius: 16px;
+  background: var(--surface-sunken);
+}
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.views {
+  display: none;
+}
+.phoneDay {
+  display: inline-flex;
+  min-width: 44px;
+  min-height: 44px;
+  align-items: center;
+  justify-content: center;
+  color: var(--accent-strong);
+}
+.arrows {
+  margin-left: auto;
+}
+.arrows a,
+.arrows button {
+  width: 44px;
+  height: 44px;
+}
+.days {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 10px;
+}
+.dayTile {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+  padding: 12px;
+  border-radius: 16px;
+  background: var(--surface);
+  border: var(--card-border);
+  box-shadow: var(--card-shadow);
+  color: var(--text);
+  text-decoration: none;
+}
+.dayTile svg {
+  height: 64px;
+}
+.dayTile:focus-visible,
+.phoneDay:focus-visible,
+.retry:focus-visible {
+  outline: 2px solid var(--accent-base);
+  outline-offset: 3px;
+}
+.tileLine {
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+.tileLine:first-child {
+  font-size: 13px;
+}
+.tileLine strong {
+  color: var(--text);
+}
+.numbers {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.numbers h2 {
+  margin: 0;
+  font-size: 16px;
+}
+.meals {
+  min-width: 0;
+}
+.retry {
+  align-self: flex-start;
+  min-height: 44px;
+  padding: 0 16px;
+  border: 1px solid var(--hairline);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  cursor: pointer;
+}
+@media (min-width: 1280px) {
+  .views {
+    display: block;
+  }
+  .phoneDay {
+    display: none;
+  }
+  .days {
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+  }
+  .numbers {
+    width: min(100%, 500px);
+  }
+}
