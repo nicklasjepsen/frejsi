@@ -26,8 +26,10 @@ let events: string[];
 let logs: ReturnType<typeof captureLog>;
 let repo: MealRepository;
 let photos: MemoryPhotoStore;
+let clock: Date;
 beforeEach(() => {
-  auth = new FakeLiveDb(() => new Date());
+  clock = at;
+  auth = new FakeLiveDb(() => at);
   auth.addSpace("s1");
   auth.addMember("carer", "s1", "carer");
   auth.addMember("viewer", "s1", "viewer");
@@ -88,7 +90,7 @@ beforeEach(() => {
     repo,
     photos,
     write: (work) => work(repo, emit),
-    now: () => at,
+    now: () => clock,
   });
 });
 afterEach(() => {
@@ -97,6 +99,19 @@ afterEach(() => {
 });
 
 describe("meal routes", () => {
+  it("rejects a session exactly at expiry by the meal clock before writing", async () => {
+    clock = new Date(at.getTime() + 60 * 60 * 1000);
+    const response = await POST(
+      request("POST", "carer", { items: [{ name: "Fictional toast", carbs: 12 }] }),
+      ctx(),
+    );
+    expect(response.status).toBe(403);
+    expect(await response.json()).toMatchObject({ error: { code: "forbidden" } });
+    expect(rows.size).toBe(0);
+    expect(events).toEqual([]);
+    expect(auth.updates).toEqual([]);
+  });
+
   it("creates, reads, corrects, saves/removes a photo and deletes with exactly one event per write", async () => {
     const created = await POST(
       request("POST", "carer", {
@@ -204,7 +219,7 @@ describe("meal routes", () => {
       const row = await find({ ...args, include: { user: { include: { memberships: true } } } });
       return row ? { ...row, user: { ...row.user, simpleMode: true } } : null;
     }) as unknown as typeof find;
-    configureMeals({ sessionDb: db, repo, photos: null });
+    configureMeals({ sessionDb: db, repo, photos: null, now: () => clock });
     const response = await POST(
       request("POST", "carer", {
         items: [{ name: "Fictional toast", carbs: 12 }],

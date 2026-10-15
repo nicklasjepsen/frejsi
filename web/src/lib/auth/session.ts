@@ -93,6 +93,19 @@ export function assertRole(
 export async function requireRole(
   spaceId: string,
   ...roles: Role[]
+): Promise<{ session: SessionContext; role: Role }>;
+export async function requireRole(
+  spaceId: string,
+  deps: SessionDeps,
+  ...roles: Role[]
+): Promise<{ session: SessionContext; role: Role }>;
+export async function requireRole(
+  spaceId: string,
+  depsOrRole: SessionDeps | Role = {},
+  ...roles: Role[]
 ): Promise<{ session: SessionContext; role: Role }> {
-  return assertRole(await getSession(), spaceId, ...roles);
+  // Keep the caller's clock through the cookie lookup and expiry check, as requireSpaceRole does.
+  const deps = typeof depsOrRole === "string" ? {} : depsOrRole;
+  const allowedRoles = typeof depsOrRole === "string" ? [depsOrRole, ...roles] : roles;
+  return assertRole(await getSession(deps), spaceId, ...allowedRoles);
 }

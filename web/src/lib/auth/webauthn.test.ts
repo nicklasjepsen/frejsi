@@ -191,7 +191,7 @@ describe("registration", () => {
   it("the session it creates is what loadSession() returns", async () => {
     const w = world();
     const result = await registerCarer(w);
-    await expect(loadSession(result.sessionId, { db: w.fake.db, emit: w.emit })).resolves.toEqual({
+    await expect(loadSession(result.sessionId, { ...w.deps, emit: w.emit })).resolves.toEqual({
       userId: result.userId,
       name: "Example Carer",
       simpleMode: false,
@@ -199,6 +199,9 @@ describe("registration", () => {
       locale: "da",
       memberships: [{ spaceId: "s1", role: "carer" }],
     });
+    await expect(
+      loadSession(result.sessionId, { ...w.deps, emit: w.emit, now: () => result.expiresAt }),
+    ).resolves.toBeNull();
   });
 
   it("rejects a second use of the same token with invite-used", async () => {
@@ -462,7 +465,7 @@ describe("removePasskey and logout", () => {
     expect(w.fake.rows("passkey")).toEqual([]);
     expect(w.fake.rows("session")).toEqual([]);
     await expect(
-      loadSession(registered.sessionId, { db: w.fake.db, emit: w.emit }),
+      loadSession(registered.sessionId, { ...w.deps, emit: w.emit }),
     ).resolves.toBeNull();
     expect(w.events).toEqual([
       { spaceId: "s1", type: "device.removed", payload: { userId: registered.userId, passkeyId } },
@@ -481,7 +484,7 @@ describe("removePasskey and logout", () => {
     await logout(registered.sessionId, w.deps);
     expect(w.fake.rows("session").map((s) => s.id)).toEqual([other.sessionId]);
     await expect(
-      loadSession(registered.sessionId, { db: w.fake.db, emit: w.emit }),
+      loadSession(registered.sessionId, { ...w.deps, emit: w.emit }),
     ).resolves.toBeNull();
     await expect(logout("unknown", w.deps)).resolves.toBeUndefined();
   });

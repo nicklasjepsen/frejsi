@@ -217,14 +217,50 @@ describe("assertRole and requireRole", () => {
     shared.rows.splice(0, shared.rows.length, { ...alive(), lastSeenAt: new Date(0) });
     shared.emitted.splice(0, shared.emitted.length);
     cookieJar.set(SESSION_COOKIE, "sess-1");
-    await expect(requireRole("s1", "carer")).resolves.toEqual({ session: expected, role: "carer" });
+    await expect(requireRole("s1", { now: () => T0 }, "carer")).resolves.toEqual({
+      session: expected,
+      role: "carer",
+    });
     expect(shared.emitted.map((call) => call.slice(0, 2))).toEqual([
       ["s1", "member.updated"],
       ["s2", "member.updated"],
     ]);
-    await expect(requireRole("s-other")).rejects.toMatchObject({ status: 404, code: "not-found" });
-    await expect(requireRole("s2", "owner")).rejects.toMatchObject({ status: 403 });
+    await expect(requireRole("s-other", { now: () => T0 })).rejects.toMatchObject({
+      status: 404,
+      code: "not-found",
+    });
+    await expect(requireRole("s2", { now: () => T0 }, "owner")).rejects.toMatchObject({ status: 403 });
     cookieJar.clear();
-    await expect(requireRole("s1")).rejects.toMatchObject({ status: 403, code: "forbidden" });
+    await expect(requireRole("s1", { now: () => T0 })).rejects.toMatchObject({
+      status: 403,
+      code: "forbidden",
+    });
+  });
+
+  it("requireRole rejects a session exactly at expiry by the caller's clock without touching it", async () => {
+    const row = alive();
+    const { db, emit, touches, emitted } = fakeDb([row]);
+    cookieJar.set(SESSION_COOKIE, row.id);
+    await expect(
+      requireRole("s1", { db, emit, now: () => row.expiresAt }, "carer"),
+    ).rejects.toMatchObject({ status: 403, code: "forbidden" });
+    expect(touches).toEqual({ session: [], user: [] });
+    expect(emitted).toEqual([]);
+  });
+
+  it("requireRole keeps the real clock and variadic roles when no dependencies are passed", async () => {
+    const now = new Date();
+    shared.rows.splice(0, shared.rows.length, {
+      ...alive(),
+      lastSeenAt: now,
+      expiresAt: new Date(now.getTime() + 60_000),
+    });
+    cookieJar.set(SESSION_COOKIE, "sess-1");
+    await expect(requireRole("s1", "owner", "carer")).resolves.toEqual({
+      session: expected,
+      role: "carer",
+    });
+    await expect(requireRole("s2")).resolves.toEqual({ session: expected, role: "viewer" });
+    await expect(requireRole("s2", "owner", "carer")).rejects.toMatchObject({ status: 403 });
   });
 });
