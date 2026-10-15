@@ -5,7 +5,7 @@ import { useState } from "react";
 
 import { Button } from "@/components/ui/Button";
 
-import type { CreatedInviteView } from "./contract";
+import { INVITE_VALID_DAYS, type CreatedInviteView } from "./contract";
 import styles from "./people.module.css";
 import { QrCode } from "./QrCode";
 
@@ -48,7 +48,7 @@ export function InviteResult({
       </div>
       <div className={styles.resultText}>
         <p>{caption}</p>
-        <p className={styles.validity}>{t("validity")}</p>
+        <p className={styles.validity}>{t("validity", { days: INVITE_VALID_DAYS })}</p>
         <code className={styles.link} data-testid="invite-link" aria-label={t("link")}>
           {result.url}
         </code>

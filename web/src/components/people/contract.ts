@@ -58,6 +58,13 @@ export const CreateInviteBody = z.union([
 ]);
 export type CreateInviteBody = z.infer<typeof CreateInviteBody>;
 
+/**
+ * How long an invitation link is good for, as the validity line says it. The auth core owns the
+ * TTL (`INVITE_TTL_MS`); contract.test.ts holds the two together, since this file is bundled for
+ * the browser and cannot import the server module.
+ */
+export const INVITE_VALID_DAYS = 7;
+
 /** What the owner gets back, once: the link to share, and when it dies. */
 export const CreatedInviteView = z.object({
   id: z.string().min(1),
