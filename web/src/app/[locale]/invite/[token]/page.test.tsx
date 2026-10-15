@@ -19,7 +19,7 @@ const mocks = vi.hoisted(() => ({
   view: null as InviteView | null,
   error: null as Error | null,
   register: vi.fn(),
-  navigate: vi.fn<(href: string) => void>(),
+  switchSpace: vi.fn<(form: FormData) => Promise<void>>(),
 }));
 vi.mock("@/app/api/invites/invite-view", () => ({
   inviteView: (token: string) => {
@@ -33,10 +33,8 @@ vi.mock("../passkey-client", async (importOriginal) => ({
   ...(await importOriginal<Record<string, unknown>>()),
   registerWithInvite: (...args: unknown[]) => mocks.register(...args) as Promise<unknown>,
 }));
-vi.mock("../navigate", () => ({
-  navigate: (href: string) => {
-    mocks.navigate(href);
-  },
+vi.mock("@/components/shell/actions", () => ({
+  switchSpace: (form: FormData) => mocks.switchSpace(form),
 }));
 vi.mock("next/navigation", () => ({
   notFound: () => {
@@ -72,8 +70,14 @@ afterEach(() => {
   mocks.view = null;
   mocks.error = null;
   mocks.register.mockReset();
-  mocks.navigate.mockReset();
+  mocks.switchSpace.mockReset();
 });
+
+/** What the landing told the shell: the locale and the space this device should open. */
+const chosen = () => {
+  const form = mocks.switchSpace.mock.calls[0]?.[0];
+  return form ? { locale: form.get("locale"), spaceId: form.get("spaceId") } : null;
+};
 
 describe("GET /[locale]/invite/[token] · the landing (Invitation-Telefon, Invitation-Desktop)", () => {
   it("greets the invitee by name and space, explains the role in the design's words, names the inviter, the days left and the single use", async () => {
@@ -167,36 +171,42 @@ describe("GET /[locale]/invite/[token] · the landing (Invitation-Telefon, Invit
 });
 
 describe("the button runs task 5's registration and lands signed in (§2b)", () => {
-  it("a carer lands on Now", async () => {
+  // The landing points this device at the invitation's space and goes to the front page; the
+  // index there lands on the role's home: Nu for a carer or owner, I dag for a viewer
+  // ([locale]/page.test.tsx). So the destination and the shell always use the same membership.
+  it("a carer: signs in, selects the invitation's space on this device, and hands over to the front page", async () => {
     mocks.view = soren;
-    mocks.register.mockResolvedValue({ role: "carer" });
+    mocks.register.mockResolvedValue({ role: "carer", spaceId: "space-b" });
+    mocks.switchSpace.mockResolvedValue(undefined);
     await open();
     fireEvent.click(screen.getByRole("button", { name: "Opret adgang med denne telefon" }));
     await waitFor(() => {
-      expect(mocks.navigate).toHaveBeenCalledWith("/da/now");
+      expect(mocks.switchSpace).toHaveBeenCalledTimes(1);
     });
+    expect(chosen()).toEqual({ locale: "da", spaceId: "space-b" });
     expect(mocks.register).toHaveBeenCalledTimes(1);
     expect(mocks.register.mock.calls[0]?.[0]).toBe(TOKEN);
   });
 
-  it("a viewer lands on the viewer shell, never on Now", async () => {
+  it("a viewer: the same hand-off, in the URL's locale; the index keeps a viewer off Now", async () => {
     mocks.view = { ...soren, role: "viewer" };
-    mocks.register.mockResolvedValue({ role: "viewer" });
+    mocks.register.mockResolvedValue({ role: "viewer", spaceId: "space-b" });
+    mocks.switchSpace.mockResolvedValue(undefined);
     await open("en");
     fireEvent.click(screen.getByRole("button", { name: "Create access with this computer" }));
     await waitFor(() => {
-      expect(mocks.navigate).toHaveBeenCalledWith("/en/soon/today");
+      expect(chosen()).toEqual({ locale: "en", spaceId: "space-b" });
     });
-    expect(mocks.navigate).not.toHaveBeenCalledWith("/en/now");
   });
 
-  it("an add-device link lands the existing user on Now with the role the server reports", async () => {
+  it("an add-device link: the existing user's device is pointed at the space the link was for, not the shell's pick", async () => {
     mocks.view = { ...soren, name: "Mette", role: "owner", forExistingUser: true };
-    mocks.register.mockResolvedValue({ role: "owner" });
+    mocks.register.mockResolvedValue({ role: "owner", spaceId: "space-b" });
+    mocks.switchSpace.mockResolvedValue(undefined);
     await open();
     fireEvent.click(screen.getByRole("button", { name: "Opret adgang med denne telefon" }));
     await waitFor(() => {
-      expect(mocks.navigate).toHaveBeenCalledWith("/da/now");
+      expect(chosen()).toEqual({ locale: "da", spaceId: "space-b" });
     });
   });
 
@@ -210,7 +220,7 @@ describe("the button runs task 5's registration and lands signed in (§2b)", () 
       await screen.findByText("Det blev ikke til noget denne gang. Prøv igen, når du er klar."),
     ).toBeInTheDocument();
     expect(screen.getByRole("alert")).toBeInTheDocument();
-    expect(mocks.navigate).not.toHaveBeenCalled();
+    expect(mocks.switchSpace).not.toHaveBeenCalled();
     expect(button).not.toBeDisabled();
   });
 
