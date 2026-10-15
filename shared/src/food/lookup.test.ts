@@ -362,6 +362,21 @@ describe("lookup", () => {
     expect(sources[0]?.calls[0]).toEqual({ method: "byBarcode", barcode });
   });
 
+  it.each([null, "s1"])(
+    "prefers a barcode row in space %s over the same source candidate",
+    async (spaceId) => {
+      const repo = new MemoryFoodRepository([
+        row("existing", { spaceId, barcode, sourceRef: `fake-remote:${barcode}` }),
+      ]);
+      const result = await lookup(repo, plugins(), { ...options, query: { barcode } });
+      expect(result.results.map((item) => item.source)).toEqual([
+        spaceId === null ? "cache" : "library",
+        "fake-local",
+      ]);
+      expect(result.sources).toEqual({ "fake-remote": "ok", "fake-local": "ok" });
+    },
+  );
+
   it("returns and caches a barcode candidate with unknown nutrition without losing healthy sources", async () => {
     const unknown = { ...candidate(), carbsPer100g: null, portions: [] };
     const source = new FakeFoodSource({ id: "fake-remote", kind: "remote", candidates: [unknown] });

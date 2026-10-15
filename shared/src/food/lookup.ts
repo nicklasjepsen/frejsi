@@ -103,6 +103,7 @@ export async function lookup(
     ...library.map(libraryResult),
     ...cache.map((row) => ({ source: "cache", verified: false, food: candidateFromRow(row) })),
   ];
+  const seen = new Set([...library, ...cache].map((row) => row.sourceRef));
   const statuses: Record<string, FoodSourceStatus> = {};
   const replies = await Promise.all(
     sources.map(async (source) => {
@@ -124,6 +125,8 @@ export async function lookup(
         food = { ...candidate, barcode: query.barcode, sourceRef: `${source.id}:${query.barcode}` };
         await repo.upsertCache({ ...food, spaceId: null, verified: false });
       }
+      if (seen.has(food.sourceRef)) continue;
+      seen.add(food.sourceRef);
       results.push({ source: source.id, verified: false, food });
     }
   }
