@@ -43,10 +43,15 @@ export interface LiveState {
   lastSeq: number;
   /** Oldest first, each with its `ts`; only the window's hours are kept. */
   readings: Reading[];
+  /** The newest reading whatever its age, so a long outage still shows the last value and its age. */
+  latest: Reading | null;
   sourceStatus: SourceStatus;
   sourceSince: string | null;
   space: LiveSpace | null;
-  /** A refusal of the readings window (403 for a viewer, 404 for a non-member); the feed stops. */
+  /**
+   * A refusal (403 for a viewer, 404 for a non-member) of the window, a catch-up or a negotiate;
+   * the feed stops and drops every reading it held.
+   */
   error: ApiErrorCode | null;
 }
 
@@ -65,6 +70,7 @@ const INITIAL: LiveState = {
   connection: "connecting",
   lastSeq: 0,
   readings: [],
+  latest: null,
   sourceStatus: "not-configured",
   sourceSince: null,
   space: null,
@@ -196,11 +202,7 @@ export class LiveFeed {
         signal: controller.signal,
       });
       if (superseded()) return;
-      if (response.status === 403 || response.status === 404) {
-        this.stop();
-        this.set({ error: response.status === 403 ? "forbidden" : "not-found", loaded: false });
-        return;
-      }
+      if (this.refused(response)) return;
       if (response.ok) body = await response.json();
     } catch {
       body = null;
@@ -223,6 +225,7 @@ export class LiveFeed {
       error: null,
       lastSeq: window.lastSeq,
       readings: this.prune(window.readings),
+      latest: newest(window.latest, before.loaded ? before.latest : null),
       sourceStatus: window.sourceStatus,
       sourceSince: window.sourceSince,
       space: window.space,
@@ -244,9 +247,11 @@ export class LiveFeed {
     const controller = new AbortController();
     this.negotiation = controller;
     void this.fetchImpl(this.url("negotiate"), { signal: controller.signal })
-      .then(async (response) =>
-        response.ok ? NegotiateResult.safeParse(await response.json()) : null,
-      )
+      .then(async (response) => {
+        if (this.cancelled(gen) || this.negotiation !== controller) return null;
+        if (this.refused(response)) return null;
+        return response.ok ? NegotiateResult.safeParse(await response.json()) : null;
+      })
       .catch(() => null)
       .then((parsed) => {
         if (this.cancelled(gen) || this.negotiation !== controller) return;
@@ -382,7 +387,7 @@ export class LiveFeed {
           this.url("events", { since: String(this.state.lastSeq) }),
           { signal: controller.signal },
         );
-        if (superseded()) return;
+        if (superseded() || this.refused(response)) return;
         const parsed = response.ok ? EventsPage.safeParse(await response.json()) : null;
         if (!parsed?.success || superseded()) return;
         for (const envelope of parsed.data.events) {
@@ -443,14 +448,18 @@ export class LiveFeed {
         const readings = this.prune(
           [...others, envelope.payload].sort((a, b) => a.ts.localeCompare(b.ts)),
         );
-        this.set({ readings });
+        this.set({ readings, latest: newest(envelope.payload, this.state.latest) });
         return;
       }
       case "source.status":
         this.set({ sourceStatus: envelope.payload.status, sourceSince: envelope.payload.since });
         return;
       case "space.updated":
-        // Unit, target range or timezone may have changed: the window carries them.
+      case "member.updated":
+      case "member.removed":
+        // Unit, target range or timezone may have changed: the window carries them. A member
+        // change may be this member's own downgrade or removal: the reload is then refused and the
+        // feed stops (the server has already taken the socket out of the glucose group).
         this.windowStale = true;
         void this.loadWindow(gen);
         return;
@@ -459,8 +468,31 @@ export class LiveFeed {
     }
   }
 
+  /**
+   * A 403 or 404 means this member may no longer read the space (downgraded to viewer, removed):
+   * stop for good, drop every reading held, and say why. Anything else is not a refusal.
+   */
+  private refused(response: Response): boolean {
+    if (response.status !== 403 && response.status !== 404) return false;
+    this.stop();
+    this.set({
+      error: response.status === 403 ? "forbidden" : "not-found",
+      loaded: false,
+      readings: [],
+      latest: null,
+    });
+    return true;
+  }
+
   private prune(readings: Reading[]): Reading[] {
     const cutoff = this.now().getTime() - this.hours * 60 * 60 * 1000;
     return readings.filter((r) => new Date(r.ts).getTime() >= cutoff);
   }
+}
+
+/** The later of two readings by `ts`; either may be missing. */
+function newest(a: Reading | null, b: Reading | null): Reading | null {
+  if (!a) return b;
+  if (!b) return a;
+  return Date.parse(a.ts) >= Date.parse(b.ts) ? a : b;
 }

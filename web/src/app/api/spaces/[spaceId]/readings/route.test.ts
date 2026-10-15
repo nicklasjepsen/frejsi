@@ -74,6 +74,30 @@ describe("GET /api/spaces/:id/readings?hours= (plan §5)", () => {
     });
   });
 
+  it("carries the newest reading whatever its age, and null for a space without readings", async () => {
+    const { body } = await readings("sess-owner-1", "3");
+    expect(body?.latest).toEqual({
+      ts: "2026-10-15T13:10:00.000Z",
+      mmol: 6.2,
+      trend: "forty-five-up",
+    });
+
+    // A source down for 26 hours: the window is empty, the last reading still comes with its ts.
+    const stale = new FakeLiveDb(() => T0);
+    stale.addSpace("s3");
+    stale.addMember("owner-3", "s3", "owner");
+    stale.addReading("s3", { ts: hoursAgo(27), mmol: 8.1, trend: "flat" });
+    stale.addReading("s3", { ts: hoursAgo(26), mmol: 7.7, trend: "flat" });
+    configureLive({ db: stale.db, now: () => T0 });
+    const late = await readings("sess-owner-3", undefined, "s3");
+    expect(late.body?.readings).toEqual([]);
+    expect(late.body?.latest).toEqual({ ts: hoursAgo(26), mmol: 7.7, trend: "flat" });
+
+    configureLive({ db: fake.db, now: () => T0 });
+    const empty = await readings("sess-other-1", undefined, "s2");
+    expect(empty.body?.latest).toBeNull();
+  });
+
   it("defaults to 24 hours and lets a carer read too", async () => {
     const { body } = await readings("sess-carer-1");
     expect(body?.readings.map((r) => r.mmol)).toEqual([5.5, 6.1, 6.2]);

@@ -126,6 +126,12 @@ export class FakeLiveDb {
             )
             .sort((a, b) => a.ts.getTime() - b.ts.getTime()),
         ),
+      findFirst: (args: { where: { spaceId: string }; orderBy: { ts: "desc" } }) =>
+        Promise.resolve(
+          this.readings
+            .filter((r) => r.spaceId === args.where.spaceId)
+            .sort((a, b) => b.ts.getTime() - a.ts.getTime())[0] ?? null,
+        ),
     };
     const eventDelegate = {
       findMany: (args: {

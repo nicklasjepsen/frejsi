@@ -47,7 +47,8 @@ export function NowScreen({ spaceId, locale, simpleMode, timeZone }: NowScreenPr
   const feed = useLiveFeed(spaceId, { hours: WINDOW_HOURS });
   const now = useNow();
 
-  const latest = feed.readings.at(-1) ?? null;
+  // From the feed, not the window: a reading older than 24 hours still shows, with its age.
+  const latest = feed.latest;
   const unit = feed.space?.glucoseUnit ?? "mmol";
   const zone = feed.space?.timezone ?? timeZone;
   const targetLow = feed.space?.targetLow ?? 4;
