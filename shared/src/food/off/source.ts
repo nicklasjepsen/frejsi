@@ -77,8 +77,8 @@ export class OffSource implements FoodSource {
     }
   }
   async search(q: string, locale: Locale, signal: AbortSignal): Promise<FoodSourceResult> {
+    const candidates: FoodSourceResult["candidates"] = [];
     try {
-      const candidates: FoodSourceResult["candidates"] = [];
       const seen = new Set<string>();
       const hosts = this.country === "world" ? ["world"] : [this.country, "world"];
       for (const host of hosts) {
@@ -103,6 +103,9 @@ export class OffSource implements FoodSource {
       }
       return result("ok", candidates.slice(0, 10));
     } catch (error) {
+      // The world fallback supplements a successful country response. Keep those
+      // matches if only the optional request fails; cancellation still wins.
+      if (candidates.length > 0 && !signal.aborted) return result("ok", candidates.slice(0, 10));
       return result(this.failure(error, signal));
     }
   }
