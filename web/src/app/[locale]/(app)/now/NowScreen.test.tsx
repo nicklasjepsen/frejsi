@@ -196,7 +196,9 @@ describe("Nu · desktop (Nu-Desktop)", () => {
     };
     mount();
     const desktop = within(screen.getByTestId("now-desktop"));
-    expect(desktop.getByRole("img", { name: "Glukose i dag fra 06:30 til 05:30" })).toBeInTheDocument();
+    expect(
+      desktop.getByRole("img", { name: "Glukose i dag fra 06:30 til 05:30" }),
+    ).toBeInTheDocument();
   });
 
   it("renders an mg/dL space as whole numbers everywhere", () => {
