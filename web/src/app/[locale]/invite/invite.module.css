@@ -1,0 +1,63 @@
+/* The invitation landing's own pieces: the reassurance lines, the desktop panel, the expiry line. */
+.lines {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  font-size: 15px;
+  line-height: 1.45;
+}
+
+.line {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+}
+
+.check {
+  flex-shrink: 0;
+  margin-top: 2px;
+  color: var(--accent-base);
+}
+
+.phoneCard {
+  margin-top: 28px;
+}
+
+.spacer {
+  flex: 1;
+  min-height: 28px;
+}
+
+.panel {
+  flex: 1 1 360px;
+  max-width: 440px;
+  gap: 18px;
+  padding: 28px;
+  border-radius: 24px;
+}
+
+.panelTitle {
+  font-family: var(--font-body-stack);
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.expiry {
+  text-align: center;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.help {
+  margin-top: 28px;
+  font-size: 15px;
+  line-height: 1.45;
+}
+
+.again {
+  margin-top: 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-items: flex-start;
+}

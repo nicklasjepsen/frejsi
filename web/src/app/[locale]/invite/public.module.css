@@ -1,0 +1,152 @@
+/*
+ * The pages before sign-in: the invitation landing (Invitation-Telefon, Invitation-Desktop) and
+ * welcome (design gap 23, drawn like the invitation). One column on the phone, the wide layout
+ * from 1280 px, where the shell switches too. Tokens only: dark mode and the accent come from
+ * tokens.css, and the default accent applies because no user has chosen one yet.
+ */
+.page {
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  padding: calc(var(--phone-safe-top) + 16px) var(--phone-gutter) 40px;
+}
+
+.inner {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+.wordmark {
+  font-family: var(--font-display-stack);
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding-top: 56px;
+}
+
+.hero {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.title {
+  font-size: 34px;
+  line-height: 1.1;
+  text-wrap: pretty;
+}
+
+.lead {
+  font-size: 17px;
+  line-height: 1.45;
+  color: var(--text-muted);
+}
+
+.lead strong {
+  color: var(--text);
+}
+
+/* Both layouts are in the DOM; CSS shows one, so the server renders without knowing the width. */
+.phoneOnly {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.desktopOnly {
+  display: none;
+}
+
+.actions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.status,
+.alert {
+  font-size: 15px;
+  line-height: 1.45;
+  text-align: center;
+}
+
+.status {
+  color: var(--text-muted);
+}
+
+.alert {
+  color: var(--text);
+  background: var(--unverified-bg);
+  border-radius: var(--radius-card-small);
+  padding: 12px 14px;
+}
+
+.footer {
+  margin-top: 28px;
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--text-muted);
+}
+
+@media (min-width: 1280px) {
+  .page {
+    align-items: center;
+    padding: 48px 24px 64px;
+  }
+
+  .inner {
+    max-width: 980px;
+    gap: 40px;
+  }
+
+  .wordmark {
+    font-size: 24px;
+  }
+
+  .main {
+    padding-top: 0;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: 40px;
+  }
+
+  .hero {
+    flex: 1 1 380px;
+    gap: 18px;
+  }
+
+  .title {
+    font-size: 44px;
+    line-height: 1.05;
+    letter-spacing: -0.01em;
+  }
+
+  .lead {
+    font-size: 18px;
+    line-height: 1.5;
+    max-width: 480px;
+  }
+
+  .phoneOnly {
+    display: none;
+  }
+
+  .desktopOnly {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .footer {
+    margin-top: 0;
+  }
+}
