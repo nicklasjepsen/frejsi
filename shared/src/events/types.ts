@@ -20,3 +20,12 @@ export interface ClientToken {
 export interface LiveTokenIssuer {
   issueClientToken(request: ClientTokenRequest): Promise<ClientToken | null>;
 }
+
+/**
+ * Takes a user's open connections out of a group at once, server side. A token's groups are baked
+ * in and auto-joined, so a role change would otherwise reach the socket only when it reconnects
+ * (issue #79). A no-op when no live transport is configured.
+ */
+export interface LiveGroupRevoker {
+  removeUserFromGroup(group: string, userId: string): Promise<void>;
+}

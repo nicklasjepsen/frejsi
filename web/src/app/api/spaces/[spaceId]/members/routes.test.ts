@@ -1,5 +1,5 @@
 // @vitest-environment node
-import type { EventSink } from "@frejsi/shared";
+import type { EventEnvelope, EventSink, LiveGroupRevoker } from "@frejsi/shared";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { PeopleView } from "@/components/people/contract";
@@ -17,11 +17,15 @@ import { DELETE as removeMember, PATCH as changeRole } from "./[userId]/route";
 import { GET as listMembers } from "./route";
 
 const holders = vi.hoisted(() => {
-  const shared: { db: Record<string, unknown>; sink: EventSink } = {
+  const shared: { db: Record<string, unknown>; sink: EventSink; live: LiveGroupRevoker } = {
     db: {},
     sink: { publish: () => Promise.resolve() },
+    live: { removeUserFromGroup: () => Promise.resolve() },
   };
-  const sink: EventSink = { publish: (group, envelope) => shared.sink.publish(group, envelope) };
+  const sink: EventSink & LiveGroupRevoker = {
+    publish: (group, envelope) => shared.sink.publish(group, envelope),
+    removeUserFromGroup: (group, userId) => shared.live.removeUserFromGroup(group, userId),
+  };
   return {
     shared,
     cookies: new Map<string, string>(),
@@ -44,11 +48,62 @@ vi.mock("next/headers", () => ({
     }),
 }));
 
+/**
+ * The live transport as the members' open sockets see it: each connection is auto-joined to the
+ * groups its token names (as `negotiate` issues them), and a publish reaches the users in the group.
+ */
+function liveConnections() {
+  const joined = new Map<string, Set<string>>();
+  const received = new Map<string, EventEnvelope[]>();
+  const removed: { group: string; userId: string }[] = [];
+  let failing = false;
+  return {
+    removed,
+    connect(userId: string, groups: string[]) {
+      joined.set(userId, new Set(groups));
+      received.set(userId, []);
+    },
+    publish(group: string, envelope: EventEnvelope) {
+      for (const [userId, groups] of joined) {
+        if (groups.has(group)) received.get(userId)?.push(envelope);
+      }
+    },
+    received: (userId: string) => received.get(userId) ?? [],
+    groupsOf: (userId: string) => [...(joined.get(userId) ?? [])],
+    failRevokes() {
+      failing = true;
+    },
+    revoker: {
+      removeUserFromGroup(group: string, userId: string) {
+        if (failing) return Promise.reject(new Error("service unavailable"));
+        removed.push({ group, userId });
+        joined.get(userId)?.delete(group);
+        return Promise.resolve();
+      },
+    } satisfies LiveGroupRevoker,
+  };
+}
+
+const reading: EventEnvelope = {
+  spaceId: "s1",
+  seq: 99,
+  ts: "2026-10-15T08:05:00.000Z",
+  type: "reading",
+  payload: { ts: "2026-10-15T08:05:00.000Z", mmol: 6.4, trend: "flat" },
+};
+
 let world: World;
+let live: ReturnType<typeof liveConnections>;
 beforeEach(() => {
   vi.useFakeTimers({ now: new Date("2026-10-15T08:00:00.000Z"), toFake: ["Date"] });
   process.env.APP_ORIGIN = "https://frejsi.example";
   world = createWorld(holders);
+  live = liveConnections();
+  holders.shared.live = live.revoker;
+  live.connect(USERS.owner.id, ["space-s1", "space-s1-glucose"]);
+  live.connect(USERS.secondOwner.id, ["space-s1", "space-s1-glucose"]);
+  live.connect(USERS.carer.id, ["space-s1", "space-s1-glucose"]);
+  live.connect(USERS.viewer.id, ["space-s1"]);
 });
 afterEach(() => {
   world.reset();
@@ -157,6 +212,43 @@ describe("PATCH /api/spaces/:id/members/:userId", () => {
     expect(world.events.map((e) => e.type)).toEqual(["member.updated"]);
   });
 
+  it("takes a carer downgraded to viewer out of the glucose group at once: no later reading reaches them", async () => {
+    world.as("owner");
+    expect((await patch(USERS.carer.id, { role: "viewer" })).status).toBe(204);
+    expect(live.removed).toEqual([{ group: "space-s1-glucose", userId: USERS.carer.id }]);
+    live.publish("space-s1-glucose", reading);
+    expect(live.received(USERS.carer.id)).toEqual([]);
+    expect(live.received(USERS.owner.id)).toEqual([reading]);
+    expect(live.groupsOf(USERS.carer.id)).toEqual(["space-s1"]);
+  });
+
+  it("does the same for an owner downgraded to viewer", async () => {
+    world.as("owner");
+    expect((await patch(USERS.secondOwner.id, { role: "viewer" })).status).toBe(204);
+    live.publish("space-s1-glucose", reading);
+    expect(live.received(USERS.secondOwner.id)).toEqual([]);
+  });
+
+  it("revokes nothing on a change that keeps glucose (carer to owner, owner to carer) or is refused", async () => {
+    world.as("owner");
+    expect((await patch(USERS.secondOwner.id, { role: "carer" })).status).toBe(204);
+    expect((await patch(USERS.owner.id, { role: "viewer" })).status).toBe(409);
+    expect((await patch(USERS.carer.id, { role: "owner" })).status).toBe(204);
+    expect(live.removed).toEqual([]);
+  });
+
+  it("keeps the committed role when the revoke fails, and logs ids only", async () => {
+    live.failRevokes();
+    world.as("owner");
+    expect((await patch(USERS.carer.id, { role: "viewer" })).status).toBe(204);
+    expect(
+      world.fake.rows("membership").find((m) => m.userId === USERS.carer.id && m.spaceId === "s1"),
+    ).toMatchObject({ role: "viewer" });
+    expect(world.log()).toContain('"code":"live-revoke-failed"');
+    expect(world.log()).not.toContain("service unavailable");
+    assertNoPii(world.log());
+  });
+
   it("gives a carer and a viewer 403, in the API, before the body is read", async () => {
     for (const who of ["carer", "viewer"] as const) {
       world.as(who);
@@ -198,6 +290,40 @@ describe("DELETE /api/spaces/:id/members/:userId", () => {
     expect(await next.json()).toMatchObject({ error: { code: "not-found" } });
   });
 
+  it("takes the removed member out of the space group and the glucose group at once", async () => {
+    world.as("owner");
+    expect((await remove(USERS.carer.id)).status).toBe(204);
+    expect(live.removed).toEqual(
+      expect.arrayContaining([
+        { group: "space-s1-glucose", userId: USERS.carer.id },
+        { group: "space-s1", userId: USERS.carer.id },
+      ]),
+    );
+    live.publish("space-s1-glucose", reading);
+    live.publish("space-s1", { ...reading, type: "member.removed", payload: { userId: "x" } });
+    expect(live.received(USERS.carer.id)).toEqual([]);
+    expect(live.groupsOf(USERS.carer.id)).toEqual([]);
+  });
+
+  it("keeps the removal when the revoke fails, and logs ids only", async () => {
+    live.failRevokes();
+    world.as("owner");
+    expect((await remove(USERS.carer.id)).status).toBe(204);
+    expect(
+      world.fake.rows("membership").find((m) => m.userId === USERS.carer.id && m.spaceId === "s1"),
+    ).toBeUndefined();
+    expect(world.log()).toContain('"code":"live-revoke-failed"');
+    assertNoPii(world.log());
+  });
+
+  it("revokes nothing when the removal is refused", async () => {
+    world.as("carer");
+    expect((await remove(USERS.viewer.id)).status).toBe(403);
+    world.as("owner");
+    expect((await remove("u-nobody")).status).toBe(404);
+    expect(live.removed).toEqual([]);
+  });
+
   it("withdraws the removed member's pending add-a-device links, emitting invite.revoked", async () => {
     world.fake.rows("invite").push({
       token: "carer-device-token",
@@ -213,9 +339,9 @@ describe("DELETE /api/spaces/:id/members/:userId", () => {
     });
     world.as("owner");
     expect((await remove(USERS.carer.id)).status).toBe(204);
-    expect(world.fake.rows("invite").find((i) => i.token === "carer-device-token")).toMatchObject(
-      { revokedAt: expect.any(Date) as Date },
-    );
+    expect(world.fake.rows("invite").find((i) => i.token === "carer-device-token")).toMatchObject({
+      revokedAt: expect.any(Date) as Date,
+    });
     expect(world.events).toEqual([
       { spaceId: "s1", type: "member.removed", payload: { userId: USERS.carer.id } },
       {
