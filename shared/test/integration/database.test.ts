@@ -89,7 +89,10 @@ describe("the database (SQL Server)", () => {
     const applied = await db.$queryRaw<{ migration_name: string }[]>`
       SELECT migration_name FROM _prisma_migrations
       WHERE finished_at IS NOT NULL AND rolled_back_at IS NULL`;
-    expect(applied.map((row) => row.migration_name)).toEqual(["0001_foundation"]);
+    expect(applied.map((row) => row.migration_name).sort()).toEqual([
+      "0001_foundation",
+      "0002_food",
+    ]);
     // Nothing left between the migrated database and schema.prisma: exit code 0, no script.
     const diff = prismaCli(
       [
