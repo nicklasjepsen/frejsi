@@ -65,6 +65,15 @@ export function resolve(value, scope) {
     const args = m[2] ? splitArgs(m[2]).map((a) => resolve(`[${a}]`, scope)) : [];
     return m[1].replace(/\{(\d+)\}/g, (_, i) => String(args[Number(i)]));
   }
+  m = expr.match(/^union\((.*)\)$/);
+  if (m) return Object.assign({}, ...splitArgs(m[1]).map((a) => resolve(`[${a}]`, scope)));
+  m = expr.match(/^createObject\((.*)\)$/);
+  if (m) {
+    const args = splitArgs(m[1]).map((a) => resolve(`[${a}]`, scope));
+    return Object.fromEntries(args.filter((_, i) => i % 2 === 0).map((key, i) => [key, args[i * 2 + 1]]));
+  }
+  m = expr.match(/^'([^']*)'$/);
+  if (m) return m[1];
   return value;
 }
 

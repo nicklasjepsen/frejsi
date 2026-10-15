@@ -13,7 +13,8 @@
 #   6. uploads the standalone Next.js build to the Static Web App
 #
 # Required environment: AZURE_SUBSCRIPTION_ID, AZURE_RESOURCE_GROUP, APP_VERSION (the tag).
-# Optional: CUSTOM_DOMAIN (sets APP_ORIGIN; otherwise the default hostname), GITHUB_OUTPUT.
+# Optional: CUSTOM_DOMAIN (sets APP_ORIGIN; otherwise the default hostname), GITHUB_OUTPUT,
+# PHOTOS_STORAGE_ACCOUNT (dedicated photo account; creates blob-connection-string once).
 # Tools: az (logged in), sqlcmd (go-sqlcmd), pnpm (workspace installed), docker, curl, zip, openssl, jq.
 #
 # Nothing secret is ever printed. Secrets travel through files with mode 600 or environment
@@ -30,6 +31,10 @@ set -euo pipefail
 : "${AZURE_RESOURCE_GROUP:?AZURE_RESOURCE_GROUP is required}"
 : "${APP_VERSION:?APP_VERSION is required (the release tag)}"
 CUSTOM_DOMAIN="${CUSTOM_DOMAIN:-}"
+PHOTOS_STORAGE_ACCOUNT="${PHOTOS_STORAGE_ACCOUNT:-}"
+if [ -n "$PHOTOS_STORAGE_ACCOUNT" ] && ! [[ "$PHOTOS_STORAGE_ACCOUNT" =~ ^[a-z0-9]{3,24}$ ]]; then
+  echo "::error::PHOTOS_STORAGE_ACCOUNT must be a storage account name" >&2; exit 1
+fi
 WEB_PUBSUB_HUB="${WEB_PUBSUB_HUB:-frejsi}"
 SQL_DATABASE="${SQL_DATABASE:-frejsi}"
 SQL_APP_LOGIN="${SQL_APP_LOGIN:-frejsi_app}"
@@ -160,6 +165,25 @@ else
   secret_write_from_file web-pubsub-connection-string "$WPS_FILE"
 fi
 
+# Find the dedicated photos account on its first release. Existing installations without the
+# module still work; multiple tagged accounts are ambiguous and must fail before reading keys.
+if [ -z "$PHOTOS_STORAGE_ACCOUNT" ] && ! secret_exists blob-connection-string; then
+  PHOTOS_STORAGE_ACCOUNT="$(az resource list -g "$RG" --resource-type Microsoft.Storage/storageAccounts \
+    --query "[?tags.purpose=='photos'].name" -o tsv)"
+  PHOTO_ACCOUNT_COUNT="$(printf '%s\n' "$PHOTOS_STORAGE_ACCOUNT" | grep -c . || true)"
+  if [ "$PHOTO_ACCOUNT_COUNT" -gt 1 ]; then
+    echo "::error::multiple purpose=photos storage accounts" >&2; exit 1
+  fi
+fi
+if [ -n "$PHOTOS_STORAGE_ACCOUNT" ] && ! secret_exists blob-connection-string; then
+  BLOB_CONNECTION="$(az storage account show-connection-string -g "$RG" -n "$PHOTOS_STORAGE_ACCOUNT" \
+      --query connectionString -o tsv)"
+  if [ -z "$BLOB_CONNECTION" ]; then echo "::error::photo storage returned no connection string" >&2; exit 1; fi
+  ( umask 077; printf '%s' "$BLOB_CONNECTION" > "$WORK/blob" )
+  unset BLOB_CONNECTION
+  secret_write_from_file blob-connection-string "$WORK/blob"
+fi
+
 # --- 3. Firewall rule for this runner, then the login (first time) and the migration -------------
 # Bounded: a hung lookup must fail fast, not sit until the job's timeout.
 RUNNER_IP="$(curl -fsS --max-time 10 --retry 3 --retry-delay 2 https://api.ipify.org)"
@@ -235,11 +259,16 @@ SWA_SETTINGS_FILE="$WORK/swa-appsettings.json"
 secret_to_file database-url "$WORK/swa-database-url"
 secret_to_file bootstrap-token "$WORK/swa-bootstrap-token"
 secret_to_file web-pubsub-connection-string "$WORK/swa-wps"
+( umask 077; : > "$WORK/swa-blob" )
+if [ -n "$PHOTOS_STORAGE_ACCOUNT" ] || secret_exists blob-connection-string; then
+  secret_to_file blob-connection-string "$WORK/swa-blob"
+fi
 ( umask 077
   jq -n \
     --rawfile databaseUrl "$WORK/swa-database-url" \
     --rawfile bootstrapToken "$WORK/swa-bootstrap-token" \
     --rawfile wpsConnection "$WORK/swa-wps" \
+    --rawfile blobConnection "$WORK/swa-blob" \
     --rawfile sourceConnectKey "$SOURCE_CONNECT_KEY_FILE" \
     --arg hub "$WEB_PUBSUB_HUB" \
     --arg sourceConnectUrl "https://$FUNCTION_HOST/api/source-connect" \
@@ -255,7 +284,8 @@ secret_to_file web-pubsub-connection-string "$WORK/swa-wps"
          SOURCE_CONNECT_KEY: ($sourceConnectKey | rtrimstr("\n")),
          APPLICATIONINSIGHTS_CONNECTION_STRING: $appInsights,
          APP_ORIGIN: $appOrigin,
-         NEXT_PUBLIC_APP_VERSION: $version } }' > "$SWA_SETTINGS_FILE" )
+         NEXT_PUBLIC_APP_VERSION: $version }
+       + (if $blobConnection == "" then {} else {BLOB_CONNECTION_STRING: ($blobConnection | rtrimstr("\n"))} end) }' > "$SWA_SETTINGS_FILE" )
 az rest --method put --url "https://management.azure.com${SWA_ID}/config/appsettings?api-version=2024-04-01" \
   --body "@$SWA_SETTINGS_FILE" --output none
 

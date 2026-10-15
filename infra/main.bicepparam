@@ -9,3 +9,6 @@ param alertEmail = readEnvironmentVariable('ALERT_EMAIL', '')
 
 // Repository variable CUSTOM_DOMAIN, set after the first release once the CNAME exists (README step 7).
 param customDomain = readEnvironmentVariable('CUSTOM_DOMAIN', '')
+
+// Photos inherit location, baseName, suffix and project tags from main.bicep.
+// deploy.sh discovers the dedicated purpose=photos account; no account key is a parameter.

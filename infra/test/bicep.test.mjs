@@ -21,6 +21,8 @@ const UNTAGGABLE = new Set(
     'Microsoft.SignalRService/webPubSub/hubs',
     'Microsoft.Web/staticSites/customDomains',
     'Microsoft.Web/sites/config',
+    'Microsoft.Storage/storageAccounts/blobServices',
+    'Microsoft.Storage/storageAccounts/blobServices/containers',
   ].map((t) => t.toLowerCase()),
 );
 
@@ -103,7 +105,11 @@ test('Function App: Linux Consumption Y1, Node 22, its own storage account, sett
   assert.ok(settings.APPLICATIONINSIGHTS_CONNECTION_STRING, 'APPLICATIONINSIGHTS_CONNECTION_STRING missing');
   assert.equal(settings.FUNCTIONS_WORKER_RUNTIME, 'node');
   assert.ok(!('APP_VERSION' in settings), 'APP_VERSION is set by deploy.sh, not Bicep');
-  assert.equal(byType('Microsoft.Storage/storageAccounts').length, 1, 'one storage account (the poller); blob storage is v0.2.0');
+  const accounts = byType('Microsoft.Storage/storageAccounts');
+  assert.equal(accounts.length, 2, 'dedicated accounts for the poller and photos');
+  const pollerAccount = accounts.find((r) => r.modulePath.includes('functionapp'));
+  assert.ok(pollerAccount, 'the poller keeps its own storage account');
+  assert.match(settings.AzureWebJobsStorage, /listKeys/);
 });
 
 test('a Bicep redeploy keeps the settings deploy.sh wrote (WEBSITE_RUN_FROM_PACKAGE, APP_VERSION)', () => {
@@ -244,3 +250,23 @@ function* listFiles(dir) {
     else yield p;
   }
 }
+
+
+test('photos have a dedicated private Standard LRS account, seven-day soft delete and a safe output', () => {
+  const account = byType('Microsoft.Storage/storageAccounts').find((r) => r.modulePath.includes('photos'));
+  assert.ok(account, 'photo account is wired into main');
+  assert.equal(resolve(account.resource.sku, account.scope).name, 'Standard_LRS');
+  assert.equal(resolve(account.resource.tags, account.scope).purpose, 'photos');
+  const p = props(account);
+  assert.equal(p.allowBlobPublicAccess, false);
+  assert.equal(p.supportsHttpsTrafficOnly, true);
+  assert.equal(p.minimumTlsVersion, 'TLS1_2');
+  const [service] = byType('Microsoft.Storage/storageAccounts/blobServices');
+  assert.equal(props(service).deleteRetentionPolicy.enabled, true);
+  assert.equal(props(service).deleteRetentionPolicy.days, 7);
+  const [container] = byType('Microsoft.Storage/storageAccounts/blobServices/containers');
+  assert.match(resolve(container.resource.name, container.scope), /photos/);
+  assert.equal(props(container).publicAccess, 'None');
+  assert.ok(template.outputs.photosStorageAccountName);
+  assert.doesNotMatch(JSON.stringify(template.outputs), /listKeys|AccountKey|connectionString/i);
+});

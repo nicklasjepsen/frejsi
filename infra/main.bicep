@@ -134,3 +134,16 @@ output functionAppName string = functionApp.outputs.name
 output staticWebAppName string = staticWebApp.outputs.name
 output staticWebAppDefaultHostname string = staticWebApp.outputs.defaultHostname
 output appInsightsName string = monitoring.outputs.appInsightsName
+
+// Dedicated photo storage (v0.2.0); deployment discovers the purpose=photos account.
+module photosStorage 'modules/photos-storage.bicep' = {
+  name: 'photos-storage'
+  params: {
+    location: location
+    tags: tags
+    baseName: baseName
+    suffix: suffix
+  }
+}
+
+output photosStorageAccountName string = photosStorage.outputs.accountName

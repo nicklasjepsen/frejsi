@@ -10,7 +10,7 @@ infra/
   main.bicep          the module list (append-only: a lane adds a module at the end, never reorders)
   main.bicepparam     parameters; per-installation values come from repository variables, not the file
   modules/            one file per concern: monitoring, keyvault, sql, webpubsub, functionapp, roles,
-                      staticwebapp, alerts; functionapp/appsettings.bicep merges the Function App's
+                      staticwebapp, alerts, photos-storage; functionapp/appsettings.bicep merges the Function App's
                       settings into the live ones instead of replacing them
   deploy.sh           what the `deploy` job runs after infra: secrets once, migrations, poller, web
   test/               node:test suite over the built ARM JSON and over deploy.sh against fake tools
@@ -28,7 +28,8 @@ infra/
 | Key Vault | Standard, RBAC | `database-url`, `web-pubsub-connection-string`, `bootstrap-token`, `glucose-<spaceId>` | <1 |
 | Log Analytics + Application Insights | Pay-as-you-go, 1 GB/day cap, 30 days | telemetry and the one alert | 0 (under 5 GB free) |
 | Action group + scheduled query alert | — | "no reading for 35 minutes" to `ALERT_EMAIL` | 0 |
-| **Total** | | | **~97** |
+| Photo storage account | Standard LRS | private originals + thumbnails, seven-day soft delete | ~1–3 |
+| **Total** | | | **~98–100** |
 
 Prices are West Europe list prices in October 2026 at about 6.9 DKK per USD; check the invoice after
 the first month. The spec's target (section 1) is 50–80 DKK/month. The Standard Static Web App is the
@@ -36,7 +37,29 @@ lever: it is what the spec asks for, and it is also two thirds of the bill. On t
 domain still included; no SLA, no managed backend scaling) the total is about 35 DKK/month. That is
 the owner's call; `modules/staticwebapp.bicep` changes one word.
 
-Deferred to v0.2.0: Blob Storage for food photos (spec section 4).
+Photo storage uses a **dedicated Standard LRS account**, about **1–3 DKK/month** at family scale
+(v0.2.0 plan, decision 21), bringing the estimate to about 98–100 DKK/month. The private `photos`
+container holds originals up to 1600 px and 320×320 JPEG thumbnails, re-encoded on the server
+without EXIF, GPS, XMP or ICC metadata. Public blob access is disabled, HTTPS/TLS 1.2 is required,
+and deleted blobs are retained for seven days. It never shares the Function App's account.
+
+`main.bicep` includes `photos-storage.bicep` and exposes the account name as a non-secret output.
+`deploy.sh` discovers it by the `purpose=photos` tag (or accepts `PHOTOS_STORAGE_ACCOUNT` explicitly),
+creates Key Vault's `blob-connection-string` only when absent, then copies the secret to SWA's
+`BLOB_CONNECTION_STRING` setting. Later releases reuse the secret without querying account keys.
+Connection strings travel through mode-600 files and are never printed or passed on a command line.
+Failed or empty reads abort before replacing SWA settings. Without either a photo account or a stored
+secret the setting is omitted; services can answer `503 photo-unavailable` while the rest works.
+
+Server consumers import the `PhotoStore` contract, `processPhoto` and the store factory from
+`@frejsi/shared/photos`; the root shared export deliberately excludes photos so the poller avoids
+native image processing. Browser `downscale` prepares JPEG bytes locally; the server always decodes
+and re-encodes again. `sharp` is externalized and its native packages traced into the Next standalone
+build. Task 10's release build check must still exercise processing inside the deployed artifact.
+
+Local development uses Azurite with the same Blob adapter and an explicit `BlobEndpoint` in the
+connection string. Tests use `MemoryPhotoStore` or a fake HTTP transport, with no Azure calls.
+Never log an account key, connection string, signed photo URL or uploaded image.
 
 ## How secrets work
 

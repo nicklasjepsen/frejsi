@@ -35,6 +35,7 @@ case "$cmd" in
       Microsoft.Web/sites) echo frejsi-poller-abc ;;
       Microsoft.Web/staticSites) echo frejsi-abc ;;
       Microsoft.Insights/components) echo appi-frejsi ;;
+      Microsoft.Storage/storageAccounts) printf '%s' "${FAKE_PHOTOS_ACCOUNT:-}" ;;
       *) echo "fake az: unknown resource type $(arg --resource-type)" >&2; exit 3 ;;
     esac ;;
   "keyvault secret list") for s in ${FAKE_EXISTING_SECRETS:-}; do echo "$s"; done ;;
