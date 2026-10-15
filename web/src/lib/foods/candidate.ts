@@ -3,25 +3,19 @@ import {
   HttpError,
   type FoodCandidate,
   type FoodSource,
-  type SessionContext,
 } from "@frejsi/shared";
 
 /** Client fields identify a pick, but can never author cross-space source data. */
 export async function confirmRemoteCandidate(
   source: FoodSource,
-  candidate: FoodCandidate,
-  locale: SessionContext["locale"],
+  candidate: FoodCandidate & { barcode: string },
 ): Promise<FoodCandidate> {
   const controller = new AbortController();
   let timer: ReturnType<typeof setTimeout> | undefined;
   let result;
   try {
     result = await Promise.race([
-      Promise.resolve().then(() =>
-        candidate.barcode
-          ? source.byBarcode(candidate.barcode, controller.signal)
-          : source.search(candidate.name, locale, controller.signal),
-      ),
+      Promise.resolve().then(() => source.byBarcode(candidate.barcode, controller.signal)),
       new Promise<never>((_resolve, reject) => {
         timer = setTimeout(() => {
           controller.abort();
@@ -38,8 +32,7 @@ export async function confirmRemoteCandidate(
   const found = result.candidates.find(
     (food) =>
       food.sourceRef === candidate.sourceRef ||
-      (candidate.barcode !== undefined &&
-        candidate.sourceRef === `${source.id}:${candidate.barcode}` &&
+      (candidate.sourceRef === `${source.id}:${candidate.barcode}` &&
         food.barcode === candidate.barcode),
   );
   if (!found) throw new HttpError(400, "validation");

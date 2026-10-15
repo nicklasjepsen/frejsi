@@ -244,8 +244,13 @@ export async function addCandidate(
     }).candidate;
   } else {
     if (!source) throw new HttpError(400, "validation");
-    if (source.kind === "remote") {
-      candidate = await confirmRemoteCandidate(source, candidate, session.locale);
+    // FoodSource has no lookup-by-reference or signed-result contract. A non-barcode pick
+    // remains an unverified space copy; it cannot safely populate the cross-space cache.
+    if (source.kind === "remote" && candidate.barcode) {
+      candidate = await confirmRemoteCandidate(source, {
+        ...candidate,
+        barcode: candidate.barcode,
+      });
       await new PrismaFoodRepository(deps.db).upsertCache({
         ...candidate,
         spaceId: null,
