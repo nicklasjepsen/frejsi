@@ -1,0 +1,102 @@
+{
+  "app": {
+    "name": "Frejsi",
+    "footer": "Frejsi · åben kildekode · regner aldrig insulin"
+  },
+  "locale": {
+    "da": "Dansk",
+    "en": "English"
+  },
+  "nav": {
+    "main": "Hovedmenu",
+    "now": "Nu",
+    "meal": "Måltid",
+    "food": "Mad",
+    "history": "Historik",
+    "more": "Mere",
+    "logMeal": "Log et måltid",
+    "library": "Bibliotek",
+    "people": "Personer",
+    "settings": "Indstillinger",
+    "myFood": "Min mad",
+    "ask": "Spørg",
+    "askAdult": "Spørg en voksen",
+    "today": "I dag",
+    "earlierDays": "Tidligere dage",
+    "keyboardShortcuts": "Tastaturgenveje",
+    "shortcutHint": "Genvej: {key}"
+  },
+  "shell": {
+    "switchSpace": "Skift rum",
+    "yourSpaces": "Dine rum",
+    "currentSpace": "Du er i {space}",
+    "viewerPill": "Du ser med",
+    "simpleFooter": "Simpel visning · slået til af {owner}",
+    "simpleFooterNoOwner": "Simpel visning",
+    "greeting": "Hej {name}",
+    "noSpaceTitle": "Du er ikke med i et rum lige nu",
+    "noSpaceBody": "Bed en ejer om en ny invitation, så er du med igen."
+  },
+  "roles": {
+    "owner": "Ejer",
+    "carer": "Hjælper",
+    "viewer": "Ser med"
+  },
+  "accent": {
+    "olive": "Oliven",
+    "plum": "Blomme",
+    "sea": "Hav",
+    "forest": "Skov",
+    "garnet": "Granat"
+  },
+  "soon": {
+    "title": "Kommer i en senere version",
+    "body": "Den her del af Frejsi er ikke klar endnu. Alt det andet virker, som det skal.",
+    "backToNow": "Tilbage til Nu",
+    "feature": {
+      "meals": "Måltider",
+      "food": "Mad og bibliotek",
+      "history": "Historik",
+      "my-food": "Min mad",
+      "ask": "Spørg en voksen",
+      "today": "Dagens måltider",
+      "earlier-days": "Tidligere dage"
+    }
+  },
+  "viewer": {
+    "todayTitle": "I dag",
+    "notice": "Som »ser med« kan du se dagens måltider og kulhydrater. Blodsukker vises ikke her.",
+    "mealsSoon": "Måltider kommer i en senere version."
+  },
+  "source": {
+    "dexcom-share": {
+      "name": "Dexcom Share"
+    },
+    "disconnected": "Ingen forbindelse til {source} siden {time}"
+  },
+  "errors": {
+    "page": {
+      "title": "Noget gik galt",
+      "body": "Det er ikke dig, der har gjort noget forkert. Prøv igen – og hvis det bliver ved, så vent lidt og prøv igen senere.",
+      "retry": "Prøv igen",
+      "home": "Til forsiden"
+    },
+    "notFound": {
+      "title": "Den side findes ikke",
+      "body": "Linket kan være forkert, eller siden er flyttet. Gå til forsiden, så er du på sikker grund.",
+      "home": "Til forsiden"
+    },
+    "api": {
+      "forbidden": "Det her har du ikke adgang til. Spørg en ejer af rummet, hvis du mener, du burde have det.",
+      "not-found": "Det, du leder efter, findes ikke – eller du har ikke adgang til det.",
+      "invite-expired": "Invitationen er udløbet. Bed om en ny – det tager kun et øjeblik.",
+      "invite-used": "Invitationen er allerede brugt. Hvis det ikke var dig, så bed om en ny.",
+      "invite-revoked": "Invitationen er trukket tilbage. Spørg den, der sendte den.",
+      "last-owner": "Et rum skal altid have mindst én ejer, så den sidste ejer kan ikke fjernes.",
+      "source-bad-credentials": "Brugernavn eller kodeord passer ikke. Prøv igen.",
+      "source-unreachable": "Vi kunne ikke få forbindelse til kilden lige nu. Prøv igen om lidt.",
+      "validation": "Noget i det, du skrev, kunne ikke bruges. Kig det igennem og prøv igen.",
+      "internal": "Noget gik galt hos os. Prøv igen om et øjeblik."
+    }
+  }
+}
