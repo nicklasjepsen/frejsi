@@ -2,11 +2,20 @@ import { DefaultAzureCredential } from "@azure/identity";
 import { WebPubSubServiceClient } from "@azure/web-pubsub";
 
 import type { EventEnvelope } from "../schemas/events";
-import type { ClientToken, ClientTokenRequest, EventSink, LiveTokenIssuer } from "./types";
+import type {
+  ClientToken,
+  ClientTokenRequest,
+  EventSink,
+  LiveGroupRevoker,
+  LiveTokenIssuer,
+} from "./types";
 
 /** The slice of `WebPubSubServiceClient` the sink uses; tests pass a fake. */
 export interface WebPubSubClientLike {
-  group(name: string): { sendToAll(message: EventEnvelope): Promise<void> };
+  group(name: string): {
+    sendToAll(message: EventEnvelope): Promise<void>;
+    removeUser(userId: string): Promise<void>;
+  };
   getClientAccessToken(options: {
     userId: string;
     groups: string[];
@@ -19,7 +28,7 @@ export const DEFAULT_HUB = "frejsi";
 const TOKEN_MINUTES = 60;
 
 /** The real sink: Web PubSub REST API through the service client (spec §3b). */
-export class WebPubSubEventSink implements EventSink, LiveTokenIssuer {
+export class WebPubSubEventSink implements EventSink, LiveTokenIssuer, LiveGroupRevoker {
   constructor(private readonly client: WebPubSubClientLike) {}
 
   async publish(group: string, envelope: EventEnvelope): Promise<void> {
@@ -36,16 +45,24 @@ export class WebPubSubEventSink implements EventSink, LiveTokenIssuer {
     });
     return { url: token.url };
   }
+
+  async removeUserFromGroup(group: string, userId: string): Promise<void> {
+    await this.client.group(group).removeUser(userId);
+  }
 }
 
 /** Local dev without `awps-tunnel`: nothing is pushed, `negotiate` answers 503 and clients poll. */
-export class NoopEventSink implements EventSink, LiveTokenIssuer {
+export class NoopEventSink implements EventSink, LiveTokenIssuer, LiveGroupRevoker {
   publish(): Promise<void> {
     return Promise.resolve();
   }
 
   issueClientToken(): Promise<null> {
     return Promise.resolve(null);
+  }
+
+  removeUserFromGroup(): Promise<void> {
+    return Promise.resolve();
   }
 }
 
@@ -71,7 +88,7 @@ export type PubSubEnv = Record<string, string | undefined>;
 export function createEventSinkFromEnv(
   env: PubSubEnv = process.env,
   factory: WebPubSubClientFactory = defaultFactory,
-): EventSink & LiveTokenIssuer {
+): EventSink & LiveTokenIssuer & LiveGroupRevoker {
   const hub = env.WEB_PUBSUB_HUB ?? DEFAULT_HUB;
   const connectionString = env.WEB_PUBSUB_CONNECTION_STRING;
   const endpoint = env.WEB_PUBSUB_ENDPOINT;

@@ -5,10 +5,15 @@ import { createEventSinkFromEnv, WebPubSubEventSink, type WebPubSubClientLike } 
 function fakeClient() {
   const sent: { group: string; message: unknown }[] = [];
   const tokens: unknown[] = [];
+  const removed: { group: string; userId: string }[] = [];
   const client: WebPubSubClientLike = {
     group: (name: string) => ({
       sendToAll: (message: unknown) => {
         sent.push({ group: name, message });
+        return Promise.resolve();
+      },
+      removeUser: (userId: string) => {
+        removed.push({ group: name, userId });
         return Promise.resolve();
       },
     }),
@@ -21,7 +26,7 @@ function fakeClient() {
       });
     },
   };
-  return { client, sent, tokens };
+  return { client, sent, tokens, removed };
 }
 
 const envelope = {
@@ -57,6 +62,14 @@ describe("WebPubSubEventSink", () => {
   });
 });
 
+describe("WebPubSubEventSink.removeUserFromGroup", () => {
+  it("takes every open connection of the user out of the named group (issue #79)", async () => {
+    const { client, removed } = fakeClient();
+    await new WebPubSubEventSink(client).removeUserFromGroup("space-s1-glucose", "u1");
+    expect(removed).toEqual([{ group: "space-s1-glucose", userId: "u1" }]);
+  });
+});
+
 describe("createEventSinkFromEnv", () => {
   it("uses the connection string when present (web), else the endpoint with the identity (poller)", () => {
     const seen: string[] = [];
@@ -85,5 +98,6 @@ describe("createEventSinkFromEnv", () => {
     const sink = createEventSinkFromEnv({});
     await expect(sink.publish("space-s1", envelope)).resolves.toBeUndefined();
     await expect(sink.issueClientToken({ userId: "u1", groups: [] })).resolves.toBeNull();
+    await expect(sink.removeUserFromGroup("space-s1-glucose", "u1")).resolves.toBeUndefined();
   });
 });
