@@ -21,6 +21,12 @@ const mocks = vi.hoisted(() => ({
   error: null as Error | null,
   register: vi.fn(),
   switchSpace: vi.fn<(form: FormData) => Promise<void>>(),
+  navigate: vi.fn<(href: string) => void>(),
+}));
+vi.mock("../navigate", () => ({
+  navigate: (href: string) => {
+    mocks.navigate(href);
+  },
 }));
 vi.mock("@/app/api/invites/invite-view", () => ({
   inviteView: (token: string) => {
@@ -72,6 +78,7 @@ afterEach(() => {
   mocks.error = null;
   mocks.register.mockReset();
   mocks.switchSpace.mockReset();
+  mocks.navigate.mockReset();
 });
 
 /** What the landing told the shell: the locale and the space this device should open. */
@@ -118,6 +125,8 @@ describe("GET /[locale]/invite/[token] · the landing (Invitation-Telefon, Invit
     expect(panel.closest(`.${pub.desktopOnly}`)).not.toBeNull();
     expect(panel.closest(`.${pub.phoneOnly}`)).toBeNull();
     expect(screen.getByText("Opret din adgang")).toBeInTheDocument();
+    // The phone block is named by the shared title, not by a key borrowed from the desktop panel.
+    expect(phone.closest("section")).toHaveAttribute("aria-label", "Opret din adgang");
     expect(
       screen.getByText(
         "Ingen adgangskode og ingen e-mail. Du logger ind med Windows Hello, Touch ID eller din telefon.",
@@ -138,7 +147,7 @@ describe("GET /[locale]/invite/[token] · the landing (Invitation-Telefon, Invit
       "Jonas has invited you as a carer. You can log meals, verify food and see the curve.",
     );
     expect(
-      screen.getAllByText("The link is valid 1 more day and can be used only once."),
+      screen.getAllByText("The link is valid for 1 more day and can be used only once."),
     ).toHaveLength(2);
     expect(await generateMetadata({ params: Promise.resolve({ locale: "en", token: TOKEN }) })).toEqual(
       { title: "Invitation" },
@@ -264,8 +273,32 @@ describe("the button runs task 5's registration and lands signed in (§2b)", () 
       ),
     ).toBeInTheDocument();
     expect(screen.getByRole("alert")).not.toHaveTextContent(/Prøv igen/);
+    // The line says to sign in instead, so the way to do that sits right next to it.
+    expect(screen.getByRole("link", { name: "Log ind" })).toHaveAttribute("href", "/da/welcome");
     expect(mocks.switchSpace).not.toHaveBeenCalled();
     expect(button).not.toBeDisabled();
+  });
+
+  it("other failures offer no sign-in link: a new link or another try is the way out there", async () => {
+    mocks.view = soren;
+    mocks.register.mockRejectedValueOnce(new CeremonyError("cancelled"));
+    await open();
+    fireEvent.click(screen.getByRole("button", { name: "Opret adgang med denne telefon" }));
+    await screen.findByRole("alert");
+    expect(screen.queryByRole("link", { name: "Log ind" })).toBeNull();
+  });
+
+  it("registered but the space switch failed: the device is signed in, so it goes to the front page instead of reporting a failed registration", async () => {
+    mocks.view = soren;
+    mocks.register.mockResolvedValue({ role: "carer", spaceId: "space-b" });
+    mocks.switchSpace.mockRejectedValueOnce(new Error("Failed to find Server Action"));
+    await open("en");
+    fireEvent.click(screen.getByRole("button", { name: "Create access with this phone" }));
+    await waitFor(() => {
+      expect(mocks.navigate).toHaveBeenCalledWith("/en");
+    });
+    expect(mocks.register).toHaveBeenCalledTimes(1);
+    expect(screen.queryByRole("alert")).toBeNull();
   });
 
   it("an authenticator that refused for another reason gets the general line, not the cancelled one", async () => {

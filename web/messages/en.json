@@ -128,23 +128,23 @@
       "button": "Create access with this phone"
     },
     "desktop": {
-      "title": "Create your access",
       "noPassword": "No password and no email. You sign in with Windows Hello, Touch ID or your phone.",
       "alsoPhone": "Want to use your phone as well? Ask {inviter} for an “add device” link afterwards.",
       "button": "Create access with this computer"
     },
     "failed": "That didn't work this time. Try again – and if it keeps happening, ask for a new link.",
     "alreadyRegistered": "This device can already sign in as you. Sign in instead, or open the link on the phone or computer you want to add.",
-    "expires": "The link is valid {days, plural, one {# more day} other {# more days}} and can be used only once.",
+    "expires": "The link is valid for {days, plural, one {# more day} other {# more days}} and can be used only once.",
     "unavailable": {
       "title": "This link no longer works",
       "invite-expired": "The link has expired. An invitation link is valid for {days, plural, one {# day} other {# days}}.",
       "invite-used": "The link has already been used. An invitation link can be used only once.",
       "invite-revoked": "The link was withdrawn by the person who sent it.",
       "whoCanHelp": "The person who sent you the link – or another owner of the space – can send you a new one. It only takes a moment.",
-      "alreadyIn": "Already have access?",
-      "login": "Sign in"
-    }
+      "alreadyIn": "Already have access?"
+    },
+    "createTitle": "Create your access",
+    "login": "Sign in"
   },
   "welcome": {
     "pageTitle": "Welcome",
