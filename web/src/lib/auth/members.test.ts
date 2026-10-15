@@ -2,7 +2,7 @@
 import { describe, expect, it } from "vitest";
 
 import { addMember, changeMemberRole, removeMember } from "./members";
-import { FakeAuthDb, recordingEmit } from "./test-support";
+import { FakeAuthDb, FakeDbError, recordingEmit } from "./test-support";
 
 const T0 = new Date("2026-10-15T08:00:00.000Z");
 
@@ -65,6 +65,7 @@ describe("changeMemberRole", () => {
   it("runs the owner count and the write in one serializable transaction, so two owners cannot both step down", async () => {
     const { fake, emit } = seeded();
     await addMember({ spaceId: "s1", userId: "o2", role: "owner" }, { db: fake.db, emit });
+    fake.operations.length = 0;
     await changeMemberRole({ spaceId: "s1", userId: "o1", role: "carer" }, { db: fake.db, emit });
     await expect(
       removeMember({ spaceId: "s1", userId: "o2" }, { db: fake.db, emit }),
@@ -73,6 +74,31 @@ describe("changeMemberRole", () => {
       { isolationLevel: "Serializable" },
       { isolationLevel: "Serializable" },
     ]);
+    // Every read and write, the owner count included, went through the transaction client.
+    expect(fake.operations).toEqual([
+      { table: "membership", op: "findUnique", inTransaction: true },
+      { table: "membership", op: "count", inTransaction: true },
+      { table: "membership", op: "update", inTransaction: true },
+      { table: "membership", op: "findUnique", inTransaction: true },
+      { table: "membership", op: "count", inTransaction: true },
+    ]);
+  });
+
+  it("still answers last-owner when SQL Server kills the transaction as a deadlock victim (P2034)", async () => {
+    const { fake, emit, events } = seeded();
+    // Two owners step down in the same second; this request loses the deadlock and is retried.
+    let victim = true;
+    fake.onTransaction = () => {
+      if (!victim) return;
+      victim = false;
+      throw new FakeDbError("P2034", "Transaction failed due to a write conflict or a deadlock.");
+    };
+    await expect(
+      changeMemberRole({ spaceId: "s1", userId: "o1", role: "carer" }, { db: fake.db, emit }),
+    ).rejects.toMatchObject({ status: 409, code: "last-owner" });
+    expect(fake.transactions).toHaveLength(2);
+    expect(fake.rows("membership").find((m) => m.userId === "o1")).toMatchObject({ role: "owner" });
+    expect(events).toEqual([]);
   });
 
   it("answers not-found for someone who is not a member", async () => {
