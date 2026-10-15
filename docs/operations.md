@@ -240,10 +240,13 @@ changes the library; meals created by the picker are deleted through the API aft
 The final check scans the entire standalone server log for seeded names, food names and barcode.
 These suites stay in `release.yml`, never PR CI.
 
-The web build runs `scripts/prepare-standalone.ts` after Next.js to include the generated Prisma
-client/engine that pnpm's file trace misses. The browser suite copies the standalone output and
-static assets into a temporary directory outside the workspace and runs its `server.js`, preventing
-missing dependencies from resolving through the checkout. Its photo check uploads generated pixels
+The web build runs `scripts/prepare-standalone.ts` after Next.js. It adds the generated Prisma
+client/engine that pnpm's file trace misses and puts the static assets beside the server. It also
+writes the root `server.js` that Static Web Apps starts, because the monorepo trace nests the app
+under `web/`; without it the deploy ends in "Web app warm up timed out", and `deploy.sh` refuses
+such a bundle. The browser suite copies the bundle as built into a temporary directory outside the
+workspace and runs that root `server.js`, preventing missing dependencies or assets from resolving
+through the checkout. Its photo check uploads generated pixels
 through the real food-photo route, which runs `processPhoto` with the bundled native `sharp`, reads
 both JPEGs from the Blob fake, asserts orientation, 1200×1600 and 320×320 dimensions and removal of injected EXIF/ICC, then verifies
 food deletion removes both. **No photo fallback is enabled**: a missing native binary fails release.

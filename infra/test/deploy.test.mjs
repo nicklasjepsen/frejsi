@@ -13,13 +13,13 @@ const deploySh = path.join(infraDir, 'deploy.sh');
 
 const SECRET_MARKERS = ['FAKEDBPASSWORD', 'FAKEWPSKEY', 'FAKEBOOTSTRAPTOKEN', 'FAKEFUNCTIONKEY', 'FAKESWATOKEN', 'FAKESAS'];
 
-function runDeploy({ env = {}, omit = [] } = {}) {
+function runDeploy({ env = {}, omit = [], rootServer = true } = {}) {
   const dir = mkdtempSync(path.join(os.tmpdir(), 'frejsi-deploy-'));
   // A pretend checkout: the poller bundle and the standalone web build the release job provides.
   mkdirSync(path.join(dir, 'repo/poller/dist'), { recursive: true });
   writeFileSync(path.join(dir, 'repo/poller/dist/index.js'), 'module.exports = {};\n');
   mkdirSync(path.join(dir, 'repo/web/.next/standalone'), { recursive: true });
-  writeFileSync(path.join(dir, 'repo/web/.next/standalone/server.js'), '// built\n');
+  if (rootServer) writeFileSync(path.join(dir, 'repo/web/.next/standalone/server.js'), '// built\n');
   const logDir = path.join(dir, 'log');
   mkdirSync(logDir);
   const log = path.join(logDir, 'calls.log');
@@ -56,6 +56,14 @@ test('fails on the first missing variable before touching Azure', () => {
   const r = runDeploy({ omit: ['APP_VERSION'] });
   assert.notEqual(r.status, 0);
   assert.match(r.stderr, /APP_VERSION/);
+  assert.equal(r.calls.filter((c) => c.startsWith('az ')).length, 0, r.calls.join('\n'));
+});
+
+test('a web bundle without a root server.js fails before touching Azure', () => {
+  // Static Web Apps would accept the upload and time out warming up ten minutes later (v0.2.1).
+  const r = runDeploy({ rootServer: false });
+  assert.notEqual(r.status, 0);
+  assert.match(r.stderr, /standalone\/server\.js is missing/);
   assert.equal(r.calls.filter((c) => c.startsWith('az ')).length, 0, r.calls.join('\n'));
 });
 
