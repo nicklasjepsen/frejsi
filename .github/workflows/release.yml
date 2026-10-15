@@ -78,6 +78,9 @@ jobs:
         # nothing (v0.1.0 failed in its suite, before infra), and a run that applied infra and failed
         # later changed production without publishing. Runs that skipped infra changed nothing and
         # are passed over. No baseline, or one that is not a tag here, means infra runs.
+        # Only the Bicep files count: infra/README.md and infra/test/ change nothing in Azure, and
+        # deploy.sh runs in the deploy job on every release anyway. A docs edit under infra/ must
+        # not ask the owner for a tap.
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -93,7 +96,7 @@ jobs:
           done <<< "$RUNS"
           if [ -n "$PREV" ] && ! git rev-parse -q --verify "refs/tags/$PREV" >/dev/null; then PREV=""; fi
           echo "Infra last applied from: ${PREV:-nothing}"
-          if [ "${{ github.event.inputs.infra }}" = "true" ] || [ -z "$PREV" ] || git diff --name-only "$PREV" "$TAG" -- infra/ | grep -q .; then
+          if [ "${{ github.event.inputs.infra }}" = "true" ] || [ -z "$PREV" ] || git diff --name-only "$PREV" "$TAG" -- infra/ | grep -Eq '\.bicep(param)?$'; then
             echo "changed=true" >> "$GITHUB_OUTPUT"
           else
             echo "changed=false" >> "$GITHUB_OUTPUT"
