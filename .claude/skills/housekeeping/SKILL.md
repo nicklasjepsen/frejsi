@@ -7,8 +7,9 @@ description: Background triage and cleanup for Frejsi, run twice daily by the ho
 
 The procedure is written so one headless session can run it top to bottom with `gh` and no
 questions. In an interactive session the `housekeeping-sweep` workflow (`.claude/workflows/housekeeping-sweep.js`)
-runs the same steps with the sweeps in parallel; use it when the Workflow tool is available, otherwise
-follow the steps below. Today's date comes from the prompt (unattended) or from `date -I`.
+runs steps 1–6 with the sweeps in parallel; use it when the Workflow tool is available, then follow
+steps 7–8 below for docs drift and the report. Otherwise follow all steps below. Today's date comes
+from the prompt (unattended) or from `date -I`.
 
 Repo: `nicklasjepsen/frejsi`. Markers: a comment this procedure writes starts with an HTML comment
 (`<!-- frejsi-triage -->`, `<!-- frejsi-stale -->`, `<!-- frejsi-milestone -->`) so a later run sees it
@@ -80,7 +81,36 @@ date. An empty list is written as "Nothing. <date>". Never comment on it; the bo
 
 Security items appear on that list by number and title only; the report is never quoted.
 
-## 7. Report
+## 7. Monday docs drift pass
+
+Only on Mondays (UTC, `date -u +%u` is `1`); other days skip this step. Use the UTC date
+(`date -u +%F`) for the title `docs: drift <date>` and branch `docs/drift-<date>`.
+
+1. Check `gh pr list --state all --search '"docs: drift <date>" in:title' --json number,title`.
+   If that exact title already exists, open no other drift PR that day, even if it was closed or
+   merged. The workflow runs twice daily; at most one drift PR is opened each Monday.
+2. `git fetch -q origin` and inspect `origin/main` in a clean worktree. Read `README.md`, CLAUDE.md's
+   **Where things stand**, `docs/operations.md`, `infra/README.md` and `poller/README.md`. Compare their
+   claims with the actual source, CI/release workflows and recently merged PRs
+   (`gh pr list --state merged --limit 120 --json number,title`). Read the implementation behind a
+   claimed feature, not just its plan.
+3. Read the latest published release with `gh release view --json tagName,publishedAt` and compare
+   its tag with `origin/main`. If there is no published release, say so; failed release runs and
+   existing Azure resources are not evidence of a successful release. Distinguish code on main,
+   planned work and released behavior. Follow the tag's code when describing that release.
+4. If nothing is stale, make no PR. Otherwise create the drift worktree with
+   `git worktree add -b docs/drift-<date> /tmp/frejsi-docs-drift-<date> origin/main` and update only
+   the stale facts in these five files, using fictional examples only. Follow `/land` for full checks, signed-off
+   conventional commits, review and CI. Open one PR titled `docs: drift <date>`, label `area:docs`,
+   with the normal template and a `## Docs` list of changed paths. Put uncertain claims in **For
+   the owner** rather than inventing facts. Run `pnpm install --frozen-lockfile` and the full checks
+   before committing; push with `git push -u origin docs/drift-<date>` (the runner permits this
+   branch prefix). Respect any active release freeze.
+
+Keep the public run log to PR numbers/titles and actions, as in the limits below; do not print
+release bodies, issue bodies or comments. This pass is outside PR CI and never tags or deploys.
+
+## 8. Report
 
 Write the run summary to `$GITHUB_STEP_SUMMARY` when it exists (triage lines, actions, the owner list),
 otherwise print it. Nothing happened is one line.

@@ -36,6 +36,12 @@ product behaviour.
    Danish copy reads like a kind nurse, plain and unhurried.
 6. Run the full checks before every commit: `pnpm -r typecheck && pnpm -r lint && pnpm -r test`.
    A red check is yours to fix, never to skip or mark `.skip`.
+   Update affected docs in the same PR as the implementation. Read the current README and relevant
+   runbooks, describe what the code does, and fill in `## Docs` with paths the PR actually changes,
+   or `None needed: <concrete reason>`. Dependabot alone is exempt. Docs that count: `README.md`,
+   `CONTRIBUTING.md`, `CLAUDE.md`, `AGENTS.md`, `docs/**` except `docs/design/**` and
+   `docs/superpowers/plans/**`, `infra/README.md`, `poller/README.md`, `.env.example`.
+   Plans and design exports alone do not count. CI checks the declaration before dependency install.
 7. Commit in small conventional commits with sign-off: `git commit -s -m "feat(web): ..."`. The
    message says what and why, not how.
 8. Land: push the branch, then open the PR with `gh pr create --fill --body-file <file>` using the

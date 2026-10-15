@@ -4,7 +4,8 @@ name: housekeeping
 # check. Twice a day and on demand, Claude Code runs the `housekeeping` skill headless: triage
 # untouched issues and PRs with the `triage` agent, merge green Dependabot minors, mark stale PRs,
 # delete fully merged branches, fix milestone hygiene, and rewrite the pinned "Waiting on the owner"
-# issue. It never closes an issue a person opened and never touches a lane PR or lane branch.
+# issue. On Mondays it can open one docs-drift PR. It never closes an issue a person opened and
+# never touches a lane PR or lane branch.
 #
 # No `issues: opened` trigger on purpose: the action refuses runs triggered by users without write
 # access unless `allowed_non_write_users` is set, which the docs mark as risky (the stranger's text
@@ -24,7 +25,7 @@ concurrency:
   cancel-in-progress: false
 
 permissions:
-  contents: write        # delete fully merged branches
+  contents: write        # delete fully merged branches; push the Monday docs-drift branch
   issues: write          # labels, comments, milestones, the owner issue
   pull-requests: write   # labels, stale comments, dependabot auto-merge
   actions: read          # read release.yml results for the owner digest
@@ -41,11 +42,23 @@ jobs:
 
       - name: Today
         id: today
-        run: echo "date=$(date -u +%F)" >> "$GITHUB_OUTPUT"
+        run: |
+          echo "date=$(date -u +%F)" >> "$GITHUB_OUTPUT"
+          echo "weekday=$(date -u +%u)" >> "$GITHUB_OUTPUT"
+
+      # Only the Monday docs pass needs the local checks required by /land.
+      - uses: pnpm/action-setup@v6
+        if: steps.today.outputs.weekday == '1'
+
+      - uses: actions/setup-node@v7
+        if: steps.today.outputs.weekday == '1'
+        with:
+          node-version: 22
+          cache: pnpm
 
       - uses: anthropics/claude-code-action@v1
-        env:
-          GH_TOKEN: ${{ github.token }}
+        # The action mints an installation token and configures both git and gh with it.
+        # A workflow GITHUB_TOKEN cannot trigger ci for a newly created drift PR.
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           # Full output in the run log: the action otherwise hides Claude's messages, and a run that
@@ -59,4 +72,4 @@ jobs:
             Write the run summary to $GITHUB_STEP_SUMMARY at the end.
           claude_args: >-
             --max-turns 80
-            --allowedTools "Skill,Agent,Read,Glob,Grep,Bash(gh *),Bash(git fetch*),Bash(git branch*),Bash(git merge-base*),Bash(git tag*),Bash(git log*),Bash(git push origin --delete *),Bash(git status*),Bash(date*),Bash(cat*),Bash(echo*),Bash(printf*),Bash(jq*),Bash(sort*),Bash(head*),Bash(grep*),Bash(wc*)"
+            --allowedTools "Skill,Agent,Read,Write,Edit,Glob,Grep,Bash(gh *),Bash(git fetch*),Bash(git branch*),Bash(git merge-base*),Bash(git tag*),Bash(git log*),Bash(git push origin --delete *),Bash(git status*),Bash(git diff*),Bash(git show*),Bash(git rev-parse*),Bash(git worktree add *),Bash(git add *),Bash(git commit *),Bash(git push -u origin docs/drift-*),Bash(pnpm *),Bash(date*),Bash(cat*),Bash(echo*),Bash(printf*),Bash(jq*),Bash(sort*),Bash(head*),Bash(grep*),Bash(wc*)"
