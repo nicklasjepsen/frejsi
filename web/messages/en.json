@@ -1,0 +1,102 @@
+{
+  "app": {
+    "name": "Frejsi",
+    "footer": "Frejsi · open source · never calculates insulin"
+  },
+  "locale": {
+    "da": "Dansk",
+    "en": "English"
+  },
+  "nav": {
+    "main": "Main menu",
+    "now": "Now",
+    "meal": "Meal",
+    "food": "Food",
+    "history": "History",
+    "more": "More",
+    "logMeal": "Log a meal",
+    "library": "Library",
+    "people": "People",
+    "settings": "Settings",
+    "myFood": "My food",
+    "ask": "Ask",
+    "askAdult": "Ask an adult",
+    "today": "Today",
+    "earlierDays": "Earlier days",
+    "keyboardShortcuts": "Keyboard shortcuts",
+    "shortcutHint": "Shortcut: {key}"
+  },
+  "shell": {
+    "switchSpace": "Switch space",
+    "yourSpaces": "Your spaces",
+    "currentSpace": "You are in {space}",
+    "viewerPill": "You're watching along",
+    "simpleFooter": "Simple view · turned on by {owner}",
+    "simpleFooterNoOwner": "Simple view",
+    "greeting": "Hi {name}",
+    "noSpaceTitle": "You're not in a space right now",
+    "noSpaceBody": "Ask an owner for a new invitation and you'll be back in."
+  },
+  "roles": {
+    "owner": "Owner",
+    "carer": "Carer",
+    "viewer": "Viewer"
+  },
+  "accent": {
+    "olive": "Olive",
+    "plum": "Plum",
+    "sea": "Sea",
+    "forest": "Forest",
+    "garnet": "Garnet"
+  },
+  "soon": {
+    "title": "Coming in a later version",
+    "body": "This part of Frejsi isn't ready yet. Everything else works as it should.",
+    "backToNow": "Back to Now",
+    "feature": {
+      "meals": "Meals",
+      "food": "Food and library",
+      "history": "History",
+      "my-food": "My food",
+      "ask": "Ask an adult",
+      "today": "Today's meals",
+      "earlier-days": "Earlier days"
+    }
+  },
+  "viewer": {
+    "todayTitle": "Today",
+    "notice": "As a viewer you can see today's meals and carbohydrates. Blood sugar is not shown here.",
+    "mealsSoon": "Meals are coming in a later version."
+  },
+  "source": {
+    "dexcom-share": {
+      "name": "Dexcom Share"
+    },
+    "disconnected": "No connection to {source} since {time}"
+  },
+  "errors": {
+    "page": {
+      "title": "Something went wrong",
+      "body": "It's nothing you did. Try again – and if it keeps happening, give it a little while and try later.",
+      "retry": "Try again",
+      "home": "To the front page"
+    },
+    "notFound": {
+      "title": "That page doesn't exist",
+      "body": "The link may be wrong, or the page has moved. Go to the front page and you're on safe ground.",
+      "home": "To the front page"
+    },
+    "api": {
+      "forbidden": "You don't have access to this. Ask an owner of the space if you think you should.",
+      "not-found": "What you're looking for doesn't exist – or you don't have access to it.",
+      "invite-expired": "The invitation has expired. Ask for a new one – it only takes a moment.",
+      "invite-used": "The invitation has already been used. If that wasn't you, ask for a new one.",
+      "invite-revoked": "The invitation has been withdrawn. Ask the person who sent it.",
+      "last-owner": "A space always needs at least one owner, so the last owner can't be removed.",
+      "source-bad-credentials": "The username or password doesn't match. Try again.",
+      "source-unreachable": "We couldn't reach the source right now. Try again in a little while.",
+      "validation": "Something in what you entered couldn't be used. Look it over and try again.",
+      "internal": "Something went wrong on our side. Try again in a moment."
+    }
+  }
+}
