@@ -7,7 +7,8 @@ import { I18nProvider } from "@/lib/i18n/Provider";
 import { getMessages } from "@/lib/i18n/messages";
 import type { AppLocale } from "@/lib/i18n/routing";
 
-import { SOON_FEATURES, SoonPage, isSoonFeature } from "./SoonPage";
+import { SoonPage } from "./SoonPage";
+import { SOON_FEATURES, isSoonFeature } from "./soon-features";
 
 const mount = (ui: React.ReactElement, locale: AppLocale = "da") =>
   render(

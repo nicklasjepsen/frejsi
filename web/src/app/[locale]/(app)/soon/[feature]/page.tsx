@@ -3,7 +3,8 @@ import { notFound } from "next/navigation";
 
 import { SPACE_COOKIE } from "@/components/shell/space-cookie";
 import { loadShellData } from "@/components/shell/load-shell";
-import { SoonPage, isSoonFeature } from "@/components/shell/SoonPage";
+import { SoonPage } from "@/components/shell/SoonPage";
+import { isSoonFeature } from "@/components/shell/soon-features";
 import { getSession } from "@/lib/auth/session";
 import { resolveLocale } from "@/lib/i18n/routing";
 

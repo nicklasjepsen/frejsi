@@ -3,7 +3,7 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 
-import { HEADER_END_ID } from "./PhoneHeader";
+import { HEADER_END_ID } from "./nav";
 
 /**
  * Renders its children at the end of the phone header (the source status pill on Nu). A page

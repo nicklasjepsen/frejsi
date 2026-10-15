@@ -7,10 +7,8 @@ import { Avatar } from "@/components/ui/Avatar";
 import type { AppLocale } from "@/lib/i18n/routing";
 
 import { SpaceSwitcher } from "./SpaceSwitcher";
-import type { ShellVariant } from "./nav";
+import { HEADER_END_ID, type ShellVariant } from "./nav";
 import styles from "./shell.module.css";
-
-export const HEADER_END_ID = "shell-header-end";
 
 /**
  * The phone header (Main, Nu-Simpel, Historik-Viewer): the subject's avatar and name, or

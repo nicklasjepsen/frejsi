@@ -176,6 +176,21 @@ describe("AppShell · normal mode (Main, Nu-Desktop)", () => {
   });
 });
 
+describe("AppShell · module boundaries", () => {
+  it("client modules export components only: a function from a 'use client' file cannot be called on the server", () => {
+    const dir = import.meta.dirname;
+    for (const file of readdirSync(dir).filter((f) => /\.tsx?$/.test(f) && !f.includes(".test."))) {
+      const source = readFileSync(path.join(dir, file), "utf8");
+      if (!/^"use client";/m.test(source)) continue;
+      const exports = [...source.matchAll(/^export (?:async )?(?:function|const) (\w+)/gm)].map(
+        (m) => m[1],
+      );
+      for (const name of exports)
+        expect(name, `${file} exports ${name ?? ""}`).toMatch(/^[A-Z][a-z]/);
+    }
+  });
+});
+
 describe("AppShell · simpleMode (Nu-Simpel, Nu-Simpel-Desktop)", () => {
   const simple: Partial<AppShellProps> = {
     user: { name: "Alma", accent: "plum", simpleMode: true },

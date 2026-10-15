@@ -4,6 +4,9 @@ import type { Messages } from "@/lib/i18n/messages";
 
 export type ShellVariant = "normal" | "simple" | "viewer";
 
+/** The element at the end of the phone header that `HeaderSlot` renders into. */
+export const HEADER_END_ID = "shell-header-end";
+
 export type NavIcon =
   "now" | "plus" | "book" | "clock" | "dots" | "people" | "settings" | "ask" | "calendar";
 
