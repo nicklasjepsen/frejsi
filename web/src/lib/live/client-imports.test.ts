@@ -28,7 +28,12 @@ describe("client modules and the shared barrel", () => {
   it("import runtime values only from browser-safe subpaths of @frejsi/shared", () => {
     const files = clientModules(
       ["src/lib/live", "src/components/glucose", "src/app/[locale]/(app)/now"],
-      ["lib/live/server.ts", "lib/live/test-support.ts", "(app)/now/page.tsx"],
+      [
+        "lib/live/server.ts",
+        "lib/live/upstream.ts",
+        "lib/live/test-support.ts",
+        "(app)/now/page.tsx",
+      ],
     );
     expect(files.length).toBeGreaterThan(5);
     for (const file of files) {

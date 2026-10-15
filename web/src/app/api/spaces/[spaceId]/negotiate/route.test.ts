@@ -38,32 +38,27 @@ afterEach(() => {
 const negotiate = (sessionId: string | null, spaceId = "s1") =>
   GET(liveRequest(spaceId, "negotiate", sessionId), spaceContext(spaceId));
 
-describe("GET /api/spaces/:id/negotiate (plan §5, decision 3)", () => {
-  it("bakes both groups into an owner's and a carer's token", async () => {
+describe("GET /api/spaces/:id/negotiate (plan §5, issue #95)", () => {
+  it("issues a token with the user only and names the space for the connect handler (issue #95)", async () => {
     const res = await negotiate("sess-owner-1");
     expect(res.status).toBe(200);
-    expect(await res.json()).toEqual({
-      url: "wss://example.webpubsub.azure.com/client/hubs/frejsi?access_token=example",
-    });
-    expect(issuer.requests[0]).toEqual({
-      userId: "owner-1",
-      groups: ["space-s1", "space-s1-glucose"],
-    });
-
-    expect((await negotiate("sess-carer-1")).status).toBe(200);
-    expect(issuer.requests[1]).toEqual({
-      userId: "carer-1",
-      groups: ["space-s1", "space-s1-glucose"],
-    });
+    const { url } = (await res.json()) as { url: string };
+    expect(url).toBe(
+      "wss://example.webpubsub.azure.com/client/hubs/frejsi?access_token=example&spaceId=s1",
+    );
+    expect(issuer.requests).toEqual([{ userId: "owner-1" }]);
   });
 
-  it("never puts the glucose group into a viewer's token", async () => {
-    const res = await negotiate("sess-viewer-1");
-    expect(res.status).toBe(200);
-    expect(issuer.requests).toEqual([{ userId: "viewer-1", groups: ["space-s1"] }]);
-    for (const request of issuer.requests) {
-      expect(request.groups.some((g) => g.includes("glucose"))).toBe(false);
+  it("bakes no group into any member's token, a viewer's included", async () => {
+    for (const session of ["sess-owner-1", "sess-carer-1", "sess-viewer-1"]) {
+      expect((await negotiate(session)).status).toBe(200);
     }
+    expect(issuer.requests).toEqual([
+      { userId: "owner-1" },
+      { userId: "carer-1" },
+      { userId: "viewer-1" },
+    ]);
+    for (const request of issuer.requests) expect(request).not.toHaveProperty("groups");
   });
 
   it("answers 404 for a member of another space and 403 without a session, issuing nothing", async () => {

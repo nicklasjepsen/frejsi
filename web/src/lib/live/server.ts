@@ -18,9 +18,10 @@ import { json, route, sessionIdFrom } from "@/app/api/auth/http";
 import { assertRole, loadSession, type SessionDb } from "@/lib/auth/session";
 
 import { EVENTS_PAGE_SIZE, type EventsPage, type ReadingsWindow } from "./contracts";
+import { upstreamConfigFrom, type UpstreamConfig } from "./upstream";
 
 /** The Prisma delegates the live routes read; tests pass a fake. The routes write nothing. */
-export type LiveDb = Pick<PrismaClient, "space" | "reading" | "event">;
+export type LiveDb = Pick<PrismaClient, "space" | "reading" | "event" | "membership">;
 
 /** What the three route handlers reach for; `configureLive` swaps them in tests. */
 export interface LiveDeps {
@@ -28,13 +29,15 @@ export interface LiveDeps {
   /** Issues the client token; the Web PubSub sink from the environment by default. */
   issuer: LiveTokenIssuer;
   now: () => Date;
+  /** How `/api/pubsub` verifies the hub's requests; from the environment by default. */
+  upstream: UpstreamConfig | null;
 }
 
 let overrides: Partial<LiveDeps> = {};
 /** The issuer from the environment, built once; never an override, so test order cannot leak. */
 let envIssuer: LiveTokenIssuer | undefined;
 
-/** Tests only: replace the database, the token issuer or the clock the routes use. */
+/** Tests only: replace the database, the token issuer, the clock or the upstream config. */
 export function configureLive(deps: Partial<LiveDeps>): void {
   overrides = deps;
 }
@@ -44,6 +47,8 @@ export function liveDeps(): LiveDeps {
     db: overrides.db ?? prisma,
     issuer: overrides.issuer ?? (envIssuer ??= createEventSinkFromEnv()),
     now: overrides.now ?? (() => new Date()),
+    upstream:
+      overrides.upstream !== undefined ? overrides.upstream : upstreamConfigFrom(process.env),
   };
 }
 

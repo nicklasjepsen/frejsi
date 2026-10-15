@@ -49,21 +49,25 @@ describe("WebPubSubEventSink", () => {
     expect(sent).toEqual([{ group: "space-s1", message: envelope }]);
   });
 
-  it("issues a client token with the groups baked in and no joinLeaveGroup role", async () => {
+  it("issues a client token with no groups and no roles: the connect handler decides (issue #95)", async () => {
     const { client, tokens } = fakeClient();
-    const token = await new WebPubSubEventSink(client).issueClientToken({
-      userId: "u1",
-      groups: ["space-s1", "space-s1-glucose"],
-    });
+    const token = await new WebPubSubEventSink(client).issueClientToken({ userId: "u1" });
     expect(token.url).toContain("access_token");
     expect(tokens).toEqual([
       {
         userId: "u1",
-        groups: ["space-s1", "space-s1-glucose"],
+        groups: [],
         roles: [],
         expirationTimeInMinutes: 1,
       },
     ]);
+  });
+
+  it("never bakes a group into a token, whatever a caller passes by mistake", async () => {
+    const { client, tokens } = fakeClient();
+    const sneaky = { userId: "u1", groups: ["space-s1-glucose"] } as { userId: string };
+    await new WebPubSubEventSink(client).issueClientToken(sneaky);
+    expect(tokens).toEqual([expect.objectContaining({ groups: [], roles: [] })]);
   });
 });
 
@@ -112,7 +116,7 @@ describe("createEventSinkFromEnv", () => {
   it("falls back to a sink that publishes nowhere and issues no token when nothing is configured", async () => {
     const sink = createEventSinkFromEnv({});
     await expect(sink.publish("space-s1", envelope)).resolves.toBeUndefined();
-    await expect(sink.issueClientToken({ userId: "u1", groups: [] })).resolves.toBeNull();
+    await expect(sink.issueClientToken({ userId: "u1" })).resolves.toBeNull();
     await expect(sink.removeUserFromGroup("space-s1-glucose", "u1")).resolves.toBeUndefined();
     await expect(sink.closeUserConnections("u1")).resolves.toBeUndefined();
   });
