@@ -225,6 +225,9 @@ food lookup and meal logging continue. The fictional seed stores no photos and n
 Run `pnpm --filter ./shared test:integration` against a local SQL Server before release. It creates
 and drops random sibling databases, tests the foundation-to-food migration, lookup precedence,
 ten concurrent candidate picks, deletion snapshots, the viewer's SQL projection and seed events.
+The food integration client reserves 12 connections so ten transactions can race on any runner;
+Prisma's CPU-derived default pool can be smaller than the test's concurrency. Timeouts and service
+retries are unchanged.
 The seed adds nine fictional foods (two unverified imports, seven explicitly verified family foods)
 and today's three meals totalling 102 g. It refuses production and nonempty databases.
 

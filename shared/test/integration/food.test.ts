@@ -38,7 +38,10 @@ let services: FoodServices;
 const sink = new MemoryEventSink();
 beforeAll(async () => {
   scratch = await createEmptyDatabase("frejsi_food_it");
-  db = new PrismaClient({ datasourceUrl: scratch.url, log: [{ emit: "event", level: "query" }] });
+  // Give all ten concurrent transactions a connection, independently of the runner's CPU count.
+  // Keep the production transaction timeout/retry behavior; this tests SQL races, not pool queuing.
+  const url = `${scratch.url.replace(/;connectionLimit=[^;]*/gi, "")};connectionLimit=12`;
+  db = new PrismaClient({ datasourceUrl: url, log: [{ emit: "event", level: "query" }] });
   services = (await import(FOODS)) as FoodServices;
 });
 afterAll(async () => {
