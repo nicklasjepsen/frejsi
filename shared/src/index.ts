@@ -70,3 +70,4 @@ export {
   type SourceFactory,
   type SpaceOutcome,
 } from "./glucose/poll-cycle";
+export { CREDENTIAL_RETRY_MS } from "./glucose/dexcom-share/index";

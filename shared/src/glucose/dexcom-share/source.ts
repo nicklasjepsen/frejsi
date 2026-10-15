@@ -25,6 +25,14 @@ export type FetchLike = (
 /** Well under the Function's four-minute invocation timeout, so one stalled space cannot starve the rest. */
 export const DEFAULT_TIMEOUT_MS = 30_000;
 
+/**
+ * How long a credential the service refused is left alone before login is tried again. Dexcom
+ * locks the account on repeated failed logins, so a wrong password must not be presented every
+ * five minutes; a new password stored through `source-connect` replaces the instance and is tried
+ * at once, and a lock that has cleared is noticed within this time.
+ */
+export const CREDENTIAL_RETRY_MS = 60 * 60_000;
+
 export interface DexcomShareSourceOptions {
   region: DexcomShareRegion;
   username: string;
@@ -35,6 +43,8 @@ export interface DexcomShareSourceOptions {
   log?: Logger;
   /** Deadline per call, headers and body together. */
   timeoutMs?: number;
+  /** Time a refused credential is left alone before the next login attempt. */
+  credentialRetryMs?: number;
 }
 
 /**
@@ -72,8 +82,11 @@ export class DexcomShareSource implements GlucoseSource {
   private readonly now: () => Date;
   private readonly log: Logger | undefined;
   private readonly timeoutMs: number;
+  private readonly credentialRetryMs: number;
   private sessionId: string | null = null;
   private loggingIn: Promise<string> | null = null;
+  /** The last credential refusal, kept so the same password is not presented again before `until`. */
+  private refused: { error: DexcomShareError; until: number } | null = null;
 
   constructor(options: DexcomShareSourceOptions) {
     this.region = options.region;
@@ -83,6 +96,7 @@ export class DexcomShareSource implements GlucoseSource {
     this.now = options.now ?? (() => new Date());
     this.log = options.log;
     this.timeoutMs = options.timeoutMs ?? DEFAULT_TIMEOUT_MS;
+    this.credentialRetryMs = options.credentialRetryMs ?? CREDENTIAL_RETRY_MS;
   }
 
   async fetchSince(since: Date): Promise<Reading[]> {
@@ -127,6 +141,13 @@ export class DexcomShareSource implements GlucoseSource {
 
   private session(): Promise<string> {
     if (this.sessionId) return Promise.resolve(this.sessionId);
+    // A credential the service refused is not presented again until the retry time: the cycle
+    // keeps counting the failure, the account is not locked by our own retries.
+    if (this.refused && this.now().getTime() < this.refused.until) {
+      this.log?.warn("dexcom.login-withheld", { code: this.refused.error.code });
+      return Promise.reject(this.refused.error);
+    }
+    this.refused = null;
     // Concurrent fetches share one login rather than each starting their own.
     this.loggingIn ??= this.login()
       .then((id) => {
@@ -140,20 +161,27 @@ export class DexcomShareSource implements GlucoseSource {
   }
 
   private async login(): Promise<string> {
-    const accountId = IdResponse.parse(
-      await this.post(PATHS.authenticate, {
-        accountName: this.username,
-        password: this.password,
-        applicationId: APPLICATION_ID,
-      }),
-    );
-    return IdResponse.parse(
-      await this.post(PATHS.login, {
-        accountId,
-        password: this.password,
-        applicationId: APPLICATION_ID,
-      }),
-    );
+    try {
+      const accountId = IdResponse.parse(
+        await this.post(PATHS.authenticate, {
+          accountName: this.username,
+          password: this.password,
+          applicationId: APPLICATION_ID,
+        }),
+      );
+      return IdResponse.parse(
+        await this.post(PATHS.login, {
+          accountId,
+          password: this.password,
+          applicationId: APPLICATION_ID,
+        }),
+      );
+    } catch (error) {
+      if (error instanceof DexcomShareError && CREDENTIAL_CODES.has(error.code)) {
+        this.refused = { error, until: this.now().getTime() + this.credentialRetryMs };
+      }
+      throw error;
+    }
   }
 
   private readLatest(sessionId: string, minutes: number, maxCount: number): Promise<unknown> {

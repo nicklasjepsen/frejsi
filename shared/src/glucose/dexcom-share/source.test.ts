@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { createLogger } from "../../log";
 import { Reading } from "../../schemas/glucose";
 import type { GlucoseSource } from "../types";
-import { DexcomShareSource } from "./source";
+import { CREDENTIAL_RETRY_MS, DexcomShareSource } from "./source";
 import { fakeDexcom, fixture } from "./test-server";
 
 /** The fixtures hold six readings, 10:00 to 10:25 UTC on 2026-10-15; the clock is 10:27. */
@@ -137,6 +137,54 @@ describe("DexcomShareSource session", () => {
     });
     expect(dexcom.count("login")).toBe(2);
     expect(dexcom.count("glucose")).toBe(2);
+  });
+});
+
+describe("DexcomShareSource and a refused credential", () => {
+  it("does not log in again with a credential the service refused, until the retry time", async () => {
+    const dexcom = fakeDexcom({ badCredentials: true });
+    let clock = now;
+    const s = source(dexcom.fetch, { now: () => clock });
+    for (let i = 0; i < 3; i += 1) {
+      await expect(s.fetchSince(now)).rejects.toMatchObject({
+        name: "DexcomShareError",
+        code: "SSO_AuthenticatePasswordInvalid",
+      });
+    }
+    expect(dexcom.count("authenticate")).toBe(1);
+
+    clock = new Date(now.getTime() + CREDENTIAL_RETRY_MS - 1);
+    await expect(s.fetchSince(now)).rejects.toMatchObject({
+      code: "SSO_AuthenticatePasswordInvalid",
+    });
+    expect(dexcom.count("authenticate")).toBe(1);
+
+    clock = new Date(now.getTime() + CREDENTIAL_RETRY_MS);
+    await expect(s.fetchSince(now)).rejects.toMatchObject({
+      code: "SSO_AuthenticatePasswordInvalid",
+    });
+    expect(dexcom.count("authenticate")).toBe(2);
+  });
+
+  it("keeps trying when the failure was not about the credential", async () => {
+    const dexcom = fakeDexcom({ serverError: true });
+    const s = source(dexcom.fetch);
+    await expect(s.fetchSince(now)).rejects.toMatchObject({ code: "Http503" });
+    await expect(s.fetchSince(now)).rejects.toMatchObject({ code: "Http503" });
+    expect(dexcom.count("authenticate")).toBe(2);
+  });
+
+  it("logs the withheld login as a code only", async () => {
+    const lines: string[] = [];
+    const log = createLogger((line) => lines.push(line));
+    const s = source(fakeDexcom({ badCredentials: true }).fetch, { log });
+    await s.fetchSince(now).catch(() => undefined);
+    await s.fetchSince(now).catch(() => undefined);
+    const withheld = lines.map((l) => JSON.parse(l) as { msg: string; code?: string });
+    expect(withheld.filter((l) => l.msg === "dexcom.login-withheld")).toEqual([
+      expect.objectContaining({ code: "SSO_AuthenticatePasswordInvalid" }),
+    ]);
+    expect(lines.join("\n")).not.toContain(credential.password);
   });
 });
 
