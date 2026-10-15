@@ -4,11 +4,14 @@
 import {
   EventEnvelope,
   type ApiErrorCode,
+  type EventEnvelopeOf,
+  type EventType,
   type Reading,
   type SourceStatus,
 } from "@frejsi/shared/schemas/index";
 
 import {
+  CURSOR_ONLY_SINCE,
   DEFAULT_WINDOW_HOURS,
   EventsPage,
   type LiveSpace,
@@ -18,6 +21,12 @@ import {
 
 /** How often the feed asks for events while the socket is not live (spec §3b). */
 export const POLL_MS = 30_000;
+/** How many of the latest non-reading events `LiveFeedState.events` keeps. */
+export const MAX_EVENTS = 100;
+
+/** Every event type but `reading`: the ones `events` and `onEvent` carry. */
+export type FeedEventType = Exclude<EventType, "reading">;
+export type FeedEventHandler<T extends FeedEventType> = (envelope: EventEnvelopeOf<T>) => void;
 
 /** The slice of `WebSocket` the feed uses; tests pass a fake. */
 export interface SocketLike {
@@ -55,6 +64,16 @@ export interface LiveState {
   error: ApiErrorCode | null;
 }
 
+/** `LiveState` plus the events the feed has seen; kept apart so v0.1.0's `LiveState` is unchanged. */
+export interface LiveFeedState extends LiveState {
+  /**
+   * The non-reading events received since `start()`, oldest first, the last `MAX_EVENTS` of them
+   * (plan §7): pushed or caught up, in sequence order. A screen that refetches on an event uses
+   * `onEvent` instead of watching this list.
+   */
+  events: EventEnvelope[];
+}
+
 export interface LiveFeedOptions {
   spaceId: string;
   /** The readings window, 1..24 hours; the day curve needs 24. */
@@ -63,9 +82,14 @@ export interface LiveFeedOptions {
   socketFactory?: SocketFactory;
   now?: () => Date;
   pollMs?: number;
+  /**
+   * False for a feed without glucose (the viewer's day): no readings window is ever asked for; the
+   * cursor comes from `events` and the feed carries events only. True by default.
+   */
+  readings?: boolean;
 }
 
-const INITIAL: LiveState = {
+const INITIAL: LiveFeedState = {
   loaded: false,
   connection: "connecting",
   lastSeq: 0,
@@ -75,6 +99,7 @@ const INITIAL: LiveState = {
   sourceSince: null,
   space: null,
   error: null,
+  events: [],
 };
 
 /** The browser's WebSocket behind `SocketLike`; the feed only ever assigns the handlers. */
@@ -97,7 +122,7 @@ const defaultSocketFactory: SocketFactory = (url) => {
 };
 
 export class LiveFeed {
-  private state: LiveState = INITIAL;
+  private state: LiveFeedState = INITIAL;
   private readonly listeners = new Set<() => void>();
   private readonly spaceId: string;
   private readonly hours: number;
@@ -105,6 +130,8 @@ export class LiveFeed {
   private readonly socketFactory: SocketFactory;
   private readonly now: () => Date;
   private readonly pollMs: number;
+  private readonly withReadings: boolean;
+  private readonly handlers = new Map<FeedEventType, Set<(envelope: EventEnvelope) => void>>();
   private socket: SocketLike | null = null;
   private pollTimer: ReturnType<typeof setInterval> | null = null;
   private stopped = true;
@@ -131,14 +158,32 @@ export class LiveFeed {
     this.socketFactory = options.socketFactory ?? defaultSocketFactory;
     this.now = options.now ?? (() => new Date());
     this.pollMs = options.pollMs ?? POLL_MS;
+    this.withReadings = options.readings ?? true;
   }
 
-  getState = (): LiveState => this.state;
+  getState = (): LiveFeedState => this.state;
 
   subscribe = (listener: () => void): (() => void) => {
     this.listeners.add(listener);
     return () => {
       this.listeners.delete(listener);
+    };
+  };
+
+  /**
+   * Calls `handler` with every event of `type` the feed applies from now on, pushed or caught up;
+   * returns the unsubscribe. A handler that throws is skipped, never the feed (plan §7).
+   */
+  onEvent = <T extends FeedEventType>(type: T, handler: FeedEventHandler<T>): (() => void) => {
+    const wrapped = handler as (envelope: EventEnvelope) => void;
+    let set = this.handlers.get(type);
+    if (!set) {
+      set = new Set();
+      this.handlers.set(type, set);
+    }
+    set.add(wrapped);
+    return () => {
+      this.handlers.get(type)?.delete(wrapped);
     };
   };
 
@@ -172,7 +217,7 @@ export class LiveFeed {
     return this.stopped || gen !== this.generation;
   }
 
-  private set(patch: Partial<LiveState>): void {
+  private set(patch: Partial<LiveFeedState>): void {
     this.state = { ...this.state, ...patch };
     for (const listener of this.listeners) listener();
   }
@@ -189,6 +234,10 @@ export class LiveFeed {
    * again so nothing received meanwhile is lost.
    */
   private async loadWindow(gen: number): Promise<void> {
+    if (!this.withReadings) {
+      await this.loadCursor(gen);
+      return;
+    }
     // A request that never answers would leave the screen loading: the timer runs while it is out,
     // and the next tick abandons it and asks again.
     this.windowRequest?.abort();
@@ -233,6 +282,42 @@ export class LiveFeed {
     if (before.loaded && before.lastSeq > window.lastSeq) void this.catchUp(gen);
     if (this.state.connection === "live") this.settleTimer();
     else this.connect(gen);
+  }
+
+  /**
+   * The feed without readings: `events?since=CURSOR_ONLY_SINCE` answers the space's current
+   * sequence and nothing else, which is where this feed starts, then `connect()`. Retried on the
+   * timer like the window; a refusal stops the feed.
+   */
+  private async loadCursor(gen: number): Promise<void> {
+    this.windowRequest?.abort();
+    const controller = new AbortController();
+    this.windowRequest = controller;
+    this.ensureTimer();
+    const superseded = () => this.cancelled(gen) || this.windowRequest !== controller;
+    let body: unknown = null;
+    try {
+      const response = await this.fetchImpl(
+        this.url("events", { since: String(CURSOR_ONLY_SINCE) }),
+        { signal: controller.signal },
+      );
+      if (superseded()) return;
+      if (this.refused(response)) return;
+      if (response.ok) body = await response.json();
+    } catch {
+      body = null;
+    }
+    if (superseded()) return;
+    this.windowRequest = null;
+    const parsed = body === null ? null : EventsPage.safeParse(body);
+    if (!parsed?.success) {
+      this.windowStale = true;
+      this.startPolling();
+      return;
+    }
+    this.windowStale = false;
+    this.set({ loaded: true, error: null, lastSeq: parsed.data.lastSeq });
+    this.connect(gen);
   }
 
   /**
@@ -442,6 +527,23 @@ export class LiveFeed {
   }
 
   private apply(envelope: EventEnvelope, gen: number): void {
+    if (envelope.type !== "reading") {
+      this.applyCommon(envelope, gen);
+      this.set({ events: [...this.state.events, envelope].slice(-MAX_EVENTS) });
+      for (const handler of this.handlers.get(envelope.type) ?? []) {
+        try {
+          handler(envelope);
+        } catch {
+          // A screen's bug must not stop the feed or the other handlers.
+        }
+      }
+      return;
+    }
+    this.applyCommon(envelope, gen);
+  }
+
+  /** What the feed itself does with an event: readings, the source status, window reloads. */
+  private applyCommon(envelope: EventEnvelope, gen: number): void {
     switch (envelope.type) {
       case "reading": {
         const others = this.state.readings.filter((r) => r.ts !== envelope.payload.ts);
@@ -457,6 +559,7 @@ export class LiveFeed {
       case "space.updated":
       case "member.updated":
       case "member.removed":
+        if (!this.withReadings) return;
         // Unit, target range or timezone may have changed: the window carries them. A member
         // change may be this member's own downgrade or removal: the reload is then refused and the
         // feed stops (the server has already taken the socket out of the glucose group).

@@ -27,12 +27,19 @@ const RUNTIME_BARREL_IMPORT = /^import\s+(?!type\s)[^;]*?from\s+"@frejsi\/shared
 describe("client modules and the shared barrel", () => {
   it("import runtime values only from browser-safe subpaths of @frejsi/shared", () => {
     const files = clientModules(
-      ["src/lib/live", "src/components/glucose", "src/app/[locale]/(app)/now"],
+      [
+        "src/lib/live",
+        "src/components/glucose",
+        "src/app/[locale]/(app)/now",
+        "src/components/day",
+        "src/app/[locale]/(app)/today",
+      ],
       [
         "lib/live/server.ts",
         "lib/live/upstream.ts",
         "lib/live/test-support.ts",
         "(app)/now/page.tsx",
+        "(app)/today/page.tsx",
       ],
     );
     expect(files.length).toBeGreaterThan(5);

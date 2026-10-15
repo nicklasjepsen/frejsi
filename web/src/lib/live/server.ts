@@ -241,7 +241,8 @@ export async function loadEventsPage(
   const space = await db.space.findUnique({ where: { id: spaceId }, select: { lastSeq: true } });
   if (!space) throw new HttpError(404, "not-found");
   const upper = space.lastSeq;
-  if (upper <= since) return { lastSeq: since, events: [], more: false };
+  // A cursor past the end (`CURSOR_ONLY_SINCE`, or a log that was reset) is brought back to it.
+  if (upper <= since) return { lastSeq: upper, events: [], more: false };
 
   const rows = await db.event.findMany({
     where: {
