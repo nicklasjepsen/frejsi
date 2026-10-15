@@ -250,7 +250,9 @@ export class LiveFeed {
     this.socket = socket;
     socket.onopen = () => {
       if (this.socket !== socket || this.cancelled(gen)) return;
-      this.stopPolling();
+      // A window reload that failed before the socket opened is retried only by the timer.
+      if (this.windowStale) this.ensureTimer();
+      else this.stopPolling();
       this.set({ connection: "live" });
       void this.catchUp(gen);
     };
