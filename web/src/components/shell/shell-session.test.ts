@@ -8,6 +8,7 @@ const mocks = vi.hoisted(() => ({
   session: null as SessionContext | null,
   sessionCalls: 0,
   spaceCookie: undefined as string | undefined,
+  spaceRole: undefined as "owner" | "carer" | "viewer" | undefined,
   loadCalls: [] as unknown[],
 }));
 vi.mock("@/lib/auth/session", () => ({
@@ -19,7 +20,13 @@ vi.mock("@/lib/auth/session", () => ({
 vi.mock("@/components/shell/load-shell", () => ({
   loadShellData: (...args: unknown[]) => {
     mocks.loadCalls.push(args);
-    return Promise.resolve({ space: { id: "s1" }, spaces: [] });
+    return Promise.resolve({
+      space: {
+        id: mocks.spaceCookie ?? "s1",
+        ...(mocks.spaceRole ? { role: mocks.spaceRole } : {}),
+      },
+      spaces: [],
+    });
   },
 }));
 vi.mock("next/headers", () => ({
@@ -45,6 +52,7 @@ afterEach(() => {
   mocks.session = null;
   mocks.sessionCalls = 0;
   mocks.spaceCookie = undefined;
+  mocks.spaceRole = undefined;
   mocks.loadCalls.length = 0;
 });
 
@@ -86,4 +94,39 @@ describe("shell-session (one session load per request)", () => {
       expect(code, file).toMatch(/from "@\/components\/shell\/shell-session"/);
     }
   });
+});
+
+describe("viewer presentation takes precedence over simpleMode", () => {
+  it("uses the chosen space's viewer shell without changing the stored personal preference", async () => {
+    mocks.session = {
+      ...jonas,
+      simpleMode: true,
+      memberships: [
+        { spaceId: "s1", role: "owner" },
+        { spaceId: "s2", role: "viewer" },
+      ],
+    };
+    mocks.spaceCookie = "s2";
+    mocks.spaceRole = "viewer";
+    expect(await getShellSession()).toEqual({ ...mocks.session, simpleMode: false });
+    expect(mocks.session.simpleMode).toBe(true);
+    expect(mocks.loadCalls).toEqual([[mocks.session, "s2"]]);
+  });
+
+  it.each(["owner", "carer"] as const)(
+    "preserves simpleMode in a chosen %s space",
+    async (role) => {
+      mocks.session = {
+        ...jonas,
+        simpleMode: true,
+        memberships: [
+          { spaceId: "s1", role: "viewer" },
+          { spaceId: "s2", role },
+        ],
+      };
+      mocks.spaceCookie = "s2";
+      mocks.spaceRole = role;
+      expect(await getShellSession()).toEqual(mocks.session);
+    },
+  );
 });
