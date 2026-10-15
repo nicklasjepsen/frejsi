@@ -219,6 +219,48 @@ describe("POST /api/spaces/:id/invites/:inviteId/resend", () => {
   });
 });
 
+describe("an expired or orphaned invitation", () => {
+  const send = (inviteId: string) =>
+    resend(
+      world.request("POST", `/api/spaces/s1/invites/${inviteId}/resend`),
+      params({ spaceId: "s1", inviteId }),
+    );
+  const del = (inviteId: string) =>
+    revoke(
+      world.request("DELETE", `/api/spaces/s1/invites/${inviteId}`),
+      params({ spaceId: "s1", inviteId }),
+    );
+
+  it("is 404 to resend and to withdraw once it has expired, as the list no longer shows it", async () => {
+    const pending = world.fake.rows("invite").find((i) => i.token === PENDING_TOKEN);
+    if (!pending) throw new Error("seeded invite missing");
+    pending.expiresAt = days(-1);
+    world.as("owner");
+    expect((await send(pendingId)).status).toBe(404);
+    expect((await del(pendingId)).status).toBe(404);
+    expect(world.events).toEqual([]);
+  });
+
+  it("is 404 to resend when it is an add-a-device link for someone no longer in the space", async () => {
+    world.fake.rows("invite").push({
+      token: "orphan-device-token",
+      spaceId: "s1",
+      role: "carer",
+      name: "Gone",
+      forUserId: USERS.outsider.id,
+      createdBy: USERS.owner.id,
+      createdAt: days(0),
+      expiresAt: days(7),
+      usedAt: null,
+      revokedAt: null,
+    });
+    world.as("owner");
+    const res = await send(hashToken("orphan-device-token"));
+    expect(res.status).toBe(404);
+    expect(world.events).toEqual([]);
+  });
+});
+
 describe("DELETE /api/spaces/:id/invites/:inviteId", () => {
   const del = (inviteId: string) =>
     revoke(
