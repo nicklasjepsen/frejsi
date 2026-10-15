@@ -5,18 +5,23 @@ import { createEventSinkFromEnv, WebPubSubEventSink, type WebPubSubClientLike } 
 function fakeClient() {
   const sent: { group: string; message: unknown }[] = [];
   const tokens: unknown[] = [];
-  const removed: { group: string; userId: string }[] = [];
+  const removed: { group: string; userId: string; signal?: AbortSignal | undefined }[] = [];
+  const closed: { userId: string; signal?: AbortSignal | undefined }[] = [];
   const client: WebPubSubClientLike = {
     group: (name: string) => ({
       sendToAll: (message: unknown) => {
         sent.push({ group: name, message });
         return Promise.resolve();
       },
-      removeUser: (userId: string) => {
-        removed.push({ group: name, userId });
+      removeUser: (userId: string, options?: { abortSignal?: AbortSignal }) => {
+        removed.push({ group: name, userId, signal: options?.abortSignal });
         return Promise.resolve();
       },
     }),
+    closeUserConnections: (userId: string, options?: { abortSignal?: AbortSignal }) => {
+      closed.push({ userId, signal: options?.abortSignal });
+      return Promise.resolve();
+    },
     getClientAccessToken: (options) => {
       tokens.push(options);
       return Promise.resolve({
@@ -26,7 +31,7 @@ function fakeClient() {
       });
     },
   };
-  return { client, sent, tokens, removed };
+  return { client, sent, tokens, removed, closed };
 }
 
 const envelope = {
@@ -56,7 +61,7 @@ describe("WebPubSubEventSink", () => {
         userId: "u1",
         groups: ["space-s1", "space-s1-glucose"],
         roles: [],
-        expirationTimeInMinutes: 5,
+        expirationTimeInMinutes: 1,
       },
     ]);
   });
@@ -67,6 +72,16 @@ describe("WebPubSubEventSink.removeUserFromGroup", () => {
     const { client, removed } = fakeClient();
     await new WebPubSubEventSink(client).removeUserFromGroup("space-s1-glucose", "u1");
     expect(removed).toEqual([{ group: "space-s1-glucose", userId: "u1" }]);
+  });
+
+  it("passes the caller's abort signal on, so a slow service call can be cut short", async () => {
+    const { client, removed, closed } = fakeClient();
+    const signal = new AbortController().signal;
+    const sink = new WebPubSubEventSink(client);
+    await sink.removeUserFromGroup("space-s1-glucose", "u1", { signal });
+    await sink.closeUserConnections("u1", { signal });
+    expect(removed[0]?.signal).toBe(signal);
+    expect(closed).toEqual([{ userId: "u1", signal }]);
   });
 });
 
@@ -99,5 +114,6 @@ describe("createEventSinkFromEnv", () => {
     await expect(sink.publish("space-s1", envelope)).resolves.toBeUndefined();
     await expect(sink.issueClientToken({ userId: "u1", groups: [] })).resolves.toBeNull();
     await expect(sink.removeUserFromGroup("space-s1-glucose", "u1")).resolves.toBeUndefined();
+    await expect(sink.closeUserConnections("u1")).resolves.toBeUndefined();
   });
 });

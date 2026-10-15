@@ -6,6 +6,7 @@ import type {
   ClientToken,
   ClientTokenRequest,
   EventSink,
+  LiveCallOptions,
   LiveGroupRevoker,
   LiveTokenIssuer,
 } from "./types";
@@ -14,8 +15,9 @@ import type {
 export interface WebPubSubClientLike {
   group(name: string): {
     sendToAll(message: EventEnvelope): Promise<void>;
-    removeUser(userId: string): Promise<void>;
+    removeUser(userId: string, options?: { abortSignal?: AbortSignal }): Promise<void>;
   };
+  closeUserConnections(userId: string, options?: { abortSignal?: AbortSignal }): Promise<void>;
   getClientAccessToken(options: {
     userId: string;
     groups: string[];
@@ -27,10 +29,11 @@ export interface WebPubSubClientLike {
 export const DEFAULT_HUB = "frejsi";
 /**
  * Only checked when a socket connects: an open socket outlives it, and the client negotiates
- * afresh on every reconnect. Short, so a token issued before a downgrade or removal cannot be
- * replayed for long to rejoin the glucose group (issue #79).
+ * afresh on every reconnect, so the token is needed for seconds. The service minimum, so a token
+ * issued before a downgrade or removal can be replayed for at most a minute to rejoin the glucose
+ * group (issue #79). A connect-time role check would close that minute.
  */
-const TOKEN_MINUTES = 5;
+const TOKEN_MINUTES = 1;
 
 /** The real sink: Web PubSub REST API through the service client (spec §3b). */
 export class WebPubSubEventSink implements EventSink, LiveTokenIssuer, LiveGroupRevoker {
@@ -51,9 +54,21 @@ export class WebPubSubEventSink implements EventSink, LiveTokenIssuer, LiveGroup
     return { url: token.url };
   }
 
-  async removeUserFromGroup(group: string, userId: string): Promise<void> {
-    await this.client.group(group).removeUser(userId);
+  async removeUserFromGroup(
+    group: string,
+    userId: string,
+    options: LiveCallOptions = {},
+  ): Promise<void> {
+    await this.client.group(group).removeUser(userId, sdkOptions(options));
   }
+
+  async closeUserConnections(userId: string, options: LiveCallOptions = {}): Promise<void> {
+    await this.client.closeUserConnections(userId, sdkOptions(options));
+  }
+}
+
+function sdkOptions(options: LiveCallOptions): { abortSignal?: AbortSignal } {
+  return options.signal ? { abortSignal: options.signal } : {};
 }
 
 /** Local dev without `awps-tunnel`: nothing is pushed, `negotiate` answers 503 and clients poll. */
@@ -67,6 +82,10 @@ export class NoopEventSink implements EventSink, LiveTokenIssuer, LiveGroupRevok
   }
 
   removeUserFromGroup(): Promise<void> {
+    return Promise.resolve();
+  }
+
+  closeUserConnections(): Promise<void> {
     return Promise.resolve();
   }
 }

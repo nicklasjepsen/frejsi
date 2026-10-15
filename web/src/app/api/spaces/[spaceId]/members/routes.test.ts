@@ -20,11 +20,16 @@ const holders = vi.hoisted(() => {
   const shared: { db: Record<string, unknown>; sink: EventSink; live: LiveGroupRevoker } = {
     db: {},
     sink: { publish: () => Promise.resolve() },
-    live: { removeUserFromGroup: () => Promise.resolve() },
+    live: {
+      removeUserFromGroup: () => Promise.resolve(),
+      closeUserConnections: () => Promise.resolve(),
+    },
   };
   const sink: EventSink & LiveGroupRevoker = {
     publish: (group, envelope) => shared.sink.publish(group, envelope),
-    removeUserFromGroup: (group, userId) => shared.live.removeUserFromGroup(group, userId),
+    removeUserFromGroup: (group, userId, options) =>
+      shared.live.removeUserFromGroup(group, userId, options),
+    closeUserConnections: (userId, options) => shared.live.closeUserConnections(userId, options),
   };
   return {
     shared,
@@ -56,9 +61,24 @@ function liveConnections() {
   const joined = new Map<string, Set<string>>();
   const received = new Map<string, EventEnvelope[]>();
   const removed: { group: string; userId: string }[] = [];
-  let failures = 0;
+  const closed: string[] = [];
+  let removeFailures = 0;
+  let closeFailures = 0;
+  let hang = false;
+  /** A call the service never answers; it only ends when the caller's signal aborts it. */
+  const hanging = (signal?: AbortSignal) =>
+    new Promise<void>((_resolve, reject) => {
+      signal?.addEventListener(
+        "abort",
+        () => {
+          reject(new Error("aborted"));
+        },
+        { once: true },
+      );
+    });
   return {
     removed,
+    closed,
     connect(userId: string, groups: string[]) {
       joined.set(userId, new Set(groups));
       received.set(userId, []);
@@ -71,16 +91,29 @@ function liveConnections() {
     received: (userId: string) => received.get(userId) ?? [],
     groupsOf: (userId: string) => [...(joined.get(userId) ?? [])],
     failRevokes(times = Number.POSITIVE_INFINITY) {
-      failures = times;
+      removeFailures = times;
+    },
+    failCloses() {
+      closeFailures = Number.POSITIVE_INFINITY;
+    },
+    hangRevokes() {
+      hang = true;
     },
     revoker: {
-      removeUserFromGroup(group: string, userId: string) {
-        if (failures > 0) {
-          failures -= 1;
+      removeUserFromGroup(group: string, userId: string, options?: { signal?: AbortSignal }) {
+        if (hang) return hanging(options?.signal);
+        if (removeFailures > 0) {
+          removeFailures -= 1;
           return Promise.reject(new Error("service unavailable"));
         }
         removed.push({ group, userId });
         joined.get(userId)?.delete(group);
+        return Promise.resolve();
+      },
+      closeUserConnections(userId: string) {
+        if (closeFailures > 0) return Promise.reject(new Error("service unavailable"));
+        closed.push(userId);
+        joined.delete(userId);
         return Promise.resolve();
       },
     } satisfies LiveGroupRevoker,
@@ -249,8 +282,39 @@ describe("PATCH /api/spaces/:id/members/:userId", () => {
     expect(world.log()).not.toContain("live-revoke-failed");
   });
 
+  it("drops the member's sockets when the group removal keeps failing, so they renegotiate", async () => {
+    live.failRevokes();
+    world.as("owner");
+    expect((await patch(USERS.carer.id, { role: "viewer" })).status).toBe(204);
+    expect(live.closed).toEqual([USERS.carer.id]);
+    live.publish("space-s1-glucose", reading);
+    expect(live.received(USERS.carer.id)).toEqual([]);
+    expect(live.received(USERS.owner.id)).toEqual([reading]);
+    expect(world.log()).toContain('"code":"live-revoke-closed"');
+    expect(world.log()).not.toContain("live-revoke-failed");
+    assertNoPii(world.log());
+  });
+
+  it("does not hold the owner's request on a service that does not answer", async () => {
+    vi.useRealTimers();
+    vi.useFakeTimers({
+      now: new Date("2026-10-15T08:00:00.000Z"),
+      toFake: ["Date", "setTimeout", "clearTimeout"],
+    });
+    live.hangRevokes();
+    world.as("owner");
+    let settled: Response | undefined;
+    void patch(USERS.carer.id, { role: "viewer" }).then((r) => (settled = r));
+    for (let ms = 0; ms < 10_000 && !settled; ms += 500) await vi.advanceTimersByTimeAsync(500);
+    expect(settled?.status).toBe(204);
+    expect(live.closed).toEqual([USERS.carer.id]);
+    live.publish("space-s1-glucose", reading);
+    expect(live.received(USERS.carer.id)).toEqual([]);
+  });
+
   it("keeps the committed role when the revoke fails, and logs ids only", async () => {
     live.failRevokes();
+    live.failCloses();
     world.as("owner");
     expect((await patch(USERS.carer.id, { role: "viewer" })).status).toBe(204);
     expect(
@@ -319,6 +383,7 @@ describe("DELETE /api/spaces/:id/members/:userId", () => {
 
   it("keeps the removal when the revoke fails, and logs ids only", async () => {
     live.failRevokes();
+    live.failCloses();
     world.as("owner");
     expect((await remove(USERS.carer.id)).status).toBe(204);
     expect(
