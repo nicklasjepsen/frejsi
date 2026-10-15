@@ -1,7 +1,8 @@
 // Pure helpers behind the glucose components: the number in the space's unit, the age of a
 // reading, staleness, the day's start in the space's timezone. No React, no strings: the
 // components translate the parts these return.
-import { fromMmol, type GlucoseUnit, type Reading } from "@frejsi/shared";
+import { fromMmol } from "@frejsi/shared/glucose/units";
+import type { GlucoseUnit, Reading } from "@frejsi/shared/schemas/index";
 
 import type { AppLocale } from "@/lib/i18n/routing";
 
