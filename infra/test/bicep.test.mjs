@@ -238,6 +238,9 @@ test('alert: no reading.stored for 35 minutes, to an action group with the alert
   const email = group.resource.properties.emailReceivers[0].emailAddress;
   assert.match(email, /parameters\('alertEmail'\)/);
   assert.equal(template.parameters.alertEmail.defaultValue, undefined, 'alertEmail has no default');
+  // Secure in main and in the module, so the address stays out of the deployment history.
+  assert.equal(template.parameters.alertEmail.type.toLowerCase(), 'securestring');
+  assert.equal(group.scope.template.parameters.alertEmail.type.toLowerCase(), 'securestring');
 });
 
 test('no email address, secret or real person in infra/ or the workflows', () => {

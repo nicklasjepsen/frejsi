@@ -20,6 +20,7 @@ param baseName string = 'frejsi'
 
 @description('Address that receives the "no reading for 35 minutes" alert. Passed from the ALERT_EMAIL repository secret; never in the repository or a log.')
 @minLength(3)
+@secure()
 param alertEmail string
 
 @description('Custom domain for the web app, for example frejsi.jepsen.ninja. Empty means none yet (first release, or a fork without a domain).')
