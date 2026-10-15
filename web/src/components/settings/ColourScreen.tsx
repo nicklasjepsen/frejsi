@@ -16,6 +16,7 @@ import { localeHref, type AppLocale } from "@/lib/i18n/routing";
 
 import { PageHeader } from "./controls";
 import type { SettingsData } from "./load-settings";
+import { useServerState } from "./server-state";
 import { failureCode, settingsApi, type SettingsApi } from "./settings-client";
 import styles from "./settings.module.css";
 
@@ -37,7 +38,8 @@ export function ColourScreen({ locale, data, api = settingsApi() }: ColourScreen
   const errors = useTranslations("errors.api");
   const router = useRouter();
 
-  const [people, setPeople] = useState(data.people);
+  // The server's people, with this screen's own writes layered on until the next refresh.
+  const [people, setPeople] = useServerState(data, (d) => d.people);
   const [selectedId, setSelectedId] = useState(data.me.userId);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<ApiErrorCode | null>(null);
