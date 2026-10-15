@@ -56,7 +56,7 @@ function liveConnections() {
   const joined = new Map<string, Set<string>>();
   const received = new Map<string, EventEnvelope[]>();
   const removed: { group: string; userId: string }[] = [];
-  let failing = false;
+  let failures = 0;
   return {
     removed,
     connect(userId: string, groups: string[]) {
@@ -70,12 +70,15 @@ function liveConnections() {
     },
     received: (userId: string) => received.get(userId) ?? [],
     groupsOf: (userId: string) => [...(joined.get(userId) ?? [])],
-    failRevokes() {
-      failing = true;
+    failRevokes(times = Number.POSITIVE_INFINITY) {
+      failures = times;
     },
     revoker: {
       removeUserFromGroup(group: string, userId: string) {
-        if (failing) return Promise.reject(new Error("service unavailable"));
+        if (failures > 0) {
+          failures -= 1;
+          return Promise.reject(new Error("service unavailable"));
+        }
         removed.push({ group, userId });
         joined.get(userId)?.delete(group);
         return Promise.resolve();
@@ -235,6 +238,15 @@ describe("PATCH /api/spaces/:id/members/:userId", () => {
     expect((await patch(USERS.owner.id, { role: "viewer" })).status).toBe(409);
     expect((await patch(USERS.carer.id, { role: "owner" })).status).toBe(204);
     expect(live.removed).toEqual([]);
+  });
+
+  it("tries a failed revoke once more before giving up", async () => {
+    live.failRevokes(1);
+    world.as("owner");
+    expect((await patch(USERS.carer.id, { role: "viewer" })).status).toBe(204);
+    live.publish("space-s1-glucose", reading);
+    expect(live.received(USERS.carer.id)).toEqual([]);
+    expect(world.log()).not.toContain("live-revoke-failed");
   });
 
   it("keeps the committed role when the revoke fails, and logs ids only", async () => {

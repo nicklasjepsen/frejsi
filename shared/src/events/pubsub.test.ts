@@ -56,7 +56,7 @@ describe("WebPubSubEventSink", () => {
         userId: "u1",
         groups: ["space-s1", "space-s1-glucose"],
         roles: [],
-        expirationTimeInMinutes: 60,
+        expirationTimeInMinutes: 5,
       },
     ]);
   });

@@ -25,7 +25,12 @@ export interface WebPubSubClientLike {
 }
 
 export const DEFAULT_HUB = "frejsi";
-const TOKEN_MINUTES = 60;
+/**
+ * Only checked when a socket connects: an open socket outlives it, and the client negotiates
+ * afresh on every reconnect. Short, so a token issued before a downgrade or removal cannot be
+ * replayed for long to rejoin the glucose group (issue #79).
+ */
+const TOKEN_MINUTES = 5;
 
 /** The real sink: Web PubSub REST API through the service client (spec §3b). */
 export class WebPubSubEventSink implements EventSink, LiveTokenIssuer, LiveGroupRevoker {
