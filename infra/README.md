@@ -196,3 +196,42 @@ node --test 'infra/test/*.test.mjs'
 - The alert needs the poller to emit the `reading.stored` custom event (task 4). Until it does, the
   alert fires after the first 35 minutes of production. That is correct: nothing is being stored.
 - Previews (`preview.yml`) carry no database; screens that need data show their empty states.
+
+## Live groups and the connect handler
+
+A client token from `negotiate` carries the user id and nothing else: no groups, no roles. The hub
+`frejsi` has one event handler, for the system `connect` event only, at
+`https://<static web app default hostname>/api/pubsub` (`modules/webpubsub.bicep`). Every time a
+socket connects, Web PubSub calls it; the app reads the member's current role in the space named by
+the socket URL's `spaceId` and answers with `space-<id>`, plus `space-<id>-glucose` for owners and
+carers only. A viewer, a carer downgraded a second ago or a removed member is never joined to the
+glucose group, whatever token they hold (issue #95). Any failure (a bad signature, an unknown member,
+the database down) is a non-2xx answer, and Web PubSub then refuses the socket; the client polls.
+
+**Handler authentication: the hub's own access key, not a managed identity.**
+
+- *Abuse protection:* the app answers the CloudEvents `OPTIONS` handshake with
+  `WebHook-Allowed-Origin` only for its own Web PubSub host, and checks `WebHook-Request-Origin` on
+  every request.
+- *Shared key:* Web PubSub signs every upstream request: `ce-signature` holds
+  `sha256=HMAC_SHA256(accessKey, connectionId)` for its primary and secondary key. The app checks it
+  with the `AccessKey` in `WEB_PUBSUB_CONNECTION_STRING`, which `deploy.sh` already copies from Key
+  Vault (`web-pubsub-connection-string`). Nothing new to store or rotate.
+- *Why not a managed identity:* the handler's `ManagedIdentity` auth makes the service send an Entra
+  token whose audience is an app registration. That needs a second app registration the pipeline
+  cannot create with its role, and code in the web app to validate Entra tokens; Static Web Apps
+  gives hybrid Next.js no built-in check for it. The signature gives the same assurance (only the
+  holder of the hub's key can produce it) with the secret the web app already has.
+
+Things to know:
+
+- **Release order.** `infra` deploys before the web app, so for the minutes between the two the hub
+  calls a route the old web app does not have yet. Sockets are refused in that window and every
+  screen polls; nothing leaks.
+- **Key rotation.** If you regenerate the primary key in the portal, delete the Key Vault secret
+  `web-pubsub-connection-string` and run a release, so `deploy.sh` stores the new one. Until then the
+  app cannot verify the hub and every socket is refused (screens poll).
+- **Local development.** A hub without this handler joins sockets to no group, so a socket opens
+  and stays silent. Either leave `WEB_PUBSUB_CONNECTION_STRING` unset (negotiate answers 503 and the
+  screens poll), or use a hub of your own whose handler is `tunnel:///api/pubsub` (connect event
+  only) and run `awps-tunnel run --hub frejsi --upstream http://localhost:3000`.
