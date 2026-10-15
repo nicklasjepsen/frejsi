@@ -63,8 +63,15 @@ function fakeDb(initial: Partial<SpaceState>[]) {
             .map(({ lastSeq: _lastSeq, ...row }) => row),
         ),
       update: (args) => {
-        Object.assign(must(args.where.id), args.data);
-        return Promise.resolve(undefined);
+        const space = must(args.where.id);
+        const { sourceFailures, ...rest } = args.data;
+        Object.assign(space, rest);
+        if (typeof sourceFailures === "number") space.sourceFailures = sourceFailures;
+        else if (sourceFailures) space.sourceFailures += sourceFailures.increment;
+        return Promise.resolve({
+          sourceFailures: space.sourceFailures,
+          sourceStatus: space.sourceStatus,
+        });
       },
       updateMany: (args) => {
         const space = must(args.where.id);
@@ -535,5 +542,16 @@ describe("runPollCycle across spaces", () => {
     await h.run();
     expect(h.spaces.get("s1")?.lastReadingAt).toEqual(new Date("2026-10-15T10:20:00.000Z"));
     expect(h.spaces.get("s1")?.sourceFailures).toBe(0);
+  });
+});
+
+describe("runPollCycle failure counting under overlap", () => {
+  it("counts every failure once when two cycles fail at the same time", async () => {
+    const h = harness([{ id: "s1", sourceFailures: 1, lastReadingAt: now }], () =>
+      recordingSource([], new Error("down")),
+    );
+    await Promise.all([h.run(), h.run()]);
+    expect(h.spaces.get("s1")).toMatchObject({ sourceFailures: 3, sourceStatus: "disconnected" });
+    expect(statusOf(h.sink, "s1")).toEqual(["disconnected"]);
   });
 });

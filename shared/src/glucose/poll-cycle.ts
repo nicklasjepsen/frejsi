@@ -39,10 +39,12 @@ export interface PollDb {
         lastReadingAt: true;
       };
     }): Promise<PollSpaceRow[]>;
+    /** The failure counter is incremented in the database, never computed from a snapshot. */
     update(args: {
       where: { id: string };
-      data: { sourceStatus?: string; sourceFailures?: number };
-    }): Promise<unknown>;
+      data: { sourceStatus?: string; sourceFailures?: number | { increment: number } };
+      select: { sourceFailures: true; sourceStatus: true };
+    }): Promise<{ sourceFailures: number; sourceStatus: string }>;
     /** `lastReadingAt` moves forward only, decided by the database, so overlapping cycles cannot regress it. */
     updateMany(args: {
       where: { id: string; OR: [{ lastReadingAt: null }, { lastReadingAt: { lt: Date } }] };
@@ -300,6 +302,7 @@ async function markConnected(
   await deps.db.space.update({
     where: { id: space.id },
     data: { sourceStatus: "connected", sourceFailures: 0 },
+    select: { sourceFailures: true, sourceStatus: true },
   });
   await advanceLastReadingAt(space.id, latest, deps);
   return "connected";
@@ -332,31 +335,37 @@ async function advanceLastReadingAt(
   });
 }
 
-/** Counts the failure; the third one in a row flips the status and tells the clients, once. */
+/**
+ * Counts the failure in the database (an atomic increment, so two overlapping cycles count two)
+ * and, when the fresh count reaches the limit, tells the clients first and flips the column after.
+ */
 async function markFailed(
   space: PollSpaceRow,
   latest: Date | null,
   deps: Resolved,
 ): Promise<SourceStatus> {
-  const failures = space.sourceFailures + 1;
-  const disconnect =
-    failures >= FAILURES_BEFORE_DISCONNECTED && space.sourceStatus !== "disconnected";
-  const status: SourceStatus = disconnect ? "disconnected" : (space.sourceStatus as SourceStatus);
   try {
-    if (disconnect) {
-      await deps.emit(space.id, "source.status", {
-        status: "disconnected",
-        since: deps.now().toISOString(),
-      });
-    }
-    await deps.db.space.update({
+    const row = await deps.db.space.update({
       where: { id: space.id },
-      data: { sourceFailures: failures, ...(disconnect ? { sourceStatus: "disconnected" } : {}) },
+      data: { sourceFailures: { increment: 1 } },
+      select: { sourceFailures: true, sourceStatus: true },
     });
     await advanceLastReadingAt(space.id, latest, deps);
+    const disconnect =
+      row.sourceFailures >= FAILURES_BEFORE_DISCONNECTED && row.sourceStatus !== "disconnected";
+    if (!disconnect) return row.sourceStatus as SourceStatus;
+    await deps.emit(space.id, "source.status", {
+      status: "disconnected",
+      since: deps.now().toISOString(),
+    });
+    await deps.db.space.update({
+      where: { id: space.id },
+      data: { sourceStatus: "disconnected" },
+      select: { sourceFailures: true, sourceStatus: true },
+    });
+    return "disconnected";
   } catch (error) {
     deps.log.error("poll.status-update-failed", { spaceId: space.id, code: codeOf(error) }, error);
     return space.sourceStatus as SourceStatus;
   }
-  return status;
 }
