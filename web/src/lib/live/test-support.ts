@@ -18,10 +18,18 @@ export interface FakeUser {
 }
 
 /**
+ * The expiry and last-seen time of every fake session: the largest Date. `requireSpaceRole` checks a
+ * session against the wall clock, not a test's pinned T0, so a row dated by the test clock expired an
+ * hour after T0 in real time and every later run answered 403 (the v0.1.0 release run). Dated here, a
+ * session never expires and never reaches its hourly touch, whatever clock reads it.
+ */
+const SESSION_FOREVER = new Date(8.64e15);
+
+/**
  * The query shapes `loadSession`, `loadReadingsWindow`, `loadEventsPage` and the connect
  * handler's membership lookup use, over plain
- * arrays. Sessions never need a touch here (`lastSeenAt` is the test clock), so the two update
- * delegates only record that they were called.
+ * arrays. A session row is valid and untouched under any clock (`SESSION_FOREVER`), so the two
+ * update delegates only record that they were called.
  */
 export class FakeLiveDb {
   users: FakeUser[] = [];
@@ -86,12 +94,11 @@ export class FakeLiveDb {
         const session = this.sessions.find((s) => s.id === args.where.id);
         const user = session ? this.users.find((u) => u.id === session.userId) : undefined;
         if (!session || !user) return Promise.resolve(null);
-        const at = this.now();
         return Promise.resolve({
           id: session.id,
           userId: user.id,
-          expiresAt: new Date(at.getTime() + 1000 * 60 * 60),
-          lastSeenAt: at,
+          expiresAt: SESSION_FOREVER,
+          lastSeenAt: SESSION_FOREVER,
           user: {
             id: user.id,
             name: user.name,
