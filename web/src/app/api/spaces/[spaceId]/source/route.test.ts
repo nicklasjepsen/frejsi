@@ -93,7 +93,11 @@ const everythingPersisted = () => JSON.stringify(fake.tables) + logLines.join("\
 describe("GET /api/spaces/:id/source", () => {
   it("gives owners and carers the source as configured and the time of its last status change, without the secretRef", async () => {
     Object.assign(space(), {
-      glucoseSource: JSON.stringify({ type: "dexcom-share", region: "us", secretRef: "glucose-s1" }),
+      glucoseSource: JSON.stringify({
+        type: "dexcom-share",
+        region: "us",
+        secretRef: "glucose-s1",
+      }),
       sourceStatus: "disconnected",
       lastReadingAt: new Date("2026-10-15T13:13:00.000Z"),
     });
@@ -164,7 +168,11 @@ describe("POST /api/spaces/:id/source (plan task 9: connect a glucose source)", 
         type: "source.status",
         payload: { status: "connected", since: T0.toISOString() },
       },
-      { spaceId: "s1", type: "space.updated", payload: { fields: ["glucoseSource", "sourceStatus"] } },
+      {
+        spaceId: "s1",
+        type: "space.updated",
+        payload: { fields: ["glucoseSource", "sourceStatus"] },
+      },
     ]);
   });
 
@@ -210,6 +218,35 @@ describe("POST /api/spaces/:id/source (plan task 9: connect a glucose source)", 
     expect((await post("owner")).status).toBe(503);
     expect(space()).toMatchObject({ glucoseSource: null });
     expect(events).toEqual([]);
+  });
+
+  it("names why the function was unreachable on a warn line, without request data", async () => {
+    const causes = (): string[] =>
+      logLines
+        .map((line) => JSON.parse(line) as Record<string, unknown>)
+        .filter((line) => line.msg === "source.connect-unreachable")
+        .map((line) => {
+          expect(line).toMatchObject({ level: "warn", route: "spaces.source", spaceId: "s1" });
+          return line.code as string;
+        });
+    upstream.answer = () => new Error("ECONNREFUSED");
+    await post("owner");
+    upstream.answer = () => new Response("<html>oops</html>", { status: 502 });
+    await post("owner");
+    upstream.answer = () => Response.json({ nonsense: true });
+    await post("owner");
+    upstream.answer = () => Response.json({ result: "unreachable" });
+    await post("owner");
+    vi.stubEnv("SOURCE_CONNECT_URL", "");
+    await post("owner");
+    expect(causes()).toEqual([
+      "network",
+      "http-502",
+      "bad-body",
+      "source-unreachable",
+      "not-configured",
+    ]);
+    expect(logLines.join("\n")).not.toMatch(/example-/);
   });
 
   it("is 403 for a carer and a viewer, 404 for a non-member, 403 without a session, and never calls the function for them", async () => {

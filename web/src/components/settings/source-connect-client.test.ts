@@ -1,7 +1,11 @@
 // @vitest-environment node
 import { describe, expect, it, vi } from "vitest";
 
-import { connectSource, type ConnectSourceEnv } from "./source-connect-client";
+import {
+  connectSource,
+  SOURCE_CONNECT_TIMEOUT_MS,
+  type ConnectSourceEnv,
+} from "./source-connect-client";
 
 const REQUEST = {
   spaceId: "s1",
@@ -47,31 +51,66 @@ describe("connectSource (the Settings route → source-connect contract, plan §
     expect(new Headers(calls[0]?.init.headers).has("x-functions-key")).toBe(false);
   });
 
-  it("is unreachable when the URL is not configured, and never calls fetch", async () => {
+  it("is unreachable (not-configured) when the URL is not configured, and never calls fetch", async () => {
     const { fetchImpl, calls } = fetching(Response.json({ result: "ok", secretRef: "x" }));
-    expect(await connectSource(REQUEST, {}, fetchImpl)).toEqual({ result: "unreachable" });
-    expect(await connectSource(REQUEST, { SOURCE_CONNECT_URL: "" }, fetchImpl)).toEqual({
-      result: "unreachable",
-    });
+    const notConfigured = { result: "unreachable", cause: "not-configured" };
+    expect(await connectSource(REQUEST, {}, fetchImpl)).toEqual(notConfigured);
+    expect(await connectSource(REQUEST, { SOURCE_CONNECT_URL: "" }, fetchImpl)).toEqual(
+      notConfigured,
+    );
     expect(calls).toEqual([]);
   });
 
-  it("is unreachable on a network error, a non-2xx answer or a body that is not a ConnectSourceResult", async () => {
-    expect(await connectSource(REQUEST, ENV, fetching(new Error("ECONNRESET")).fetchImpl)).toEqual(
-      { result: "unreachable" },
-    );
+  it("names the cause: a network error, a non-2xx answer, a body that is not a ConnectSourceResult", async () => {
+    expect(await connectSource(REQUEST, ENV, fetching(new Error("ECONNRESET")).fetchImpl)).toEqual({
+      result: "unreachable",
+      cause: "network",
+    });
     expect(
       await connectSource(
         REQUEST,
         ENV,
         fetching(new Response("Service Unavailable", { status: 503 })).fetchImpl,
       ),
-    ).toEqual({ result: "unreachable" });
+    ).toEqual({ result: "unreachable", cause: "http-503" });
     expect(
       await connectSource(REQUEST, ENV, fetching(Response.json({ result: "maybe" })).fetchImpl),
-    ).toEqual({ result: "unreachable" });
+    ).toEqual({ result: "unreachable", cause: "bad-body" });
+    expect(await connectSource(REQUEST, ENV, fetching(new Response("not json")).fetchImpl)).toEqual(
+      { result: "unreachable", cause: "bad-body" },
+    );
+  });
+
+  it("passes on the function's own unreachable answer as source-unreachable", async () => {
     expect(
-      await connectSource(REQUEST, ENV, fetching(new Response("not json")).fetchImpl),
-    ).toEqual({ result: "unreachable" });
+      await connectSource(
+        REQUEST,
+        ENV,
+        fetching(Response.json({ result: "unreachable" })).fetchImpl,
+      ),
+    ).toEqual({ result: "unreachable", cause: "source-unreachable" });
+  });
+
+  it("gives up after the timeout and answers unreachable (timeout) instead of hanging", async () => {
+    // A function that never answers but honours the abort signal, as fetch does.
+    const stalled = vi.fn(
+      (_url: string, init: RequestInit = {}) =>
+        new Promise<Response>((_resolve, reject) => {
+          init.signal?.addEventListener("abort", () => {
+            reject(init.signal?.reason as Error);
+          });
+        }),
+    ) as unknown as typeof fetch;
+    expect(await connectSource(REQUEST, ENV, stalled, 20)).toEqual({
+      result: "unreachable",
+      cause: "timeout",
+    });
+  });
+
+  it("sends a timeout signal by default", async () => {
+    const { fetchImpl, calls } = fetching(Response.json({ result: "bad-credentials" }));
+    await connectSource(REQUEST, ENV, fetchImpl);
+    expect(calls[0]?.init.signal).toBeInstanceOf(AbortSignal);
+    expect(SOURCE_CONNECT_TIMEOUT_MS).toBeGreaterThan(0);
   });
 });
