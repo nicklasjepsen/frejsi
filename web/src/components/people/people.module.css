@@ -1,0 +1,557 @@
+/* Personer: rows on the phone (Personer-Telefon), the five-column table and the invite panel from
+   1280 px (Personer-Desktop). Colours come from the tokens only, so dark mode and the person's
+   accent follow the shell. */
+
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding-top: 12px;
+}
+
+.phoneOnly {
+  display: block;
+}
+
+.desktopOnly {
+  display: none;
+}
+
+.back {
+  align-self: flex-start;
+  min-height: var(--touch-min);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--text-muted);
+  text-decoration: none;
+  font-size: 15px;
+}
+
+.head {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.title {
+  font-size: 24px;
+}
+
+.summary {
+  margin-top: 4px;
+  color: var(--text-muted);
+  font-size: 14px;
+}
+
+.layout {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.listColumn {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+
+.listCard {
+  padding: 4px 16px;
+}
+
+.table {
+  display: block;
+}
+
+.headGroup {
+  display: none;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 64px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--hairline);
+  cursor: pointer;
+}
+
+.row:last-child {
+  border-bottom: 0;
+}
+
+.row[aria-expanded="true"] {
+  background: var(--surface-selected);
+  margin: 0 -16px;
+  padding-left: 16px;
+  padding-right: 16px;
+}
+
+.inviteRow {
+  cursor: default;
+}
+
+.row:focus-visible {
+  outline: 2px solid var(--accent-base);
+  outline-offset: -2px;
+  border-radius: var(--radius-button-small);
+}
+
+.cell {
+  display: none;
+  min-width: 0;
+}
+
+.inviteRow .actions {
+  display: flex;
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+.personCell {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+  min-width: 0;
+}
+
+.personText {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.nameLine {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  min-width: 0;
+}
+
+.name {
+  font-weight: 700;
+  font-size: 16px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.you {
+  color: var(--text-muted);
+  font-weight: 400;
+  font-size: 14px;
+}
+
+.sub {
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+/* A person who is not here yet: the initial inside a dashed ring, no fill (Avatar, pending). */
+.pendingAvatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 2px dashed var(--hairline-strong);
+  color: var(--text-muted);
+  font-weight: 700;
+  font-size: 18px;
+}
+
+.actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+/* The pill buttons on People: "Fjern" (destructive text), "Send igen", "Ja, fjern", "Fortryd". */
+.pillButton {
+  min-height: 34px;
+  padding: 0 14px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--hairline-strong);
+  background: var(--surface);
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.pillButton:hover {
+  background: var(--surface-selected);
+}
+
+.pillButton[data-destructive="true"] {
+  color: var(--destructive);
+}
+
+.detailRow {
+  display: block;
+  padding: 4px 0 16px 56px;
+  border-bottom: 1px solid var(--hairline);
+}
+
+.detail {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.detailSection {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.detailHeading {
+  font-family: var(--font-body-stack);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.muted {
+  color: var(--text-muted);
+  font-size: 14px;
+}
+
+.deviceList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
+
+.device {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: var(--touch-min);
+}
+
+.deviceText {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.deviceName {
+  font-weight: 700;
+  font-size: 15px;
+}
+
+.deviceSeen {
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+.confirm {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.confirmText {
+  font-size: 14px;
+  color: var(--text);
+}
+
+/* Role cards: title 700 and a one-line explanation; the chosen one gets the accent border and tint. */
+.roleCards {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  min-width: 0;
+  width: 100%;
+}
+
+.legend {
+  padding: 0;
+  margin-bottom: 6px;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.roleCard {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  grid-template-rows: auto auto;
+  column-gap: 10px;
+  align-items: center;
+  padding: 10px 12px;
+  border-radius: var(--radius-card-small);
+  border: 2px solid var(--hairline);
+  background: var(--surface);
+  cursor: pointer;
+}
+
+.roleCard[data-selected="true"] {
+  border-color: var(--accent-base);
+  background: var(--accent-tint);
+}
+
+.roleRadio {
+  grid-row: 1 / span 2;
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  accent-color: var(--accent-base);
+}
+
+.roleTitle {
+  font-weight: 700;
+  font-size: 15px;
+}
+
+.roleHint {
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+/* The invite panel: a bottom sheet on the phone, the right column on desktop. */
+.invitePanel {
+  display: none;
+}
+
+.invitePanel[data-open="true"] {
+  display: block;
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 5;
+  max-height: 90vh;
+  max-height: 90dvh;
+  overflow: auto;
+  padding: 8px 12px calc(12px + env(safe-area-inset-bottom));
+  background: var(--ground);
+  border-top: 1px solid var(--hairline);
+}
+
+.panelCard {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 20px;
+}
+
+.panelHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.panelTitle {
+  font-size: 22px;
+}
+
+.closeButton {
+  width: var(--touch-min);
+  height: var(--touch-min);
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  font-size: 26px;
+  line-height: 1;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.closeButton:hover {
+  background: var(--surface-selected);
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.fieldLabel {
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.input {
+  min-height: 42px;
+  padding: 0 12px;
+  border-radius: var(--radius-button-small);
+  border: 1px solid var(--hairline-strong);
+  background: var(--surface-input);
+  color: var(--text);
+  font: inherit;
+  font-size: 16px;
+}
+
+/* The created invitation: QR on a surface with a hairline, the caption, the validity, the link. */
+.result {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.qrBox {
+  display: inline-flex;
+  padding: 8px;
+  border-radius: var(--radius-button-small);
+  background: var(--surface-input);
+  border: 1px solid var(--hairline);
+  color: var(--text);
+  align-self: flex-start;
+}
+
+.resultText {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+.validity {
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+.link {
+  display: block;
+  padding: 8px 10px;
+  border-radius: var(--radius-button-small);
+  background: var(--surface-sunken);
+  font-size: 13px;
+  word-break: break-all;
+  user-select: all;
+}
+
+.resultActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.status {
+  min-height: 1.2em;
+  font-size: 13px;
+  color: var(--accent-strong);
+}
+
+.th {
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--text-muted);
+}
+
+@media (min-width: 1280px) {
+  .phoneOnly {
+    display: none;
+  }
+
+  .desktopOnly {
+    display: block;
+  }
+
+  .page {
+    padding-top: 0;
+    gap: 20px;
+  }
+
+  .title {
+    font-size: 30px;
+  }
+
+  .layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 340px;
+    gap: 24px;
+    align-items: start;
+  }
+
+  .listCard {
+    padding: 8px 20px;
+  }
+
+  .headGroup {
+    display: block;
+  }
+
+  .headRow,
+  .row {
+    display: grid;
+    grid-template-columns: minmax(0, 2.2fr) 1.3fr 1fr 1.4fr 1.2fr;
+    gap: 12px;
+    align-items: center;
+  }
+
+  .headRow {
+    min-height: 40px;
+    border-bottom: 1px solid var(--hairline);
+  }
+
+  .row {
+    min-height: 56px;
+    font-size: 14px;
+  }
+
+  .row[aria-expanded="true"] {
+    margin: 0 -20px;
+    padding-left: 20px;
+    padding-right: 20px;
+  }
+
+  .cell {
+    display: block;
+  }
+
+  .inviteRow .actions {
+    margin-left: 0;
+  }
+
+  .personCell {
+    gap: 10px;
+  }
+
+  .name {
+    font-size: 15px;
+  }
+
+  .detailRow {
+    padding-left: 50px;
+  }
+
+  .invitePanel,
+  .invitePanel[data-open="true"] {
+    display: block;
+    position: static;
+    max-height: none;
+    overflow: visible;
+    padding: 0;
+    background: transparent;
+    border-top: 0;
+  }
+}

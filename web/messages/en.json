@@ -250,5 +250,81 @@
     "data": {
       "lead": "Export for the clinic"
     }
+  },
+  "people": {
+    "title": "People",
+    "titleIn": "People in {space}",
+    "back": "Back to More",
+    "peopleCount": "{count, plural, one {# person} other {# people}}",
+    "deviceCount": "{count, plural, one {# device} other {# devices}}",
+    "pendingCount": "{count, plural, one {# invitation pending} other {# invitations pending}}",
+    "you": "(you)",
+    "noGlucose": "no glucose",
+    "simpleViewInline": "simple view",
+    "view": {
+      "normal": "Normal",
+      "simple": "Simple view"
+    },
+    "columns": {
+      "person": "Person",
+      "role": "Role",
+      "view": "View",
+      "devices": "Devices",
+      "lastSeen": "Last seen"
+    },
+    "lastSeen": {
+      "never": "Never",
+      "now": "Now",
+      "today": "Today {time}",
+      "yesterday": "Yesterday {time}"
+    },
+    "deviceLastSeen": {
+      "never": "not used yet",
+      "now": "last seen now",
+      "today": "last seen today {time}",
+      "yesterday": "last seen yesterday {time}",
+      "other": "last seen {when}"
+    },
+    "devices": "Devices",
+    "noDevices": "No devices yet",
+    "unnamedDevice": "Device",
+    "addDevice": "+ Add a device",
+    "remove": "Remove",
+    "removeMember": "Remove {name} from the space",
+    "confirmRemoveMember": "Remove {name} from the space? The devices are signed out, and {name} can only come back with a new invitation.",
+    "confirmRemoveDevice": "Remove {device}? It is signed out right away.",
+    "confirm": "Yes, remove",
+    "cancel": "Cancel",
+    "deviceNotice": "New phone number or a new phone? Add a device to the person here – it's the only way in. No passwords.",
+    "deviceNoticeDesktop": "Devices: a new phone is a new device, added through an “add a device” link for the same person. It's the only way in and the only way back.",
+    "ownerOnly": "Only owners can invite, change roles and remove people and devices.",
+    "role": "Role",
+    "roleCards": {
+      "carer": "Logs meals, approves food, sees the curve",
+      "viewer": "Sees today's meals and carbohydrates. Never glucose.",
+      "owner": "Everything, including people, devices and settings"
+    },
+    "detail": "Show details for {name}",
+    "close": "Close",
+    "invite": {
+      "button": "Invite a person",
+      "title": "Invite a person",
+      "name": "Name",
+      "create": "Create invitation",
+      "qr": "QR code for the invitation",
+      "scanOrSend": "Let {name} scan the code, or send the link.",
+      "deviceScanOrSend": "Let {name} scan the code with the new device, or send the link to it.",
+      "validity": "Valid 7 days · single use",
+      "link": "Invitation link",
+      "copyLink": "Copy link",
+      "copied": "Link copied",
+      "new": "New invitation",
+      "sent": "{days, plural, =0 {Invitation sent today} =1 {Invitation sent yesterday} other {Invitation sent # days ago}}",
+      "expires": "{days, plural, =0 {expires today} one {expires in # day} other {expires in # days}}",
+      "resend": "Send again",
+      "revoke": "Withdraw",
+      "pendingRow": "Invitation for {name}",
+      "newDevice": "New device for {name}"
+    }
   }
 }
