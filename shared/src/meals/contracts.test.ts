@@ -174,6 +174,33 @@ describe("food and meal contracts", () => {
     ).toBe(false);
   });
 
+  it("rejects edits that explicitly clear every carbohydrate basis", () => {
+    expect(food.UpdateFoodRequest.safeParse({ carbsPer100g: null, portions: [] }).success).toBe(
+      false,
+    );
+    expect(food.UpdateFoodRequest.safeParse({ carbsPer100g: 0, portions: [] }).success).toBe(true);
+    expect(
+      food.UpdateFoodRequest.safeParse({
+        carbsPer100g: null,
+        portions: [{ label: "bowl", carbs: 42 }],
+      }).success,
+    ).toBe(true);
+  });
+
+  it("validates partial nutrition edits against the stored space food", () => {
+    const clearWeight = food.UpdateFoodRequest.parse({ carbsPer100g: null });
+    expect(food.Food.safeParse({ ...row, ...clearWeight }).success).toBe(false);
+    const portionFood = { ...row, carbsPer100g: null, portions: [{ label: "bowl", carbs: 42 }] };
+    expect(food.Food.safeParse({ ...portionFood, ...clearWeight }).success).toBe(true);
+
+    const clearPortions = food.UpdateFoodRequest.parse({ portions: [] });
+    expect(food.Food.safeParse({ ...portionFood, ...clearPortions }).success).toBe(false);
+    expect(food.Food.safeParse({ ...row, ...clearPortions }).success).toBe(true);
+    expect(
+      food.Food.safeParse({ ...row, spaceId: null, carbsPer100g: null, portions: [] }).success,
+    ).toBe(true);
+  });
+
   it("walks strict public views recursively without glucose or dosing fields", () => {
     const keys = schemaVocabulary({ FoodView: food.FoodView, DayView: meal.DayView });
     const forbidden = new Set(["mmol", "mgdl", "trend", "reading", "readings", "glucose"]);

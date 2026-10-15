@@ -380,6 +380,28 @@ describe("lookup", () => {
     },
   );
 
+  it("keeps the first remote barcode candidate in both the response and cache", async () => {
+    const first = candidate("Example first loaf");
+    const source = new FakeFoodSource({
+      id: "fake-remote",
+      kind: "remote",
+      candidates: [first, candidate("Example second loaf")],
+    });
+    const repo = new MemoryFoodRepository();
+    const result = await lookup(repo, [source], { ...options, query: { barcode } });
+    expect(result.results).toHaveLength(1);
+    expect(result.results[0]?.food.name).toBe(first.name);
+    expect(repo.rows).toHaveLength(1);
+    expect(repo.rows[0]?.name).toBe(first.name);
+    expect(repo.writes).toHaveLength(1);
+
+    const cached = await lookup(repo, [source], { ...options, query: { barcode } });
+    expect(cached.results).toHaveLength(1);
+    expect(cached.results[0]?.food).toEqual(result.results[0]?.food);
+    expect(cached.sources).toEqual({ "fake-remote": "skipped" });
+    expect(repo.writes).toHaveLength(1);
+  });
+
   it("rejects an oversized folded source name before any cache write", async () => {
     const repo = new MemoryFoodRepository();
     const source = new FakeFoodSource({

@@ -126,9 +126,11 @@ export async function lookup(
       let food = candidate;
       if ("barcode" in query && source.kind === "remote") {
         food = { ...candidate, barcode: query.barcode, sourceRef: `${source.id}:${query.barcode}` };
-        await repo.upsertCache({ ...food, spaceId: null, verified: false });
       }
       if (seen.has(food.sourceRef)) continue;
+      if ("barcode" in query && source.kind === "remote") {
+        await repo.upsertCache({ ...food, spaceId: null, verified: false });
+      }
       seen.add(food.sourceRef);
       results.push({ source: source.id, verified: false, food });
     }
