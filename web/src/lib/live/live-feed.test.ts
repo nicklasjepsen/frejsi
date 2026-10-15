@@ -73,8 +73,8 @@ function fakeServer(initial: { readings: Reading[]; lastSeq: number }) {
       server.negotiateHangs
         ? new Promise<Response>(() => undefined)
         : server.live
-        ? jsonResponse({ url: SOCKET_URL })
-        : jsonResponse({ error: { code: "internal", message: "" } }, 503),
+          ? jsonResponse({ url: SOCKET_URL })
+          : jsonResponse({ error: { code: "internal", message: "" } }, 503),
     "/events": (url) => {
       const since = Number(url.searchParams.get("since"));
       const events = server.events.filter((e) => e.seq > since);
