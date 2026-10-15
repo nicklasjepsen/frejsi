@@ -9,22 +9,7 @@ import { Notice } from "@/components/ui/Notice";
 import { localeHref, type AppLocale } from "@/lib/i18n/routing";
 
 import styles from "./shell.module.css";
-
-/** The unbuilt destinations the navigation links to (decision 15); the URL slug is the key. */
-export const SOON_FEATURES = [
-  "meals",
-  "food",
-  "history",
-  "my-food",
-  "ask",
-  "today",
-  "earlier-days",
-] as const;
-export type SoonFeature = (typeof SOON_FEATURES)[number];
-
-export function isSoonFeature(value: string): value is SoonFeature {
-  return (SOON_FEATURES as readonly string[]).includes(value);
-}
+import type { SoonFeature } from "./soon-features";
 
 /**
  * "Kommer i en senere version": a calm page, nothing drawn empty. For a viewer, `today` is the
