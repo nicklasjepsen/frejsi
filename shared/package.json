@@ -7,7 +7,8 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
-    "./*": "./src/*.ts"
+    "./*": "./src/*.ts",
+    "./photos": "./src/photos/index.ts"
   },
   "scripts": {
     "postinstall": "prisma generate",
@@ -20,15 +21,18 @@
   "dependencies": {
     "@azure/identity": "4.14.0",
     "@azure/keyvault-secrets": "4.11.2",
+    "@azure/storage-blob": "12.34.0",
     "@azure/web-pubsub": "1.2.0",
     "@opentelemetry/api-logs": "0.221.0",
     "@prisma/client": "6.19.3",
     "applicationinsights": "3.17.0",
+    "sharp": "0.35.5",
     "zod": "4.6.7"
   },
   "devDependencies": {
     "@types/node": "22.20.5",
     "eslint": "9.39.5",
+    "jpeg-js": "0.4.4",
     "prisma": "6.19.3",
     "typescript": "5.9.3",
     "vitest": "3.2.7"
