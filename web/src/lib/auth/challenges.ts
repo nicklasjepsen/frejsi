@@ -47,7 +47,8 @@ export async function createChallenge(
 /**
  * Takes the challenge out of the table and returns it, once. The delete is the claim: of two
  * requests racing on the same id, only the one whose delete removed the row gets it. An expired or
- * unknown challenge is a stale request, not an authorization failure, hence `validation`.
+ * unknown challenge is a stale request, not an authorization failure, hence `validation`. The
+ * message stays at the code: the sign-in screen translates it (plan §9).
  */
 export async function consumeChallenge(
   id: string,
@@ -63,5 +64,5 @@ export async function consumeChallenge(
 }
 
 function stale(): HttpError {
-  return new HttpError(400, "validation", "The sign-in attempt is no longer valid. Start again.");
+  return new HttpError(400, "validation");
 }
