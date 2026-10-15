@@ -25,6 +25,7 @@ let auth: FakeLiveDb;
 let events: string[];
 let logs: ReturnType<typeof captureLog>;
 let repo: MealRepository;
+let photos: MemoryPhotoStore;
 beforeEach(() => {
   auth = new FakeLiveDb(() => new Date());
   auth.addSpace("s1");
@@ -81,10 +82,11 @@ beforeEach(() => {
       }),
     );
   };
+  photos = new MemoryPhotoStore();
   configureMeals({
     sessionDb: auth.db,
     repo,
-    photos: new MemoryPhotoStore(),
+    photos,
     write: (work) => work(repo, emit),
     now: () => at,
   });
@@ -141,6 +143,26 @@ describe("meal routes", () => {
     expect(rows.size).toBe(0);
     expect(logs.all()).not.toMatch(/Fictional|toast|oats|note|data:image/);
     expect(logs.all()).toContain('"count":1');
+  });
+  it("returns photo-unavailable for a configured store outage without a meal or event write", async () => {
+    const put = photos.put.bind(photos);
+    vi.spyOn(photos, "put").mockImplementation(async (key, bytes) => {
+      await put(key, bytes);
+      throw new Error("photo-unavailable");
+    });
+    const response = await POST(
+      request("POST", "carer", {
+        items: [{ name: "Fictional toast", carbs: 12 }],
+        photoDataUrl: png,
+      }),
+      ctx(),
+    );
+    expect(response.status).toBe(503);
+    expect(await response.json()).toHaveProperty("error.code", "photo-unavailable");
+    expect(rows.size).toBe(0);
+    expect(events).toHaveLength(0);
+    expect(photos.photos.size).toBe(0);
+    expect(logs.all()).not.toMatch(/Fictional|toast|data:image/);
   });
   it("rejects every meal route for viewers, missing sessions and non-members before any write", async () => {
     for (const [handler, method] of [

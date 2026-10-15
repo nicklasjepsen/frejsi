@@ -140,7 +140,12 @@ async function upload(
     );
   }
   const key = photoKey(spaceId, "meals", id);
-  await deps.photos.put(key, bytes);
+  try {
+    await deps.photos.put(key, bytes);
+  } catch {
+    await cleanup(key, deps);
+    throw new HttpError(503, "photo-unavailable");
+  }
   return key;
 }
 async function cleanup(key: string | undefined, deps: MealDeps): Promise<void> {
