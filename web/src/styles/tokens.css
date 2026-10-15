@@ -1,0 +1,191 @@
+/*
+ * Design tokens from docs/design/tokens.json (direction A "Kitchen table"). Light values are read
+ * from the artboards; the dark values for the accents other than olive, the dark sunken surface
+ * and the tints for sea, forest and garnet are derived by the same rules (README design gaps
+ * 2 and 3): lift the accent, a border instead of a shadow.
+ */
+:root {
+  --ground: #f6f1e8;
+  --surface: #fffcf6;
+  --surface-sunken: #eee7da;
+  --surface-selected: #f3eee3;
+  --surface-input: #ffffff;
+  --text: #2b2622;
+  --text-muted: #6e6458;
+  --hairline: #e7dfd0;
+  --hairline-strong: #c9bfa9;
+  --gridline: #b9ae98;
+  --card-shadow: 0 1px 0 #e7dfd0;
+  --card-border: 1px solid transparent;
+  --avatar-subject-bg: #d9cdb8;
+  --avatar-subject-fg: #5a4e3c;
+  --avatar-member-bg: #e4d8c3;
+  --avatar-member-fg: #5a4e3c;
+  --avatar-owner-bg: #cfd8b8;
+  --avatar-owner-fg: #3f4c28;
+  --meal-marker: #c4674a;
+  --meal-bolus-marker: #a3503a;
+  --unverified-bg: #f6e3db;
+  --unverified-fg: #a3503a;
+  --destructive: #a3503a;
+  --switch-off: #c9bfa9;
+
+  /* Olive is the default accent (tokens.json#color.light.accent.olive). */
+  --accent-base: #5a6a3b;
+  --accent-strong: #3f4c28;
+  --accent-tint: #e9ecdf;
+  --accent-tint-border: #c9cdb8;
+  --accent-band: #6b7a4b;
+  --accent-band-opacity: 0.12;
+  --accent-on: #f6f1e8;
+
+  --font-display-stack: var(--font-display, "Newsreader"), Georgia, serif;
+  --font-body-stack: var(--font-body, "Atkinson Hyperlegible"), system-ui, sans-serif;
+
+  --radius-kbd: 6px;
+  --radius-button-small: 10px;
+  --radius-nav-item: 12px;
+  --radius-button-medium: 14px;
+  --radius-card-small: 16px;
+  --radius-nav-item-simple: 16px;
+  --radius-primary-phone: 18px;
+  --radius-card: 20px;
+  --radius-card-simple: 22px;
+  --radius-button-simple: 22px;
+  --radius-pill: 999px;
+
+  --sidebar-width: 240px;
+  --sidebar-width-simple: 260px;
+  --phone-gutter: 24px;
+  --phone-safe-top: 56px;
+  --touch-min: 44px;
+  --touch-min-simple: 48px;
+}
+
+[data-accent="olive"] {
+  --accent-base: #5a6a3b;
+  --accent-strong: #3f4c28;
+  --accent-tint: #e9ecdf;
+  --accent-tint-border: #c9cdb8;
+  --accent-band: #6b7a4b;
+  --accent-on: #f6f1e8;
+}
+
+[data-accent="plum"] {
+  --accent-base: #5b3f73;
+  --accent-strong: #432c57;
+  --accent-tint: #eae3ef;
+  --accent-tint-border: #cdbfd8;
+  --accent-band: #5b3f73;
+  --accent-on: #f6f1e8;
+}
+
+[data-accent="sea"] {
+  --accent-base: #3b5f7e;
+  --accent-strong: #2b4660;
+  --accent-tint: #e0e8ef;
+  --accent-tint-border: #b8c8d6;
+  --accent-band: #3b5f7e;
+  --accent-on: #f6f1e8;
+}
+
+[data-accent="forest"] {
+  --accent-base: #2f6b5e;
+  --accent-strong: #22514a;
+  --accent-tint: #ddebe6;
+  --accent-tint-border: #b3cfc6;
+  --accent-band: #2f6b5e;
+  --accent-on: #f6f1e8;
+}
+
+[data-accent="garnet"] {
+  --accent-base: #7a3a4b;
+  --accent-strong: #5c2a38;
+  --accent-tint: #f0e0e4;
+  --accent-tint-border: #d3b5bd;
+  --accent-band: #7a3a4b;
+  --accent-on: #f6f1e8;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --ground: #1f1b17;
+    --surface: #2a2521;
+    --surface-sunken: #26211c;
+    --surface-selected: #332d27;
+    --surface-input: #2a2521;
+    --text: #f1eadf;
+    --text-muted: #b5aa9a;
+    --hairline: #3a332c;
+    --hairline-strong: #4a4238;
+    --gridline: #6e6458;
+    --card-shadow: none;
+    --card-border: 1px solid #3a332c;
+    --avatar-subject-bg: #4a3f33;
+    --avatar-subject-fg: #e7dbc6;
+    --avatar-member-bg: #4a3f33;
+    --avatar-member-fg: #e7dbc6;
+    --avatar-owner-bg: #3f4a30;
+    --avatar-owner-fg: #d6e0c0;
+    --meal-marker: #e08a6c;
+    --meal-bolus-marker: #e08a6c;
+    --unverified-bg: #4a2f27;
+    --unverified-fg: #e7a48a;
+    --destructive: #e08a6c;
+    --switch-off: #4a4238;
+
+    /* Olive, lifted, from Nu-Moerk. */
+    --accent-base: #9dae78;
+    --accent-strong: #b8c797;
+    --accent-tint: #353b2a;
+    --accent-tint-border: #4a5438;
+    --accent-band: #9dae78;
+    --accent-band-opacity: 0.14;
+    --accent-on: #1f1b17;
+  }
+
+  [data-accent="olive"] {
+    --accent-base: #9dae78;
+    --accent-strong: #b8c797;
+    --accent-tint: #353b2a;
+    --accent-tint-border: #4a5438;
+    --accent-band: #9dae78;
+    --accent-on: #1f1b17;
+  }
+
+  [data-accent="plum"] {
+    --accent-base: #b59ad0;
+    --accent-strong: #cdb8e3;
+    --accent-tint: #3a2f47;
+    --accent-tint-border: #54456a;
+    --accent-band: #b59ad0;
+    --accent-on: #1f1b17;
+  }
+
+  [data-accent="sea"] {
+    --accent-base: #8fb0cd;
+    --accent-strong: #aac6de;
+    --accent-tint: #2c3a47;
+    --accent-tint-border: #405466;
+    --accent-band: #8fb0cd;
+    --accent-on: #1f1b17;
+  }
+
+  [data-accent="forest"] {
+    --accent-base: #86bbad;
+    --accent-strong: #a3d0c4;
+    --accent-tint: #27403a;
+    --accent-tint-border: #3a5c53;
+    --accent-band: #86bbad;
+    --accent-on: #1f1b17;
+  }
+
+  [data-accent="garnet"] {
+    --accent-base: #c98a9c;
+    --accent-strong: #dba7b6;
+    --accent-tint: #43303a;
+    --accent-tint-border: #5f4552;
+    --accent-band: #c98a9c;
+    --accent-on: #1f1b17;
+  }
+}
