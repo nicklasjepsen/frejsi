@@ -169,6 +169,30 @@ What the import does:
   ingen målinger eller kulhydrater i filen." (`import-empty`), and `validation` for a file over
   20 MB of text.
 
+### From the command line
+
+Use the script when the screen is not an option: a fork owner without a browser session handy, an
+export older than Clarity's 90-day window, or importing on an owner's behalf. It runs the same
+service as the screen against the database `DATABASE_URL` names:
+
+```sh
+pnpm --filter ./web import -- <file> --space <spaceId> --user <userId> [--no-meals]
+```
+
+The user must be an **owner** of the space; anyone else is refused before the file is read. It
+prints the space id and counts only (format, readings added and skipped with their range, meals,
+other rows), and on a refusal exits non-zero with the code (`import-unrecognised`, `import-empty`,
+`validation`, `forbidden`, `not-found`). `--no-meals` imports readings only. Without Web PubSub
+configured the event row is still written and open screens catch up by polling.
+
+For the production database, `DATABASE_URL` comes from Key Vault. Set it for that one command, so
+it is never printed, exported to your shell or saved:
+
+```sh
+DATABASE_URL="$(az keyvault secret show --subscription <id> --vault-name $VAULT -n database-url --query value -o tsv)" \
+  pnpm --filter ./web import -- <file> --space <spaceId> --user <userId>
+```
+
 Other export formats (LibreView, a Nightscout dump) implement `GlucoseImportSource` under
 `shared/src/glucose/import/` and add a name to `GlucoseImportFormat`; nothing else changes.
 Fixtures with the layout, fictional throughout, are under `fixtures/clarity/`.

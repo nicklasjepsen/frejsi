@@ -12,7 +12,8 @@
     "lint": "eslint . --ignore-pattern 'e2e/.output/**'",
     "test": "vitest run",
     "test:e2e": "playwright test",
-    "seed": "tsx scripts/seed.ts"
+    "seed": "tsx scripts/seed.ts",
+    "import": "tsx scripts/import-glucose.ts"
   },
   "dependencies": {
     "@frejsi/shared": "workspace:*",
