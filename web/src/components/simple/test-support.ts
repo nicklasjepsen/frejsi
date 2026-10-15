@@ -83,7 +83,7 @@ export function fakeApi(
       );
       const method = (init.method ?? "GET").toUpperCase();
       const body: unknown = typeof init.body === "string" ? JSON.parse(init.body) : undefined;
-      const path = url.pathname.replace(/^\/api\/spaces\/s1\//, "");
+      const path = url.pathname.replace(/^\/api\/spaces\/[^/]+\//, "");
       api.calls.push({ method, path, query: Object.fromEntries(url.searchParams), body });
       if (api.failing.has(`${method} ${path}`)) return error(500, "internal");
       if (method === "GET" && path === "foods") {

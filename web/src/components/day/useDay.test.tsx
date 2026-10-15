@@ -20,8 +20,8 @@ const emit = (type: string) => {
   for (const handler of handlers.get(type) ?? []) handler();
 };
 
-function Probe({ loaded }: { loaded: boolean }) {
-  const state = useDay("s1", subscribe, loaded);
+function Probe({ loaded, spaceId = "s1" }: { loaded: boolean; spaceId?: string }) {
+  const state = useDay(spaceId, subscribe, loaded);
   return (
     <p data-testid="probe">
       {state.status === "ready" ? `${state.day.date}:${state.day.mealCount}` : state.status}
@@ -108,5 +108,23 @@ describe("useDay (Nu's meal regions)", () => {
     });
     await settle();
     expect(screen.getByTestId("probe")).toHaveTextContent("2026-10-15:1");
+    // That failed refresh is retried by the recheck, not left until the next event.
+    api.failing.clear();
+    api.meals = [];
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(DAY_RECHECK_MS);
+    });
+    expect(screen.getByTestId("probe")).toHaveTextContent("2026-10-15:0");
+  });
+
+  it("never shows one space's day under another: a failed read after a switch shows the failure", async () => {
+    const { rerender } = render(<Probe loaded />);
+    await settle();
+    expect(screen.getByTestId("probe")).toHaveTextContent("2026-10-15:1");
+    api.failing.add("GET day");
+    rerender(<Probe loaded spaceId="s2" />);
+    expect(screen.getByTestId("probe")).toHaveTextContent("loading");
+    await settle();
+    expect(screen.getByTestId("probe")).toHaveTextContent("failed");
   });
 });

@@ -18,6 +18,7 @@ export default async function NowPage({ params }: { params: Promise<{ locale: st
   if (shell.space.role === "viewer") redirect(localeHref(locale, homePath("viewer")));
   return (
     <NowScreen
+      key={shell.space.id}
       spaceId={shell.space.id}
       locale={locale}
       simpleMode={session.simpleMode}
