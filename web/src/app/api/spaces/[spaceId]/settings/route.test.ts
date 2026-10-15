@@ -70,7 +70,11 @@ function patch(as: Who | null, body: unknown, spaceId = "s1") {
   return PATCH(req, params({ spaceId }));
 }
 function patchFor(as: Who | null, userId: string, body: unknown, spaceId = "s1") {
-  const req = request(`/api/spaces/${spaceId}/settings/members/${userId}`, { method: "PATCH", body, as });
+  const req = request(`/api/spaces/${spaceId}/settings/members/${userId}`, {
+    method: "PATCH",
+    body,
+    as,
+  });
   shared.holder.request = req;
   return patchMember(req, params({ spaceId, userId }));
 }
@@ -103,7 +107,11 @@ describe("PATCH /api/spaces/:id/settings", () => {
   it("lets an owner change the unit and the target range, emits space.updated and answers with the new values", async () => {
     const res = await patch("owner", { glucoseUnit: "mgdl", targetLow: 3.9, targetHigh: 9.5 });
     expect(res.status).toBe(200);
-    expect(await res.json()).toMatchObject({ glucoseUnit: "mgdl", targetLow: 3.9, targetHigh: 9.5 });
+    expect(await res.json()).toMatchObject({
+      glucoseUnit: "mgdl",
+      targetLow: 3.9,
+      targetHigh: 9.5,
+    });
     expect(events).toEqual([
       {
         spaceId: "s1",
@@ -150,6 +158,18 @@ describe("PATCH /api/spaces/:id/settings/members/:userId", () => {
     expect(events).toEqual([]);
   });
 
+  it("is 403 when an owner sets simpleMode for a viewer, as it is for the viewer; language and colour are fine", async () => {
+    const res = await patchFor("owner", USERS.viewer, { simpleMode: true });
+    expect(res.status).toBe(403);
+    expect(fake.rows("user").find((u) => u.id === USERS.viewer)).toMatchObject({
+      simpleMode: false,
+    });
+    expect(events).toEqual([]);
+    expect((await patchFor("owner", USERS.viewer, { accent: "plum", locale: "en" })).status).toBe(
+      200,
+    );
+  });
+
   it("logs spaceId, userId and a code only; never a name", async () => {
     await patch("owner", { glucoseUnit: "mgdl" });
     await patch("carer", { glucoseUnit: "mgdl" });
@@ -161,7 +181,9 @@ describe("PATCH /api/spaces/:id/settings/members/:userId", () => {
       expect(parsed.spaceId).toBe("s1");
       expect(typeof parsed.code).toBe("string");
       for (const key of Object.keys(parsed)) {
-        expect(["ts", "level", "msg", "route", "code", "spaceId", "userId", "error"]).toContain(key);
+        expect(["ts", "level", "msg", "route", "code", "spaceId", "userId", "error"]).toContain(
+          key,
+        );
       }
     }
     expect(logLines.join("\n")).not.toMatch(/Example/);
