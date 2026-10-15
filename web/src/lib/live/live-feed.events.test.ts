@@ -216,6 +216,29 @@ describe("LiveFeed without readings (the viewer's day)", () => {
     feed.stop();
   });
 
+  it("asks the server again on a member removal, and stops when it is this member", async () => {
+    const { server, fetch } = fakeServer(5);
+    const feed = new LiveFeed({ spaceId: "s1", fetch, socketFactory: factory, readings: false });
+    feed.start();
+    await flush();
+    sockets[0]?.open();
+    await flush();
+    sockets[0]?.receive(mealCreated(6));
+    await flush();
+    // The owner removes this member: the server refuses from now on, the socket is not closed.
+    server.eventsStatus = 404;
+    sockets[0]?.receive({
+      spaceId: "s1",
+      seq: 7,
+      ts: T0.toISOString(),
+      type: "member.removed",
+      payload: { userId: "u-viewer" },
+    });
+    await flush();
+    expect(feed.getState()).toMatchObject({ loaded: false, error: "not-found" });
+    feed.stop();
+  });
+
   it("polls events every 30 s when negotiate is unavailable, and hands on what it finds", async () => {
     const { server, fetch, calls } = fakeServer(7);
     server.live = false;
