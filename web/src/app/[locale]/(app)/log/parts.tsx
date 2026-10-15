@@ -115,6 +115,7 @@ export function Bolus({
       timeZone={timeZone}
       onTap={controller.tapBolus}
       onUndo={controller.undoBolus}
+      canUndo={controller.canUndoBolus}
     />
   );
 }

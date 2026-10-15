@@ -24,7 +24,10 @@ export function ManualFoodForm({
   busy,
   failed,
   onCreate,
+  onCancel,
 }: {
+  /** Desktop: back to the results without creating anything (the phone has its header back). */
+  onCancel?: () => void;
   initialName: string;
   barcode?: string | undefined;
   busy: boolean;
@@ -32,6 +35,7 @@ export function ManualFoodForm({
   onCreate: (request: CreateFoodRequest) => void;
 }) {
   const t = useTranslations("log.manual");
+  const cancel = useTranslations("log");
   const [name, setName] = useState(initialName);
   const [per100g, setPer100g] = useState("");
   const [portionLabel, setPortionLabel] = useState("");
@@ -104,6 +108,11 @@ export function ManualFoodForm({
       <Button type="submit" size="phone" disabled={!valid || busy}>
         {t("create")}
       </Button>
+      {onCancel && (
+        <Button variant="secondary" onClick={onCancel}>
+          {cancel("cancel")}
+        </Button>
+      )}
     </form>
   );
 }
