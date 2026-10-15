@@ -22,12 +22,15 @@ describe("PR docs declaration", () => {
   it.each([
     "## Docs\n- `README.md`\n- [operations](docs/operations.md)",
     "## Docs\r\nREADME.md\r\n### Details\r\nRefreshed the status.\r\n## Tests\r\nPassed",
+    "## Docs\n- [readme](README.md#what-it-does)",
+    "## Docs\n- [operations](./docs/operations.md?plain=1#bootstrap-the-first-space)",
   ])("accepts documentation paths in the diff: %s", (body) => {
     expect(() => checkDocs(body, changed)).not.toThrow();
   });
 
   it.each([
     "## Docs\n- `CONTRIBUTING.md`",
+    "## Docs\n- [contributing](CONTRIBUTING.md#workflow)",
     "## Docs\n- `README.md`\n- `docs/missing.md`",
     "## Docs\n- `web/src/example.ts`",
     "## Docs\n- `docs/design/tokens.json`",

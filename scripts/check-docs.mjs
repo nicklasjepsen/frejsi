@@ -83,7 +83,7 @@ export function checkDocs(body, changedFiles, author) {
   // Paths may be plain, backticked or Markdown link targets, as shown in the PR template.
   const listed = section
     .split(/[\s`()[\]<>,;:"']+/u)
-    .map((token) => token.replace(/^\.\//, "").replace(/\.$/, ""))
+    .map((token) => token.split(/[?#]/, 1)[0].replace(/^\.\//, "").replace(/\.$/, ""))
     .filter(isDocFile);
   if (!listed.length)
     throw new Error(
