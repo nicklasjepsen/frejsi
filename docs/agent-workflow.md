@@ -274,6 +274,12 @@ to ask; questions go in its PR body.
   shell itself.
 - `gpt-6-astra` is for a lane that has failed twice.
 
+- **Launcher:** `.claude/scripts/codex-lane.sh <issue> <slug> <plan-task|0> <area> "<owns>" "<adjacent files>" "<notes>"`
+  with `MS=<milestone>` and, for a plan task, `PLAN=<plan file>`. It creates the worktree, writes the
+  brief and starts Codex in the background; briefs, logs, pids (`running`) and final reports go to
+  `~/.cache/frejsi-codex-lanes/`. Release-suite lanes use the local SQL Server container `frejsi-sql`
+  (localhost:14330); its sa password is in `~/.config/frejsi/local-sql-sa` on the claude-agents VM.
+
 ## 13. Docs stay current
 
 Every lane updates affected docs in the same PR as the code. Describe what is implemented, using
