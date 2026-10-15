@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import { bootstrapSpace, BootstrapRequest, tokenMatches } from "./bootstrap";
 import { hashToken } from "./invites";
-import { FakeAuthDb, recordingEmit } from "./test-support";
+import { FakeAuthDb, FakeDbError, recordingEmit } from "./test-support";
 
 const T0 = new Date("2026-10-15T08:00:00.000Z");
 const TOKEN = "example-bootstrap-token-0123456789";
@@ -119,6 +119,21 @@ describe("bootstrapSpace", () => {
     expect(w.fake.rows("space").map((s) => s.id)).toEqual(["other"]);
     expect(w.fake.rows("user")).toEqual([]);
     expect(w.fake.transactions).toEqual([{ isolationLevel: "Serializable" }]);
+  });
+
+  it("is retried when SQL Server kills it as a deadlock victim (P2034), and then succeeds", async () => {
+    const w = world();
+    let victim = true;
+    w.fake.onTransaction = () => {
+      if (!victim) return;
+      victim = false;
+      throw new FakeDbError("P2034", "Transaction failed due to a write conflict or a deadlock.");
+    };
+    const result = await bootstrapSpace({ token: TOKEN, body }, w.deps);
+    expect(w.fake.rows("space").map((s) => s.id)).toEqual([result.spaceId]);
+    expect(w.fake.rows("user")).toHaveLength(1);
+    expect(w.fake.transactions).toHaveLength(2);
+    expect(w.events.map((e) => e.type)).toEqual(["member.joined", "invite.created"]);
   });
 
   it("answers 401 on a wrong or missing token and when no token is configured", async () => {

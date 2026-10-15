@@ -1,8 +1,10 @@
 import {
   emit as defaultEmit,
+  log as defaultLog,
   prisma,
   type EventPayload,
   type EventType,
+  type Logger,
   type PrismaClient,
 } from "@frejsi/shared";
 
@@ -64,31 +66,71 @@ export function resolve(deps: AuthDeps): { db: AuthDb; emit: Emitter; now: () =>
 }
 
 /**
+ * How often a transaction SQL Server killed as a deadlock victim is attempted. Two serializable
+ * read-check-writes on the same rows (two owners stepping down in the same second) each take a
+ * range lock on the count and then block on the other's; the victim comes back as Prisma P2034
+ * and is simply run again, where it then reads the winner's state.
+ */
+export const TRANSACTION_ATTEMPTS = 3;
+
+export interface TransactOptions {
+  serializable?: boolean;
+  /** Receives the line for an event that could not be emitted after the commit. */
+  log?: Logger;
+}
+
+/** Prisma's code for a transaction that failed due to a write conflict or a deadlock. */
+function isTransactionConflict(error: unknown): boolean {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    (error as { code?: unknown }).code === "P2034"
+  );
+}
+
+/**
  * Runs `fn` in one Prisma transaction and delivers every event it emitted after the commit, in
  * order. A write that rolls back therefore never has an event, and an event never precedes its
- * row (plan §5: every write is followed by its event).
+ * row (plan §5: every write is followed by its event). An event that fails after the commit is
+ * logged, not thrown: the write stands and the caller's response (a session cookie, say) must
+ * not be withheld for it; clients catch up through `/events?since` or a reload.
  *
  * `serializable` is for a read-check-write that must not interleave with another request's
  * (the last-owner guard, the one-shot bootstrap): Azure SQL's default read-committed snapshot
- * would let both see the state before either wrote.
+ * would let both see the state before either wrote. A deadlock victim is retried, see
+ * `TRANSACTION_ATTEMPTS`.
  */
 export async function transact<T>(
   db: AuthDb,
   emit: Emitter,
   fn: (tx: AuthTx, emit: Emitter) => Promise<T>,
-  options: { serializable?: boolean } = {},
+  options: TransactOptions = {},
 ): Promise<T> {
-  const queued: (() => Promise<unknown>)[] = [];
-  const deferred: Emitter = (spaceId, type, payload) => {
-    queued.push(() => emit(spaceId, type, payload));
-    return Promise.resolve();
-  };
-  const result = await db.$transaction(
-    (tx) => fn(tx, deferred),
-    options.serializable ? { isolationLevel: "Serializable" } : undefined,
-  );
-  for (const publish of queued) await publish();
-  return result;
+  const log = options.log ?? defaultLog;
+  const isolation = options.serializable ? { isolationLevel: "Serializable" as const } : undefined;
+
+  for (let attempt = 1; ; attempt += 1) {
+    const queued: { spaceId: string; publish: () => Promise<unknown> }[] = [];
+    const deferred: Emitter = (spaceId, type, payload) => {
+      queued.push({ spaceId, publish: () => emit(spaceId, type, payload) });
+      return Promise.resolve();
+    };
+    let result: T;
+    try {
+      result = await db.$transaction((tx) => fn(tx, deferred), isolation);
+    } catch (error) {
+      if (attempt < TRANSACTION_ATTEMPTS && isTransactionConflict(error)) continue;
+      throw error;
+    }
+    for (const { spaceId, publish } of queued) {
+      try {
+        await publish();
+      } catch (error) {
+        log.error("event.emit-failed", { spaceId, code: "emit-failed" }, error);
+      }
+    }
+    return result;
+  }
 }
 
 /**

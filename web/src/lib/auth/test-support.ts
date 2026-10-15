@@ -189,10 +189,19 @@ export class FakeDbError extends Error {
   }
 }
 
+/** One delegate call, and whether it went through a transaction client or the root client. */
+export interface Operation {
+  table: TableName;
+  op: string;
+  inTransaction: boolean;
+}
+
 /**
  * An in-memory `AuthDb`. It understands the argument shapes the auth modules use (equality and
  * lt/gt/not/in in `where`, compound keys, nested `include`), enforces the schema's unique keys,
- * and rolls a `$transaction` back when its callback throws.
+ * and rolls a `$transaction` back when its callback throws. The client a transaction callback
+ * receives is a distinct object, so a test can tell a read inside the transaction from one that
+ * slipped out to the root client.
  */
 export class FakeAuthDb {
   tables: Tables = emptyTables();
@@ -200,34 +209,43 @@ export class FakeAuthDb {
   failNextWrite: TableName | null = null;
   /** Runs right before every write; a test uses it to mutate state as a racing request would. */
   beforeWrite: ((table: TableName) => void) | null = null;
-  /** Runs when a transaction starts, before its callback. */
+  /** Runs when a transaction starts, before its callback; a throw here is the transaction's. */
   onTransaction: (() => void) | null = null;
   /** The options every `$transaction` was called with, in order. */
   readonly transactions: (TransactionOptions | undefined)[] = [];
+  /** Every delegate call, in order. */
+  readonly operations: Operation[] = [];
 
   constructor(private readonly now: () => Date = () => new Date()) {}
 
   /** The object to hand to code that expects `AuthDb` (or `AuthTx`). */
   get db(): AuthDb {
-    const delegates: Record<string, unknown> = {};
-    for (const table of Object.keys(this.tables) as TableName[]) {
-      delegates[table] = this.delegate(table);
-    }
+    const delegates = this.delegates(false) as Record<string, unknown>;
     delegates.$transaction = async <T>(
       fn: (tx: AuthTx) => Promise<T>,
       options?: TransactionOptions,
     ): Promise<T> => {
       this.transactions.push(options);
+      // The hook models what another request did or does to this transaction: a commit that
+      // must survive this one's rollback, or the deadlock that kills it.
       this.onTransaction?.();
       const snapshot = structuredClone(this.tables);
       try {
-        return await fn(this.db);
+        return await fn(this.delegates(true));
       } catch (error) {
         this.tables = snapshot;
         throw error;
       }
     };
     return delegates as unknown as AuthDb;
+  }
+
+  private delegates(inTransaction: boolean): AuthTx {
+    const out: Record<string, unknown> = {};
+    for (const table of Object.keys(this.tables) as TableName[]) {
+      out[table] = this.delegate(table, inTransaction);
+    }
+    return out as unknown as AuthTx;
   }
 
   rows(table: TableName): Row[] {
@@ -273,8 +291,9 @@ export class FakeAuthDb {
     }
   }
 
-  private delegate(table: TableName) {
+  private delegate(table: TableName, inTransaction: boolean) {
     const rows = () => this.tables[table];
+    const record = (op: string) => this.operations.push({ table, op, inTransaction });
     const find = (args: { where?: Where; include?: Record<string, unknown> } = {}) =>
       rows()
         .filter((r) => matches(r, args.where))
@@ -292,21 +311,31 @@ export class FakeAuthDb {
     };
     return {
       create: (args: { data: Row; include?: Record<string, unknown> }) => {
+        record("create");
         this.failIfAsked(table);
         const row = { ...defaults[table](this.now()), ...strip(args.data) };
         this.checkUnique(table, row);
         rows().push(row);
         return Promise.resolve(this.include(table, row, args.include));
       },
-      findUnique: (args: { where: Where; include?: Record<string, unknown> }) =>
-        Promise.resolve(find(args)[0] ?? null),
-      findFirst: (args: { where?: Where; include?: Record<string, unknown> } = {}) =>
-        Promise.resolve(find(args)[0] ?? null),
-      findMany: (args: { where?: Where; include?: Record<string, unknown> } = {}) =>
-        Promise.resolve(find(args)),
-      count: (args: { where?: Where } = {}) =>
-        Promise.resolve(rows().filter((r) => matches(r, args.where)).length),
+      findUnique: (args: { where: Where; include?: Record<string, unknown> }) => {
+        record("findUnique");
+        return Promise.resolve(find(args)[0] ?? null);
+      },
+      findFirst: (args: { where?: Where; include?: Record<string, unknown> } = {}) => {
+        record("findFirst");
+        return Promise.resolve(find(args)[0] ?? null);
+      },
+      findMany: (args: { where?: Where; include?: Record<string, unknown> } = {}) => {
+        record("findMany");
+        return Promise.resolve(find(args));
+      },
+      count: (args: { where?: Where } = {}) => {
+        record("count");
+        return Promise.resolve(rows().filter((r) => matches(r, args.where)).length);
+      },
       update: (args: { where: Where; data: Row; include?: Record<string, unknown> }) => {
+        record("update");
         this.failIfAsked(table);
         const row = rows().find((r) => matches(r, args.where));
         if (!row) {
@@ -318,12 +347,14 @@ export class FakeAuthDb {
         return Promise.resolve(this.include(table, row, args.include));
       },
       updateMany: (args: { where: Where; data: Row }) => {
+        record("updateMany");
         this.failIfAsked(table);
         const hits = rows().filter((r) => matches(r, args.where));
         for (const row of hits) Object.assign(row, strip(args.data));
         return Promise.resolve({ count: hits.length });
       },
       delete: (args: { where: Where }) => {
+        record("delete");
         this.failIfAsked(table);
         const index = rows().findIndex((r) => matches(r, args.where));
         if (index < 0) {
@@ -333,6 +364,7 @@ export class FakeAuthDb {
         return Promise.resolve(row);
       },
       deleteMany: (args: { where?: Where } = {}) => {
+        record("deleteMany");
         this.failIfAsked(table);
         const before = rows().length;
         this.tables[table] = rows().filter((r) => !matches(r, args.where));
