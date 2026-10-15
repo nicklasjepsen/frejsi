@@ -154,5 +154,99 @@
     "failed": "Vi kender ikke den adgangsnøgle. Er det en ny telefon eller computer? Så bed en ejer af rummet om et »tilføj enhed«-link.",
     "firstTimeTitle": "Første gang her?",
     "firstTimeBody": "Så skal du have et invitationslink fra en ejer af rummet. Åbn linket på den telefon eller computer, du vil bruge."
+  },
+  "settings": {
+    "title": "Indstillinger",
+    "subtitleOwner": "{space} · kun ejere kan ændre her",
+    "subtitleMember": "Du kan ændre dit eget sprog, din visning og din farve",
+    "back": "Tilbage",
+    "comingLater": "Kommer i en senere version",
+    "saving": "Gemmer …",
+    "sections": {
+      "source": "Glukosekilde",
+      "ai": "AI-hjælp",
+      "unitAndLanguage": "Enhed og sprog",
+      "simpleMode": "Simpel visning",
+      "colour": "Farve",
+      "data": "Data og eksport"
+    },
+    "source": {
+      "lead": "Hvor Frejsi henter {subject}s målinger fra. Én kilde ad gangen.",
+      "rowConnected": "{source} · forbundet · sidste måling {time}",
+      "rowConnectedNoReading": "{source} · forbundet · ingen målinger endnu",
+      "rowDisconnected": "{source} · ingen forbindelse",
+      "notConfigured": "Ingen kilde endnu",
+      "cardConnected": "Forbundet · sidste måling {when} · {region} · henter hvert 5. minut",
+      "cardConnectedNoReading": "Forbundet · ingen målinger endnu · {region} · henter hvert 5. minut",
+      "cardDisconnected": "Ingen forbindelse · {region}",
+      "today": "i dag {time}",
+      "onDate": "{date} {time}",
+      "region": {
+        "eu": "EU-server",
+        "us": "US-server"
+      },
+      "changeLogin": "Skift login",
+      "nightscout": "Nightscout",
+      "manual": "Manuelt",
+      "vaultNote": "Login til {source} gemmes i et låst hvælv, aldrig i databasen. Ejere får besked, hvis forbindelsen har været nede i mere end 35 minutter.",
+      "connect": "Forbind"
+    },
+    "connect": {
+      "title": "Skift login",
+      "lead": "Log ind med den konto, som sensor-appen deler fra. Frejsi gemmer kun login i et låst hvælv – aldrig i databasen.",
+      "username": "Brugernavn",
+      "password": "Kodeord",
+      "region": "Server",
+      "regionOption": {
+        "eu": "EU",
+        "us": "USA"
+      },
+      "submit": "Forbind",
+      "submitting": "Forbinder …",
+      "cancel": "Annullér"
+    },
+    "ai": {
+      "lead": "Søgning, stemme, billeder og observationer"
+    },
+    "unit": {
+      "label": "Enhed",
+      "labelDesktop": "Glukose vises i",
+      "mmol": "mmol/L",
+      "mgdl": "mg/dL"
+    },
+    "language": {
+      "label": "Sprog"
+    },
+    "targetRange": {
+      "label": "Mål-område",
+      "low": "Nedre grænse",
+      "high": "Øvre grænse",
+      "note": "{unit} · som aftalt med klinikken",
+      "save": "Gem"
+    },
+    "simpleMode": {
+      "lead": "Stor, billedbaseret og kun tjekket mad. Pr. person.",
+      "leadDesktop": "Stor, billedbaseret og kun tjekket mad. Slås til pr. person – det er en visning, ikke en rolle.",
+      "you": "{name} (dig)",
+      "toggle": "Simpel visning for {name}",
+      "languageFor": "Sprog for {name}"
+    },
+    "colour": {
+      "row": "Farve",
+      "title": "Farve",
+      "lead": "Hver person vælger sin egen farve. Den ændrer kun udseendet – aldrig hvad et tal betyder.",
+      "people": "Hvem",
+      "swatches": "Farver",
+      "pick": "Vælg farven {colour} til {name}",
+      "previewFor": "Sådan ser det ud for {name}",
+      "connected": "forbundet",
+      "noReadings": "Ingen målinger endnu",
+      "eatingNow": "Jeg spiser nu",
+      "note": "Måltider er altid teglrøde, og tallet er altid sort – uanset farve. {name} kan også selv skifte under Mere.",
+      "noteSelf": "Måltider er altid teglrøde, og tallet er altid sort – uanset farve."
+    },
+    "data": {
+      "lead": "Eksport til klinikken"
+    }
   }
 }

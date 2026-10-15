@@ -91,11 +91,18 @@ const space = () => fake.rows("space").find((s) => s.id === "s1") ?? {};
 const everythingPersisted = () => JSON.stringify(fake.tables) + logLines.join("\n");
 
 describe("GET /api/spaces/:id/source", () => {
-  it("gives owners and carers the source as configured, without the secretRef", async () => {
+  it("gives owners and carers the source as configured and the time of its last status change, without the secretRef", async () => {
     Object.assign(space(), {
       glucoseSource: JSON.stringify({ type: "dexcom-share", region: "us", secretRef: "glucose-s1" }),
-      sourceStatus: "connected",
+      sourceStatus: "disconnected",
       lastReadingAt: new Date("2026-10-15T13:13:00.000Z"),
+    });
+    fake.rows("event").push({
+      spaceId: "s1",
+      seq: 1,
+      type: "source.status",
+      payload: JSON.stringify({ status: "disconnected", since: "2026-10-15T13:45:00.000Z" }),
+      ts: T0,
     });
     const res = await get("carer");
     expect(res.status).toBe(200);
@@ -103,9 +110,11 @@ describe("GET /api/spaces/:id/source", () => {
     expect(body).toEqual({
       type: "dexcom-share",
       region: "us",
-      status: "connected",
+      status: "disconnected",
       lastReadingAt: "2026-10-15T13:13:00.000Z",
+      since: "2026-10-15T13:45:00.000Z",
     });
+    expect(JSON.stringify(body)).not.toContain("glucose-s1");
   });
 
   it("is all null but the status before a source is configured", async () => {
@@ -114,6 +123,7 @@ describe("GET /api/spaces/:id/source", () => {
       region: null,
       status: "not-configured",
       lastReadingAt: null,
+      since: null,
     });
   });
 

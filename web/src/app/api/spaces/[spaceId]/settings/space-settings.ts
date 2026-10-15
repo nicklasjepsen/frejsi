@@ -2,8 +2,10 @@
 import {
   GlucoseSourceConfig,
   HttpError,
+  SourceStatusPayload,
   SpaceSettings,
   type GlucoseSourceType,
+  type PrismaClient,
 } from "@frejsi/shared";
 
 import {
@@ -42,14 +44,42 @@ export function sourceTypeOf(glucoseSource: string | null): GlucoseSourceType | 
 }
 
 /** The `/source` view of the row: type, region and status; never the `secretRef`. */
-export function toSourceView(row: SpaceSettingsRow): SourceView {
+export function toSourceView(row: SpaceSettingsRow, since: string | null): SourceView {
   const config = sourceConfigOf(row.glucoseSource);
   return SourceView.parse({
     type: config?.type ?? null,
     region: config?.region ?? null,
     status: row.sourceStatus,
     lastReadingAt: row.lastReadingAt ? row.lastReadingAt.toISOString() : null,
+    since,
   });
+}
+
+/**
+ * The `since` of the space's latest `source.status` event, or null before the first one. Reads
+ * the events table; only `emit()` writes it. The highest `seq` is picked in code as well as asked
+ * for, so a store that ignores `orderBy` (the fake in tests) gives the same answer.
+ */
+export async function latestSourceStatusSince(
+  db: Pick<PrismaClient, "event">,
+  spaceId: string,
+): Promise<string | null> {
+  const rows = await db.event.findMany({
+    where: { spaceId, type: "source.status" },
+    orderBy: { seq: "desc" },
+    take: 1,
+  });
+  const latest = rows.reduce<(typeof rows)[number] | null>(
+    (best, row) => (best === null || row.seq > best.seq ? row : best),
+    null,
+  );
+  if (!latest) return null;
+  try {
+    const parsed = SourceStatusPayload.safeParse(JSON.parse(latest.payload));
+    return parsed.success ? parsed.data.since : null;
+  } catch {
+    return null;
+  }
 }
 
 /** The shared contract from the row: never the `secretRef`, never the raw JSON (plan §4). */
