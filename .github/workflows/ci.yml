@@ -48,7 +48,9 @@ jobs:
           BASE="${{ github.event.pull_request.base.sha || github.event.before }}"
           if [ -z "$BASE" ] || ! git cat-file -e "$BASE" 2>/dev/null; then BASE=$(git rev-parse HEAD~1 2>/dev/null || echo ""); fi
           CHANGED=""
-          if [ -n "$BASE" ]; then CHANGED=$(git diff --name-only "$BASE" HEAD); fi
+          # --no-renames: a rename lists both its old and its new path, so code moved to a .md file
+          # or into docs/ is never classified as docs-only.
+          if [ -n "$BASE" ]; then CHANGED=$(git diff --name-only --no-renames "$BASE" HEAD); fi
           # A change outside the packages (root config, lock file, workflows) runs everything.
           if [ -z "$BASE" ] || echo "$CHANGED" | grep -Evq '^(web|poller|shared)/'; then
             echo "filter=" >> "$GITHUB_OUTPUT"
