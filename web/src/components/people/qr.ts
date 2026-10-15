@@ -1,6 +1,6 @@
 // The QR code behind an invitation link, as a module matrix and an SVG path. The encoder is the
-// `qrcode` package; this module only reads its matrix, so the drawing is one `<path>` the design
-// can colour with the text colour (QrCode: 96 px square on surface, Personer-Desktop).
+// `qrcode` package; this module only reads its matrix, so the drawing is one `<path>` (QrCode:
+// 96 px square, black on white in every theme, Personer-Desktop).
 import { create } from "qrcode";
 
 export interface QrModules {
