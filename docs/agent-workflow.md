@@ -171,7 +171,9 @@ every change goes through a PR again.
    `NEXT_PUBLIC_APP_VERSION=<tag>`.
 3. **Infra** (`production-infra` environment): deploy `infra/main.bicep`. This environment has the
    owner as required reviewer: one tap approves cost-bearing changes. A release that changes no infra
-   passes through without the tap. There is no what-if step: the Bicep diff in the PR is the review,
+   passes through without the tap. "Infra" means the `.bicep` and `.bicepparam` files, measured
+   against the newest tag whose infra job succeeded; `infra/README.md`, `infra/test/` and
+   `deploy.sh` do not count. There is no what-if step: the Bicep diff in the PR is the review,
    and a what-if printed into a log nobody reads before the deploy gates nothing.
 4. **Deploy** (`production` environment, no reviewer): poller package to the Function App, web build to
    the Static Web App, migrations with Prisma.
