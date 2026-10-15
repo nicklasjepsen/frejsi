@@ -28,6 +28,8 @@ const envelope = (seq: number, payload: Reading): EventEnvelope => ({
 function fakeServer(initial: { readings: Reading[]; lastSeq: number }) {
   const server = {
     live: true,
+    /** When true, negotiate never answers (a stalled credential call on the server). */
+    negotiateHangs: false,
     events: [] as EventEnvelope[],
     window: {
       lastSeq: initial.lastSeq,
@@ -68,7 +70,9 @@ function fakeServer(initial: { readings: Reading[]; lastSeq: number }) {
           : jsonResponse({ error: { code: "forbidden", message: "" } }, server.readingsStatus),
       ),
     "/negotiate": () =>
-      server.live
+      server.negotiateHangs
+        ? new Promise<Response>(() => undefined)
+        : server.live
         ? jsonResponse({ url: SOCKET_URL })
         : jsonResponse({ error: { code: "internal", message: "" } }, 503),
     "/events": (url) => {
@@ -239,6 +243,28 @@ describe("LiveFeed (plan §5)", () => {
     const before = calls.length;
     await vi.advanceTimersByTimeAsync(POLL_MS * 2);
     expect(calls).toHaveLength(before);
+  });
+
+  it("polls while negotiate never answers, and tries negotiate again on the next tick", async () => {
+    const { server, fetch, calls } = fakeServer({ readings: [], lastSeq: 1 });
+    server.negotiateHangs = true;
+    const { feed } = start(fetch);
+    await flush();
+    expect(sockets).toHaveLength(0);
+    calls.length = 0;
+
+    server.append(reading(minutesAgo(1), 7.1));
+    await vi.advanceTimersByTimeAsync(POLL_MS);
+    expect(feed.getState().connection).toBe("polling");
+    expect(calls).toEqual(["/api/spaces/s1/events?since=1", "/api/spaces/s1/negotiate"]);
+    expect(feed.getState().readings.map((r) => r.mmol)).toEqual([7.1]);
+
+    server.negotiateHangs = false;
+    await vi.advanceTimersByTimeAsync(POLL_MS);
+    expect(sockets).toHaveLength(1);
+    sockets[0]?.open();
+    await flush();
+    expect(feed.getState().connection).toBe("live");
   });
 
   it("opens one socket when start–stop–start races the first window (React strict mode)", async () => {
