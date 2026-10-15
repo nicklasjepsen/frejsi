@@ -114,7 +114,8 @@ In this order. Everything after step 5 is one tap or one DNS record.
    repository the subjects are:
    - `repo:nicklasjepsen@2478876/frejsi@1419802630:environment:production-infra`
    - `repo:nicklasjepsen@2478876/frejsi@1419802630:environment:production`
-   - `repo:nicklasjepsen@2478876/frejsi@1419802630:environment:preview`
+   - `repo:nicklasjepsen@2478876/frejsi@1419802630:environment:preview` (only with previews on;
+     previews are off here for now, so this one does not exist yet)
 
    If the command prints nothing, the repository uses the older form `repo:<owner>/<repo>`. A wrong
    subject fails the login with `AADSTS700213: No matching federated identity record found`.
@@ -200,10 +201,11 @@ Frejsi is one person's data on one person's subscription. A fork gets its own co
    group id).
 2. Do steps 1–5 above in your own Azure subscription and GitHub repository. Build the federated
    credential subjects from your fork's own prefix, read with the command in step 3
-   (`<prefix>:environment:production-infra`, `…:production`, `…:preview`); a fork created today gets
-   an immutable prefix with its own IDs, so never copy this repository's subjects. Create
-   the environments `production-infra`, `production` and `preview` in the fork (Settings → Environments),
-   with yourself as required reviewer on `production-infra`. Add the repository secret
+   (`<prefix>:environment:production-infra`, `…:production`, and `…:preview` only if you want PR
+   previews); a fork created today gets an immutable prefix with its own IDs, so never copy this
+   repository's subjects. Create the environments `production-infra` and `production` in the fork
+   (Settings → Environments), with yourself as required reviewer on `production-infra`; for previews
+   also `preview` and the repository variable `PREVIEWS_ENABLED=true`. Add the repository secret
    `CI_SQL_SA_PASSWORD` (any strong password; it is only for the SQL Server container the release
    suite starts).
 3. Create a milestone titled `v0.1.0` with no open issues and push the tag `v0.1.0`. Approve the
