@@ -373,7 +373,10 @@ release lanes; this foundation makes no Azure calls and enables no provider in p
 
 `aiProviders({})` returns no adapters. `FAKE_AI_PROVIDER=1` registers a scripted `FakeAiProvider`
 under all three provider identifiers for local development and tests. It has no network transport;
-a script must supply answers, and an exhausted script returns `ai-unavailable`. Actual adapters,
+its default script repeats fictional meal, photo, normalisation and insight outputs and supplies
+1024-dimensional fixture vectors. These exercise the flows, not language or image accuracy. Tests
+can inject `aiProviders(env, { fakeScript })` with an answer queue or responder; an exhausted queue
+or an unknown output schema returns `ai-unavailable`. Actual adapters,
 provider keys, the web factory, settings routes, service prompts, UI and push delivery are separate
 integration work. The unresolved provider and wording defaults are tracked in issue #72; they do
 not enable AI by themselves.
@@ -382,8 +385,11 @@ not enable AI by themselves.
 space per local calendar day, using the space timezone (including daylight-saving changes). A null
 space, used for deployment-wide shared-cache work, always uses UTC. Callers can override the limits,
 including a 2000 embedding limit for cache backfill. Each completion in a tool loop counts separately;
-a tool loop executes at most eight tool calls in total. The wrapper validates structured output and guards
-every output string before returning it. `ai-rejected` means output validation or the vocabulary
+a tool loop executes at most eight tool calls in total. A failed handler becomes a content-free
+`tool-unavailable` result alongside the successful results, so the model can finish the batch. The wrapper validates structured output and guards
+every output string before returning it. Generated strings also reject the descriptive-copy test's
+advice verbs (plus the Danish imperative), bare English/Danish unit words and numeric unit
+abbreviations; the UI vocabulary allow-list does not apply to generated text. `ai-rejected` means output validation or the vocabulary
 guard failed; `ai-unavailable` includes provider refusals and errors. Neither includes generated text.
 
 `AiCall` is content-free bookkeeping and intentionally does not emit events (plan decision 5).

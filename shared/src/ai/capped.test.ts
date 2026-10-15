@@ -296,3 +296,92 @@ describe("fake, registry and tool loop", () => {
     }
   });
 });
+
+it("rejects generated numeric unit instructions and advice verbs without relying on a named substance", () => {
+  for (const text of [
+    "Give 2 units before eating",
+    "Giv 2 enheder",
+    "2.5 units",
+    "twenty units",
+    "femogtyve enheder",
+    "to enheder",
+    "2U",
+    "Take two before lunch",
+    "Tag to før frokost",
+    "You should change it next time",
+  ]) {
+    expect(() => {
+      assertNoDosing(text, "test");
+    }).toThrow(expect.objectContaining({ code: "ai-rejected" }));
+  }
+});
+
+it("provides repeatable usable fake-mode results for every output contract and embeddings", async () => {
+  const { AiProviderId, ParsedMeal, PhotoEstimate, NormalisedFood, MealInsight, WeekInsight } =
+    await import("../schemas/ai");
+  const registry = aiProviders({ FAKE_AI_PROVIDER: "1" });
+  for (const id of AiProviderId.options) {
+    const fake = registry[id];
+    if (!fake) throw new Error("Missing fake");
+    for (const schema of [ParsedMeal, PhotoEstimate, NormalisedFood, MealInsight, WeekInsight]) {
+      for (let i = 0; i < 2; i++) {
+        const result = await fake.complete({ ...req, outputSchema: schema });
+        expect(result.kind).toBe("json");
+        if (result.kind === "json") expect(schema.safeParse(result.json).success).toBe(true);
+      }
+    }
+    const image = await fake.vision({
+      role: "everyday",
+      system: "Describe the plate.",
+      image: { mediaType: "image/jpeg", base64: "/9j/2Q==" },
+      prompt: "Example plate",
+      outputSchema: PhotoEstimate,
+    });
+    expect(image.kind).toBe("json");
+    const embedded = await fake.embed({ texts: ["Example loaf", "Example pasta"] });
+    expect(embedded.vectors).toHaveLength(2);
+    for (const vector of embedded.vectors) {
+      expect(vector).toHaveLength(1024);
+      expect(vector.every(Number.isFinite)).toBe(true);
+    }
+  }
+});
+
+it("allows scripted fake-mode responses to be injected through the registry", async () => {
+  const fake = aiProviders({ FAKE_AI_PROVIDER: "1" }, { fakeScript: [answer] }).anthropic;
+  if (!fake) throw new Error("Missing fake");
+  expect(await fake.complete(req)).toEqual(answer);
+  await expect(fake.complete(req)).rejects.toEqual(code("ai-unavailable"));
+});
+
+it("returns safe tool failures alongside successful results so the model can finish", async () => {
+  const fake = new FakeAiProvider([
+    {
+      kind: "tool-calls",
+      model: "fixture",
+      calls: [
+        { id: "a", name: "lookup", input: "loaf" },
+        { id: "b", name: "lookup", input: "pasta" },
+      ],
+    },
+    answer,
+  ]);
+  expect(
+    await runToolLoop(fake, req, {
+      lookup: (input) =>
+        input === "loaf"
+          ? Promise.reject(new Error("private repository details"))
+          : Promise.resolve({ name: "Example pasta" }),
+    }),
+  ).toEqual(answer);
+  const call = fake.calls[1];
+  if (call?.kind !== "complete") throw new Error("Expected completion");
+  expect(call.request.messages.at(-1)).toEqual({
+    role: "user",
+    content: [
+      { type: "tool-result", toolCallId: "a", result: { error: { code: "tool-unavailable" } } },
+      { type: "tool-result", toolCallId: "b", result: { name: "Example pasta" } },
+    ],
+  });
+  expect(JSON.stringify(call.request.messages)).not.toContain("private");
+});

@@ -34,11 +34,13 @@ export async function runToolLoop(
       result.calls.map(async (call) => {
         const handler = tools[call.name];
         if (!handler) throw new HttpError(502, "ai-rejected");
-        return {
-          type: "tool-result" as const,
-          toolCallId: call.id,
-          result: await handler(call.input),
-        };
+        let value: unknown;
+        try {
+          value = await handler(call.input);
+        } catch {
+          value = { error: { code: "tool-unavailable" } };
+        }
+        return { type: "tool-result" as const, toolCallId: call.id, result: value };
       }),
     );
     messages.push(
