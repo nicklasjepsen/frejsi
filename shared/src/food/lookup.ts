@@ -109,6 +109,9 @@ export async function lookup(
     sources.map(async (source) => {
       const skipped =
         session.simpleMode ||
+        ("barcode" in query &&
+          source.kind === "remote" &&
+          seen.has(`${source.id}:${query.barcode}`)) ||
         ("q" in query && (query.q.length < 3 || (!query.remote && source.kind === "remote")));
       return skipped
         ? { status: "skipped" as const, candidates: [] }

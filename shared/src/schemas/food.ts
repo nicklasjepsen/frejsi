@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import { normaliseBarcode } from "../food/barcode";
+import { foldForSearch } from "../food/search";
 
 export const Portion = z.strictObject({
   label: z.string().min(1).max(40),
@@ -24,7 +25,15 @@ const barcode = z.string().transform((value, ctx) => {
   return normalised;
 });
 const fields = {
-  name: z.string().trim().min(1).max(200),
+  name: z
+    .string()
+    .trim()
+    .min(1)
+    .max(200)
+    .refine(
+      (value) => foldForSearch(value).length <= 200,
+      "Folded food name must be at most 200 characters",
+    ),
   carbsPer100g: z.number().min(0).max(100).multipleOf(0.1).nullish(),
   portions: z.array(Portion).default([]),
   barcode: barcode.optional(),
