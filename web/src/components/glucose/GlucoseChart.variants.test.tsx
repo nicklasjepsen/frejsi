@@ -121,6 +121,24 @@ describe('GlucoseChart variant="week-tile"', () => {
   });
 });
 
+describe('GlucoseChart variant="week-tile" with one bucket', () => {
+  it("draws a lone bucket as a dot", () => {
+    const { container } = mount(
+      <GlucoseChart
+        variant="week-tile"
+        curve={[{ ts: "2026-10-05T06:00:00.000Z", mmol: 6 }]}
+        mealTimes={[]}
+        from={new Date("2026-10-04T22:00:00.000Z")}
+        to={new Date("2026-10-05T22:00:00.000Z")}
+        target={{ low: 4, high: 10 }}
+        timeZone={zone}
+      />,
+    );
+    expect(container.querySelector("polyline")).toBeNull();
+    expect(container.querySelectorAll("[data-testid=lone-point]")).toHaveLength(1);
+  });
+});
+
 describe('GlucoseChart variant="day" with meals', () => {
   const from = new Date("2026-10-14T04:00:00.000Z");
   const to = new Date("2026-10-14T13:13:00.000Z");
