@@ -76,7 +76,8 @@ export const Food = z
     createdBy: z.string().min(1).optional(),
     createdAt: z.iso.datetime(),
   })
-  .refine((value) => value.spaceId !== null || !value.verified, "Shared cache cannot be verified");
+  .refine((value) => value.spaceId !== null || !value.verified, "Shared cache cannot be verified")
+  .refine((value) => value.spaceId === null || hasCarbs(value), nutritionError);
 export type Food = z.infer<typeof Food>;
 
 export const FoodSourceStatus = z.enum(["ok", "timeout", "error", "rate-limited", "skipped"]);
@@ -118,7 +119,8 @@ export const AddCandidateRequest = z.strictObject({
 export type AddCandidateRequest = z.infer<typeof AddCandidateRequest>;
 export const UpdateFoodRequest = z
   .strictObject({ ...fields, portions: z.array(Portion), favourite: z.boolean() })
-  .partial();
+  .partial()
+  .refine((value) => value.carbsPer100g !== null || value.portions?.length !== 0, nutritionError);
 export type UpdateFoodRequest = z.infer<typeof UpdateFoodRequest>;
 export const VerifyFoodsRequest = z.strictObject({
   foodIds: z.array(z.string().min(1)).min(1).max(50),
