@@ -16,12 +16,18 @@ export const DEFAULT_WINDOW_HOURS = 24;
 /** The most events one `events?since` page carries; a longer gap takes several pages. */
 export const EVENTS_PAGE_SIZE = 1000;
 
-/** The Web PubSub groups a member may join: readings go to the glucose group viewers never get. */
+/**
+ * The Web PubSub groups a member may join: readings go to the glucose group viewers never get.
+ * Granted by the hub's connect handler from the role the member has when the socket connects.
+ */
 export function groupsFor(spaceId: string, role: Role): string[] {
   const groups = [`space-${spaceId}`];
   if (role !== "viewer") groups.push(`space-${spaceId}-glucose`);
   return groups;
 }
+
+/** The query parameter of the socket URL that names the space the connect handler checks. */
+export const SPACE_QUERY = "spaceId";
 
 export const WindowHours = z.coerce.number().int().min(1).max(MAX_WINDOW_HOURS);
 export const SinceSeq = z.coerce.number().int().min(0);

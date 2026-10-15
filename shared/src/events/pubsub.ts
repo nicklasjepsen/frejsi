@@ -29,9 +29,9 @@ export interface WebPubSubClientLike {
 export const DEFAULT_HUB = "frejsi";
 /**
  * Only checked when a socket connects: an open socket outlives it, and the client negotiates
- * afresh on every reconnect, so the token is needed for seconds. The service minimum, so a token
- * issued before a downgrade or removal can be replayed for at most a minute to rejoin the glucose
- * group (issue #79). A connect-time role check would close that minute.
+ * afresh on every reconnect, so the token is needed for seconds. The service minimum. The token
+ * carries no groups, so replaying one only reaches the connect handler, which checks the role the
+ * user has now (issue #95).
  */
 const TOKEN_MINUTES = 1;
 
@@ -43,11 +43,15 @@ export class WebPubSubEventSink implements EventSink, LiveTokenIssuer, LiveGroup
     await this.client.group(group).sendToAll(envelope);
   }
 
-  /** Groups are baked into the token and auto-joined; no `joinLeaveGroup` role (plan decision 3). */
+  /**
+   * The user id and nothing else: no groups, which the hub's connect handler grants from the
+   * current membership (issue #95), and no `joinLeaveGroup` role, so the client can join nothing
+   * itself (plan decision 3).
+   */
   async issueClientToken(request: ClientTokenRequest): Promise<ClientToken> {
     const token = await this.client.getClientAccessToken({
       userId: request.userId,
-      groups: request.groups,
+      groups: [],
       roles: [],
       expirationTimeInMinutes: TOKEN_MINUTES,
     });

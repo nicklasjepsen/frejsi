@@ -18,7 +18,7 @@ export class MemoryEventSink implements EventSink, LiveTokenIssuer {
   issueClientToken(request: ClientTokenRequest): Promise<ClientToken | null> {
     this.tokens.push(request);
     return Promise.resolve({
-      url: `ws://memory.invalid/client/hubs/frejsi?groups=${request.groups.join(",")}`,
+      url: `ws://memory.invalid/client/hubs/frejsi?user=${encodeURIComponent(request.userId)}`,
     });
   }
 }

@@ -1,0 +1,31 @@
+{
+  "_comment": "A Web PubSub system connect event in CloudEvents binary mode, shaped after https://learn.microsoft.com/azure/azure-web-pubsub/reference-cloud-events#system-connect-event. Fictional ids and host; the test sets ce-userId, ce-signature and the query per case.",
+  "headers": {
+    "content-type": "application/json; charset=utf-8",
+    "webhook-request-origin": "wps-frejsi-example.webpubsub.azure.com",
+    "ce-specversion": "1.0",
+    "ce-type": "azure.webpubsub.sys.connect",
+    "ce-source": "/hubs/frejsi/client/conn-0001",
+    "ce-id": "1",
+    "ce-time": "2026-10-15T13:13:00Z",
+    "ce-connectionId": "conn-0001",
+    "ce-hub": "frejsi",
+    "ce-eventName": "connect"
+  },
+  "body": {
+    "claims": {
+      "sub": ["<set by the test>"],
+      "aud": ["https://wps-frejsi-example.webpubsub.azure.com/client/hubs/frejsi"]
+    },
+    "query": {
+      "access_token": ["fictional-access-token"]
+    },
+    "headers": {
+      "Connection": ["Upgrade"],
+      "Upgrade": ["websocket"],
+      "Sec-WebSocket-Version": ["13"]
+    },
+    "subprotocols": [],
+    "clientCertificates": []
+  }
+}

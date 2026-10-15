@@ -20,8 +20,9 @@ describe("MemoryEventSink", () => {
     expect(sink.forGroup("space-s1")).toEqual([envelope]);
     expect(sink.forGroup("space-s1-glucose")).toEqual([]);
 
-    const token = await asIssuer.issueClientToken({ userId: "u1", groups: ["space-s1"] });
-    expect(token?.url).toContain("space-s1");
-    expect(sink.tokens).toEqual([{ userId: "u1", groups: ["space-s1"] }]);
+    const token = await asIssuer.issueClientToken({ userId: "u1" });
+    expect(token?.url).toContain("u1");
+    expect(token?.url).not.toContain("space-s1");
+    expect(sink.tokens).toEqual([{ userId: "u1" }]);
   });
 });

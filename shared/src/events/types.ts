@@ -5,10 +5,14 @@ export interface EventSink {
   publish(group: string, envelope: EventEnvelope): Promise<void>;
 }
 
+/**
+ * What a client token carries: the user and nothing else. No groups and no roles: the hub's
+ * `connect` handler (`/api/pubsub`) looks up the member's current role each time a socket connects
+ * and joins it to exactly the groups that role allows, so a token issued before a downgrade cannot
+ * be replayed into the glucose group (issue #95).
+ */
 export interface ClientTokenRequest {
   userId: string;
-  /** Baked into the token and auto-joined; the client cannot join anything else. */
-  groups: string[];
 }
 
 export interface ClientToken {
@@ -22,15 +26,15 @@ export interface LiveTokenIssuer {
 }
 
 /**
- * Takes a user's open connections out of a group at once, server side. A token's groups are baked
- * in and auto-joined, so a role change would otherwise reach the socket only when it reconnects
- * (issue #79). A no-op when no live transport is configured.
+ * Takes a user's open connections out of a group at once, server side. The connect handler only
+ * runs when a socket connects, so a role change would otherwise reach an open socket only when it
+ * reconnects (issue #79). A no-op when no live transport is configured.
  */
 export interface LiveGroupRevoker {
   removeUserFromGroup(group: string, userId: string, options?: LiveCallOptions): Promise<void>;
   /**
    * Drops every open connection of the user. The fallback when a group removal fails: the client
-   * reconnects through `negotiate`, which issues a token for the role the user has now.
+   * reconnects, and the connect handler joins it to the groups of the role the user has now.
    */
   closeUserConnections(userId: string, options?: LiveCallOptions): Promise<void>;
 }

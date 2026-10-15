@@ -18,7 +18,8 @@ export interface FakeUser {
 }
 
 /**
- * The query shapes `loadSession`, `loadReadingsWindow` and `loadEventsPage` use, over plain
+ * The query shapes `loadSession`, `loadReadingsWindow`, `loadEventsPage` and the connect
+ * handler's membership lookup use, over plain
  * arrays. Sessions never need a touch here (`lastSeenAt` is the test clock), so the two update
  * delegates only record that they were called.
  */
@@ -167,8 +168,21 @@ export class FakeLiveDb {
             .sort((a, b) => b.seq - a.seq)[0] ?? null,
         ),
     };
+    const membershipDelegate = {
+      findUnique: (args: {
+        where: { userId_spaceId: { userId: string; spaceId: string } };
+        select?: { role?: boolean };
+      }) => {
+        const { userId, spaceId } = args.where.userId_spaceId;
+        const membership = this.users
+          .find((u) => u.id === userId)
+          ?.memberships.find((m) => m.spaceId === spaceId);
+        return Promise.resolve(membership ? { userId, spaceId, role: membership.role } : null);
+      },
+    };
     return {
       session: sessionDelegate,
+      membership: membershipDelegate,
       user: userDelegate,
       space: spaceDelegate,
       reading: readingDelegate,
