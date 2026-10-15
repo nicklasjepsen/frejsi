@@ -99,5 +99,99 @@
       "validation": "Something in what you entered couldn't be used. Look it over and try again.",
       "internal": "Something went wrong on our side. Try again in a moment."
     }
+  },
+  "settings": {
+    "title": "Settings",
+    "subtitleOwner": "{space} · only owners can change things here",
+    "subtitleMember": "You can change your own language, view and colour",
+    "back": "Back",
+    "comingLater": "Coming in a later version",
+    "saving": "Saving …",
+    "sections": {
+      "source": "Glucose source",
+      "ai": "AI help",
+      "unitAndLanguage": "Unit and language",
+      "simpleMode": "Simple view",
+      "colour": "Colour",
+      "data": "Data and export"
+    },
+    "source": {
+      "lead": "Where Frejsi gets {subject}'s readings from. One source at a time.",
+      "rowConnected": "{source} · connected · last reading {time}",
+      "rowConnectedNoReading": "{source} · connected · no readings yet",
+      "rowDisconnected": "{source} · no connection",
+      "notConfigured": "No source yet",
+      "cardConnected": "Connected · last reading {when} · {region} · fetches every 5 minutes",
+      "cardConnectedNoReading": "Connected · no readings yet · {region} · fetches every 5 minutes",
+      "cardDisconnected": "No connection · {region}",
+      "today": "today {time}",
+      "onDate": "{date} {time}",
+      "region": {
+        "eu": "EU server",
+        "us": "US server"
+      },
+      "changeLogin": "Change login",
+      "nightscout": "Nightscout",
+      "manual": "Manual",
+      "vaultNote": "The {source} login is kept in a locked vault, never in the database. Owners are told if the connection has been down for more than 35 minutes.",
+      "connect": "Connect"
+    },
+    "connect": {
+      "title": "Change login",
+      "lead": "Sign in with the account the sensor app shares from. Frejsi keeps the login in a locked vault only – never in the database.",
+      "username": "Username",
+      "password": "Password",
+      "region": "Server",
+      "regionOption": {
+        "eu": "EU",
+        "us": "US"
+      },
+      "submit": "Connect",
+      "submitting": "Connecting …",
+      "cancel": "Cancel"
+    },
+    "ai": {
+      "lead": "Search, voice, photos and observations"
+    },
+    "unit": {
+      "label": "Unit",
+      "labelDesktop": "Glucose is shown in",
+      "mmol": "mmol/L",
+      "mgdl": "mg/dL"
+    },
+    "language": {
+      "label": "Language"
+    },
+    "targetRange": {
+      "label": "Target range",
+      "low": "Lower bound",
+      "high": "Upper bound",
+      "note": "{unit} · as agreed with the clinic",
+      "save": "Save"
+    },
+    "simpleMode": {
+      "lead": "Large, picture-based and verified food only. Per person.",
+      "leadDesktop": "Large, picture-based and verified food only. Turned on per person – it is a view, not a role.",
+      "you": "{name} (you)",
+      "toggle": "Simple view for {name}",
+      "languageFor": "Language for {name}"
+    },
+    "colour": {
+      "row": "Colour",
+      "title": "Colour",
+      "lead": "Each person picks their own colour. It only changes how things look – never what a number means.",
+      "people": "Who",
+      "swatches": "Colours",
+      "pick": "Pick the colour {colour} for {name}",
+      "previewFor": "How it looks for {name}",
+      "connected": "connected",
+      "noReadings": "No readings yet",
+      "eatingNow": "I'm eating now",
+      "note": "Meals are always terracotta and the number is always black – whatever the colour. {name} can also switch under More.",
+      "noteSelf": "Meals are always terracotta and the number is always black – whatever the colour."
+    },
+    "data": {
+      "lead": "Export for the clinic"
+    }
   }
 }
