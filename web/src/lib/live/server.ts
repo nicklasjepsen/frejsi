@@ -31,7 +31,8 @@ export interface LiveDeps {
 }
 
 let overrides: Partial<LiveDeps> = {};
-let defaultIssuer: LiveTokenIssuer | undefined;
+/** The issuer from the environment, built once; never an override, so test order cannot leak. */
+let envIssuer: LiveTokenIssuer | undefined;
 
 /** Tests only: replace the database, the token issuer or the clock the routes use. */
 export function configureLive(deps: Partial<LiveDeps>): void {
@@ -39,10 +40,9 @@ export function configureLive(deps: Partial<LiveDeps>): void {
 }
 
 export function liveDeps(): LiveDeps {
-  defaultIssuer ??= overrides.issuer ?? createEventSinkFromEnv();
   return {
     db: overrides.db ?? prisma,
-    issuer: overrides.issuer ?? defaultIssuer,
+    issuer: overrides.issuer ?? (envIssuer ??= createEventSinkFromEnv()),
     now: overrides.now ?? (() => new Date()),
   };
 }
@@ -109,6 +109,19 @@ function sourceTypeOf(glucoseSource: string | null): ReadingsWindow["space"]["so
   }
 }
 
+/** One stored reading row as the wire `Reading`, with its `ts`. */
+function readingOf(row: {
+  ts: Date;
+  mmol: unknown;
+  trend: string;
+}): ReadingsWindow["readings"][number] {
+  return {
+    ts: row.ts.toISOString(),
+    mmol: Number(row.mmol),
+    trend: row.trend as ReadingsWindow["readings"][number]["trend"],
+  };
+}
+
 /** One stored event row as the envelope the client parses; null for a row that no longer parses. */
 export function envelopeOf(row: {
   spaceId: string;
@@ -161,10 +174,17 @@ export async function loadReadingsWindow(
   if (!space) throw new HttpError(404, "not-found");
 
   const since = new Date(now().getTime() - hours * 60 * 60 * 1000);
-  const [rows, statusRow] = await Promise.all([
+  const [rows, latestRow, statusRow] = await Promise.all([
     db.reading.findMany({
       where: { spaceId, ts: { gte: since } },
       orderBy: { ts: "asc" },
+      select: { ts: true, mmol: true, trend: true },
+    }),
+    // The newest reading whatever its age: a source down for longer than the window still shows
+    // its last value with that age on Nu, never "no readings yet".
+    db.reading.findFirst({
+      where: { spaceId },
+      orderBy: { ts: "desc" },
       select: { ts: true, mmol: true, trend: true },
     }),
     db.event.findFirst({
@@ -195,11 +215,8 @@ export async function loadReadingsWindow(
       timezone: space.timezone,
       sourceType: sourceTypeOf(space.glucoseSource),
     },
-    readings: rows.map((row) => ({
-      ts: row.ts.toISOString(),
-      mmol: Number(row.mmol),
-      trend: row.trend as ReadingsWindow["readings"][number]["trend"],
-    })),
+    readings: rows.map(readingOf),
+    latest: latestRow ? readingOf(latestRow) : null,
   };
 }
 
