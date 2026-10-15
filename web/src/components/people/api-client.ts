@@ -6,7 +6,12 @@ import { ApiError, type ApiErrorCode } from "@frejsi/shared/schemas/api";
 import type { Role } from "@frejsi/shared/schemas/auth";
 import type { z } from "zod";
 
-import { CreatedInviteView, PeopleView, type CreateInviteBody } from "./contract";
+import {
+  CreatedInviteView,
+  PeopleView,
+  RemovedDeviceView,
+  type CreateInviteBody,
+} from "./contract";
 
 export class PeopleApiError extends Error {
   constructor(
@@ -77,5 +82,9 @@ export const peopleApi = {
   removeMember: (spaceId: string, userId: string) =>
     callEmpty(`${base(spaceId)}/members/${encodeURIComponent(userId)}`, { method: "DELETE" }),
   removeDevice: (spaceId: string, passkeyId: string) =>
-    callEmpty(`${base(spaceId)}/passkeys/${encodeURIComponent(passkeyId)}`, { method: "DELETE" }),
+    callJson(
+      `${base(spaceId)}/passkeys/${encodeURIComponent(passkeyId)}`,
+      { method: "DELETE" },
+      RemovedDeviceView,
+    ),
 };

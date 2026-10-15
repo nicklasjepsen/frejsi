@@ -51,6 +51,13 @@ export const PeopleView = z.object({
 });
 export type PeopleView = z.infer<typeof PeopleView>;
 
+/**
+ * `DELETE /api/spaces/:id/passkeys/:passkeyId`. `signedOut` is true when the device removed was
+ * the one that asked: its session is gone and the screen goes to sign-in.
+ */
+export const RemovedDeviceView = z.object({ signedOut: z.boolean() });
+export type RemovedDeviceView = z.infer<typeof RemovedDeviceView>;
+
 /** `POST /api/spaces/:id/invites`: a new person, or a new device for a member (`forUserId`). */
 export const CreateInviteBody = z.union([
   z.object({ name: z.string().trim().min(1).max(80), role: Role }),
