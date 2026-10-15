@@ -76,7 +76,13 @@ beforeEach(() => {
       }),
     );
   };
-  configureMeals({ sessionDb: auth.db, repo, photos: new MemoryPhotoStore(), emit, now: () => at });
+  configureMeals({
+    sessionDb: auth.db,
+    repo,
+    photos: new MemoryPhotoStore(),
+    write: (work) => work(repo, emit),
+    now: () => at,
+  });
 });
 afterEach(() => {
   configureMeals({});
