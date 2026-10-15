@@ -24,6 +24,7 @@ import styles from "./now.module.css";
 
 const SPARKLINE_HOURS = 3;
 const DAY_START_HOUR = 6;
+const WINDOW_HOURS = 24;
 
 export interface NowScreenProps {
   spaceId: string;
@@ -43,7 +44,7 @@ export function NowScreen({ spaceId, locale, simpleMode, timeZone }: NowScreenPr
   const t = useTranslations("now");
   const g = useTranslations("glucose");
   const errors = useTranslations("errors.api");
-  const feed = useLiveFeed(spaceId, { hours: 24 });
+  const feed = useLiveFeed(spaceId, { hours: WINDOW_HOURS });
   const now = useNow();
 
   const latest = feed.readings.at(-1) ?? null;
@@ -86,7 +87,14 @@ export function NowScreen({ spaceId, locale, simpleMode, timeZone }: NowScreenPr
   }
 
   const sparklineFrom = new Date(now.getTime() - SPARKLINE_HOURS * 60 * 60 * 1000);
-  const dayFrom = dayStart(now, zone, DAY_START_HOUR);
+  // Never before the feed's window: on the night daylight saving ends, yesterday's 06:00 can lie
+  // up to 25 hours back, and that first hour would be drawn empty.
+  const dayFrom = new Date(
+    Math.max(
+      dayStart(now, zone, DAY_START_HOUR).getTime(),
+      now.getTime() - WINDOW_HOURS * 60 * 60 * 1000,
+    ),
+  );
 
   return (
     <>

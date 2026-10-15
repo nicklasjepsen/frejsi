@@ -182,6 +182,23 @@ describe("Nu · desktop (Nu-Desktop)", () => {
     expect(chart.textContent).toContain("15:13");
   });
 
+  it("starts the day curve no earlier than the 24-hour window on the night daylight saving ends", () => {
+    // 05:30 in Copenhagen on 25 October: yesterday's 06:00 is 24.5 hours back, past the window.
+    const night = new Date("2026-10-25T04:30:00.000Z");
+    vi.setSystemTime(night);
+    const ago = (m: number) => new Date(night.getTime() - m * 60_000).toISOString();
+    live.state = {
+      ...loaded,
+      readings: [
+        { ts: ago(24 * 60), mmol: 6.0, trend: "flat" },
+        { ts: ago(3), mmol: 6.2, trend: "flat" },
+      ],
+    };
+    mount();
+    const desktop = within(screen.getByTestId("now-desktop"));
+    expect(desktop.getByRole("img", { name: "Glukose i dag fra 06:30 til 05:30" })).toBeInTheDocument();
+  });
+
   it("renders an mg/dL space as whole numbers everywhere", () => {
     live.state = { ...loaded, space: { ...space, glucoseUnit: "mgdl" } };
     mount({}, "en");
@@ -194,10 +211,10 @@ describe("Nu · desktop (Nu-Desktop)", () => {
 });
 
 describe("Nu · simpleMode (Nu-Simpel, Nu-Simpel-Desktop)", () => {
-  it("shows 'Dit tal lige nu', the big number without the unit, and only 'Jeg spiser nu'", () => {
+  it("shows 'Dit tal', the big number without the unit, and only 'Jeg spiser nu'", () => {
     mount({ simpleMode: true });
     const simple = within(screen.getByTestId("now-simple"));
-    expect(simple.getByText("Dit tal lige nu")).toBeInTheDocument();
+    expect(simple.getByText("Dit tal")).toBeInTheDocument();
     expect(simple.getByTestId("glucose-number")).toHaveTextContent("6,2");
     expect(simple.getByTestId("glucose-number").parentElement?.parentElement).toHaveAttribute(
       "data-size",
