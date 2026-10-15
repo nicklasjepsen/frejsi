@@ -25,7 +25,12 @@ export interface TodayScreenProps {
 /** How often the screen checks whether a failed read needs a retry or the day has turned. */
 export const RECHECK_MS = 30_000;
 
-type DayState = { status: "loading" } | { status: "failed" } | { status: "ready"; day: DayView };
+type DayState =
+  | { status: "loading" }
+  | { status: "failed" }
+  /** 403 or 404: this member may no longer read the space; nothing of it stays on screen. */
+  | { status: "refused"; code: "forbidden" | "not-found" }
+  | { status: "ready"; day: DayView };
 
 /**
  * I dag (Historik-Viewer): the space's meals and carbs today, for every role. It reads `day` and
@@ -42,10 +47,12 @@ export function TodayScreen({
   socketFactory,
 }: TodayScreenProps) {
   const t = useTranslations("today");
+  const errors = useTranslations("errors.api");
   const request = useCallback(
-    (path: string) =>
+    (path: string, signal?: AbortSignal) =>
       (fetchImpl ?? globalThis.fetch)(`/api/spaces/${spaceId}/${path}`, {
         headers: { accept: "application/json" },
+        ...(signal ? { signal } : {}),
       }),
     [fetchImpl, spaceId],
   );
@@ -58,23 +65,31 @@ export function TodayScreen({
   const [state, setState] = useState<DayState>({ status: "loading" });
   const [owners, setOwners] = useState<string[]>([]);
   const latestRequest = useRef(0);
+  /** The read in flight, if any, and when it started: the recheck replaces one that stalls. */
+  const inFlight = useRef<{ controller: AbortController; startedAt: number } | null>(null);
   const lastFailed = useRef(false);
 
   const loadDay = useCallback(async () => {
     const id = ++latestRequest.current;
+    inFlight.current?.controller.abort();
+    const controller = new AbortController();
+    inFlight.current = { controller, startedAt: Date.now() };
     let next: DayState = { status: "failed" };
     try {
-      const response = await request("day");
-      if (response.ok) {
+      const response = await request("day", controller.signal);
+      if (response.status === 403 || response.status === 404) {
+        next = { status: "refused", code: response.status === 403 ? "forbidden" : "not-found" };
+      } else if (response.ok) {
         const parsed = DayView.safeParse(await response.json());
         if (parsed.success) next = { status: "ready", day: parsed.data };
       }
     } catch {
-      // Shown as "could not be loaded"; the next event or focus tries again.
+      // Shown as "could not be loaded"; the recheck tries again.
     }
     if (id !== latestRequest.current) return;
+    inFlight.current = null;
     lastFailed.current = next.status === "failed";
-    // A failed refresh keeps the day already on screen.
+    // A failed refresh keeps the day already on screen; a refusal never does.
     setState((current) =>
       next.status === "failed" && current.status === "ready" ? current : next,
     );
@@ -82,6 +97,10 @@ export function TodayScreen({
 
   useEffect(() => {
     void loadDay();
+    return () => {
+      inFlight.current?.controller.abort();
+      inFlight.current = null;
+    };
   }, [loadDay]);
 
   // Once the feed knows its cursor, everything after it arrives as events: one more read closes
@@ -108,7 +127,9 @@ export function TodayScreen({
   useEffect(() => {
     const timer = setInterval(() => {
       const turned = shownDay && localDateOf(new Date(), shownDay.timezone) !== shownDay.date;
-      if (lastFailed.current || turned) void loadDay();
+      const pending = inFlight.current;
+      const stalled = pending !== null && Date.now() - pending.startedAt >= RECHECK_MS;
+      if (stalled || (pending === null && (lastFailed.current || turned))) void loadDay();
     }, RECHECK_MS);
     return () => {
       clearInterval(timer);
@@ -150,6 +171,23 @@ export function TodayScreen({
     owners.length > 0
       ? t("notice", { owners: formatAskList(owners, locale) })
       : t("noticeNoOwners");
+
+  // The feed is refused too when the member was removed or the space is gone.
+  const refusal =
+    state.status === "refused"
+      ? state.code
+      : feed.error === "forbidden" || feed.error === "not-found"
+        ? feed.error
+        : null;
+  if (refusal !== null || state.status === "refused") {
+    return (
+      <div className={styles.page} data-testid="today">
+        <Notice tone="sunken" role="alert">
+          {errors(refusal ?? "forbidden")}
+        </Notice>
+      </div>
+    );
+  }
 
   if (state.status === "loading") {
     return <div className={styles.page} aria-busy="true" data-testid="today-loading" />;

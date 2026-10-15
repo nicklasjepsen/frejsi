@@ -92,7 +92,14 @@ const people = {
   invites: [],
 };
 
-let server: { day: DayView; dayStatus: number; lastSeq: number; members: unknown };
+let server: {
+  day: DayView;
+  dayStatus: number;
+  dayHangs: boolean;
+  lastSeq: number;
+  eventsStatus: number;
+  members: unknown;
+};
 let net: ReturnType<typeof fakeFetch>;
 let sockets: FakeSocket[];
 let factory: ReturnType<typeof fakeSocketFactory>["factory"];
@@ -102,16 +109,27 @@ beforeEach(() => {
     now: T0,
     toFake: ["setTimeout", "setInterval", "clearInterval", "clearTimeout", "Date"],
   });
-  server = { day: fullDay, dayStatus: 200, lastSeq: 20, members: people };
+  server = {
+    day: fullDay,
+    dayStatus: 200,
+    dayHangs: false,
+    lastSeq: 20,
+    eventsStatus: 200,
+    members: people,
+  };
   net = fakeFetch({
     "/day": () =>
-      server.dayStatus === 200
-        ? jsonResponse(server.day)
-        : jsonResponse({ error: { code: "internal", message: "" } }, server.dayStatus),
+      server.dayHangs
+        ? new Promise<Response>(() => undefined)
+        : server.dayStatus === 200
+          ? jsonResponse(server.day)
+          : jsonResponse({ error: { code: "internal", message: "" } }, server.dayStatus),
     "/members": () => jsonResponse(server.members),
     "/negotiate": () => jsonResponse({ url: "wss://example/hub" }),
     "/events": () =>
-      jsonResponse({ lastSeq: server.lastSeq, events: [], more: false } satisfies EventsPage),
+      server.eventsStatus !== 200
+        ? jsonResponse({ error: { code: "not-found", message: "" } }, server.eventsStatus)
+        : jsonResponse({ lastSeq: server.lastSeq, events: [], more: false } satisfies EventsPage),
   });
   ({ sockets, factory } = fakeSocketFactory());
 });
@@ -288,6 +306,38 @@ describe("I dag (Historik-Viewer)", () => {
     );
     await act(() => vi.advanceTimersByTimeAsync(RECHECK_MS * 2));
     expect(dayCalls()).toBe(before + 1);
+  });
+
+  it("retries a read that never answers on the next check", async () => {
+    server.dayHangs = true;
+    await mount();
+    expect(screen.getByTestId("today-loading")).toBeInTheDocument();
+    const before = dayCalls();
+    server.dayHangs = false;
+    await act(() => vi.advanceTimersByTimeAsync(RECHECK_MS));
+    await act(() => vi.advanceTimersByTimeAsync(RECHECK_MS));
+    expect(dayCalls()).toBeGreaterThan(before);
+    expect(screen.getByTestId("day-total")).toHaveTextContent("102");
+  });
+
+  it("drops the day from the screen when the member is refused (removed from the space)", async () => {
+    await mount();
+    expect(screen.getByTestId("day-total")).toBeVisible();
+    server.dayStatus = 404;
+    act(() => {
+      fireEvent.focus(window);
+    });
+    await flush();
+    expect(screen.queryByTestId("day-total")).toBeNull();
+    expect(screen.queryByText(/Rugbrød/)).toBeNull();
+    expect(screen.getByRole("alert")).toHaveTextContent("Det, du leder efter, findes ikke");
+  });
+
+  it("drops the day when the live feed is refused", async () => {
+    server.eventsStatus = 404;
+    await mount();
+    expect(screen.queryByTestId("day-total")).toBeNull();
+    expect(screen.getByRole("alert")).toHaveTextContent("Det, du leder efter, findes ikke");
   });
 
   it("keeps the day on screen when a refresh fails, and says so when the first read fails", async () => {
