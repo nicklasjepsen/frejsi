@@ -427,13 +427,13 @@
   gap: 14px;
 }
 
+/* The code draws its own white ground and quiet zone, so it scans in either theme (QrCode). */
 .qrBox {
   display: inline-flex;
   padding: 8px;
   border-radius: var(--radius-button-small);
   background: var(--surface-input);
   border: 1px solid var(--hairline);
-  color: var(--text);
   align-self: flex-start;
 }
 
