@@ -8,11 +8,7 @@ import {
   type PrismaClient,
 } from "@frejsi/shared";
 
-import {
-  SourceView,
-  definedOnly,
-  type SpaceSettingsPatch,
-} from "@/components/settings/contracts";
+import { SourceView, definedOnly, type SpaceSettingsPatch } from "@/components/settings/contracts";
 import { run, type AuthDeps } from "@/lib/auth/core";
 
 /** The Space columns the settings read; `targetLow/High` arrive as Prisma Decimals. */
@@ -99,24 +95,30 @@ export function toSpaceSettings(row: SpaceSettingsRow): SpaceSettings {
 /**
  * Writes the unit and the target range (always in mmol, plan §3) and emits `space.updated` with
  * the fields that changed. A range is checked against the stored other end, so one end cannot be
- * moved across the other.
+ * moved across the other. The check and the write share a serializable transaction: two owners
+ * saving one end each (9 as low, 5 as high, from 4–10) would otherwise both pass against 4–10 and
+ * leave 9–5 behind.
  */
 export function updateSpaceSettings(
   spaceId: string,
   patch: SpaceSettingsPatch,
   deps: AuthDeps = {},
 ): Promise<SpaceSettings> {
-  return run(deps, async (tx, emit) => {
-    const current = await tx.space.findUnique({ where: { id: spaceId } });
-    if (!current) throw new HttpError(404, "not-found");
-    const low = patch.targetLow ?? Number(current.targetLow.toString());
-    const high = patch.targetHigh ?? Number(current.targetHigh.toString());
-    if (low >= high) throw new HttpError(400, "validation");
-    const data = definedOnly(patch);
-    const row = await tx.space.update({ where: { id: spaceId }, data });
-    await emit(spaceId, "space.updated", { fields: Object.keys(data) });
-    return toSpaceSettings(row);
-  });
+  return run(
+    deps,
+    async (tx, emit) => {
+      const current = await tx.space.findUnique({ where: { id: spaceId } });
+      if (!current) throw new HttpError(404, "not-found");
+      const low = patch.targetLow ?? Number(current.targetLow.toString());
+      const high = patch.targetHigh ?? Number(current.targetHigh.toString());
+      if (low >= high) throw new HttpError(400, "validation");
+      const data = definedOnly(patch);
+      const row = await tx.space.update({ where: { id: spaceId }, data });
+      await emit(spaceId, "space.updated", { fields: Object.keys(data) });
+      return toSpaceSettings(row);
+    },
+    { serializable: true },
+  );
 }
 
 /**

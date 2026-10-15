@@ -112,6 +112,14 @@ describe("updateSpaceSettings", () => {
     expect(events).toHaveLength(1);
   });
 
+  it("checks the range against the stored row and writes it in one serializable transaction, so two partial saves cannot leave low above high", async () => {
+    const { fake, deps } = setup();
+    fake.transactions.length = 0;
+    await updateSpaceSettings("s1", { targetLow: 5 }, deps);
+    expect(fake.transactions).toEqual([{ isolationLevel: "Serializable" }]);
+    expect(fake.operations.every((o) => o.inTransaction)).toBe(true);
+  });
+
   it("is 404 for an unknown space", async () => {
     const { deps } = setup();
     await expect(updateSpaceSettings("nope", { glucoseUnit: "mmol" }, deps)).rejects.toMatchObject({
