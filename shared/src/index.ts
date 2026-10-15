@@ -88,3 +88,4 @@ export { lookup, type LookupOptions } from "./food/lookup";
 export { PrismaFoodRepository } from "./food/repository";
 export { dayRange } from "./meals/day-range";
 export { mealTitle, mealSlot } from "./meals/title";
+export * from "./stats";

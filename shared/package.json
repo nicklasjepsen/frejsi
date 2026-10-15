@@ -9,7 +9,8 @@
     ".": "./src/index.ts",
     "./*": "./src/*.ts",
     "./photos": "./src/photos/index.ts",
-    "./food": "./src/food/registry.ts"
+    "./food": "./src/food/registry.ts",
+    "./stats": "./src/stats/index.ts"
   },
   "scripts": {
     "postinstall": "prisma generate",
