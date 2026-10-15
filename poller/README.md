@@ -10,6 +10,14 @@ Nothing here knows Dexcom. The adapter and the cycle live in `@frejsi/shared`
 run the same code; this package wires them to the Functions host, Prisma, Key Vault and App
 Insights.
 
+The adapter only reads. It makes three calls, `General/AuthenticatePublisherAccount`,
+`General/LoginPublisherAccountById` and `Publisher/ReadPublisherLatestGlucoseValues`, all `POST`,
+and every one goes through `sendShareRequest` (`shared/src/glucose/dexcom-share/transport.ts`),
+which refuses any other path or method before a request is sent. The Share API would accept
+writes with the same publisher login (uploading readings, follower and alert changes); Frejsi never
+makes them (CLAUDE.md, hard rules), and a lint rule keeps `fetch` out of every other file under
+`shared/src/glucose/`.
+
 ## Functions
 
 | Name             | Trigger                                     | What it does                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
@@ -93,4 +101,7 @@ space failed. Only `--once` exists; the timer runs in the Function App.
 credential, `secret-missing` / `secret-invalid`), `source-connect` (probe, store, the three results,
 400 on a bad body, nothing credential-shaped in the log), the CLI arguments and the build contract.
 The adapter is tested in `shared/` against `fixtures/dexcom-share/` (hand-written, no real account)
-and the cycle against in-memory tables and `FakeGlucoseSource`. No test reaches the network.
+and the cycle against in-memory tables and `FakeGlucoseSource`. No test reaches the network. The
+read-only rule has its own tests there: every call in every fixture scenario hits an allow-listed
+path with its method, a write path is refused with no `fetch` call, and `GlucoseSource` and each
+registered source expose read operations only (`shared/src/glucose/read-only.test.ts`).

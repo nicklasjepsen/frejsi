@@ -27,6 +27,7 @@ It was started for a 9-year-old newly diagnosed with type 1 diabetes (Tandem pum
 
 - **No insulin dosing.** Frejsi never computes, suggests or displays insulin units, ratios or corrections. Users look up carbs here and enter them in their pump/pen. Clinical and legal choice; enforced in code (see §5).
 - Does not replace the CGM app or the pump app.
+- **Never writes to a glucose service.** Glucose sources are read-only: no uploads, no follower or alert changes, even when the credential would allow it (hard rule, enforced in code: the Dexcom adapter calls only allow-listed endpoints).
 - No pump data in v1 (Tandem has no real-time API; must not block).
 - No native apps. Web app (installable PWA on phones; regular web app on desktop) only.
 
@@ -132,6 +133,8 @@ Adapters: `dexcom-share` (v1), `nightscout` (next — opens Frejsi to the Nights
 1. `General/AuthenticatePublisherAccount` (username, password, Dexcom applicationId) → accountId
 2. `General/LoginPublisherAccountById` → sessionId (lasts ~24 h; reused; renewed on `SessionNotValid`)
 3. `Publisher/ReadPublisherLatestGlucoseValues?minutes=30&maxCount=6` → `[{ WT, Value (mg/dL), Trend }]`
+
+Those three are the adapter's whole allow-list (`shared/src/glucose/dexcom-share/transport.ts`): the Share API also accepts writes with the same publisher credential (uploading readings, creating or removing followers and invitations, changing a follower's alert settings), and the adapter refuses any path outside the list before a request is sent. Glucose sources are read-only; a future `nightscout` adapter gets its own allow-list the same way.
 
 EU endpoint `shareous1.dexcom.com`. The login is the **subject's** Dexcom account (the one the G7 app is signed into — the "publisher"), not a follower's. Share must be enabled on the subject's phone. mg/dL ÷ 18.016 → mmol/L, one decimal. This protocol is unofficial (the same one Dexcom Follow and `pydexcom` use); it has been stable for years, but we own the risk — hence the adapter boundary. The official Dexcom API is a possible adapter but has a 3-hour delay in the EU, which fails the real-time requirement.
 

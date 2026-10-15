@@ -1,10 +1,11 @@
 import { describe, expect, it } from "vitest";
 
 import { createLogger } from "../../log";
-import { Reading } from "../../schemas/glucose";
+import { type DexcomShareRegion, Reading } from "../../schemas/glucose";
 import type { GlucoseSource } from "../types";
 import { CREDENTIAL_RETRY_MS, DexcomShareSource } from "./source";
 import { fakeDexcom, fixture } from "./test-server";
+import { READ_ONLY_ENDPOINTS } from "./transport";
 
 /** The fixtures hold six readings, 10:00 to 10:25 UTC on 2026-10-15; the clock is 10:27. */
 const now = new Date("2026-10-15T10:27:00.000Z");
@@ -100,6 +101,42 @@ describe("DexcomShareSource.fetchSince", () => {
       applicationId: expect.stringMatching(/^[0-9a-f-]{36}$/) as string,
     });
     expect([...(auth?.url.searchParams.keys() ?? [])]).toEqual([]);
+  });
+});
+
+describe("DexcomShareSource is read-only", () => {
+  it("sends every call of every scenario to an allow-listed endpoint with its method", async () => {
+    const scenarios: [string, ReturnType<typeof fakeDexcom>, DexcomShareRegion][] = [
+      ["login and read, eu", fakeDexcom(), "eu"],
+      ["login and read, us", fakeDexcom(), "us"],
+      ["expired session renewed once", fakeDexcom({ staleSessions: 1 }), "eu"],
+      ["expired session given up", fakeDexcom({ staleSessions: 5 }), "eu"],
+      ["refused credential", fakeDexcom({ badCredentials: true }), "eu"],
+      ["server error retried", fakeDexcom({ serverError: true }), "eu"],
+    ];
+    for (const [, dexcom, region] of scenarios) {
+      const s = source(dexcom.fetch, { region });
+      await s.probe();
+      await s.fetchSince(now).catch(() => undefined);
+      await s.fetchSince(new Date(0)).catch(() => undefined);
+      expect(dexcom.calls.length).toBeGreaterThan(0);
+      for (const call of dexcom.calls) {
+        expect(READ_ONLY_ENDPOINTS.get(call.url.pathname), call.url.pathname).toBe(call.method);
+      }
+    }
+  });
+
+  it("never reaches a write endpoint, whatever the fixtures answer", async () => {
+    const dexcom = fakeDexcom({ staleSessions: 1 });
+    const s = source(dexcom.fetch);
+    await s.probe();
+    await s.fetchSince(now);
+    await s.fetchSince(new Date(0));
+    const paths = dexcom.calls.map((c) => c.url.pathname);
+    expect(
+      paths.some((p) => /PostReceiverEgvRecords|Subscription|Contact|AlertSettings/.test(p)),
+    ).toBe(false);
+    expect(new Set(paths).size).toBe(3);
   });
 });
 

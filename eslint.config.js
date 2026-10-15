@@ -32,6 +32,45 @@ const noFakes = {
     "FakeGlucoseSource, MemoryEventSink and MemorySecrets are for tests, the seed and the CLI only. Production code uses the interfaces (plan §2).",
 };
 
+/** Only emit() writes the events table (plan §5). */
+const eventWrite = {
+  selector:
+    'MemberExpression[object.property.name="event"][property.name=/^(create|createMany|createManyAndReturn|upsert|update|updateMany|delete|deleteMany)$/]',
+  message: "emit() in shared/src/events/emit.ts is the only writer of Event (plan §5).",
+};
+
+/** The Dexcom host and service path live in the adapter folder only (plan §2). */
+const dexcomHost = [
+  {
+    selector: "Literal[value=/dexcom\\.com|ShareWebServices/i]",
+    message: "The Dexcom host lives in shared/src/glucose/dexcom-share/ only (plan §2).",
+  },
+  {
+    selector: "TemplateElement[value.raw=/dexcom\\.com|ShareWebServices/i]",
+    message: "The Dexcom host lives in shared/src/glucose/dexcom-share/ only (plan §2).",
+  },
+];
+
+/**
+ * Hard rule: glucose sources are read-only. The one caller of fetch under shared/src/glucose/ is
+ * the Dexcom transport, whose allow-list holds the reads Frejsi makes; a new source adds its own
+ * transport file to the ignores below, with its own allow-list, instead of calling fetch from its
+ * adapter.
+ */
+const glucoseFetch = [
+  'CallExpression[callee.name="fetch"]',
+  'CallExpression[callee.property.name="fetch"]',
+].map((selector) => ({
+  selector,
+  message:
+    "Glucose sources are read-only: send requests through the allow-listed transport (shared/src/glucose/dexcom-share/transport.ts), never fetch directly (CLAUDE.md hard rules).",
+}));
+const glucoseFetchCallers = [
+  "shared/src/glucose/dexcom-share/transport.ts",
+  "shared/src/glucose/**/*.test.ts",
+  "shared/src/glucose/**/test-server.ts",
+];
+
 export const boundaries = [
   {
     name: "frejsi/boundaries",
@@ -64,22 +103,7 @@ export const boundaries = [
           ],
         },
       ],
-      "no-restricted-syntax": [
-        "error",
-        {
-          selector:
-            'MemberExpression[object.property.name="event"][property.name=/^(create|createMany|createManyAndReturn|upsert|update|updateMany|delete|deleteMany)$/]',
-          message: "emit() in shared/src/events/emit.ts is the only writer of Event (plan §5).",
-        },
-        {
-          selector: "Literal[value=/dexcom\\.com|ShareWebServices/i]",
-          message: "The Dexcom host lives in shared/src/glucose/dexcom-share/ only (plan §2).",
-        },
-        {
-          selector: "TemplateElement[value.raw=/dexcom\\.com|ShareWebServices/i]",
-          message: "The Dexcom host lives in shared/src/glucose/dexcom-share/ only (plan §2).",
-        },
-      ],
+      "no-restricted-syntax": ["error", eventWrite, ...dexcomHost],
     },
   },
   {
@@ -208,16 +232,19 @@ export const boundaries = [
   {
     name: "frejsi/boundaries/dexcom-share",
     files: ["shared/src/glucose/dexcom-share/**/*.ts"],
-    rules: {
-      "no-restricted-syntax": [
-        "error",
-        {
-          selector:
-            'MemberExpression[object.property.name="event"][property.name=/^(create|createMany|createManyAndReturn|upsert|update|updateMany|delete|deleteMany)$/]',
-          message: "emit() in shared/src/events/emit.ts is the only writer of Event (plan §5).",
-        },
-      ],
-    },
+    rules: { "no-restricted-syntax": ["error", eventWrite] },
+  },
+  {
+    name: "frejsi/boundaries/glucose-read-only",
+    files: ["shared/src/glucose/**/*.ts"],
+    ignores: ["shared/src/glucose/dexcom-share/**", ...glucoseFetchCallers],
+    rules: { "no-restricted-syntax": ["error", eventWrite, ...dexcomHost, ...glucoseFetch] },
+  },
+  {
+    name: "frejsi/boundaries/glucose-read-only/dexcom-share",
+    files: ["shared/src/glucose/dexcom-share/**/*.ts"],
+    ignores: glucoseFetchCallers,
+    rules: { "no-restricted-syntax": ["error", eventWrite, ...glucoseFetch] },
   },
   {
     name: "frejsi/boundaries/english-in-web",

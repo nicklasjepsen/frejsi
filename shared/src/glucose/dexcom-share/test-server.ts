@@ -28,7 +28,7 @@ export interface FakeDexcomOptions {
 
 export interface FakeDexcom {
   fetch: FetchLike;
-  calls: { url: URL; body: unknown }[];
+  calls: { url: URL; method: string | undefined; body: unknown }[];
   count(endpoint: "authenticate" | "login" | "glucose"): number;
 }
 
@@ -53,7 +53,7 @@ export function fakeDexcom(options: FakeDexcomOptions = {}): FakeDexcom {
   const fetch: FetchLike = (input, init) => {
     const url = new URL(typeof input === "string" ? input : input.toString());
     const body = typeof init?.body === "string" ? (JSON.parse(init.body) as unknown) : undefined;
-    calls.push({ url, body });
+    calls.push({ url, method: init?.method, body });
     if (options.networkError) return Promise.reject(new TypeError("fetch failed"));
 
     switch (url.pathname) {

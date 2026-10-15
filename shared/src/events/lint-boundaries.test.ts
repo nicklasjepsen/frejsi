@@ -126,6 +126,21 @@ describe("lint boundaries", () => {
     expect(await messages("shared/src/glucose/dexcom-share/client.ts", host)).toEqual([]);
   });
 
+  it("keep fetch out of the glucose sources; the read-only transport is the one caller", async () => {
+    const direct = 'export const f = (url: string) => fetch(url, { method: "POST" });\n';
+    const member =
+      "export class S { fetch = globalThis.fetch; go(u: string) { return this.fetch(u); } }\n";
+    for (const code of [direct, member]) {
+      const found = await messages("shared/src/glucose/dexcom-share/source.ts", code);
+      expect(found).toHaveLength(1);
+      expect(found[0]).toContain("read-only");
+      expect(await messages("shared/src/glucose/nightscout/source.ts", code)).toHaveLength(1);
+    }
+    expect(await messages("shared/src/glucose/dexcom-share/transport.ts", direct)).toEqual([]);
+    expect(await messages("shared/src/glucose/dexcom-share/source.test.ts", direct)).toEqual([]);
+    expect(await messages("shared/src/glucose/dexcom-share/test-server.ts", direct)).toEqual([]);
+  });
+
   it("keep Danish out of web/src code; web/messages/da/ is where it lives", async () => {
     const danish =
       'export const title = "Blodsukker vises ikke her";\nexport const t = `Måltid`;\n';

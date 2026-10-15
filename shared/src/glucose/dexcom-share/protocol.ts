@@ -16,10 +16,15 @@ export const APPLICATION_ID = "d89443d2-327c-4a6f-89e5-496bbb0317db";
 
 const BASE_PATH = "/ShareWebServices/Services";
 
-export const PATHS = {
-  authenticate: `${BASE_PATH}/General/AuthenticatePublisherAccount`,
-  login: `${BASE_PATH}/General/LoginPublisherAccountById`,
-  glucose: `${BASE_PATH}/Publisher/ReadPublisherLatestGlucoseValues`,
+/**
+ * The three calls Frejsi makes, each with the method it takes. They are the whole allow-list in
+ * `transport.ts`: the Share API also accepts writes with the same credential, and none is listed
+ * (hard rule: glucose sources are read-only).
+ */
+export const ENDPOINTS = {
+  authenticate: { method: "POST", path: `${BASE_PATH}/General/AuthenticatePublisherAccount` },
+  login: { method: "POST", path: `${BASE_PATH}/General/LoginPublisherAccountById` },
+  glucose: { method: "POST", path: `${BASE_PATH}/Publisher/ReadPublisherLatestGlucoseValues` },
 } as const;
 
 /** One call can ask for at most a day; the adapter clamps the window. */
