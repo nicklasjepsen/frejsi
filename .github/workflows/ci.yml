@@ -12,6 +12,7 @@ name: ci
 on:
   pull_request:
     branches: [main]
+    types: [opened, synchronize, reopened, edited]
   push:
     branches: [main]
 
@@ -67,6 +68,10 @@ jobs:
           node-version: 22
           cache: pnpm
 
+      - name: PR docs declaration
+        if: github.event_name == 'pull_request' && github.event.pull_request.user.login != 'dependabot[bot]'
+        run: node scripts/check-docs.mjs
+
       - name: Install
         run: pnpm install --frozen-lockfile
 
@@ -77,6 +82,9 @@ jobs:
           pnpm -r ${{ steps.changes.outputs.filter }} typecheck
           pnpm -r ${{ steps.changes.outputs.filter }} lint
           pnpm -r ${{ steps.changes.outputs.filter }} test
+
+      - name: Docs checker tests
+        run: pnpm test:scripts
 
       # The schema and the committed migration must agree; no database involved (plan task 1).
       - name: Prisma schema matches the migration
