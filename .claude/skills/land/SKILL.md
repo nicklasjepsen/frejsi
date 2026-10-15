@@ -10,6 +10,12 @@ description: Land the current Frejsi branch as a pull request the right way: ful
 2. **Checks.** `pnpm -r typecheck && pnpm -r lint && pnpm -r test`. Red is yours to fix; never
    `.skip`, never `--no-verify`. If `evals/` exists and the change touches prompts or AI schemas,
    run the evals too.
+   **Docs in this PR.** Update affected docs alongside the code; do not defer them to another lane.
+   In the PR's `## Docs`, list paths the diff actually changes, or write
+   `None needed: <concrete reason>`. Only Dependabot is exempt. Docs that count: `README.md`, `CONTRIBUTING.md`, `CLAUDE.md`,
+   `AGENTS.md`, `docs/**` except `docs/design/**` and `docs/superpowers/plans/**`, `infra/README.md`,
+   `poller/README.md`, `.env.example`. Plans and design exports alone do not count. The dependency-free
+   `scripts/check-docs.mjs` checks this before install in PR CI; `pnpm test:scripts` tests the checker.
 3. **Commits.** Small, conventional, signed off: `git commit -s -m "feat(poller): ..."`. English.
    The body says why. Add the attribution lines the session was given, if any.
 4. **Codex review** (only where the Codex CLI is installed and signed in):

@@ -22,6 +22,20 @@ git commit -s -m "feat: add matvaretabellen food source"
 2. Branch from `main`, keep PRs small, add tests next to the code.
 3. Conventional commit messages (`feat:`, `fix:`, `docs:` …).
 4. English in code, comments, commits and docs. UI strings go through i18n (`da`, `en`).
+5. Update affected docs in the same PR. Fill in `## Docs` with changed documentation paths, or `None needed: <concrete reason>`. CI rejects a missing/empty section or paths outside the PR's diff; Dependabot is exempt. See [the docs rule](docs/agent-workflow.md#13-docs-stay-current) for the files that count.
+
+## Local checks
+
+Use Node 22 or newer and the pnpm version pinned in `package.json`:
+
+```sh
+pnpm install --frozen-lockfile
+pnpm -r typecheck
+pnpm -r lint
+pnpm test
+```
+
+`pnpm test` runs the root scripts' tests as well as all package unit tests. Unit tests use fictional fixtures and fakes; they need no database or Azure access. Database integration tests, browser flows and the production build run at release; local instructions are in [the operations runbook](docs/operations.md#run-the-release-suites-locally).
 
 ## Licence
 

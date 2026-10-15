@@ -273,3 +273,21 @@ to ask; questions go in its PR body.
 - Wait on it by pid (`while kill -0 <pid>`), not `pgrep -f "codex exec"`, which matches the waiting
   shell itself.
 - `gpt-6-astra` is for a lane that has failed twice.
+
+## 13. Docs stay current
+
+Every lane updates affected docs in the same PR as the code. Describe what is implemented, using
+fictional examples; plans are not evidence that a feature exists. Every PR declares `## Docs` with
+paths its diff actually changes, or `None needed: <concrete reason>` when no docs need changing.
+Dependabot PRs are exempt. `scripts/check-docs.mjs` reads the PR event and its git diff without
+dependencies or network calls; the `ci` job runs it before installing packages, and rechecks body edits.
+
+Docs that count: `README.md`, `CONTRIBUTING.md`, `CLAUDE.md`, `AGENTS.md`, `docs/**` except
+`docs/design/**` and `docs/superpowers/plans/**`, `infra/README.md`, `poller/README.md`, `.env.example`.
+Design exports and implementation plans alone do not count. The implementer and `/land` check the
+same rule; the PR template shows how to declare it. Run `pnpm test:scripts` for the checker's tests.
+
+On Mondays, `/housekeeping` compares the README, CLAUDE.md's "Where things stand" and the operations,
+infra and poller runbooks against `main` and the latest published release. It opens at most one
+`docs: drift <date>` PR for stale facts. Before tagging, `/release` checks that the README status names
+the version being cut and its implemented features; any correction lands in a PR first.
