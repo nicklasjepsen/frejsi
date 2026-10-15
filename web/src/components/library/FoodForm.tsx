@@ -24,13 +24,17 @@ interface Row {
 }
 
 /** "40,5" and "40.5" both read as 40.5; one decimal, as the contract stores it. */
-export function parseDecimal(value: string): number | undefined {
+function parseNumber(value: string): number | undefined {
   const trimmed = value.trim().replace(",", ".");
-  if (!/^\d+(\.\d+)?$/.test(trimmed)) return undefined;
-  return Math.round(Number(trimmed) * 10) / 10;
+  return /^\d+(\.\d+)?$/.test(trimmed) ? Number(trimmed) : undefined;
 }
+export function parseDecimal(value: string): number | undefined {
+  const parsed = parseNumber(value);
+  return parsed === undefined ? undefined : Math.round(parsed * 10) / 10;
+}
+/** Whole grams of carbohydrate, rounded once from what was typed (14,49 → 14). */
 function parseWhole(value: string): number | undefined {
-  const parsed = parseDecimal(value);
+  const parsed = parseNumber(value);
   return parsed === undefined ? undefined : Math.round(parsed);
 }
 
@@ -95,6 +99,8 @@ export function FoodForm({ spaceId, food, onSaved }: FoodFormProps) {
     );
     setPreview(url);
     return () => {
+      // The preview ends with the picked bytes: after an upload the saved thumbnail shows.
+      setPreview(undefined);
       URL.revokeObjectURL(url);
     };
   }, [photo]);

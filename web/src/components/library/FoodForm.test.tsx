@@ -65,7 +65,7 @@ const mount = (props: { food?: FoodView; onSaved?: (food: FoodView) => void }) =
 const writes = () => api.calls.filter((call) => call.method !== "GET");
 
 describe("FoodForm (the edit panel's fields)", () => {
-  it("reads 40,5 and 40.5 alike", () => {
+  it("reads 40,5 and 40.5 alike (5.49 g of carbohydrate in a portion saves as 5)", () => {
     expect(parseDecimal("40,5")).toBe(40.5);
     expect(parseDecimal(" 17 ")).toBe(17);
     expect(parseDecimal("abc")).toBeUndefined();
@@ -81,7 +81,7 @@ describe("FoodForm (the edit panel's fields)", () => {
     fireEvent.click(screen.getByRole("button", { name: "+ Portion" }));
     const second = at(screen.getAllByTestId("portion-row"), 1);
     fireEvent.change(within(second).getByLabelText("Portion"), { target: { value: "1 bid" } });
-    fireEvent.change(within(second).getByLabelText("g kulhydrat"), { target: { value: "5" } });
+    fireEvent.change(within(second).getByLabelText("g kulhydrat"), { target: { value: "5.49" } });
     fireEvent.click(screen.getByRole("checkbox", { name: "Favorit" }));
     fireEvent.click(screen.getByRole("button", { name: "Gem" }));
     await waitFor(() => {
@@ -126,6 +126,10 @@ describe("FoodForm (the edit panel's fields)", () => {
     ]);
     expect(onSaved.mock.calls[0]?.[0]).toMatchObject({
       photo: { thumbUrl: "https://photos.example.invalid/f-potato/thumb.jpg" },
+    });
+    // The revoked preview gives way once the photo is stored.
+    await waitFor(() => {
+      expect(screen.queryByRole("img", { name: "Det valgte billede" })).toBeNull();
     });
   });
 
