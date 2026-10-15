@@ -260,6 +260,37 @@
   cursor: default;
 }
 
+/* The simple variant (Log-Simpel): name and amount on one line, the confirm button below. */
+.totalBarSimple {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 12px;
+}
+.totalSimpleLine {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+.totalName {
+  font-size: 18px;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+.confirmButton {
+  justify-content: center;
+  min-height: 64px;
+  font-size: 20px;
+}
+.totalBarSimple[data-size="simple"] .totalAmount {
+  font-size: 26px;
+}
+.totalBarSimple[data-size="simple"] .confirmButton {
+  min-height: 76px;
+  border-radius: 22px;
+  font-size: 24px;
+}
+
 .manualForm {
   display: flex;
   flex-direction: column;
