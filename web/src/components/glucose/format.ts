@@ -68,23 +68,70 @@ export function capitalize(text: string, locale: AppLocale): string {
   return `${first}${text.slice(1)}`;
 }
 
-/**
- * The instant of `hour`:00 in `timeZone` on the day of `now` in that zone, or on the day before
- * when `now` is earlier than that hour. The desktop day curve starts at 06:00 (Nu-Desktop).
- */
-export function dayStart(now: Date, timeZone: string, hour: number): Date {
+/** The calendar date and wall-clock time of `at` in `timeZone`. */
+function zoned(at: number, timeZone: string) {
   const parts = new Intl.DateTimeFormat("en-GB", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
     hour: "2-digit",
     minute: "2-digit",
     second: "2-digit",
     hourCycle: "h23",
     timeZone,
-  }).formatToParts(now);
+  }).formatToParts(new Date(at));
   const value = (type: string) => Number(parts.find((p) => p.type === type)?.value ?? "0");
-  const sinceMidnightMs = ((value("hour") * 60 + value("minute")) * 60 + value("second")) * 1000;
-  let start = now.getTime() - sinceMidnightMs + hour * 60 * 60 * 1000;
-  if (start > now.getTime()) start -= 24 * 60 * 60 * 1000;
-  return new Date(start);
+  return {
+    year: value("year"),
+    month: value("month"),
+    day: value("day"),
+    hour: value("hour"),
+    minute: value("minute"),
+    second: value("second"),
+  };
+}
+
+/** The zone's offset from UTC at `at`, in ms (positive east of Greenwich). */
+function zoneOffsetMs(at: number, timeZone: string): number {
+  const z = zoned(at, timeZone);
+  return Date.UTC(z.year, z.month - 1, z.day, z.hour, z.minute, z.second) - at;
+}
+
+/**
+ * The instant at which the wall clock in `timeZone` reads `hour`:00 on the given calendar date.
+ * Two passes over the offset, so a date next to a daylight-saving change still lands on the
+ * right hour.
+ */
+function zonedInstant(
+  year: number,
+  month: number,
+  day: number,
+  hour: number,
+  timeZone: string,
+): Date {
+  const wall = Date.UTC(year, month - 1, day, hour);
+  let guess = wall - zoneOffsetMs(wall, timeZone);
+  guess = wall - zoneOffsetMs(guess, timeZone);
+  return new Date(guess);
+}
+
+/**
+ * The instant of `hour`:00 in `timeZone` on the day of `now` in that zone, or on the day before
+ * when `now` is earlier than that hour; by calendar arithmetic, so a daylight-saving change does
+ * not shift it. The desktop day curve starts at 06:00 (Nu-Desktop).
+ */
+export function dayStart(now: Date, timeZone: string, hour: number): Date {
+  const today = zoned(now.getTime(), timeZone);
+  const sameDay = zonedInstant(today.year, today.month, today.day, hour, timeZone);
+  if (sameDay.getTime() <= now.getTime()) return sameDay;
+  const yesterday = new Date(Date.UTC(today.year, today.month - 1, today.day - 1));
+  return zonedInstant(
+    yesterday.getUTCFullYear(),
+    yesterday.getUTCMonth() + 1,
+    yesterday.getUTCDate(),
+    hour,
+    timeZone,
+  );
 }
 
 /** "Onsdag 14. oktober" under the desktop title, in the space's zone. */
