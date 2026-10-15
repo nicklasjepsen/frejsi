@@ -34,9 +34,13 @@ export function calendarDaysBetween(from: Date, to: Date, timeZone: string): num
   return dayNumber(to, timeZone) - dayNumber(from, timeZone);
 }
 
-/** Whole days until `expiresAt`, floored; a link that dies later today has 0. */
-export function daysLeft(expiresAt: Date, now: Date): number {
-  return Math.max(0, Math.floor((expiresAt.getTime() - now.getTime()) / DAY_MS));
+/**
+ * Calendar days in the zone until `expiresAt`, never negative: "udløber i dag" means the link dies
+ * some time today, "om 1 dag" that it lasts into tomorrow. Counted the same way as the "sendt"
+ * line next to it, so the two never disagree.
+ */
+export function daysLeft(expiresAt: Date, now: Date, timeZone: string): number {
+  return Math.max(0, calendarDaysBetween(now, expiresAt, timeZone));
 }
 
 /**
