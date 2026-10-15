@@ -2,17 +2,20 @@
 
 // Values come from the pure modules by path, never from the shared index: a client bundle must not
 // pull in the Prisma client or App Insights that the index exports (plan §2; see routing.ts).
-import type { ApiErrorCode } from "@frejsi/shared";
+import type { ApiErrorCode, GlucoseUnit } from "@frejsi/shared";
 import { Accent } from "@frejsi/shared/schemas/settings";
 import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
+import { GlucoseValue } from "@/components/glucose/GlucoseValue";
+import { useNow } from "@/components/glucose/useNow";
 import { Avatar } from "@/components/ui/Avatar";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Notice } from "@/components/ui/Notice";
 import { localeHref, type AppLocale } from "@/lib/i18n/routing";
+import { useLiveFeed } from "@/lib/live/useLiveFeed";
 
 import { PageHeader } from "./controls";
 import type { SettingsData } from "./load-settings";
@@ -123,7 +126,12 @@ export function ColourScreen({ locale, data, api = settingsApi() }: ColourScreen
       <Card className={styles.preview} data-accent={selected.accent} data-testid="colour-preview">
         <p className={styles.previewTitle}>{t("colour.previewFor", { name: selected.name })}</p>
         <div className={styles.previewBand}>
-          {canSeeGlucose && <PreviewReading connected={data.source?.status === "connected"} />}
+          {canSeeGlucose && (
+            <PreviewReading
+              spaceId={data.spaceId}
+              unit={data.space?.glucoseUnit ?? "mmol"}
+            />
+          )}
         </div>
         <Button size="phone" disabled>
           {t("colour.eatingNow")}
@@ -136,17 +144,21 @@ export function ColourScreen({ locale, data, api = settingsApi() }: ColourScreen
 }
 
 /**
- * The glucose part of the preview. This is where `GlucoseValue`, fed by `useLiveFeed` (plan task
- * 8, issue #20), renders the latest reading with its age once that lane has landed; until then the
- * card shows the source status and nothing more, because a number never appears without its time.
- * Not mounted for a viewer at all.
+ * The glucose part of the preview: the latest reading from `useLiveFeed`, through `GlucoseValue`
+ * so its age is always shown with it, or "Ingen målinger endnu" once the feed knows there is none.
+ * Nothing before the feed has loaded or when it is refused. Not mounted for a viewer at all, and
+ * the API sends a viewer no glucose data either.
  */
-function PreviewReading({ connected }: { connected: boolean }) {
-  const t = useTranslations("settings.colour");
+function PreviewReading({ spaceId, unit }: { spaceId: string; unit: GlucoseUnit }) {
+  const feed = useLiveFeed(spaceId, { hours: 1 });
+  const now = useNow();
+  if (!feed.loaded || feed.error) return null;
   return (
-    <p className={styles.previewStatus} data-testid="preview-reading">
-      <span className={styles.dot} aria-hidden="true" />
-      {connected ? t("connected") : t("noReadings")}
-    </p>
+    <GlucoseValue
+      reading={feed.latest}
+      unit={feed.space?.glucoseUnit ?? unit}
+      now={now}
+      size="preview"
+    />
   );
 }

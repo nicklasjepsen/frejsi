@@ -9,6 +9,18 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { I18nProvider } from "@/lib/i18n/Provider";
 import { getMessages } from "@/lib/i18n/messages";
 import type { AppLocale } from "@/lib/i18n/routing";
+import type { LiveState } from "@/lib/live/live-feed";
+
+const live = vi.hoisted(() => ({
+  state: null as LiveState | null,
+  calls: [] as unknown[],
+}));
+vi.mock("@/lib/live/useLiveFeed", () => ({
+  useLiveFeed: (...args: unknown[]) => {
+    live.calls.push(args);
+    return live.state;
+  },
+}));
 
 import { ColourScreen } from "./ColourScreen";
 import type { SourceView } from "./contracts";
@@ -74,6 +86,29 @@ const data: SettingsData = {
   people: [owner, child, viewer],
 };
 
+const minutesAgo = (m: number) => new Date(Date.now() - m * 60_000).toISOString();
+function liveState(over: Partial<LiveState> = {}): LiveState {
+  const latest = { ts: minutesAgo(3), mmol: 6.2, trend: "forty-five-up" as const };
+  return {
+    loaded: true,
+    connection: "live",
+    lastSeq: 40,
+    readings: [latest],
+    latest,
+    sourceStatus: "connected",
+    sourceSince: null,
+    space: {
+      glucoseUnit: "mmol",
+      targetLow: 4,
+      targetHigh: 10,
+      timezone: "Europe/Copenhagen",
+      sourceType: "dexcom-share",
+    },
+    error: null,
+    ...over,
+  };
+}
+
 function fakeApi() {
   const calls: { url: string; body: Record<string, unknown> }[] = [];
   const fetchImpl = vi.fn((url: string, init: RequestInit = {}) => {
@@ -94,6 +129,8 @@ function mount(props: SettingsData, locale: AppLocale = "da", api = fakeApi().ap
 
 beforeEach(() => {
   navigation.refresh.mockClear();
+  live.state = liveState();
+  live.calls.length = 0;
 });
 afterEach(cleanup);
 
@@ -166,18 +203,48 @@ describe("ColourScreen (Farve-Indstilling)", () => {
     expect(screen.getByText("Måltider er altid teglrøde, og tallet er altid sort – uanset farve.")).toBeInTheDocument();
   });
 
-  it("shows owners and carers the source status in the preview and never a number without its time", () => {
+  it("shows owners and carers the latest live reading with its age in the preview", () => {
     mount(data);
-    expect(screen.getByTestId("preview-reading")).toHaveTextContent("forbundet");
-    expect(screen.getByTestId("colour-preview").textContent).not.toMatch(/\d,\d/);
+    expect(live.calls).toEqual([["s1", { hours: 1 }]]);
+    const preview = within(screen.getByTestId("colour-preview"));
+    expect(preview.getByTestId("glucose-number")).toHaveTextContent("6,2");
+    expect(preview.getByTestId("glucose-age")).toHaveTextContent(
+      "mmol/L · for 3 min. siden · stiger langsomt",
+    );
+  });
+
+  it("says 'Ingen målinger endnu' in the preview when there is no reading yet", () => {
+    live.state = liveState({ readings: [], latest: null, sourceStatus: "not-configured" });
+    mount(data);
+    const preview = within(screen.getByTestId("colour-preview"));
+    expect(preview.getByText("Ingen målinger endnu")).toBeInTheDocument();
+    expect(preview.queryByTestId("glucose-number")).toBeNull();
+  });
+
+  it("shows no number and no empty text before the feed has loaded or when it is refused", () => {
+    live.state = liveState({ loaded: false, latest: null, readings: [] });
+    mount(data);
+    let preview = screen.getByTestId("colour-preview");
+    expect(within(preview).queryByTestId("glucose-number")).toBeNull();
+    expect(preview.textContent).not.toMatch(/Ingen målinger/);
     cleanup();
-    mount({ ...data, source: { ...source, status: "not-configured" } });
-    expect(screen.getByTestId("preview-reading")).toHaveTextContent("Ingen målinger endnu");
+    live.state = liveState({ error: "forbidden", latest: null, readings: [] });
+    mount(data);
+    preview = screen.getByTestId("colour-preview");
+    expect(within(preview).queryByTestId("glucose-number")).toBeNull();
+  });
+
+  it("speaks English in the empty preview", () => {
+    live.state = liveState({ readings: [], latest: null });
+    mount({ ...data, me: { ...owner, locale: "en" } }, "en");
+    expect(within(screen.getByTestId("colour-preview")).getByText("No readings yet")).toBeInTheDocument();
   });
 
   it("never mounts the reading for a viewer: the band and the button only", () => {
     mount({ ...data, role: "viewer", space: null, source: null, me: viewer, people: [viewer] });
-    expect(screen.queryByTestId("preview-reading")).toBeNull();
+    expect(live.calls).toEqual([]);
+    expect(screen.queryByTestId("glucose-number")).toBeNull();
+    expect(screen.queryByTestId("glucose-age")).toBeNull();
     const preview = screen.getByTestId("colour-preview");
     expect(within(preview).getByRole("button", { name: "Jeg spiser nu" })).toBeInTheDocument();
     expect(preview.textContent).not.toMatch(/\d/);
