@@ -12,6 +12,9 @@ import path from "node:path";
 
 import {
   createEmit,
+  dayRange,
+  type FoodView,
+  type SessionContext,
   glucoseSecretName,
   HttpError,
   prisma,
@@ -19,6 +22,13 @@ import {
   type PrismaClient,
   type Role,
 } from "@frejsi/shared";
+import { FakeFoodSource } from "@frejsi/shared/food/fake";
+import { createFood, addCandidate } from "../src/lib/foods";
+import { createMeal } from "../src/lib/meals/service";
+import { PrismaMealRepository } from "../src/lib/meals/repository";
+import { createMealWriter } from "../src/lib/meals/transaction";
+import { localDate } from "../src/app/api/spaces/[spaceId]/day/load-day";
+
 import { MemoryEventSink } from "@frejsi/shared/events/memory";
 import { FakeGlucoseSource } from "@frejsi/shared/glucose/fake";
 
@@ -47,10 +57,64 @@ export const SEED_PEOPLE = {
 
 export type SeedPersonKey = keyof typeof SEED_PEOPLE;
 
+/** Hand-written artboard foods: fictional nutrition, restricted-circulation barcode, no photos. */
+export const SEED_BARCODE = "2000000000015";
+export const SEED_FOODS = [
+  {
+    name: "Rugbrød",
+    origin: "off",
+    sourceRef: `off:${SEED_BARCODE}`,
+    barcode: SEED_BARCODE,
+    carbsPer100g: 40,
+    portions: [{ label: "1 skive", grams: 45, carbs: 18 }],
+  },
+  {
+    name: "Kartoffel kogt",
+    origin: "frida",
+    sourceRef: "frida:fictional-seed",
+    carbsPer100g: 17,
+    portions: [{ label: "1 portion", grams: 100, carbs: 17 }],
+  },
+  { name: "Pasta bolognese", portions: [{ label: "1 portion", carbs: 55 }] },
+  { name: "Min madpakke", portions: [{ label: "1 madpakke", carbs: 42 }] },
+  { name: "Havregrød", portions: [{ label: "1 skål", carbs: 24 }] },
+  {
+    name: "Rugbrød med ost",
+    portions: [
+      { label: "1 skive", carbs: 18 },
+      { label: "2 skiver", carbs: 36 },
+    ],
+  },
+  { name: "Æble", portions: [{ label: "1 stk", carbs: 14 }] },
+  { name: "Banan", portions: [{ label: "1 stk", carbs: 23 }] },
+  { name: "Mælk", portions: [{ label: "1 glas", carbs: 10 }] },
+] as const;
+
+/** A wall-clock time on the seed's local day, including days when the UTC offset changes. */
+export function seedTime(at: Date, hour: number, minute: number): string {
+  const zone = SEED_SPACE.timezone;
+  const [start] = dayRange(localDate(at, zone), zone);
+  const guess = new Date(start.getTime() + (hour * 60 + minute) * 60_000);
+  const parts = new Intl.DateTimeFormat("en", {
+    timeZone: zone,
+    hourCycle: "h23",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).formatToParts(guess);
+  const actual =
+    Number(parts.find((part) => part.type === "hour")?.value) * 60 +
+    Number(parts.find((part) => part.type === "minute")?.value);
+  return new Date(guess.getTime() + (hour * 60 + minute - actual) * 60_000).toISOString();
+}
+
 /** Every name the seed writes; the e2e checks that none of them reaches the server's log. */
 export const SEED_NAMES: readonly string[] = [
   SEED_SPACE.name,
   ...Object.values(SEED_PEOPLE).map((person) => person.name),
+  ...SEED_FOODS.map((food) => food.name),
+  "Havregrød med æble",
+  "et æble",
+  SEED_BARCODE,
 ];
 
 export class SeedRefused extends Error {
@@ -146,6 +210,87 @@ export async function seed(options: SeedOptions = {}): Promise<SeededSpace> {
   if (outcome?.outcome !== "ok") {
     throw new Error(`the poll cycle failed: ${outcome?.code ?? "no outcome"}`);
   }
+
+  const session = (key: SeedPersonKey): SessionContext => ({
+    ...people[key],
+    accent: "olive",
+    locale: "da",
+    memberships: [{ spaceId, role: people[key].role }],
+  });
+  const sources = SEED_FOODS.filter((food) => "origin" in food).map((food) => {
+    if (!("origin" in food)) throw new Error("missing seed origin");
+    return new FakeFoodSource({
+      id: food.origin,
+      kind: "local",
+      candidates: [{ ...food, portions: [...food.portions] }],
+    });
+  });
+  const foods = new Map<string, FoodView>();
+  for (const food of SEED_FOODS) {
+    const saved =
+      "origin" in food
+        ? await addCandidate(
+            spaceId,
+            session("jonas"),
+            { ...food, portions: [...food.portions] },
+            { db, sink, now, sources, photos: null },
+          )
+        : await createFood(
+            spaceId,
+            session("jonas"),
+            { ...food, from: "library", favourite: true, verify: true },
+            { db, sink, now, sources: [], photos: null },
+          );
+    foods.set(food.name, saved);
+  }
+  const foodId = (name: string): string => {
+    const food = foods.get(name);
+    if (!food) throw new Error("a seed food is missing");
+    return food.id;
+  };
+  const mealDeps = {
+    repo: new PrismaMealRepository(db),
+    write: createMealWriter(db, sink, now),
+    now,
+    photos: null,
+  };
+  const at = now();
+  await createMeal(
+    spaceId,
+    session("mette"),
+    {
+      ts: seedTime(at, 7, 15),
+      items: [{ name: "Havregrød med æble", carbs: 38 }],
+    },
+    mealDeps,
+  );
+  await createMeal(
+    spaceId,
+    session("alma"),
+    {
+      ts: seedTime(at, 9, 50),
+      items: [{ foodId: foodId("Æble"), name: "Æble", portionLabel: "1 stk", carbs: 14 }],
+    },
+    mealDeps,
+  );
+  await createMeal(
+    spaceId,
+    session("jonas"),
+    {
+      ts: seedTime(at, 12, 10),
+      bolusTs: seedTime(at, 11, 58),
+      items: [
+        {
+          foodId: foodId("Rugbrød med ost"),
+          name: "Rugbrød med ost",
+          portionLabel: "2 skiver",
+          carbs: 36,
+        },
+        { name: "et æble", carbs: 14 },
+      ],
+    },
+    mealDeps,
+  );
 
   return { spaceId, people, ownerInviteUrl: boot.inviteUrl, readings: outcome.stored };
 }
