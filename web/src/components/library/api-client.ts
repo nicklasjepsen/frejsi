@@ -91,6 +91,10 @@ async function callJson<T>(path: string, init: Init, schema: z.ZodType<T>): Prom
   return parsed.data;
 }
 
+/** `GET foods` answers 400 to a `q` longer than 80 characters; a longer paste searches its start. */
+const MAX_QUERY = 80;
+const searchText = (q: string) => q.trim().slice(0, MAX_QUERY).trim();
+
 /** `VerifyFoodsRequest.foodIds` holds 1–50 ids. */
 const VERIFY_BATCH = 50;
 
@@ -104,7 +108,7 @@ export const libraryApi = {
     signal?: AbortSignal,
   ): Promise<FoodList> => {
     const params = new URLSearchParams({ filter: query.filter });
-    const q = query.q.trim();
+    const q = searchText(query.q);
     if (q) params.set("q", q);
     return callJson(
       `${foods(spaceId)}?${params.toString()}`,
