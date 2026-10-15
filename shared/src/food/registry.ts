@@ -36,3 +36,18 @@ export function foodSources(env: FoodSourceEnv): FoodSource[] {
     return source;
   });
 }
+
+import { OffSource } from "./off/source";
+import { FridaSource } from "./frida/source";
+
+registerFoodSource(
+  "off",
+  (env) =>
+    new OffSource({
+      fetch: globalThis.fetch,
+      country: env.OFF_COUNTRY,
+      version: env.APP_VERSION ?? env.NEXT_PUBLIC_APP_VERSION ?? "dev",
+      locale: env.OFF_LANGUAGE === "da" ? "da" : "en",
+    }),
+);
+registerFoodSource("frida", () => new FridaSource());
