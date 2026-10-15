@@ -207,7 +207,10 @@ export async function startLogin(
 /**
  * Verifies the assertion against the stored passkey, including the signature counter (a counter
  * that did not move is a cloned authenticator), then records the use and opens a session.
- * `lastSeen` here is sign-in bookkeeping and emits nothing.
+ * People shows `User.lastSeen`, so that touch emits `member.updated` to every space of the user,
+ * as `loadSession()` does for its hourly touch. `Passkey.counter` and `lastUsedAt` ride along
+ * with no event of their own (plan §6): no `device.updated` type exists, and the `member.updated`
+ * tells People to refetch the member, devices included.
  */
 export async function finishLogin(input: LoginInput, deps: AuthDeps = {}): Promise<LoginResult> {
   const { db, emit, now } = resolve(deps);
@@ -238,7 +241,7 @@ export async function finishLogin(input: LoginInput, deps: AuthDeps = {}): Promi
   const at = now();
   const sessionId = newSessionId();
   const expiresAt = sessionExpiry(at);
-  await transact(db, emit, async (tx) => {
+  await transact(db, emit, async (tx, emitLater) => {
     // Conditional on the counter the assertion was verified against: a login that raced this
     // one on the same passkey has moved it, and neither a stale write nor a second session for
     // a cloned authenticator may follow.
@@ -248,6 +251,10 @@ export async function finishLogin(input: LoginInput, deps: AuthDeps = {}): Promi
     });
     if (count !== 1) throw new HttpError(403, "forbidden");
     await tx.user.update({ where: { id: passkey.userId }, data: { lastSeen: at } });
+    const memberships = await tx.membership.findMany({ where: { userId: passkey.userId } });
+    for (const membership of memberships) {
+      await emitLater(membership.spaceId, "member.updated", { userId: passkey.userId });
+    }
     await tx.session.create({
       data: {
         id: sessionId,
