@@ -55,6 +55,9 @@ for tool in az sqlcmd pnpm docker curl zip openssl mktemp jq; do
 done
 test -d "$POLLER_DIST" || { echo "::error::$POLLER_DIST is missing; was the build artifact downloaded?" >&2; exit 1; }
 test -d "$WEB_DIR/.next/standalone" || { echo "::error::$WEB_DIR/.next/standalone is missing; the web build must use output: standalone" >&2; exit 1; }
+# Static Web Apps starts server.js at the bundle's root; without it the upload ends ten minutes later
+# in "Web app warm up timed out" (web/scripts/prepare-standalone.ts writes it).
+test -f "$WEB_DIR/.next/standalone/server.js" || { echo "::error::$WEB_DIR/.next/standalone/server.js is missing; Static Web Apps cannot start the bundle (web/scripts/prepare-standalone.ts)" >&2; exit 1; }
 
 RG="$AZURE_RESOURCE_GROUP"
 WORK="$(mktemp -d)"
