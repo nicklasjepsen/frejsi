@@ -4,7 +4,7 @@ import { DayView } from "@frejsi/shared/schemas/meal";
 import { useTranslations } from "next-intl";
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import { DayList, DayTotal, formatAskList, formatDayDate } from "@/components/day";
+import { DayList, DayTotal, formatAskList, formatDayDate, localDateOf } from "@/components/day";
 import { PeopleView } from "@/components/people/contract";
 import { Notice } from "@/components/ui/Notice";
 import type { AppLocale } from "@/lib/i18n/routing";
@@ -22,13 +22,18 @@ export interface TodayScreenProps {
   socketFactory?: SocketFactory;
 }
 
+/** How often the screen checks whether a failed read needs a retry or the day has turned. */
+export const RECHECK_MS = 30_000;
+
 type DayState = { status: "loading" } | { status: "failed" } | { status: "ready"; day: DayView };
 
 /**
  * I dag (Historik-Viewer): the space's meals and carbs today, for every role. It reads `day` and
  * `members` and listens to the live feed without readings, so the only routes it calls are `day`,
  * `members`, `negotiate` and `events`; nothing of glucose is fetched or drawn (plan §7, task 8).
- * The day is fetched again on every `meal.*` event, when the feed has its cursor, and on focus.
+ * The day is fetched again on every `meal.*` and `space.updated` event (the timezone may have
+ * changed), when the feed has its cursor, on focus, after a failed read and when the space's day
+ * turns at midnight; the latter two are checked every 30 seconds.
  */
 export function TodayScreen({
   spaceId,
@@ -53,6 +58,7 @@ export function TodayScreen({
   const [state, setState] = useState<DayState>({ status: "loading" });
   const [owners, setOwners] = useState<string[]>([]);
   const latestRequest = useRef(0);
+  const lastFailed = useRef(false);
 
   const loadDay = useCallback(async () => {
     const id = ++latestRequest.current;
@@ -67,6 +73,7 @@ export function TodayScreen({
       // Shown as "could not be loaded"; the next event or focus tries again.
     }
     if (id !== latestRequest.current) return;
+    lastFailed.current = next.status === "failed";
     // A failed refresh keeps the day already on screen.
     setState((current) =>
       next.status === "failed" && current.status === "ready" ? current : next,
@@ -90,11 +97,23 @@ export function TodayScreen({
       subscribe("meal.created", refresh),
       subscribe("meal.updated", refresh),
       subscribe("meal.deleted", refresh),
+      subscribe("space.updated", refresh),
     ];
     return () => {
       for (const off of offs) off();
     };
   }, [subscribe, loadDay]);
+
+  const shownDay = state.status === "ready" ? state.day : null;
+  useEffect(() => {
+    const timer = setInterval(() => {
+      const turned = shownDay && localDateOf(new Date(), shownDay.timezone) !== shownDay.date;
+      if (lastFailed.current || turned) void loadDay();
+    }, RECHECK_MS);
+    return () => {
+      clearInterval(timer);
+    };
+  }, [shownDay, loadDay]);
 
   useEffect(() => {
     const onFocus = () => void loadDay();

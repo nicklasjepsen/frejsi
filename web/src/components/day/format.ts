@@ -23,3 +23,17 @@ export function formatAskList(names: string[], locale: AppLocale): string {
     names,
   );
 }
+
+/** The calendar date `at` falls on in `timeZone`, as YYYY-MM-DD: when "today" has moved on. */
+export function localDateOf(at: Date, timeZone: string): string {
+  const parts = new Intl.DateTimeFormat("en", {
+    timeZone,
+    calendar: "gregory",
+    numberingSystem: "latn",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(at);
+  const part = (type: string) => parts.find((p) => p.type === type)?.value ?? "";
+  return `${part("year").padStart(4, "0")}-${part("month")}-${part("day")}`;
+}
