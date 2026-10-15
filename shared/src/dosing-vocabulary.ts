@@ -41,7 +41,18 @@ export const DOSING_ALLOW_LIST = [
   "bolus before meal",
 ] as const;
 
-const BOLUS_TIME = /^Bolus \d{2}:\d{2}$/;
+/**
+ * v0.2.0 (plan §8, task 7): the sentence drawn under "Bolus givet nu" on Log-Portioner and its
+ * English counterpart, exactly as quoted in the plan. Kept apart from the v0.1.0 list above so that
+ * list stays as its own test pins it.
+ */
+export const BOLUS_TAP_ALLOW_LIST = [
+  '"Bolus givet nu" gemmer kun tidspunktet, så det kan ses på kurven. Frejsi regner aldrig insulin.',
+  '"Bolus given now" saves only the time so it can be seen on the curve. Frejsi never calculates insulin.',
+] as const;
+
+/** `Bolus HH:MM`, rendered or as its message template `Bolus {time}` (the BolusTap key). */
+const BOLUS_TIME = /^Bolus (?:\d{2}:\d{2}|\{time\})$/;
 
 export interface DosingFinding {
   where: string;
@@ -57,7 +68,11 @@ const patterns = DOSING_WORDS.map((term) => ({
 }));
 
 function isAllowed(text: string): boolean {
-  return (DOSING_ALLOW_LIST as readonly string[]).includes(text) || BOLUS_TIME.test(text);
+  return (
+    (DOSING_ALLOW_LIST as readonly string[]).includes(text) ||
+    (BOLUS_TAP_ALLOW_LIST as readonly string[]).includes(text) ||
+    BOLUS_TIME.test(text)
+  );
 }
 
 /** Every listed term found in each `[where, text]` pair that is not on the allow-list. */
