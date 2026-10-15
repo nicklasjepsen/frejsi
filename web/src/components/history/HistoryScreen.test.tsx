@@ -11,7 +11,8 @@ import { HistoryScreen } from "./HistoryScreen";
 import { ViewerDays } from "./ViewerDays";
 
 const push = vi.hoisted(() => vi.fn());
-vi.mock("next/navigation", () => ({ useRouter: () => ({ push }) }));
+const refresh = vi.hoisted(() => vi.fn());
+vi.mock("next/navigation", () => ({ useRouter: () => ({ push, refresh }) }));
 
 const scrollIntoView = vi.fn();
 const urlOf = (input: RequestInfo | URL) =>
@@ -68,6 +69,7 @@ let request: typeof fetch;
 let desktop: boolean;
 beforeEach(() => {
   vi.useFakeTimers({ now: NOW, toFake: ["Date"] });
+  refresh.mockClear();
   calls = [];
   desktop = false;
   observers = [];
@@ -231,6 +233,7 @@ it("merges live readings into today and refetches on each meal event", async () 
     }),
   );
   expect(screen.getByTestId("end-dot").getAttribute("cy")).not.toBe(before);
+  expect(screen.getByRole("link", { name: /Rugbrød/ })).toHaveTextContent("top 11,0 efter 1 t 10");
   for (const [i, type] of ["meal.created", "meal.updated", "meal.deleted"].entries()) {
     await flush(() => {
       sockets.sockets[0]?.receive({
@@ -459,4 +462,22 @@ it("cached arrow jumps still scroll when that date is already selected", async (
     fireEvent.click(within(daySection(TODAY)).getByRole("button", { name: "Forrige dag" }));
   });
   expect(scrollIntoView).toHaveBeenCalled();
+});
+
+it("refreshes cached targets and the server-provided presentation unit on space changes", async () => {
+  let high = 10;
+  reply = (date) => ({ ...history(date), target: { low: 4, high } });
+  await mount();
+  high = 8;
+  await flush(() => {
+    sockets.sockets[0]?.receive({
+      spaceId: "s1",
+      seq: 11,
+      type: "space.updated",
+      ts: NOW.toISOString(),
+      payload: { fields: ["targetHigh", "glucoseUnit"] },
+    });
+  });
+  expect(screen.getByText("Mål 4–8")).toBeVisible();
+  expect(refresh).toHaveBeenCalled();
 });
