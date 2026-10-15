@@ -56,6 +56,8 @@ export interface FakeApi {
   /** Ids of foods eaten in the last 30 days, newest first. */
   recent: string[];
   meals: DayMealView[];
+  /** The local date `GET day` answers for. */
+  date: string;
   /** As the route does for a simpleMode session: verified foods only. */
   simpleMode: boolean;
   /** "METHOD path-suffix" pairs that answer 500, e.g. "POST meals", "GET day". */
@@ -71,6 +73,7 @@ export function fakeApi(
     recent: init.recent ?? [],
     meals: init.meals ?? [],
     simpleMode: init.simpleMode ?? false,
+    date: "2026-10-15",
     failing: new Set(),
     fetch: async (input: RequestInfo | URL, init: RequestInit = {}) => {
       await Promise.resolve();
@@ -108,7 +111,7 @@ export function fakeApi(
         return json(
           200,
           DayView.parse({
-            date: "2026-10-15",
+            date: api.date,
             timezone: "Europe/Copenhagen",
             totalCarbs: meals.reduce((sum, m) => sum + m.totalCarbs, 0),
             mealCount: meals.length,

@@ -104,6 +104,7 @@ beforeEach(() => {
   live.handlers.clear();
   navigation.push.mockClear();
   api = fakeApi();
+  api.date = "2026-10-14";
   vi.stubGlobal("fetch", api.fetch);
 });
 afterEach(() => {

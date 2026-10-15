@@ -26,13 +26,14 @@ const FOOD_EVENTS: FeedEventType[] = [
 
 /**
  * The foods Nu shows next to the glucose: through `GET foods` only, which the route filters for a
- * simpleMode session. Read again when a food or meal event arrives. A failed read shows nothing
- * rather than a stale count.
+ * simpleMode session. Read again once the feed has its cursor and when a food or meal event
+ * arrives. A failed read shows nothing rather than a stale count.
  */
 export function useNowFoods(
   spaceId: string,
   simpleMode: boolean,
   subscribe: Subscribe | undefined,
+  loaded = false,
 ): NowFoods {
   const [foods, setFoods] = useState<NowFoods>({ myFood: [], unverified: 0 });
   const latest = useRef(0);
@@ -53,9 +54,10 @@ export function useNowFoods(
     if (id === latest.current) setFoods(next);
   }, [spaceId, simpleMode]);
 
+  // Again once `loaded` turns true: the feed's cursor is then known.
   useEffect(() => {
     void load();
-  }, [load]);
+  }, [load, loaded]);
 
   useEffect(() => {
     if (!subscribe) return;

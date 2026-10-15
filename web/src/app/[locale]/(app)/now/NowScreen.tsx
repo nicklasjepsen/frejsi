@@ -63,8 +63,8 @@ export function NowScreen({ spaceId, locale, simpleMode, timeZone }: NowScreenPr
   const router = useRouter();
   const feed = useLiveFeed(spaceId, { hours: WINDOW_HOURS });
   const now = useNow();
-  const day = useDay(spaceId, feed.subscribe);
-  const foods = useNowFoods(spaceId, simpleMode, feed.subscribe);
+  const day = useDay(spaceId, feed.subscribe, feed.loaded);
+  const foods = useNowFoods(spaceId, simpleMode, feed.subscribe, feed.loaded);
   const lastMeal = day.status === "ready" ? (day.day.meals[0] ?? null) : null;
   const mealZone = day.status === "ready" ? day.day.timezone : timeZone;
 
