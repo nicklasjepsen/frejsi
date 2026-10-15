@@ -2,7 +2,9 @@
 import { NextRequest } from "next/server";
 import { describe, expect, it } from "vitest";
 
-import { config, isProtectedPath, middleware } from "./middleware";
+import { SESSION_COOKIE as AUTH_SESSION_COOKIE } from "@/lib/auth/session";
+
+import { SESSION_COOKIE, config, isProtectedPath, middleware } from "./middleware";
 
 const request = (path: string, init: { cookie?: string; acceptLanguage?: string } = {}) => {
   const headers = new Headers();
@@ -14,6 +16,13 @@ const request = (path: string, init: { cookie?: string; acceptLanguage?: string 
 const location = (res: Response) => new URL(res.headers.get("location") ?? "", "http://x").pathname;
 
 describe("middleware", () => {
+  it("looks for the same session cookie that the auth module sets", () => {
+    // Duplicated on purpose: the auth module imports Prisma, which the edge cannot load.
+    expect(SESSION_COOKIE).toBe(AUTH_SESSION_COOKIE);
+    const res = middleware(request("/da/now", { cookie: `${AUTH_SESSION_COOKIE}=abc` }));
+    expect(res.status).toBe(200);
+  });
+
   it("routes / to da by default and to en when the browser prefers it", () => {
     const res = middleware(request("/"));
     expect(res.status).toBe(307);

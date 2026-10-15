@@ -1,4 +1,4 @@
-import { Health } from "@frejsi/shared";
+import { Health, createLogger } from "@frejsi/shared";
 import { describe, expect, it } from "vitest";
 
 import { FRESH_READING_MINUTES, computeHealth, type HealthDb } from "./health";
@@ -57,8 +57,36 @@ describe("computeHealth (plan decision 22)", () => {
     expect(JSON.stringify(stale)).not.toContain("2026-10-15T07");
   });
 
-  it("reports db error and ok false, with readings none, when Prisma cannot query", async () => {
-    const health = await computeHealth({ db: fakeDb({ fails: true }), now: () => NOW, env: {} });
+  it("reports db error and ok false, with readings none, when Prisma cannot query, and logs why without the message", async () => {
+    const lines: string[] = [];
+    const logger = createLogger((line) => lines.push(line), () => NOW);
+    const health = await computeHealth({
+      db: fakeDb({ fails: true }),
+      now: () => NOW,
+      env: {},
+      logger,
+    });
     expect(health).toEqual({ ok: false, version: "dev", db: "error", readings: "none" });
+    expect(lines).toHaveLength(1);
+    expect(JSON.parse(lines[0] ?? "{}")).toEqual({
+      ts: NOW.toISOString(),
+      level: "error",
+      msg: "health: database check failed",
+      route: "/api/health",
+      error: "Error",
+    });
+    // A connection string in a Prisma message must not reach the log.
+    expect(lines[0]).not.toContain("no db");
+  });
+
+  it("logs nothing when the database answers", async () => {
+    const lines: string[] = [];
+    await computeHealth({
+      db: fakeDb({}),
+      now: () => NOW,
+      env: {},
+      logger: createLogger((line) => lines.push(line)),
+    });
+    expect(lines).toEqual([]);
   });
 });

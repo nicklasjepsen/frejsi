@@ -1,4 +1,4 @@
-import { type Health, type PrismaClient } from "@frejsi/shared";
+import { log, type Health, type Logger, type PrismaClient } from "@frejsi/shared";
 
 /** A reading newer than this is `fresh`; matches the 35-minute alert in Bicep (plan §9). */
 export const FRESH_READING_MINUTES = 35;
@@ -12,6 +12,8 @@ export interface HealthDeps {
   db: HealthDb;
   now?: () => Date;
   env?: Record<string, string | undefined>;
+  /** The no-PII logger; the error's class name reaches App Insights, never its message. */
+  logger?: Pick<Logger, "error">;
 }
 
 /**
@@ -22,6 +24,7 @@ export async function computeHealth({
   db,
   now = () => new Date(),
   env = process.env,
+  logger = log,
 }: HealthDeps): Promise<Health> {
   const version = env.NEXT_PUBLIC_APP_VERSION ?? "dev";
   try {
@@ -33,7 +36,9 @@ export async function computeHealth({
       readings = ageMinutes <= FRESH_READING_MINUTES ? "fresh" : "stale";
     }
     return { ok: true, version, db: "ok", readings };
-  } catch {
+  } catch (error) {
+    // The probe sees only `db: "error"`; the operator needs a line that says the database failed.
+    logger.error("health: database check failed", { route: "/api/health" }, error);
     return { ok: false, version, db: "error", readings: "none" };
   }
 }
