@@ -1,0 +1,91 @@
+"use client";
+
+import type { GlucoseUnit } from "@frejsi/shared";
+import { useLocale, useTranslations } from "next-intl";
+
+import { resolveLocale } from "@/lib/i18n/routing";
+import { formatClock } from "@/lib/i18n/time";
+
+import { formatBound } from "./format";
+import styles from "./glucose.module.css";
+
+export type ChartLegendProps =
+  | {
+      /** Maaltid-Telefon: 12 px muted, "Måltid", "Bolus 11:58", "Tidligere gange". */
+      variant: "meal";
+      /** The bolus tap's time; without one the triangle entry is left out. */
+      bolusTs?: string;
+      /** Whether previous curves are drawn behind. */
+      previous: boolean;
+      timeZone: string;
+    }
+  | {
+      /** Nu-Desktop: 14 px, "Måltid", "Bolus givet", "Mål 4–10 mmol/L". */
+      variant: "day";
+      target: { low: number; high: number };
+      unit: GlucoseUnit;
+    };
+
+function Triangle({ size }: { size: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 10 10" aria-hidden="true" data-swatch="triangle">
+      <path className={styles.bolus} d="M5 1 L9 9 H1 Z" />
+    </svg>
+  );
+}
+
+/**
+ * The two drawn chart legends (plan §7), composed from one message key per entry so the dosing
+ * test sees each whole string. "Bolus 11:58" is v0.2.0's BolusTap key; the triangle is a time.
+ */
+export function ChartLegend(props: ChartLegendProps) {
+  const t = useTranslations("chart");
+  const log = useTranslations("log");
+  const g = useTranslations("glucose");
+  const locale = resolveLocale(useLocale());
+  if (props.variant === "meal") {
+    return (
+      <ul className={styles.legend} data-variant="meal">
+        <li>
+          <span className={styles.swatchMealBar} aria-hidden="true" data-swatch="meal-bar" />
+          {t("legend.meal")}
+        </li>
+        {props.bolusTs !== undefined && (
+          <li>
+            <Triangle size={9} />
+            {log("bolus.at", { time: formatClock(new Date(props.bolusTs), props.timeZone) })}
+          </li>
+        )}
+        {props.previous && (
+          <li>
+            <span
+              className={styles.swatchPreviousBar}
+              aria-hidden="true"
+              data-swatch="previous-bar"
+            />
+            {t("legend.previous")}
+          </li>
+        )}
+      </ul>
+    );
+  }
+  return (
+    <ul className={styles.legend} data-variant="day">
+      <li>
+        <span className={styles.swatchMealDot} aria-hidden="true" data-swatch="meal-dot" />
+        {t("legend.meal")}
+      </li>
+      <li>
+        <Triangle size={10} />
+        {t("legend.bolusGiven")}
+      </li>
+      <li>
+        {g("targetWithUnit", {
+          low: formatBound(props.target.low, props.unit, locale),
+          high: formatBound(props.target.high, props.unit, locale),
+          unit: g(`unit.${props.unit}`),
+        })}
+      </li>
+    </ul>
+  );
+}

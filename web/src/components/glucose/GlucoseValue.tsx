@@ -5,9 +5,10 @@ import { useLocale, useTranslations } from "next-intl";
 
 import { resolveLocale } from "@/lib/i18n/routing";
 
-import { ageOf, capitalize, formatGlucose, isStale } from "./format";
+import { capitalize, formatGlucose, isStale } from "./format";
 import styles from "./glucose.module.css";
 import { TrendArrow } from "./TrendArrow";
+import { useAgeText } from "./useAgeText";
 
 export type GlucoseValueSize = "phone" | "simple" | "desktop" | "inline" | "preview";
 
@@ -51,6 +52,7 @@ export function GlucoseValue({
 }: GlucoseValueProps) {
   const t = useTranslations("glucose");
   const locale = resolveLocale(useLocale());
+  const ageTextOf = useAgeText();
 
   if (!reading) {
     return (
@@ -60,17 +62,7 @@ export function GlucoseValue({
     );
   }
 
-  const age = ageOf(reading.ts, now);
-  const ageText =
-    age.kind === "justNow"
-      ? t("age.justNow")
-      : age.kind === "minutes"
-        ? t("age.minutes", { minutes: age.minutes })
-        : age.kind === "hours"
-          ? age.minutes === 0
-            ? t("age.wholeHours", { hours: age.hours })
-            : t("age.hours", { hours: age.hours, minutes: age.minutes })
-          : t("age.overADay");
+  const ageText = ageTextOf(reading.ts, now);
   const trendWord = t(`trend.${reading.trend}`);
   const unitText = t(`unit.${unit}`);
   const line = [showUnit ? unitText : null, ageText, layout === "line" ? trendWord : null]

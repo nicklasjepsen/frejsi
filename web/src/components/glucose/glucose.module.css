@@ -152,6 +152,64 @@
   fill: var(--text);
 }
 
+/* v0.3.0 (plan §7): the meal and week curves. The curve and the previous curves stay the text
+   colour; meals are always terracotta; only the band follows the accent (tokens.json#color.rules). */
+.previousLine {
+  fill: none;
+  stroke: var(--text);
+  stroke-width: 1.5;
+  stroke-linejoin: round;
+}
+
+.weekLine {
+  fill: none;
+  stroke: var(--text);
+  stroke-width: 1.8;
+  stroke-linejoin: round;
+}
+
+.mealLine {
+  stroke: var(--meal-marker);
+  stroke-width: 1.5;
+}
+
+.mealDot {
+  fill: var(--meal-marker);
+}
+
+.bolus {
+  fill: var(--meal-bolus-marker);
+}
+
+.tickMeal {
+  fill: var(--meal-bolus-marker);
+  font-family: var(--font-body-stack);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+/* The meal lines of the day curve as 44 px tap targets over the SVG. */
+.tapLayer {
+  position: relative;
+}
+
+.mealTap {
+  position: absolute;
+  top: 0;
+  transform: translateX(-50%);
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+.mealTap:focus-visible {
+  outline: 2px solid var(--accent-base);
+  outline-offset: -2px;
+  border-radius: 8px;
+}
+
 /* The source status: a dot and one line. */
 .source {
   display: flex;
@@ -202,4 +260,57 @@
     width: 88px;
     height: 88px;
   }
+}
+
+/* ChartLegend (Maaltid-Telefon 12 px, Nu-Desktop 14 px) and ChartCaption. */
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.legend li {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.legend[data-variant="day"] {
+  font-size: 14px;
+}
+
+.legend[data-variant="day"] li {
+  gap: 6px;
+}
+
+.swatchMealBar,
+.swatchPreviousBar {
+  display: inline-block;
+  width: 10px;
+  height: 2px;
+  background: var(--meal-marker);
+}
+
+.swatchPreviousBar {
+  background: var(--text);
+  opacity: 0.25;
+}
+
+.swatchMealDot {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--meal-marker);
+}
+
+.caption {
+  margin: 0;
+  font-size: 12px;
+  color: var(--text-muted);
 }

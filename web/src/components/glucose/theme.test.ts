@@ -32,6 +32,8 @@ const COLOUR_VARS = [
   "--accent-base",
   "--accent-tint",
   "--accent-band",
+  "--meal-marker",
+  "--meal-bolus-marker",
 ];
 
 describe("glucose styles use tokens only (Nu-Moerk, Farve-Nu-*)", () => {
@@ -46,6 +48,8 @@ describe("glucose styles use tokens only (Nu-Moerk, Farve-Nu-*)", () => {
         "--font-body-stack",
         "--gridline",
         "--hairline",
+        "--meal-bolus-marker",
+        "--meal-marker",
         "--text",
         "--text-muted",
       ]
@@ -95,5 +99,41 @@ describe("glucose styles use tokens only (Nu-Moerk, Farve-Nu-*)", () => {
     expect(block(desktop, '.value[data-size="simple"] .number {')).toContain("font-size: 200px");
     expect(block(glucoseCss, '.value[data-size="phone"] .number {')).toContain("font-size: 100px");
     expect(block(glucoseCss, '.value[data-size="desktop"] .number {')).toContain("font-size: 92px");
+  });
+});
+
+describe("the meal and week curves in dark mode and the five accents (v0.3.0 plan §7, design gap 2)", () => {
+  const dark = tokens.slice(tokens.indexOf("@media (prefers-color-scheme: dark)"));
+  const darkRoot = block(dark, ":root");
+
+  it("takes the derived dark values: curve #f1eadf, meal marker #e08a6c, band at 0.14, gridlines #6e6458", () => {
+    expect(darkRoot).toContain("--text: #f1eadf");
+    expect(darkRoot).toContain("--meal-marker: #e08a6c");
+    expect(darkRoot).toContain("--meal-bolus-marker: #e08a6c");
+    expect(darkRoot).toContain("--accent-band-opacity: 0.14");
+    expect(darkRoot).toContain("--gridline: #6e6458");
+  });
+
+  it("draws the curves in the text colour and the meals in the meal colours, whatever the accent", () => {
+    for (const cls of [".line {", ".previousLine {", ".weekLine {", ".endDot {"]) {
+      expect(block(glucoseCss, cls), cls).toMatch(/var\(--text\)/);
+    }
+    expect(block(glucoseCss, ".mealLine {")).toContain("var(--meal-marker)");
+    expect(block(glucoseCss, ".mealDot {")).toContain("var(--meal-marker)");
+    expect(block(glucoseCss, ".bolus {")).toContain("var(--meal-bolus-marker)");
+    expect(block(glucoseCss, ".tickMeal {")).toContain("var(--meal-bolus-marker)");
+    expect(block(glucoseCss, ".band {")).toContain("var(--accent-band)");
+  });
+
+  it("lets an accent change the band only: no accent block touches the curve, meal or gridline colours", () => {
+    for (const accent of ["olive", "plum", "sea", "forest", "garnet"]) {
+      for (const css of [tokens, dark]) {
+        const rule = block(css, `[data-accent="${accent}"] {`);
+        expect(rule, accent).toContain("--accent-band:");
+        for (const name of ["--text:", "--meal-marker:", "--meal-bolus-marker:", "--gridline:"]) {
+          expect(rule, `${accent} ${name}`).not.toContain(name);
+        }
+      }
+    }
   });
 });

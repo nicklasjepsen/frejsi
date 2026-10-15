@@ -19,6 +19,16 @@ export const CHART_SIZES: Record<
   day: { width: 720, plotWidth: 680, plotHeight: 200, axisHeight: 20, labelSize: 12 },
 };
 
+/** The phone day curve (Historik-Telefon) in the curvePhone viewBox, 326×118. */
+const DAY_PHONE = { width: 326, plotWidth: 296, plotHeight: 98, axisHeight: 20, labelSize: 11 };
+
+/** A meal on the day curve: its line at `ts`, and a triangle at `bolusTs` when the tap exists. */
+export interface ChartMeal {
+  mealId: string;
+  ts: string;
+  bolusTs?: string;
+}
+
 /** The curve never shows less than this range, so a quiet day is not drawn as a mountain. */
 const MIN_DOMAIN_LOW = 2;
 const MIN_DOMAIN_HIGH = 14;
@@ -34,6 +44,10 @@ export interface ChartInput {
   timeZone: string;
   locale: AppLocale;
   variant: ChartVariant;
+  /** The day variant only: `phone` draws it in the curvePhone viewBox (Historik-Telefon). */
+  size?: "phone" | "desktop" | undefined;
+  /** The day variant only: meal lines and bolus triangles. */
+  meals?: readonly ChartMeal[] | undefined;
 }
 
 export interface ChartGeometry {
@@ -49,12 +63,18 @@ export interface ChartGeometry {
   ticks: { x: number; label: string; strong: boolean; anchor: "start" | "middle" | "end" }[];
   axisY: number;
   labelSize: number;
+  /** Meal lines inside the window, from `markerTop` to the baseline (`plotHeight`). */
+  meals: { mealId: string; ts: string; x: number }[];
+  /** Bolus triangles inside the window, on the baseline. */
+  boluses: { mealId: string; x: number; path: string; clock: string }[];
+  markerTop: number;
 }
 
 const round = (n: number) => Math.round(n * 10) / 10;
 
 export function chartGeometry(input: ChartInput): ChartGeometry {
-  const size = CHART_SIZES[input.variant];
+  const size =
+    input.variant === "day" && input.size === "phone" ? DAY_PHONE : CHART_SIZES[input.variant];
   const fromMs = input.from.getTime();
   const span = Math.max(1, input.to.getTime() - fromMs);
   const inWindow = input.readings.filter((r) => {
@@ -69,21 +89,27 @@ export function chartGeometry(input: ChartInput): ChartGeometry {
   const y = (mmol: number) =>
     round(((high - Math.min(high, Math.max(low, mmol))) / (high - low)) * size.plotHeight);
 
-  const segments: string[] = [];
-  let current: string[] = [];
-  let previous: Reading | null = null;
-  for (const reading of inWindow) {
-    const gap =
-      previous &&
-      new Date(reading.ts).getTime() - new Date(previous.ts).getTime() > GAP_MINUTES * 60_000;
-    if (gap && current.length > 0) {
-      segments.push(current.join(" "));
-      current = [];
-    }
-    current.push(`${x(reading.ts)},${y(reading.mmol)}`);
-    previous = reading;
-  }
-  if (current.length > 0) segments.push(current.join(" "));
+  const segments = segmentsOf(inWindow, x, y);
+  const toMs = input.to.getTime();
+  const inside = (ts: string) => {
+    const t = new Date(ts).getTime();
+    return t >= fromMs && t <= toMs;
+  };
+  const meals = (input.meals ?? [])
+    .filter((meal) => inside(meal.ts))
+    .map((meal) => ({ mealId: meal.mealId, ts: meal.ts, x: x(meal.ts) }));
+  const boluses = (input.meals ?? []).flatMap((meal) =>
+    meal.bolusTs !== undefined && inside(meal.bolusTs)
+      ? [
+          {
+            mealId: meal.mealId,
+            x: x(meal.bolusTs),
+            path: trianglePath(x(meal.bolusTs), size.plotHeight),
+            clock: formatClock(new Date(meal.bolusTs), input.timeZone),
+          },
+        ]
+      : [],
+  );
 
   const last = inWindow.at(-1);
   const end = last ? { x: x(last.ts), y: y(last.mmol) } : null;
@@ -105,6 +131,258 @@ export function chartGeometry(input: ChartInput): ChartGeometry {
     ticks: ticksFor(input, size.plotWidth),
     axisY: size.plotHeight + size.axisHeight - 4,
     labelSize: size.labelSize,
+    meals,
+    boluses,
+    markerTop: round(size.plotHeight * 0.1),
+  };
+}
+
+/** One `points` string per unbroken run; a gap longer than `GAP_MINUTES` starts a new run (gap 5). */
+function segmentsOf(
+  points: readonly { ts: string; mmol: number }[],
+  x: (ts: string) => number,
+  y: (mmol: number) => number,
+  gapMinutes: number = GAP_MINUTES,
+): string[] {
+  const segments: string[] = [];
+  let current: string[] = [];
+  let previousMs: number | null = null;
+  for (const point of points) {
+    const t = new Date(point.ts).getTime();
+    if (previousMs !== null && t - previousMs > gapMinutes * 60_000 && current.length > 0) {
+      segments.push(current.join(" "));
+      current = [];
+    }
+    current.push(`${x(point.ts)},${y(point.mmol)}`);
+    previousMs = t;
+  }
+  if (current.length > 0) segments.push(current.join(" "));
+  return segments;
+}
+
+/** The 10 px bolus triangle (tokens.json#chart.bolusTriangle): apex up, base on the baseline. */
+function trianglePath(x: number, baseline: number): string {
+  return `M${x} ${round(baseline - 8)} L${round(x + 5)} ${round(baseline + 2)} H${round(x - 5)} Z`;
+}
+
+// ---------------------------------------------------------------------------------------------
+// The meal curve (v0.3.0 plan §7): −1 h to +4 h around the meal, y fixed from 2 to 20 mmol/L.
+
+export const CHART_BEFORE_MINUTES = 60;
+export const CHART_AFTER_MINUTES = 240;
+/** The meal and week curves share one fixed scale; a value above the top sits on the edge (gap 5). */
+export const Y_MIN = 2;
+export const Y_MAX = 20;
+
+export type MealChartSize = "phone" | "desktop";
+
+/** From tokens.json#chart: curvePhone 326×118 and curveDesktopMeal 760×262 (Maaltid-*). */
+export const MEAL_CHART_SIZES: Record<
+  MealChartSize,
+  {
+    width: number;
+    height: number;
+    plotWidth: number;
+    plotTop: number;
+    baseline: number;
+    labelX: number;
+    axisY: number;
+    labelSize: number;
+    previousOpacity: number;
+  }
+> = {
+  phone: {
+    width: 326,
+    height: 118,
+    plotWidth: 296,
+    plotTop: 10,
+    baseline: 100,
+    labelX: 304,
+    axisY: 114,
+    labelSize: 11,
+    previousOpacity: 0.18,
+  },
+  desktop: {
+    width: 760,
+    height: 262,
+    plotWidth: 720,
+    plotTop: 30,
+    baseline: 234,
+    labelX: 730,
+    axisY: 256,
+    labelSize: 12,
+    previousOpacity: 0.16,
+  },
+};
+
+/** An earlier occurrence of the same dish: its own meal time and its own readings. */
+export interface PreviousCurve {
+  mealTs: string;
+  readings: readonly Reading[];
+}
+
+export interface MealChartInput {
+  readings: readonly Reading[];
+  mealTs: string;
+  bolusTs?: string;
+  previous: readonly PreviousCurve[];
+  /** In mmol; the labels are drawn in `unit`. */
+  target: { low: number; high: number };
+  unit: GlucoseUnit;
+  locale: AppLocale;
+  timeZone: string;
+  size: MealChartSize;
+  /** Readings after `now` are not drawn. */
+  now: Date;
+}
+
+export interface MealChartGeometry {
+  width: number;
+  height: number;
+  plotWidth: number;
+  band: ChartGeometry["band"];
+  segments: string[];
+  end: { x: number; y: number } | null;
+  /** One list of segments per previous occurrence, each positioned relative to its own meal. */
+  previous: string[][];
+  previousOpacity: number;
+  meal: { x: number; top: number; bottom: number };
+  mealClock: string;
+  bolus: { x: number; path: string; clock: string } | null;
+  /** Hours relative to the meal, −1 to +4; 0 is the meal time. */
+  ticks: { hours: number; x: number; anchor: "start" | "middle" | "end" }[];
+  axisY: number;
+  labelSize: number;
+}
+
+const WINDOW_MINUTES = CHART_BEFORE_MINUTES + CHART_AFTER_MINUTES;
+
+function fixedY(top: number, baseline: number) {
+  return (mmol: number) => {
+    const clamped = Math.min(Y_MAX, Math.max(Y_MIN, mmol));
+    return round(baseline - ((clamped - Y_MIN) / (Y_MAX - Y_MIN)) * (baseline - top));
+  };
+}
+
+/** x across the plot for a time relative to `mealTs`, over the −1 h/+4 h window. */
+function mealX(mealTs: string, plotWidth: number) {
+  const start = new Date(mealTs).getTime() - CHART_BEFORE_MINUTES * 60_000;
+  return (ts: string) =>
+    round(((new Date(ts).getTime() - start) / (WINDOW_MINUTES * 60_000)) * plotWidth);
+}
+
+function inMealWindow(mealTs: string, readings: readonly Reading[], until?: number) {
+  const mealMs = new Date(mealTs).getTime();
+  const from = mealMs - CHART_BEFORE_MINUTES * 60_000;
+  const to = Math.min(mealMs + CHART_AFTER_MINUTES * 60_000, until ?? Infinity);
+  return readings
+    .filter((r) => {
+      const t = new Date(r.ts).getTime();
+      return t >= from && t <= to;
+    })
+    .toSorted((a, b) => a.ts.localeCompare(b.ts));
+}
+
+export function mealChartGeometry(input: MealChartInput): MealChartGeometry {
+  const size = MEAL_CHART_SIZES[input.size];
+  const x = mealX(input.mealTs, size.plotWidth);
+  const y = fixedY(size.plotTop, size.baseline);
+  const readings = inMealWindow(input.mealTs, input.readings, input.now.getTime());
+  const last = readings.at(-1);
+  const bolusX = input.bolusTs === undefined ? null : x(input.bolusTs);
+  return {
+    width: size.width,
+    height: size.height,
+    plotWidth: size.plotWidth,
+    band: {
+      top: y(input.target.high),
+      bottom: y(input.target.low),
+      highLabel: formatBound(input.target.high, input.unit, input.locale),
+      lowLabel: formatBound(input.target.low, input.unit, input.locale),
+      labelX: size.labelX,
+    },
+    segments: segmentsOf(readings, x, y),
+    end: last ? { x: x(last.ts), y: y(last.mmol) } : null,
+    previous: input.previous.map((p) =>
+      segmentsOf(inMealWindow(p.mealTs, p.readings), mealX(p.mealTs, size.plotWidth), y),
+    ),
+    previousOpacity: size.previousOpacity,
+    meal: { x: x(input.mealTs), top: size.plotTop, bottom: size.baseline },
+    mealClock: formatClock(new Date(input.mealTs), input.timeZone),
+    bolus:
+      bolusX === null || input.bolusTs === undefined
+        ? null
+        : {
+            x: bolusX,
+            path: trianglePath(bolusX, size.baseline),
+            clock: formatClock(new Date(input.bolusTs), input.timeZone),
+          },
+    ticks: [-1, 0, 1, 2, 3, 4].map((hours) => ({
+      hours,
+      x: round(((hours + 1) / 5) * size.plotWidth),
+      anchor: hours === -1 ? "start" : hours === 4 ? "end" : "middle",
+    })),
+    axisY: size.axisY,
+    labelSize: size.labelSize,
+  };
+}
+
+// ---------------------------------------------------------------------------------------------
+// The week tile (tokens.json#chart.weekTile, Historik-Desktop): one day in 120×64.
+
+export const WEEK_TILE = {
+  width: 120,
+  height: 64,
+  plotTop: 2,
+  baseline: 52,
+  dotY: 58,
+  maxPoints: 48,
+};
+
+export interface WeekTileInput {
+  /** The day downsampled to 30-minute buckets (plan §5), at most 48 points. */
+  curve: readonly { ts: string; mmol: number }[];
+  mealTimes: readonly string[];
+  /** The local day, 00:00 to 24:00 in the space's zone. */
+  from: Date;
+  to: Date;
+  target: { low: number; high: number };
+}
+
+export interface WeekTileGeometry {
+  width: number;
+  height: number;
+  band: { top: number; bottom: number };
+  segments: string[];
+  mealDots: { x: number; y: number }[];
+}
+
+export function weekTileGeometry(input: WeekTileInput): WeekTileGeometry {
+  const fromMs = input.from.getTime();
+  const span = Math.max(1, input.to.getTime() - fromMs);
+  const x = (ts: string) => round(((new Date(ts).getTime() - fromMs) / span) * WEEK_TILE.width);
+  const y = fixedY(WEEK_TILE.plotTop, WEEK_TILE.baseline);
+  const inDay = input.curve
+    .filter((p) => {
+      const t = new Date(p.ts).getTime();
+      return t >= fromMs && t <= input.to.getTime();
+    })
+    .toSorted((a, b) => a.ts.localeCompare(b.ts));
+  const step = Math.ceil(inDay.length / WEEK_TILE.maxPoints);
+  const points = step > 1 ? inDay.filter((_, i) => i % step === 0) : inDay;
+  // Buckets are 30 minutes apart; a missing hour is a gap in the line.
+  const gapMinutes = Math.max(GAP_MINUTES, (span / 60_000 / WEEK_TILE.maxPoints) * 2);
+  return {
+    width: WEEK_TILE.width,
+    height: WEEK_TILE.height,
+    band: { top: y(input.target.high), bottom: y(input.target.low) },
+    segments: segmentsOf(points, x, y, gapMinutes * Math.max(1, step)),
+    mealDots: input.mealTimes
+      .filter((ts) => {
+        const t = new Date(ts).getTime();
+        return t >= fromMs && t <= input.to.getTime();
+      })
+      .map((ts) => ({ x: x(ts), y: WEEK_TILE.dotY })),
   };
 }
 
