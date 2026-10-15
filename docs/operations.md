@@ -176,7 +176,7 @@ export older than Clarity's 90-day window, or importing on an owner's behalf. It
 service as the screen against the database `DATABASE_URL` names:
 
 ```sh
-pnpm --filter ./web import -- <file> --space <spaceId> --user <userId> [--no-meals]
+pnpm --filter ./web run import -- <file> --space <spaceId> --user <userId> [--no-meals]
 ```
 
 The user must be an **owner** of the space; anyone else is refused before the file is read. It
@@ -190,7 +190,7 @@ it is never printed, exported to your shell or saved:
 
 ```sh
 DATABASE_URL="$(az keyvault secret show --subscription <id> --vault-name $VAULT -n database-url --query value -o tsv)" \
-  pnpm --filter ./web import -- <file> --space <spaceId> --user <userId>
+  pnpm --filter ./web run import -- <file> --space <spaceId> --user <userId>
 ```
 
 Other export formats (LibreView, a Nightscout dump) implement `GlucoseImportSource` under

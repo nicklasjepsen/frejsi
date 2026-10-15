@@ -1,4 +1,4 @@
-// `pnpm --filter ./web import -- <file> --space <spaceId> --user <userId> [--no-meals]` (#156):
+// `pnpm --filter ./web run import -- <file> --space <spaceId> --user <userId> [--no-meals]` (#156):
 // imports an export file through `importGlucose`, the service behind POST /api/spaces/:id/import,
 // into the database DATABASE_URL names. The user must own the space, checked before the file is
 // read. Prints counts only: never a row of the file, a name or the environment.
