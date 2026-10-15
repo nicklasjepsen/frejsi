@@ -22,7 +22,8 @@
     "next-intl": "4.14.9",
     "react": "19.1.10",
     "react-dom": "19.1.10",
-    "zod": "4.6.7"
+    "zod": "4.6.7",
+    "qrcode": "1.5.4"
   },
   "devDependencies": {
     "@next/eslint-plugin-next": "15.5.28",
@@ -38,6 +39,7 @@
     "jsdom": "26.1.0",
     "tsx": "4.23.15",
     "typescript": "5.9.3",
-    "vitest": "3.2.7"
+    "vitest": "3.2.7",
+    "@types/qrcode": "1.5.6"
   }
 }
