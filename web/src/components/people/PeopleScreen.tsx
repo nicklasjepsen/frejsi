@@ -46,6 +46,8 @@ export type AfterAction = "reload" | "home" | "signedOut";
 export type RunAction = (
   action: () => Promise<void> | Promise<AfterAction>,
   after?: AfterAction,
+  /** Text for a failure code where the general `errors.api` copy would mislead in this place. */
+  failures?: Partial<Record<ApiErrorCode, string>>,
 ) => Promise<void>;
 
 const COLUMNS = ["person", "role", "view", "devices", "lastSeen"] as const;
@@ -80,7 +82,7 @@ export function PeopleScreen({
   const [expanded, setExpanded] = useState<Expanded>(null);
   // Shown under the pending row: the old id until the list reloads, the new id after it.
   const [resent, setResent] = useState<{ ids: string[]; result: CreatedInviteView } | null>(null);
-  const [error, setError] = useState<ApiErrorCode | null>(null);
+  const [error, setError] = useState<{ code: ApiErrorCode; text?: string } | null>(null);
   const [inviteOpen, setInviteOpen] = useState(false);
   const [focused, setFocused] = useState(0);
   const tableRef = useRef<HTMLDivElement>(null);
@@ -92,7 +94,7 @@ export function PeopleScreen({
    * the device they are using has no session left and goes to the sign-in page.
    */
   const onAction = useCallback<RunAction>(
-    async (action, after = "reload") => {
+    async (action, after = "reload", failures = {}) => {
       setError(null);
       try {
         const next = (await action()) ?? after;
@@ -103,7 +105,9 @@ export function PeopleScreen({
         }
         setView(await peopleApi.load(spaceId));
       } catch (failure) {
-        setError(failure instanceof PeopleApiError ? failure.code : "internal");
+        const code = failure instanceof PeopleApiError ? failure.code : "internal";
+        const text = failures[code];
+        setError(text === undefined ? { code } : { code, text });
       }
     },
     [locale, router, spaceId],
@@ -388,7 +392,7 @@ export function PeopleScreen({
 
       {error && (
         <Notice role="alert" tone="sunken">
-          {errors(error)}
+          {error.text ?? errors(error.code)}
         </Notice>
       )}
 

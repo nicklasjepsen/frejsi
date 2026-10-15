@@ -391,6 +391,22 @@ describe("PeopleScreen · a member's devices and role (design gap: phone detail)
     expect(screen.queryByRole("alert")).toBeNull();
   });
 
+  it("says why when the device is the last one any owner can sign in with, and keeps the list", async () => {
+    api.removeDevice.mockRejectedValue(new PeopleApiError(409, "last-owner"));
+    mount();
+    fireEvent.click(rowOf("Jonas"));
+    const phone = nth(within(detail()).getAllByTestId("device"), 0);
+    fireEvent.click(within(phone).getByRole("button", { name: "Fjern" }));
+    fireEvent.click(within(phone).getByRole("button", { name: "Ja, fjern" }));
+    await waitFor(() => {
+      expect(screen.getByRole("alert")).toHaveTextContent(
+        "Det er den sidste enhed, en ejer kan logge ind med. Tilføj først en ny enhed til en ejer, så rummet aldrig står uden en vej ind.",
+      );
+    });
+    expect(navigation.push).not.toHaveBeenCalled();
+    expect(api.load).not.toHaveBeenCalled();
+  });
+
   it("lets an owner make an add-a-device link for a member and shows its QR code and link", async () => {
     api.createInvite.mockResolvedValue({ ...created, name: "Mette", forUserId: "u-mette" });
     mount();

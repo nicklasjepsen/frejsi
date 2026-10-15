@@ -175,6 +175,7 @@
       "pendingRow": "Invitation for {name}",
       "newDevice": "New device for {name}"
     },
-    "notYet": "not yet"
+    "notYet": "not yet",
+    "lastOwnerDevice": "This is the last device an owner can sign in with. Add a new device for an owner first, so the space is never left without a way in."
   }
 }

@@ -175,6 +175,7 @@
       "pendingRow": "Invitation til {name}",
       "newDevice": "Ny enhed til {name}"
     },
-    "notYet": "ikke endnu"
+    "notYet": "ikke endnu",
+    "lastOwnerDevice": "Det er den sidste enhed, en ejer kan logge ind med. Tilføj først en ny enhed til en ejer, så rummet aldrig står uden en vej ind."
   }
 }
