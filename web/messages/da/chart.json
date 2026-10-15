@@ -1,0 +1,19 @@
+{
+  "aria": {
+    "meal": "Glukose fra en time før til fire timer efter måltidet",
+    "mealWithPrevious": "Glukose fra en time før til fire timer efter, denne og de sidste {count, plural, =1 {gang} =2 {to gange} =3 {tre gange} =4 {fire gange} =5 {fem gange} other {# gange}}",
+    "historyDay": "Glukose i dag med måltider markeret",
+    "dayWithMeals": "Glukose i dag fra {from} til {to} med {count, plural, one {# måltid} other {# måltider}}"
+  },
+  "axis": {
+    "hoursBefore": "−{hours} t",
+    "hoursAfter": "+{hours} t"
+  },
+  "legend": {
+    "meal": "Måltid",
+    "bolusGiven": "Bolus givet",
+    "previous": "Tidligere gange"
+  },
+  "mealAt": "Måltid kl. {time}",
+  "lastReading": "sidste måling {age}"
+}

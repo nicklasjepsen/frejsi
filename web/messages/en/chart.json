@@ -1,0 +1,19 @@
+{
+  "aria": {
+    "meal": "Glucose from one hour before to four hours after the meal",
+    "mealWithPrevious": "Glucose from one hour before to four hours after, this time and the last {count, plural, =1 {time} =2 {two times} =3 {three times} =4 {four times} =5 {five times} other {# times}}",
+    "historyDay": "Glucose today with meals marked",
+    "dayWithMeals": "Glucose today from {from} to {to} with {count, plural, one {# meal} other {# meals}}"
+  },
+  "axis": {
+    "hoursBefore": "−{hours} h",
+    "hoursAfter": "+{hours} h"
+  },
+  "legend": {
+    "meal": "Meal",
+    "bolusGiven": "Bolus given",
+    "previous": "Earlier times"
+  },
+  "mealAt": "Meal at {time}",
+  "lastReading": "last reading {age}"
+}
