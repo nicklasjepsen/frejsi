@@ -11,6 +11,7 @@
 - [ ] Raw readings never go to an AI call; photos and text only on an explicit user action; daily cap in place
 - [ ] Every write to space data goes through `emit(spaceId, type, payload)`
 - [ ] External sources stay behind `GlucoseSource` / `FoodSource` / `AiProvider`; nothing Danish hard-coded
+- [ ] Glucose sources are read-only: nothing is sent to a CGM or glucose service (no uploads, no follower or alert changes); the Dexcom adapter calls only its allow-listed endpoints
 - [ ] No secrets, no real people, no PII in code, fixtures, seeds or logs
 - [ ] UI strings in both `da` and `en`; Danish reads like a kind nurse
 

@@ -11,7 +11,9 @@ the design spec is in `docs/superpowers/specs/2026-10-14-frejsi-design.md`.
    or AI created without `verified: false`; a glucose value without its timestamp or rendered without
    its age; the `viewer` role receiving glucose, or any role check done only in the UI; raw readings
    sent to an AI provider; a write to space data that does not go through `emit()`; a vendor API
-   called outside its adapter; a secret, a real person or PII anywhere.
+   called outside its adapter; a glucose source that sends anything to its provider (an upload, a
+   follower or alert change, any Dexcom endpoint outside the adapter's allow-list); a secret, a real
+   person or PII anywhere.
 2. **Bugs** with a concrete scenario: the input or state, and the wrong output or crash.
 3. **Contract breaks** between `web/`, `poller/` and `shared/`: a Zod schema, event payload or Prisma
    model changed without every consumer following, or a migration out of order.

@@ -5,22 +5,18 @@ import type { GlucoseSource } from "../types";
 import {
   APPLICATION_ID,
   CREDENTIAL_CODES,
+  ENDPOINTS,
   ErrorBody,
   GlucoseResponse,
-  HOSTS,
   IdResponse,
-  PATHS,
   parseDotNetDate,
   SESSION_CODES,
   toTrend,
   windowFor,
 } from "./protocol";
+import { defaultFetch, type FetchLike, ReadOnlyEndpointError, sendShareRequest } from "./transport";
 
-/** The slice of `fetch` the adapter uses; tests pass one that serves the fixtures. */
-export type FetchLike = (
-  input: string | URL,
-  init?: { method?: string; headers?: Record<string, string>; body?: string; signal?: AbortSignal },
-) => Promise<Pick<Response, "ok" | "status" | "text">>;
+export type { FetchLike } from "./transport";
 
 /** Well under the Function's four-minute invocation timeout, so one stalled space cannot starve the rest. */
 export const DEFAULT_TIMEOUT_MS = 30_000;
@@ -63,16 +59,11 @@ export class DexcomShareError extends Error {
   }
 }
 
-const HEADERS = {
-  "content-type": "application/json",
-  accept: "application/json",
-  "user-agent": "Frejsi",
-};
-
 /**
  * The Dexcom Share adapter (spec §3): authenticate → login → latest values, the session kept for
  * the life of the instance and renewed once when the service says it is stale. One instance per
- * space per process is what keeps logins to one per process lifetime.
+ * space per process is what keeps logins to one per process lifetime. Every call goes through
+ * `sendShareRequest`, which sends allow-listed reads only: the adapter never writes to Dexcom.
  */
 export class DexcomShareSource implements GlucoseSource {
   readonly fetch: FetchLike;
@@ -92,7 +83,7 @@ export class DexcomShareSource implements GlucoseSource {
     this.region = options.region;
     this.username = options.username;
     this.password = options.password;
-    this.fetch = options.fetch ?? ((input, init) => globalThis.fetch(input, init));
+    this.fetch = options.fetch ?? defaultFetch;
     this.now = options.now ?? (() => new Date());
     this.log = options.log;
     this.timeoutMs = options.timeoutMs ?? DEFAULT_TIMEOUT_MS;
@@ -163,14 +154,14 @@ export class DexcomShareSource implements GlucoseSource {
   private async login(): Promise<string> {
     try {
       const accountId = IdResponse.parse(
-        await this.post(PATHS.authenticate, {
+        await this.request(ENDPOINTS.authenticate, {
           accountName: this.username,
           password: this.password,
           applicationId: APPLICATION_ID,
         }),
       );
       return IdResponse.parse(
-        await this.post(PATHS.login, {
+        await this.request(ENDPOINTS.login, {
           accountId,
           password: this.password,
           applicationId: APPLICATION_ID,
@@ -190,28 +181,31 @@ export class DexcomShareSource implements GlucoseSource {
       minutes: String(minutes),
       maxCount: String(maxCount),
     });
-    return this.post(`${PATHS.glucose}?${query.toString()}`, undefined);
+    return this.request(ENDPOINTS.glucose, undefined, query);
   }
 
-  private async post(
-    pathAndQuery: string,
+  /** One of the three allow-listed calls; the transport refuses anything else before sending. */
+  private async request(
+    endpoint: (typeof ENDPOINTS)[keyof typeof ENDPOINTS],
     body: Record<string, string> | undefined,
+    query?: URLSearchParams,
   ): Promise<unknown> {
-    const url = `https://${HOSTS[this.region]}${pathAndQuery}`;
     // One signal for the request and the body: a stall anywhere ends as a timeout, not a hang.
     const signal = AbortSignal.timeout(this.timeoutMs);
     let text: string;
     try {
-      const response = await this.fetch(url, {
-        method: "POST",
-        headers: HEADERS,
+      const response = await sendShareRequest(this.fetch, {
+        region: this.region,
+        ...endpoint,
         signal,
-        ...(body === undefined ? {} : { body: JSON.stringify(body) }),
+        ...(body === undefined ? {} : { body }),
+        ...(query === undefined ? {} : { query }),
       });
       text = await response.text();
       return this.decode(response, text);
     } catch (error) {
-      if (error instanceof DexcomShareError) throw error;
+      // A refused call is a programming error, never a network condition.
+      if (error instanceof DexcomShareError || error instanceof ReadOnlyEndpointError) throw error;
       const code = signal.aborted ? "Timeout" : "Network";
       this.log?.warn("dexcom.unreachable", { code });
       throw new DexcomShareError(code, 0);

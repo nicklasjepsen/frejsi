@@ -54,6 +54,7 @@ Azure: owner's Proxus subscription, **dedicated resource group `frejsi`** (West 
 - Raw readings never go to an AI model; only computed statistics. Photos/text only on an explicit user action. Per-space daily cap on AI calls.
 - No secrets in the repo; no real people in seed data or docs; no PII in logs.
 - Glucose sources and food sources are plugins behind interfaces (`GlucoseSource`, `FoodSource`). Nothing Danish is hard-coded.
+- Glucose sources are read-only: Frejsi never writes to a CGM or glucose service (no uploads, no follower or alert changes), even when the credential would allow it; the Dexcom adapter calls only allow-listed endpoints.
 - Every write goes through `emit(spaceId, type, payload)` so it reaches the `events` table and Web PubSub.
 
 ## The owner's vault

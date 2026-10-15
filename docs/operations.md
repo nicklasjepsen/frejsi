@@ -108,7 +108,8 @@ Check in this order and stop at the first thing that is wrong:
 The Dexcom Share credential is entered on the site and nowhere else. It goes from the browser to the
 Function App's `source-connect` endpoint, which tries it against Dexcom and only then writes it to Key
 Vault as `glucose-<spaceId>`. The database holds the source type, the region and the secret's name,
-never the login.
+never the login. Frejsi only reads with that login: it never uploads readings or changes followers,
+invitations or alert settings on the Dexcom account, and the adapter refuses any such call in code.
 
 1. Sign in as an **owner** and open **Indstillinger → Glukosekilde → Skift login** (on the phone,
    Indstillinger is the Mere tab).

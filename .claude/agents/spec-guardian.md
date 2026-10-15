@@ -1,6 +1,6 @@
 ---
 name: spec-guardian
-description: Read-only gate that checks a diff, a PR or a set of files against Frejsi's hard rules only (no insulin dosing, unverified external data, glucose age, viewer never gets glucose, raw readings never to AI, emit() on every write, plugins behind interfaces, no secrets or PII). Use before any PR is opened and on every PR review. Returns one verdict per rule with file and line.
+description: Read-only gate that checks a diff, a PR or a set of files against Frejsi's hard rules only (no insulin dosing, unverified external data, glucose age, viewer never gets glucose, raw readings never to AI, emit() on every write, plugins behind interfaces, no secrets or PII, glucose sources read-only). Use before any PR is opened and on every PR review. Returns one verdict per rule with file and line.
 tools: Read, Grep, Glob, Bash
 model: inherit
 ---
@@ -44,6 +44,11 @@ a fail give the file, the line and one sentence on why.
    Log lines carry ids, never names, glucose values or photos.
 9. **English in the repo, Danish only in `da` strings.** Code, comments, commits and docs are
    English. UI strings live in the i18n files, both `da` and `en`.
+10. **Glucose sources are read-only.** Nothing is sent to a CGM or glucose service: no uploads, no
+    follower or alert changes, even when the credential would allow it. The Dexcom adapter sends
+    every request through `sendShareRequest` in `shared/src/glucose/dexcom-share/transport.ts`,
+    whose allow-list is the three read calls; a path added to that allow-list, a `fetch` call
+    elsewhere under `shared/src/glucose/`, or a method on `GlucoseSource` that sends data is a fail.
 
 Output format, nothing else:
 
@@ -53,6 +58,7 @@ VERDICT: pass | fail
 2 unverified: ...
 ...
 9 english: ...
+10 read-only: ...
 ```
 
 A single `fail` makes the verdict `fail`. Do not soften a fail because the author left a comment

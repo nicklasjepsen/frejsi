@@ -14,5 +14,9 @@ are plain epoch milliseconds in `Date(...)` wrappers as the protocol writes them
 | `session-not-valid.json`            | any call with a stale session (HTTP 500)      | `{ Code, Message }`                                     |
 | `bad-credentials.json`              | authenticate with a wrong password (HTTP 500) | `{ Code, Message }`                                     |
 
+These three calls are the whole allow-list in `shared/src/glucose/dexcom-share/transport.ts`; the
+adapter refuses every other Share path (uploads, follower and alert changes) before sending anything,
+so there are no fixtures for them and never will be.
+
 `Value` is mg/dL. The adapter converts with mg/dL ÷ 18.016 to one decimal, so the six readings
 are 6.2, 6.5, 7.0, 7.3, 7.7 and 8.0 mmol/L from oldest to newest.
