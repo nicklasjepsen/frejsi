@@ -17,6 +17,16 @@
   display: none;
 }
 
+/* Read by a screen reader, drawn nowhere (the "—" of an empty cell is aria-hidden). */
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
 .back {
   align-self: flex-start;
   min-height: var(--touch-min);

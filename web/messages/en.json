@@ -140,7 +140,7 @@
     "addDevice": "+ Add a device",
     "remove": "Remove",
     "removeMember": "Remove {name} from the space",
-    "confirmRemoveMember": "Remove {name} from the space? The devices are signed out, and {name} can only come back with a new invitation.",
+    "confirmRemoveMember": "Remove {name} from the space? {name} loses access to the space and can only come back with a new invitation.",
     "confirmRemoveDevice": "Remove {device}? It is signed out right away.",
     "confirm": "Yes, remove",
     "cancel": "Cancel",
@@ -163,7 +163,7 @@
       "qr": "QR code for the invitation",
       "scanOrSend": "Let {name} scan the code, or send the link.",
       "deviceScanOrSend": "Let {name} scan the code with the new device, or send the link to it.",
-      "validity": "Valid 7 days · single use",
+      "validity": "Valid {days} days · single use",
       "link": "Invitation link",
       "copyLink": "Copy link",
       "copied": "Link copied",
@@ -174,6 +174,7 @@
       "revoke": "Withdraw",
       "pendingRow": "Invitation for {name}",
       "newDevice": "New device for {name}"
-    }
+    },
+    "notYet": "not yet"
   }
 }

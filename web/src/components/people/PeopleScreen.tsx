@@ -179,9 +179,13 @@ export function PeopleScreen({
       t("deviceCount", { count: member.devices.length }),
     ].join(" · ");
 
+  // One row carries tabIndex 0 so Tab reaches the table. The index is clamped: when a reload
+  // drops the rows below the focused one, the last row left takes it over instead of no row.
+  const rowCount = view.members.length + view.invites.length;
+  const focusedIndex = Math.min(focused, Math.max(0, rowCount - 1));
   let rowIndex = 0;
   const rowProps = (index: number) => ({
-    tabIndex: index === focused ? 0 : -1,
+    tabIndex: index === focusedIndex ? 0 : -1,
     onFocus: () => {
       setFocused(index);
     },
@@ -256,17 +260,31 @@ export function PeopleScreen({
     );
   };
 
+  /** A cell with nothing in it yet: a dash to the eye, "ikke endnu" to a screen reader. */
+  const emptyCell = (column: (typeof COLUMNS)[number]) => (
+    <div role="cell" data-col={column} className={styles.cell}>
+      <span aria-hidden="true">—</span>
+      <span className={styles.srOnly}>{t("notYet")}</span>
+    </div>
+  );
+
   const inviteRow = (invite: PendingInviteView) => {
     const index = rowIndex++;
     const sentDays = calendarDaysBetween(new Date(invite.createdAt), now, timezone);
     const left = daysLeft(new Date(invite.expiresAt), now, timezone);
+    // An add-a-device link belongs to a member who already has a row above: it is named as a
+    // new device for them, so nobody reads it as the member being invited twice.
+    const title = invite.forUserId
+      ? t("invite.newDevice", { name: invite.name })
+      : t("invite.pendingRow", { name: invite.name });
     return (
       <Fragment key={invite.id}>
         <div
           role="row"
           className={`${styles.row} ${styles.inviteRow}`}
           data-testid="invite-row"
-          aria-label={t("invite.pendingRow", { name: invite.name })}
+          data-for-user-id={invite.forUserId}
+          aria-label={title}
           onKeyDown={(event) => {
             onRowKeyDown(event, null);
           }}
@@ -277,7 +295,7 @@ export function PeopleScreen({
               {invite.name.trim().charAt(0).toLocaleUpperCase() || "·"}
             </span>
             <span className={styles.personText}>
-              <span className={styles.name}>{invite.name}</span>
+              <span className={styles.name}>{invite.forUserId ? title : invite.name}</span>
               <span className={styles.sub}>
                 {t("invite.sent", { days: sentDays })} · {t("invite.expires", { days: left })}
               </span>
@@ -286,12 +304,8 @@ export function PeopleScreen({
           <div role="cell" data-col="role" className={styles.cell}>
             {roles(invite.role)}
           </div>
-          <div role="cell" data-col="view" className={styles.cell}>
-            —
-          </div>
-          <div role="cell" data-col="devices" className={styles.cell}>
-            —
-          </div>
+          {emptyCell("view")}
+          {emptyCell("devices")}
           <div role="cell" data-col="lastSeen" className={`${styles.cell} ${styles.actions}`}>
             {canManage && (
               <>

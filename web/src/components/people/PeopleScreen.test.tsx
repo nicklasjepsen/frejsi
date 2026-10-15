@@ -239,18 +239,56 @@ describe("PeopleScreen · the list (Personer-Telefon, Personer-Desktop)", () => 
   it("shows a pending invitation as a dashed-avatar row: sent yesterday, expires in 6 days, role, dashes", () => {
     mount();
     const row = screen.getByTestId("invite-row");
+    expect(row).toHaveAccessibleName("Invitation til Morfar Søren");
     expect(within(row).getByTestId("pending-avatar")).toBeInTheDocument();
     expect(within(row).getByText("Morfar Søren")).toBeInTheDocument();
     expect(row).toHaveTextContent("Invitation sendt i går · udløber om 6 dage");
     expect(within(row).getByRole("cell", { name: "Hjælper" })).toBeInTheDocument();
-    expect(within(row).getAllByText("—")).toHaveLength(2);
+    // The view and devices cells are empty: a dash to the eye, "ikke endnu" to a screen reader.
+    const empty = within(row).getAllByRole("cell", { name: "ikke endnu" });
+    expect(empty.map((c) => c.getAttribute("data-col"))).toEqual(["view", "devices"]);
+    for (const cell of empty) {
+      expect(within(cell).getByText("—")).toHaveAttribute("aria-hidden", "true");
+    }
     expect(within(row).getByRole("button", { name: "Send igen" })).toBeInTheDocument();
   });
 
-  it("renders the device notices for phone and desktop", () => {
+  it("draws an add-a-device link as Ny enhed til {name}, not as a second invitation of the member", () => {
+    mount({
+      initial: {
+        ...view,
+        invites: [
+          ...view.invites,
+          {
+            id: "inv-mette-device",
+            name: "Mette",
+            role: "owner",
+            forUserId: "u-mette",
+            createdAt: ago(0),
+            expiresAt: new Date(NOW.getTime() + 7 * DAY).toISOString(),
+          },
+        ],
+      },
+    });
+    expect(screen.getByTestId("people-summary")).toHaveTextContent("2 invitationer venter");
+    const rows = screen.getAllByTestId("invite-row");
+    expect(rows).toHaveLength(2);
+    const device = nth(rows, 1);
+    expect(device).toHaveAccessibleName("Ny enhed til Mette");
+    expect(within(device).getByText("Ny enhed til Mette")).toBeInTheDocument();
+    expect(device).toHaveTextContent("Invitation sendt i dag · udløber om 7 dage");
+    expect(within(device).getByRole("cell", { name: "Ejer" })).toBeInTheDocument();
+    // Mette's own member row is untouched and still the one that opens.
+    expect(rowOf("Mette")).toHaveAccessibleName("Vis detaljer for Mette");
+    expect(nth(rows, 0)).toHaveAccessibleName("Invitation til Morfar Søren");
+  });
+
+  it("renders the device notices for phone and desktop, naming the button as it reads", () => {
     mount();
     expect(screen.getByText(/Nyt telefonnummer eller ny telefon\?/)).toBeInTheDocument();
-    expect(screen.getByText(/Enheder: ny telefon = ny enhed/)).toBeInTheDocument();
+    expect(screen.getByText(/Enheder: ny telefon = ny enhed/)).toHaveTextContent(
+      "»Tilføj en enhed«-link",
+    );
   });
 
   it("speaks English when the locale is en", () => {
@@ -285,6 +323,22 @@ describe("PeopleScreen · keyboard", () => {
     fireEvent.keyDown(nth(rows, 1), { key: " " });
     expect(rows[1]).toHaveAttribute("aria-expanded", "false");
     expect(screen.queryByTestId("member-detail")).toBeNull();
+  });
+
+  it("keeps one row reachable with Tab when the focused last row disappears on reload", async () => {
+    api.revokeInvite.mockResolvedValue(undefined);
+    api.load.mockResolvedValue({ ...view, invites: [] });
+    mount();
+    const invite = screen.getByTestId("invite-row");
+    fireEvent.focus(invite);
+    expect(invite).toHaveAttribute("tabindex", "0");
+    expect(nth(memberRows(), 0)).toHaveAttribute("tabindex", "-1");
+    fireEvent.click(within(invite).getByRole("button", { name: "Træk tilbage" }));
+    await waitFor(() => {
+      expect(screen.queryByTestId("invite-row")).toBeNull();
+    });
+    const rows = memberRows();
+    expect(rows.filter((row) => row.tabIndex === 0)).toEqual([nth(rows, rows.length - 1)]);
   });
 });
 
@@ -382,7 +436,11 @@ describe("PeopleScreen · a member's devices and role (design gap: phone detail)
     fireEvent.click(
       within(detail()).getByRole("button", { name: "Fjern Farmor Birthe fra rummet" }),
     );
-    expect(detail()).toHaveTextContent("Fjern Farmor Birthe fra rummet? Enhederne logges ud");
+    // Removal takes the space away, not the devices: a member of another space stays signed in.
+    expect(detail()).toHaveTextContent(
+      "Fjern Farmor Birthe fra rummet? Farmor Birthe mister adgangen til rummet og kan kun komme ind igen med en ny invitation.",
+    );
+    expect(detail()).not.toHaveTextContent(/logges ud/);
     fireEvent.click(within(detail()).getByRole("button", { name: "Ja, fjern" }));
     expect(api.removeMember).toHaveBeenCalledWith("s1", "u-birthe");
     await waitFor(() => {
