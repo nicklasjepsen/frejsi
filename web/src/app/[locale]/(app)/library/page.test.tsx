@@ -68,8 +68,54 @@ describe("/[locale]/library and its phone pages (plan task 5)", () => {
       pages.map((page) => page()),
     )) as ReactElement<Record<string, unknown>>[];
     expect(isValidElement(list)).toBe(true);
-    expect(list?.props).toEqual({ spaceId: "s1", locale: "da" });
+    expect(list?.props).toEqual({ spaceId: "s1", locale: "da", initialFilter: "all" });
     expect(created?.props).toEqual({ spaceId: "s1", locale: "da" });
     expect(edited?.props).toEqual({ spaceId: "s1", locale: "da", foodId: "f-rye" });
+  });
+});
+
+describe("library filter search parameter (#122)", () => {
+  it.each(["all", "unverified", "own", "favourites", "recent", "off", "frida", "future-source"])(
+    "passes the valid filter %s to the screen",
+    async (filter) => {
+      as(false, "owner");
+      const page = (await LibraryPage({
+        params,
+        searchParams: Promise.resolve({ filter }),
+      })) as ReactElement<Record<string, unknown>>;
+      expect(page.props.initialFilter).toBe(filter);
+    },
+  );
+
+  it.each([
+    undefined,
+    "",
+    "UNKNOWN",
+    " unverified",
+    "unverified ",
+    "off/source",
+    "a".repeat(21),
+    ["unverified"],
+    ["unverified", "all"],
+  ])("falls back to all for a missing or malformed filter %j", async (filter) => {
+    as(false, "carer");
+    const page = (await LibraryPage({
+      params,
+      searchParams: Promise.resolve({ filter }),
+    })) as ReactElement<Record<string, unknown>>;
+    expect(page.props.initialFilter).toBe("all");
+  });
+
+  it.each([
+    { simpleMode: false, role: "viewer" as const, target: "/da/today" },
+    { simpleMode: true, role: "carer" as const, target: "/da/now" },
+  ])("keeps the redirect to $target with a filter", async ({ simpleMode, role, target }) => {
+    as(simpleMode, role);
+    await expect(
+      LibraryPage({
+        params,
+        searchParams: Promise.resolve({ filter: "unverified" }),
+      }),
+    ).rejects.toThrow(`redirect:${target}`);
   });
 });
