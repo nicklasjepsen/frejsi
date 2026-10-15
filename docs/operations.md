@@ -244,9 +244,15 @@ These suites stay in `release.yml`, never PR CI.
 
 The web build runs `scripts/prepare-standalone.ts` after Next.js. It adds the generated Prisma
 client/engine that pnpm's file trace misses and puts the static assets beside the server. It also
-writes the root `server.js` that Static Web Apps starts, because the monorepo trace nests the app
-under `web/`; without it the deploy ends in "Web app warm up timed out", and `deploy.sh` refuses
-such a bundle. The bundle must contain no symlinks: the GitHub artifact between release jobs drops
+writes the root `server.js` that Static Web Apps starts (`node server.js`), because the monorepo
+trace nests the app under `web/`; `deploy.sh` refuses a bundle without it. The script also writes
+the bundle's root `package.json` (CommonJS, `start: node server.js`), because the trace copies a
+different one depending on the machine. That entry copies the
+upload's warm-up probe file (`/.swa/health.html`, which must read exactly `healthy`) from the root
+`public/` into `web/public/`, where the nested server serves from, and listens on every interface,
+since App Service sets `HOSTNAME` to the container's name and Next binds to it. Any of these
+missing ends the deploy in "Web app warm up timed out" after ten minutes with no log from the
+app; the browser suite checks the probe file. The bundle must contain no symlinks: the GitHub artifact between release jobs drops
 them, and a copied pnpm link cannot find its package's dependencies (the server then dies on start
 with "Cannot find module", which Static Web Apps also reports as a warm-up timeout). `.npmrc` sets
 `node-linker=hoisted` for a flat `node_modules`, and the script fails the build if a link appears.

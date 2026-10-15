@@ -19,6 +19,16 @@ test("/api/health reports the release version", async ({ request }) => {
   });
 });
 
+test("the Static Web Apps warm-up probe file answers exactly as the upload writes it", async ({
+  request,
+}) => {
+  // Static Web Apps probes /.swa/health.html until it reads "healthy"; anything else fails the
+  // deploy with "Web app warm up timed out" (scripts/prepare-standalone.ts).
+  const response = await request.get("/.swa/health.html");
+  expect(response.status()).toBe(200);
+  expect(await response.text()).toBe("healthy");
+});
+
 // Hand-written EXIF orientation/GPS-version and ICC markers on generated pixels, as in the
 // processor's unit fixture. No coordinates or camera metadata from a person are used.
 function taggedJpeg(jpeg: Buffer): Buffer {

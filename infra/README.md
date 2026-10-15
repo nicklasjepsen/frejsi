@@ -122,7 +122,12 @@ In this order. Everything after step 5 is one tap or one DNS record.
 4. **Role assignments** for the app registration's service principal on the resource group:
    **Owner**, or Contributor plus User Access Administrator (the deployment creates role assignments
    for the Function App's identity and for the deploy principal itself). Key Vault data-plane access is
-   granted by Bicep, not by hand.
+   granted by Bicep, not by hand. Also one read-only grant at **subscription** scope: a custom role
+   with the action `Microsoft.Web/locations/*/read`. ARM polls asynchronous Static Web Apps
+   operations (the custom domain) at
+   `/subscriptions/<id>/providers/Microsoft.Web/locations/<region>/staticSitesOperationStatuses/…`,
+   outside the resource group; without the grant the infra job hangs with `AuthorizationFailed` until
+   it times out (the exact action is not a registered operation, so only the wildcard can grant it).
 5. **Repository variables** (Settings → Secrets and variables → Actions → Variables):
    `AZURE_CLIENT_ID`, `AZURE_TENANT_ID`, `AZURE_SUBSCRIPTION_ID`, and `SQL_SERVER_ID` only for an
    existing SQL server (below). Leave `CUSTOM_DOMAIN` unset until step 7. **Repository secret**
