@@ -99,5 +99,81 @@
       "validation": "Noget i det, du skrev, kunne ikke bruges. Kig det igennem og prøv igen.",
       "internal": "Noget gik galt hos os. Prøv igen om et øjeblik."
     }
+  },
+  "people": {
+    "title": "Personer",
+    "titleIn": "Personer i {space}",
+    "back": "Tilbage til Mere",
+    "peopleCount": "{count, plural, one {# person} other {# personer}}",
+    "deviceCount": "{count, plural, one {# enhed} other {# enheder}}",
+    "pendingCount": "{count, plural, one {# invitation venter} other {# invitationer venter}}",
+    "you": "(dig)",
+    "noGlucose": "ingen glukose",
+    "simpleViewInline": "simpel visning",
+    "view": {
+      "normal": "Normal",
+      "simple": "Simpel visning"
+    },
+    "columns": {
+      "person": "Person",
+      "role": "Rolle",
+      "view": "Visning",
+      "devices": "Enheder",
+      "lastSeen": "Sidst set"
+    },
+    "lastSeen": {
+      "never": "Aldrig",
+      "now": "Nu",
+      "today": "I dag {time}",
+      "yesterday": "I går {time}"
+    },
+    "deviceLastSeen": {
+      "never": "ikke brugt endnu",
+      "now": "sidst set nu",
+      "today": "sidst set i dag {time}",
+      "yesterday": "sidst set i går {time}",
+      "other": "sidst set {when}"
+    },
+    "devices": "Enheder",
+    "noDevices": "Ingen enheder endnu",
+    "unnamedDevice": "Enhed",
+    "addDevice": "+ Tilføj en enhed",
+    "remove": "Fjern",
+    "removeMember": "Fjern {name} fra rummet",
+    "confirmRemoveMember": "Fjern {name} fra rummet? Enhederne logges ud, og {name} kan kun komme ind igen med en ny invitation.",
+    "confirmRemoveDevice": "Fjern {device}? Den logges ud med det samme.",
+    "confirm": "Ja, fjern",
+    "cancel": "Fortryd",
+    "deviceNotice": "Nyt telefonnummer eller ny telefon? Tilføj en enhed til personen her – det er den eneste vej ind. Ingen adgangskoder.",
+    "deviceNoticeDesktop": "Enheder: ny telefon = ny enhed, tilføjet via et »tilføj enhed«-link til den samme person. Det er den eneste vej ind og den eneste vej tilbage.",
+    "ownerOnly": "Kun ejere kan invitere, skifte roller og fjerne personer og enheder.",
+    "role": "Rolle",
+    "roleCards": {
+      "carer": "Logger måltider, godkender mad, ser kurven",
+      "viewer": "Ser dagens måltider og kulhydrater. Aldrig glukose.",
+      "owner": "Alt, inkl. personer, enheder og indstillinger"
+    },
+    "detail": "Vis detaljer for {name}",
+    "close": "Luk",
+    "invite": {
+      "button": "Invitér en person",
+      "title": "Invitér en person",
+      "name": "Navn",
+      "create": "Opret invitation",
+      "qr": "QR-kode til invitationen",
+      "scanOrSend": "Lad {name} scanne koden, eller send linket.",
+      "deviceScanOrSend": "Lad {name} scanne koden med den nye enhed, eller send linket til den.",
+      "validity": "Gælder i 7 dage · kan bruges én gang",
+      "link": "Invitationslink",
+      "copyLink": "Kopiér link",
+      "copied": "Linket er kopieret",
+      "new": "Ny invitation",
+      "sent": "{days, plural, =0 {Invitation sendt i dag} =1 {Invitation sendt i går} other {Invitation sendt for # dage siden}}",
+      "expires": "{days, plural, =0 {udløber i dag} one {udløber om # dag} other {udløber om # dage}}",
+      "resend": "Send igen",
+      "revoke": "Træk tilbage",
+      "pendingRow": "Invitation til {name}",
+      "newDevice": "Ny enhed til {name}"
+    }
   }
 }
