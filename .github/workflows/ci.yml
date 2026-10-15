@@ -30,7 +30,7 @@ jobs:
       # Placeholder so `prisma validate` and `prisma migrate diff` can load the schema; nothing connects.
       DATABASE_URL: "sqlserver://localhost:1433;database=frejsi;user=sa;password=placeholder;encrypt=true"
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
