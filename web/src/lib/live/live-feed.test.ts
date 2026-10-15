@@ -30,6 +30,8 @@ function fakeServer(initial: { readings: Reading[]; lastSeq: number }) {
     live: true,
     /** When true, negotiate never answers (a stalled credential call on the server). */
     negotiateHangs: false,
+    /** The socket URL the next negotiate hands out; a test can issue a new token per call. */
+    socketUrl: (): string => SOCKET_URL,
     events: [] as EventEnvelope[],
     window: {
       lastSeq: initial.lastSeq,
@@ -73,7 +75,7 @@ function fakeServer(initial: { readings: Reading[]; lastSeq: number }) {
       server.negotiateHangs
         ? new Promise<Response>(() => undefined)
         : server.live
-          ? jsonResponse({ url: SOCKET_URL })
+          ? jsonResponse({ url: server.socketUrl() })
           : jsonResponse({ error: { code: "internal", message: "" } }, 503),
     "/events": (url) => {
       const since = Number(url.searchParams.get("since"));
@@ -202,6 +204,45 @@ describe("LiveFeed (plan §5)", () => {
     expect(feed.getState().readings.map((r) => r.mmol)).toEqual([7.0, 7.2]);
     await vi.advanceTimersByTimeAsync(POLL_MS * 3);
     expect(calls).toHaveLength(8);
+  });
+
+  it("asks negotiate for a new token on every reconnect and never reuses an expired one", async () => {
+    const { server, fetch, calls } = fakeServer({ readings: [], lastSeq: 1 });
+    // Client tokens expire within minutes (issue #79): each negotiate issues a different one.
+    let issued = 0;
+    server.socketUrl = () => {
+      issued += 1;
+      return `wss://example.webpubsub.azure.com/client/hubs/frejsi?access_token=token-${issued}`;
+    };
+    const { feed } = start(fetch);
+    await flush();
+    sockets[0]?.open();
+    await flush();
+    expect(sockets[0]?.url).toContain("access_token=token-1");
+
+    // The socket outlives its token, then drops (network change, iOS sleep, service restart).
+    await vi.advanceTimersByTimeAsync(10 * 60_000);
+    sockets[0]?.drop();
+    await flush();
+    expect(sockets).toHaveLength(1);
+    await vi.advanceTimersByTimeAsync(POLL_MS);
+    expect(calls.filter((c) => c.endsWith("/negotiate"))).toHaveLength(2);
+    expect(sockets).toHaveLength(2);
+    expect(sockets[1]?.url).toContain("access_token=token-2");
+    sockets[1]?.open();
+    await flush();
+    expect(feed.getState().connection).toBe("live");
+
+    // A second drop: a third token, not the second again.
+    sockets[1]?.drop();
+    await flush();
+    await vi.advanceTimersByTimeAsync(POLL_MS);
+    expect(calls.filter((c) => c.endsWith("/negotiate"))).toHaveLength(3);
+    expect(sockets.map((s) => s.url.split("access_token=")[1])).toEqual([
+      "token-1",
+      "token-2",
+      "token-3",
+    ]);
   });
 
   it("falls back to polling when negotiate answers 503 (no Web PubSub), without a socket", async () => {
