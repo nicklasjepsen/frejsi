@@ -167,7 +167,9 @@
       "low": "Nedre grænse",
       "high": "Øvre grænse",
       "note": "{unit} · som aftalt med klinikken",
-      "save": "Gem"
+      "save": "Gem",
+      "storedAs": "Gemmes som {low}–{high} mmol/L",
+      "crossed": "Den nedre grænse skal være lavere end den øvre."
     },
     "simpleMode": {
       "lead": "Stor, billedbaseret og kun tjekket mad. Pr. person.",

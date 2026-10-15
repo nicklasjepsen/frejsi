@@ -133,7 +133,9 @@ describe("SettingsScreen · the source (Indstillinger-Telefon, Indstillinger-Des
     expect(screen.getByTestId("source-card")).toHaveTextContent(
       "Forbundet · sidste måling i dag 15:13 · EU-server · henter hvert 5. minut",
     );
-    expect(screen.getByText("Hvor Frejsi henter Almas målinger fra. Én kilde ad gangen.")).toBeInTheDocument();
+    expect(
+      screen.getByText("Hvor Frejsi henter Almas målinger fra. Én kilde ad gangen."),
+    ).toBeInTheDocument();
     expect(screen.getAllByRole("link", { name: "Skift login" })[0]).toHaveAttribute(
       "href",
       "/da/settings/source",
@@ -222,6 +224,29 @@ describe("SettingsScreen · unit and target range (per space, owners only)", () 
     expect(nth(calls, 0).body).toEqual({ targetLow: 3.9, targetHigh: 10 });
   });
 
+  it("shows the mmol an mg/dL range will be stored as, so rounding is visible", () => {
+    mount({ ...connected, space: { ...space, glucoseUnit: "mgdl" } }, "da", fakeApi().api);
+    fireEvent.change(screen.getByLabelText("Nedre grænse"), { target: { value: "70" } });
+    fireEvent.change(screen.getByLabelText("Øvre grænse"), { target: { value: "179" } });
+    expect(screen.getByTestId("target-range-stored")).toHaveTextContent(
+      "Gemmes som 3,9–9,9 mmol/L",
+    );
+  });
+
+  it("refuses a range that collapses after conversion, says why, and saves nothing", () => {
+    const { api, calls } = fakeApi();
+    mount({ ...connected, space: { ...space, glucoseUnit: "mgdl" } }, "da", api);
+    fireEvent.change(screen.getByLabelText("Nedre grænse"), { target: { value: "100" } });
+    fireEvent.change(screen.getByLabelText("Øvre grænse"), { target: { value: "101" } });
+    fireEvent.click(screen.getByRole("button", { name: "Gem" }));
+    expect(calls).toEqual([]);
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      "Den nedre grænse skal være lavere end den øvre.",
+    );
+    fireEvent.change(screen.getByLabelText("Øvre grænse"), { target: { value: "180" } });
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+  });
+
   it("does not save an emptied bound as zero", () => {
     const { api, calls } = fakeApi();
     mount(connected, "da", api);
@@ -246,7 +271,9 @@ describe("SettingsScreen · unit and target range (per space, owners only)", () 
     const refreshed: SettingsData = {
       ...connected,
       space: { ...space, glucoseUnit: "mmol", targetLow: 3.5, targetHigh: 9 },
-      people: connected.people.map((p) => (p.userId === child.userId ? { ...p, simpleMode: false } : p)),
+      people: connected.people.map((p) =>
+        p.userId === child.userId ? { ...p, simpleMode: false } : p,
+      ),
     };
     view.rerender(
       <I18nProvider locale="da" messages={getMessages("da")} timeZone="Europe/Copenhagen">
@@ -267,7 +294,9 @@ describe("SettingsScreen · unit and target range (per space, owners only)", () 
     expect(screen.getByRole("radio", { name: "mmol/L" })).toBeDisabled();
     expect(screen.queryByLabelText("Nedre grænse")).toBeNull();
     expect(screen.queryByRole("link", { name: "Skift login" })).toBeNull();
-    expect(screen.getByText("Du kan ændre dit eget sprog, din visning og din farve")).toBeInTheDocument();
+    expect(
+      screen.getByText("Du kan ændre dit eget sprog, din visning og din farve"),
+    ).toBeInTheDocument();
     expect(screen.queryByText(/kun ejere kan ændre her/)).toBeNull();
   });
 
@@ -295,18 +324,17 @@ describe("SettingsScreen · language, simpleMode and colour (per person)", () =>
   it("lists every member for an owner: a switch for everyone but the viewer, a language control for everyone but oneself", () => {
     mount(connected);
     const rows = screen.getAllByTestId("person-row");
-    expect(rows.map((r) => within(r).queryByRole("switch")?.getAttribute("aria-label") ?? null)).toEqual([
+    expect(
+      rows.map((r) => within(r).queryByRole("switch")?.getAttribute("aria-label") ?? null),
+    ).toEqual([
       "Simpel visning for Jonas",
       "Simpel visning for Alma",
       "Simpel visning for Farmor Birthe",
       null,
     ]);
-    expect(rows.map((r) => within(r).queryByRole("radiogroup")?.getAttribute("aria-label") ?? null)).toEqual([
-      null,
-      "Sprog for Alma",
-      "Sprog for Farmor Birthe",
-      "Sprog for Laerke",
-    ]);
+    expect(
+      rows.map((r) => within(r).queryByRole("radiogroup")?.getAttribute("aria-label") ?? null),
+    ).toEqual([null, "Sprog for Alma", "Sprog for Farmor Birthe", "Sprog for Laerke"]);
     expect(nth(rows, 0)).toHaveTextContent("Jonas (dig)");
     expect(within(nth(rows, 1)).getByRole("switch")).toHaveAttribute("aria-checked", "true");
   });
@@ -340,10 +368,9 @@ describe("SettingsScreen · language, simpleMode and colour (per person)", () =>
       body: { simpleMode: true },
     });
     await waitFor(() => {
-      expect(screen.getByRole("switch", { name: "Simpel visning for Farmor Birthe" })).toHaveAttribute(
-        "aria-checked",
-        "true",
-      );
+      expect(
+        screen.getByRole("switch", { name: "Simpel visning for Farmor Birthe" }),
+      ).toHaveAttribute("aria-checked", "true");
     });
     expect(navigation.refresh).toHaveBeenCalled();
   });
