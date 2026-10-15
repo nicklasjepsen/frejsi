@@ -1,0 +1,147 @@
+.photo {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.placeholder {
+  width: 100%;
+  height: 100%;
+  display: grid;
+  place-items: center;
+  background: #e4d8c3;
+  color: #7a6b52;
+  font-size: 13px;
+}
+.tile {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+  min-width: 0;
+  padding: 10px;
+  border: 3px solid transparent;
+  border-radius: 20px;
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: var(--card-shadow);
+  cursor: pointer;
+  text-align: start;
+}
+.tile[aria-pressed="true"] {
+  border-color: var(--accent-base);
+  background: var(--kit-tint);
+}
+.tile:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+.tileImage {
+  position: relative;
+  width: 100%;
+  overflow: hidden;
+  border-radius: 12px;
+}
+.tileTitle {
+  font: 600 21px/1.1 var(--font-display-stack);
+}
+.tile[data-size="92"] .tileTitle {
+  font-size: 17px;
+}
+.tile[data-size="112"] .tileTitle {
+  font-size: 22px;
+}
+.tile[data-size="140"] .tileTitle {
+  font-size: 26px;
+}
+.selectionCheck {
+  position: absolute;
+  right: 6px;
+  top: 6px;
+  width: 24px;
+  height: 24px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  color: var(--accent-on);
+  background: var(--accent-base);
+  font-weight: 700;
+}
+.subtitle {
+  font-size: 13px;
+  color: var(--text-muted);
+}
+.amount {
+  font-variant-numeric: tabular-nums;
+}
+.portions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 8px;
+}
+.portion {
+  min-height: 46px;
+}
+.grams {
+  width: 96px;
+}
+.grams input {
+  height: 46px;
+  border-radius: 999px;
+}
+.picker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.search {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid var(--hairline);
+  border-radius: 16px;
+  background: var(--surface-input);
+  color: var(--text-muted);
+  padding: 0 14px;
+  min-height: 50px;
+}
+.search input {
+  flex: 1;
+  min-width: 0;
+  height: 48px;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  color: var(--text);
+}
+.search:focus-within {
+  outline: 2px solid var(--accent-base);
+  outline-offset: 2px;
+}
+.searchHint {
+  font-size: 12px;
+}
+@media (min-width: 1280px) {
+  .search {
+    min-height: 44px;
+    border-radius: 14px;
+  }
+  .search input {
+    height: 42px;
+  }
+}
+@media (prefers-color-scheme: dark) {
+  .placeholder {
+    background: #4a3f33;
+    color: #c9bba3;
+  }
+  .tile {
+    box-shadow: none;
+    border-color: var(--hairline);
+  }
+  .tile[aria-pressed="true"] {
+    border-color: var(--accent-base);
+  }
+}

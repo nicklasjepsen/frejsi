@@ -1,0 +1,251 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`food kit theme matrix > forest dark: checked badge, pressed chip and selected tile 1`] = `
+{
+  "html": "<div data-accent="forest" data-mode="dark"><span class="_theme_030889 _badge_030889" data-variant="checked">Tjekket</span><button type="button" class="_theme_030889 _chip_030889 " aria-pressed="true" data-variant="default">Fictional food</button><button type="button" class="_theme_030889 _tile_b361ff" data-size="104" aria-pressed="true"><div class="_tileImage_b361ff" style="height:104px"><span class="_placeholder_b361ff" role="img" aria-label="foto">foto</span><span data-testid="selection-check" class="_selectionCheck_b361ff" aria-hidden="true">✓</span></div><span class="_tileTitle_b361ff">Fictional food</span></button></div>",
+  "palette": "
+    --accent-base: #86bbad;
+    --accent-strong: #a3d0c4;
+    --accent-tint: #27403a;
+    --accent-tint-border: #3a5c53;
+    --accent-band: #86bbad;
+    --accent-on: #1f1b17;
+  ",
+  "tintRules": ".theme {
+  --kit-tint: var(--accent-tint);
+  --kit-tint-border: var(--accent-tint-border);
+}
+:global([data-accent="sea"]) .theme,
+:global([data-accent="forest"]) .theme,
+:global([data-accent="garnet"]) .theme {
+  --kit-tint: color-mix(in srgb, var(--accent-base) 12%, var(--surface));
+  --kit-tint-border: color-mix(in srgb, var(--accent-base) 30%, var(--surface));
+}
+",
+}
+`;
+
+exports[`food kit theme matrix > forest light: checked badge, pressed chip and selected tile 1`] = `
+{
+  "html": "<div data-accent="forest" data-mode="light"><span class="_theme_030889 _badge_030889" data-variant="checked">Tjekket</span><button type="button" class="_theme_030889 _chip_030889 " aria-pressed="true" data-variant="default">Fictional food</button><button type="button" class="_theme_030889 _tile_b361ff" data-size="104" aria-pressed="true"><div class="_tileImage_b361ff" style="height:104px"><span class="_placeholder_b361ff" role="img" aria-label="foto">foto</span><span data-testid="selection-check" class="_selectionCheck_b361ff" aria-hidden="true">✓</span></div><span class="_tileTitle_b361ff">Fictional food</span></button></div>",
+  "palette": "
+  --accent-base: #2f6b5e;
+  --accent-strong: #22514a;
+  --accent-tint: #ddebe6;
+  --accent-tint-border: #b3cfc6;
+  --accent-band: #2f6b5e;
+  --accent-on: #f6f1e8;
+",
+  "tintRules": ".theme {
+  --kit-tint: var(--accent-tint);
+  --kit-tint-border: var(--accent-tint-border);
+}
+:global([data-accent="sea"]) .theme,
+:global([data-accent="forest"]) .theme,
+:global([data-accent="garnet"]) .theme {
+  --kit-tint: color-mix(in srgb, var(--accent-base) 12%, var(--surface));
+  --kit-tint-border: color-mix(in srgb, var(--accent-base) 30%, var(--surface));
+}
+",
+}
+`;
+
+exports[`food kit theme matrix > garnet dark: checked badge, pressed chip and selected tile 1`] = `
+{
+  "html": "<div data-accent="garnet" data-mode="dark"><span class="_theme_030889 _badge_030889" data-variant="checked">Tjekket</span><button type="button" class="_theme_030889 _chip_030889 " aria-pressed="true" data-variant="default">Fictional food</button><button type="button" class="_theme_030889 _tile_b361ff" data-size="104" aria-pressed="true"><div class="_tileImage_b361ff" style="height:104px"><span class="_placeholder_b361ff" role="img" aria-label="foto">foto</span><span data-testid="selection-check" class="_selectionCheck_b361ff" aria-hidden="true">✓</span></div><span class="_tileTitle_b361ff">Fictional food</span></button></div>",
+  "palette": "
+    --accent-base: #c98a9c;
+    --accent-strong: #dba7b6;
+    --accent-tint: #43303a;
+    --accent-tint-border: #5f4552;
+    --accent-band: #c98a9c;
+    --accent-on: #1f1b17;
+  ",
+  "tintRules": ".theme {
+  --kit-tint: var(--accent-tint);
+  --kit-tint-border: var(--accent-tint-border);
+}
+:global([data-accent="sea"]) .theme,
+:global([data-accent="forest"]) .theme,
+:global([data-accent="garnet"]) .theme {
+  --kit-tint: color-mix(in srgb, var(--accent-base) 12%, var(--surface));
+  --kit-tint-border: color-mix(in srgb, var(--accent-base) 30%, var(--surface));
+}
+",
+}
+`;
+
+exports[`food kit theme matrix > garnet light: checked badge, pressed chip and selected tile 1`] = `
+{
+  "html": "<div data-accent="garnet" data-mode="light"><span class="_theme_030889 _badge_030889" data-variant="checked">Tjekket</span><button type="button" class="_theme_030889 _chip_030889 " aria-pressed="true" data-variant="default">Fictional food</button><button type="button" class="_theme_030889 _tile_b361ff" data-size="104" aria-pressed="true"><div class="_tileImage_b361ff" style="height:104px"><span class="_placeholder_b361ff" role="img" aria-label="foto">foto</span><span data-testid="selection-check" class="_selectionCheck_b361ff" aria-hidden="true">✓</span></div><span class="_tileTitle_b361ff">Fictional food</span></button></div>",
+  "palette": "
+  --accent-base: #7a3a4b;
+  --accent-strong: #5c2a38;
+  --accent-tint: #f0e0e4;
+  --accent-tint-border: #d3b5bd;
+  --accent-band: #7a3a4b;
+  --accent-on: #f6f1e8;
+",
+  "tintRules": ".theme {
+  --kit-tint: var(--accent-tint);
+  --kit-tint-border: var(--accent-tint-border);
+}
+:global([data-accent="sea"]) .theme,
+:global([data-accent="forest"]) .theme,
+:global([data-accent="garnet"]) .theme {
+  --kit-tint: color-mix(in srgb, var(--accent-base) 12%, var(--surface));
+  --kit-tint-border: color-mix(in srgb, var(--accent-base) 30%, var(--surface));
+}
+",
+}
+`;
+
+exports[`food kit theme matrix > olive dark: checked badge, pressed chip and selected tile 1`] = `
+{
+  "html": "<div data-accent="olive" data-mode="dark"><span class="_theme_030889 _badge_030889" data-variant="checked">Tjekket</span><button type="button" class="_theme_030889 _chip_030889 " aria-pressed="true" data-variant="default">Fictional food</button><button type="button" class="_theme_030889 _tile_b361ff" data-size="104" aria-pressed="true"><div class="_tileImage_b361ff" style="height:104px"><span class="_placeholder_b361ff" role="img" aria-label="foto">foto</span><span data-testid="selection-check" class="_selectionCheck_b361ff" aria-hidden="true">✓</span></div><span class="_tileTitle_b361ff">Fictional food</span></button></div>",
+  "palette": "
+    --accent-base: #9dae78;
+    --accent-strong: #b8c797;
+    --accent-tint: #353b2a;
+    --accent-tint-border: #4a5438;
+    --accent-band: #9dae78;
+    --accent-on: #1f1b17;
+  ",
+  "tintRules": ".theme {
+  --kit-tint: var(--accent-tint);
+  --kit-tint-border: var(--accent-tint-border);
+}
+:global([data-accent="sea"]) .theme,
+:global([data-accent="forest"]) .theme,
+:global([data-accent="garnet"]) .theme {
+  --kit-tint: color-mix(in srgb, var(--accent-base) 12%, var(--surface));
+  --kit-tint-border: color-mix(in srgb, var(--accent-base) 30%, var(--surface));
+}
+",
+}
+`;
+
+exports[`food kit theme matrix > olive light: checked badge, pressed chip and selected tile 1`] = `
+{
+  "html": "<div data-accent="olive" data-mode="light"><span class="_theme_030889 _badge_030889" data-variant="checked">Tjekket</span><button type="button" class="_theme_030889 _chip_030889 " aria-pressed="true" data-variant="default">Fictional food</button><button type="button" class="_theme_030889 _tile_b361ff" data-size="104" aria-pressed="true"><div class="_tileImage_b361ff" style="height:104px"><span class="_placeholder_b361ff" role="img" aria-label="foto">foto</span><span data-testid="selection-check" class="_selectionCheck_b361ff" aria-hidden="true">✓</span></div><span class="_tileTitle_b361ff">Fictional food</span></button></div>",
+  "palette": "
+  --accent-base: #5a6a3b;
+  --accent-strong: #3f4c28;
+  --accent-tint: #e9ecdf;
+  --accent-tint-border: #c9cdb8;
+  --accent-band: #6b7a4b;
+  --accent-on: #f6f1e8;
+",
+  "tintRules": ".theme {
+  --kit-tint: var(--accent-tint);
+  --kit-tint-border: var(--accent-tint-border);
+}
+:global([data-accent="sea"]) .theme,
+:global([data-accent="forest"]) .theme,
+:global([data-accent="garnet"]) .theme {
+  --kit-tint: color-mix(in srgb, var(--accent-base) 12%, var(--surface));
+  --kit-tint-border: color-mix(in srgb, var(--accent-base) 30%, var(--surface));
+}
+",
+}
+`;
+
+exports[`food kit theme matrix > plum dark: checked badge, pressed chip and selected tile 1`] = `
+{
+  "html": "<div data-accent="plum" data-mode="dark"><span class="_theme_030889 _badge_030889" data-variant="checked">Tjekket</span><button type="button" class="_theme_030889 _chip_030889 " aria-pressed="true" data-variant="default">Fictional food</button><button type="button" class="_theme_030889 _tile_b361ff" data-size="104" aria-pressed="true"><div class="_tileImage_b361ff" style="height:104px"><span class="_placeholder_b361ff" role="img" aria-label="foto">foto</span><span data-testid="selection-check" class="_selectionCheck_b361ff" aria-hidden="true">✓</span></div><span class="_tileTitle_b361ff">Fictional food</span></button></div>",
+  "palette": "
+    --accent-base: #b59ad0;
+    --accent-strong: #cdb8e3;
+    --accent-tint: #3a2f47;
+    --accent-tint-border: #54456a;
+    --accent-band: #b59ad0;
+    --accent-on: #1f1b17;
+  ",
+  "tintRules": ".theme {
+  --kit-tint: var(--accent-tint);
+  --kit-tint-border: var(--accent-tint-border);
+}
+:global([data-accent="sea"]) .theme,
+:global([data-accent="forest"]) .theme,
+:global([data-accent="garnet"]) .theme {
+  --kit-tint: color-mix(in srgb, var(--accent-base) 12%, var(--surface));
+  --kit-tint-border: color-mix(in srgb, var(--accent-base) 30%, var(--surface));
+}
+",
+}
+`;
+
+exports[`food kit theme matrix > plum light: checked badge, pressed chip and selected tile 1`] = `
+{
+  "html": "<div data-accent="plum" data-mode="light"><span class="_theme_030889 _badge_030889" data-variant="checked">Tjekket</span><button type="button" class="_theme_030889 _chip_030889 " aria-pressed="true" data-variant="default">Fictional food</button><button type="button" class="_theme_030889 _tile_b361ff" data-size="104" aria-pressed="true"><div class="_tileImage_b361ff" style="height:104px"><span class="_placeholder_b361ff" role="img" aria-label="foto">foto</span><span data-testid="selection-check" class="_selectionCheck_b361ff" aria-hidden="true">✓</span></div><span class="_tileTitle_b361ff">Fictional food</span></button></div>",
+  "palette": "
+  --accent-base: #5b3f73;
+  --accent-strong: #432c57;
+  --accent-tint: #eae3ef;
+  --accent-tint-border: #cdbfd8;
+  --accent-band: #5b3f73;
+  --accent-on: #f6f1e8;
+",
+  "tintRules": ".theme {
+  --kit-tint: var(--accent-tint);
+  --kit-tint-border: var(--accent-tint-border);
+}
+:global([data-accent="sea"]) .theme,
+:global([data-accent="forest"]) .theme,
+:global([data-accent="garnet"]) .theme {
+  --kit-tint: color-mix(in srgb, var(--accent-base) 12%, var(--surface));
+  --kit-tint-border: color-mix(in srgb, var(--accent-base) 30%, var(--surface));
+}
+",
+}
+`;
+
+exports[`food kit theme matrix > sea dark: checked badge, pressed chip and selected tile 1`] = `
+{
+  "html": "<div data-accent="sea" data-mode="dark"><span class="_theme_030889 _badge_030889" data-variant="checked">Tjekket</span><button type="button" class="_theme_030889 _chip_030889 " aria-pressed="true" data-variant="default">Fictional food</button><button type="button" class="_theme_030889 _tile_b361ff" data-size="104" aria-pressed="true"><div class="_tileImage_b361ff" style="height:104px"><span class="_placeholder_b361ff" role="img" aria-label="foto">foto</span><span data-testid="selection-check" class="_selectionCheck_b361ff" aria-hidden="true">✓</span></div><span class="_tileTitle_b361ff">Fictional food</span></button></div>",
+  "palette": "
+    --accent-base: #8fb0cd;
+    --accent-strong: #aac6de;
+    --accent-tint: #2c3a47;
+    --accent-tint-border: #405466;
+    --accent-band: #8fb0cd;
+    --accent-on: #1f1b17;
+  ",
+  "tintRules": ".theme {
+  --kit-tint: var(--accent-tint);
+  --kit-tint-border: var(--accent-tint-border);
+}
+:global([data-accent="sea"]) .theme,
+:global([data-accent="forest"]) .theme,
+:global([data-accent="garnet"]) .theme {
+  --kit-tint: color-mix(in srgb, var(--accent-base) 12%, var(--surface));
+  --kit-tint-border: color-mix(in srgb, var(--accent-base) 30%, var(--surface));
+}
+",
+}
+`;
+
+exports[`food kit theme matrix > sea light: checked badge, pressed chip and selected tile 1`] = `
+{
+  "html": "<div data-accent="sea" data-mode="light"><span class="_theme_030889 _badge_030889" data-variant="checked">Tjekket</span><button type="button" class="_theme_030889 _chip_030889 " aria-pressed="true" data-variant="default">Fictional food</button><button type="button" class="_theme_030889 _tile_b361ff" data-size="104" aria-pressed="true"><div class="_tileImage_b361ff" style="height:104px"><span class="_placeholder_b361ff" role="img" aria-label="foto">foto</span><span data-testid="selection-check" class="_selectionCheck_b361ff" aria-hidden="true">✓</span></div><span class="_tileTitle_b361ff">Fictional food</span></button></div>",
+  "palette": "
+  --accent-base: #3b5f7e;
+  --accent-strong: #2b4660;
+  --accent-tint: #e0e8ef;
+  --accent-tint-border: #b8c8d6;
+  --accent-band: #3b5f7e;
+  --accent-on: #f6f1e8;
+",
+  "tintRules": ".theme {
+  --kit-tint: var(--accent-tint);
+  --kit-tint-border: var(--accent-tint-border);
+}
+:global([data-accent="sea"]) .theme,
+:global([data-accent="forest"]) .theme,
+:global([data-accent="garnet"]) .theme {
+  --kit-tint: color-mix(in srgb, var(--accent-base) 12%, var(--surface));
+  --kit-tint-border: color-mix(in srgb, var(--accent-base) 30%, var(--surface));
+}
+",
+}
+`;

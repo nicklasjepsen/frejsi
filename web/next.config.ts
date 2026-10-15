@@ -9,7 +9,14 @@ const nextConfig: NextConfig = {
   // @frejsi/shared is consumed as TypeScript source.
   transpilePackages: ["@frejsi/shared"],
   // Native engines and the App Insights SDK stay outside the webpack bundle.
-  serverExternalPackages: ["@prisma/client", "applicationinsights"],
+  serverExternalPackages: ["@prisma/client", "applicationinsights", "sharp"],
+  // pnpm keeps native packages outside web/node_modules; include both the loader and libvips.
+  outputFileTracingIncludes: {
+    "/*": [
+      "../node_modules/.pnpm/sharp@*/node_modules/sharp/**/*",
+      "../node_modules/.pnpm/@img+sharp-*/node_modules/@img/**/*",
+    ],
+  },
   reactStrictMode: true,
 };
 
