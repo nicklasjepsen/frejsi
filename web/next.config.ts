@@ -10,12 +10,10 @@ const nextConfig: NextConfig = {
   transpilePackages: ["@frejsi/shared"],
   // Native engines and the App Insights SDK stay outside the webpack bundle.
   serverExternalPackages: ["@prisma/client", "applicationinsights", "sharp"],
-  // pnpm keeps native packages outside web/node_modules; include both the loader and libvips.
+  // The workspace hoists packages to the root node_modules (.npmrc node-linker=hoisted); include
+  // sharp's loader and its native libvips packages, which the trace cannot see.
   outputFileTracingIncludes: {
-    "/*": [
-      "../node_modules/.pnpm/sharp@*/node_modules/sharp/**/*",
-      "../node_modules/.pnpm/@img+sharp-*/node_modules/@img/**/*",
-    ],
+    "/*": ["../node_modules/sharp/**/*", "../node_modules/@img/**/*"],
   },
   reactStrictMode: true,
 };

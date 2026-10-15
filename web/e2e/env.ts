@@ -1,12 +1,22 @@
 // What the e2e run and the app under test share (plan §8): the port, the origin, the database
 // and the version. `playwright.config.ts` reads these and puts them into the environment, so the
 // global setup and the workers see the same values.
+import { existsSync } from "node:fs";
 import path from "node:path";
 
 // web/ is CommonJS (no "type": "module"), and Playwright loads these files as such.
 
 export const WEB = path.resolve(__dirname, "..");
 export const SHARED = path.resolve(WEB, "../shared");
+
+/** A package's CLI: its own node_modules/.bin, else the workspace root's (.npmrc hoists there). */
+export function bin(dir: string, name: string): string {
+  return (
+    [dir, path.dirname(dir)]
+      .map((base) => path.join(base, "node_modules/.bin", name))
+      .find((file) => existsSync(file)) ?? path.join(dir, "node_modules/.bin", name)
+  );
+}
 export const OUTPUT = path.join(WEB, "e2e/.output");
 export const SERVER_LOG = path.join(OUTPUT, "server.log");
 

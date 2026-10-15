@@ -3,9 +3,7 @@
 import { execFileSync } from "node:child_process";
 import path from "node:path";
 
-import { SHARED, WEB, databaseName, withDatabase } from "./env";
-
-const bin = (dir: string, name: string) => path.join(dir, "node_modules/.bin", name);
+import { SHARED, WEB, bin, databaseName, withDatabase } from "./env";
 
 function run(file: string, args: string[], cwd: string, env: NodeJS.ProcessEnv = process.env) {
   execFileSync(file, args, { cwd, env, stdio: ["pipe", "pipe", "inherit"], encoding: "utf8" });

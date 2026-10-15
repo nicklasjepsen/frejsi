@@ -8,7 +8,10 @@
 //    because the root package.json (the workspace's) has no start script. The monorepo trace nests
 //    the app under web/, so the assets go in there and a root `server.js` starts web/server.js.
 //    Without it the v0.2.1 deploy ended in "Web app warm up timed out".
-import { cpSync, existsSync, writeFileSync } from "node:fs";
+// 3. No symlinks. The GitHub artifact between release jobs drops them, and a copied pnpm link
+//    cannot find its package's dependencies; .npmrc installs a flat node_modules, and the build
+//    fails if a link reaches the bundle again (the v0.2.2 deploy timed out warming up on this).
+import { cpSync, existsSync, readdirSync, writeFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import path from "node:path";
 
@@ -40,3 +43,15 @@ writeFileSync(
     "",
   ].join("\n"),
 );
+
+const links = readdirSync(standalone, { recursive: true, withFileTypes: true }).filter((entry) =>
+  entry.isSymbolicLink(),
+);
+const [firstLink] = links;
+if (firstLink) {
+  const first = path.relative(standalone, path.join(firstLink.parentPath, firstLink.name));
+  throw new Error(
+    `The standalone bundle contains ${String(links.length)} symlink(s), first ${first}; the release ` +
+      "artifact drops them. Is node-linker=hoisted still in .npmrc? Run pnpm install again.",
+  );
+}
