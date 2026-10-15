@@ -38,6 +38,7 @@ vi.mock("next/navigation", () => ({
 
 import ColourPage from "./colour/page";
 import SettingsPage from "./page";
+import ImportPage from "./import/page";
 import ConnectSourcePage from "./source/page";
 
 const params = Promise.resolve({ locale: "da" });
@@ -71,8 +72,24 @@ const viewerData: SettingsData = {
   role: "viewer",
   space: null,
   source: null,
-  me: { userId: "u-viewer", name: "Laerke", role: "viewer", locale: "da", simpleMode: false, accent: "sea" },
-  people: [{ userId: "u-viewer", name: "Laerke", role: "viewer", locale: "da", simpleMode: false, accent: "sea" }],
+  me: {
+    userId: "u-viewer",
+    name: "Laerke",
+    role: "viewer",
+    locale: "da",
+    simpleMode: false,
+    accent: "sea",
+  },
+  people: [
+    {
+      userId: "u-viewer",
+      name: "Laerke",
+      role: "viewer",
+      locale: "da",
+      simpleMode: false,
+      accent: "sea",
+    },
+  ],
 };
 
 const mount = (tree: React.ReactNode) =>
@@ -133,10 +150,36 @@ describe("settings pages (plan task 9)", () => {
     mocks.data = {
       ...viewerData,
       role: "owner",
-      source: { type: "dexcom-share", region: "us", status: "connected", lastReadingAt: null, since: null },
+      source: {
+        type: "dexcom-share",
+        region: "us",
+        status: "connected",
+        lastReadingAt: null,
+        since: null,
+      },
     };
     mount(await ConnectSourcePage({ params }));
     expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("Skift login");
     expect(screen.getByRole("radio", { name: "US" })).toBeChecked();
+  });
+});
+
+describe("ImportPage (#154)", () => {
+  it("renders nothing without a session, sends a carer back to Settings and gives an owner the form", async () => {
+    mocks.session = null;
+    mocks.shell = null;
+    expect(await ImportPage({ params })).toBeNull();
+
+    mocks.session = { ...session, memberships: [{ spaceId: "s1", role: "carer" }] };
+    mocks.shell = shellFor("carer");
+    await expect(ImportPage({ params })).rejects.toThrow("NEXT_REDIRECT:/da/settings");
+
+    mocks.session = { ...session, memberships: [{ spaceId: "s1", role: "owner" }] };
+    mocks.shell = shellFor("owner");
+    mount(await ImportPage({ params }));
+    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent(
+      "Importér fra Dexcom Clarity",
+    );
+    expect(screen.getByText("Tiderne i filen læses som Europe/Copenhagen.")).toBeInTheDocument();
   });
 });

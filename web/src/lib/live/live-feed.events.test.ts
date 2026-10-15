@@ -115,6 +115,27 @@ describe("LiveFeed events (plan §7, task 8)", () => {
     feed.stop();
   });
 
+  it("reloads the readings window on readings.imported, and never applies it row by row", async () => {
+    const { fetch, calls } = fakeServer(10);
+    const feed = new LiveFeed({ spaceId: "s1", fetch, socketFactory: factory });
+    feed.start();
+    await flush();
+    sockets[0]?.open();
+    await flush();
+    const before = calls.filter((c) => c.includes("/readings")).length;
+    sockets[0]?.receive({
+      spaceId: "s1",
+      seq: 11,
+      ts: T0.toISOString(),
+      type: "readings.imported",
+      payload: { count: 288, from: T0.toISOString(), to: T0.toISOString() },
+    });
+    await flush();
+    expect(calls.filter((c) => c.includes("/readings")).length).toBe(before + 1);
+    expect(feed.getState().events.map((e) => e.type)).toEqual(["readings.imported"]);
+    feed.stop();
+  });
+
   it("hands events that arrive through a catch-up to the handlers too", async () => {
     const { server, fetch } = fakeServer(10);
     server.events.push(mealCreated(11, "m-missed"));

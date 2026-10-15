@@ -118,6 +118,7 @@ describe("emit", () => {
 
   it("names the groups with hyphens", () => {
     expect(groupFor("abc", "reading")).toBe("space-abc-glucose");
+    expect(groupFor("abc", "readings.imported")).toBe("space-abc-glucose");
     expect(groupFor("abc", "member.joined")).toBe("space-abc");
   });
 

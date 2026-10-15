@@ -68,3 +68,34 @@ export const ConnectSourceResult = z.discriminatedUnion("result", [
   z.object({ result: z.literal("unreachable") }),
 ]);
 export type ConnectSourceResult = z.infer<typeof ConnectSourceResult>;
+
+/** The export formats an owner can import; `clarity` is Dexcom Clarity's CSV export (#154). */
+export const GlucoseImportFormat = z.enum(["clarity"]);
+export type GlucoseImportFormat = z.infer<typeof GlucoseImportFormat>;
+
+/** 90 days of readings is about 3 MB; this leaves room for a generous export, not a stray file. */
+export const MAX_IMPORT_CHARS = 20_000_000;
+
+/** `POST /api/spaces/:id/import`: the file as text and whether its carb entries become meals. */
+export const GlucoseImportRequest = z.strictObject({
+  text: z.string().min(1).max(MAX_IMPORT_CHARS),
+  createMeals: z.boolean().default(true),
+});
+export type GlucoseImportRequest = z.infer<typeof GlucoseImportRequest>;
+
+/** Counts only: what was added, what was there already, what the file held that Frejsi keeps no record of. */
+export const GlucoseImportResult = z.strictObject({
+  format: GlucoseImportFormat,
+  readings: z.strictObject({
+    added: z.number().int().nonnegative(),
+    skipped: z.number().int().nonnegative(),
+    from: z.iso.datetime().nullable(),
+    to: z.iso.datetime().nullable(),
+  }),
+  meals: z.strictObject({
+    added: z.number().int().nonnegative(),
+    skipped: z.number().int().nonnegative(),
+  }),
+  otherRows: z.number().int().nonnegative(),
+});
+export type GlucoseImportResult = z.infer<typeof GlucoseImportResult>;

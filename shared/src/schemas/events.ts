@@ -23,6 +23,7 @@ export const EventType = z.enum([
   "meal.created",
   "meal.updated",
   "meal.deleted",
+  "readings.imported",
 ]);
 export type EventType = z.infer<typeof EventType>;
 
@@ -50,6 +51,16 @@ export const MealCreatedPayload = z.strictObject({
   totalCarbs: z.number().int().nonnegative(),
 });
 export const MealIdPayload = z.strictObject({ mealId: z.string().min(1) });
+/**
+ * One event per import batch, never one per imported reading: a batch of a month is thousands of
+ * rows, and the clients only need to know the window changed. Counts and the range only; it
+ * travels in the glucose group like `reading`, so a viewer never hears it.
+ */
+export const ReadingsImportedPayload = z.strictObject({
+  count: z.number().int().nonnegative(),
+  from: z.iso.datetime(),
+  to: z.iso.datetime(),
+});
 
 /** One payload schema per type. `emit()` validates against this map before it writes. */
 export const EventPayloads = {
@@ -70,6 +81,7 @@ export const EventPayloads = {
   "meal.created": MealCreatedPayload,
   "meal.updated": MealIdPayload,
   "meal.deleted": MealIdPayload,
+  "readings.imported": ReadingsImportedPayload,
 } as const satisfies Record<EventType, z.ZodType>;
 
 export type EventPayload<T extends EventType> = z.infer<(typeof EventPayloads)[T]>;
@@ -102,6 +114,14 @@ export const EventEnvelope = z.discriminatedUnion("type", [
   envelope("meal.created"),
   envelope("meal.updated"),
   envelope("meal.deleted"),
+  envelope("readings.imported"),
 ]);
 export type EventEnvelope = z.infer<typeof EventEnvelope>;
 export type EventEnvelopeOf<T extends EventType> = Extract<EventEnvelope, { type: T }>;
+
+/**
+ * The event types that carry or concern glucose: published to the glucose group a viewer cannot
+ * join, and filtered out of a viewer's events page in the query (CLAUDE.md hard rules).
+ */
+export const GLUCOSE_EVENT_TYPES: readonly EventType[] = ["reading", "readings.imported"];
+export const isGlucoseEvent = (type: EventType): boolean => GLUCOSE_EVENT_TYPES.includes(type);

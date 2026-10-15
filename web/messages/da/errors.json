@@ -26,6 +26,8 @@
     "photo-type": "Vælg et billede i JPEG, PNG eller WebP.",
     "photo-unavailable": "Billeder er ikke tilgængelige lige nu. Prøv igen senere.",
     "barcode-invalid": "Tjek stregkoden og prøv igen.",
-    "lookup-unavailable": "Madsøgning er ikke tilgængelig lige nu. Prøv igen eller skriv dine egne tal."
+    "lookup-unavailable": "Madsøgning er ikke tilgængelig lige nu. Prøv igen eller skriv dine egne tal.",
+    "import-unrecognised": "Det ligner ikke en eksportfil, Frejsi kender. Vælg CSV-filen fra Clarity og prøv igen.",
+    "import-empty": "Der var ingen målinger eller kulhydrater i filen."
   }
 }

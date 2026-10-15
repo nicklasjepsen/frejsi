@@ -4,6 +4,7 @@
 // pull in the Prisma client or App Insights that the index exports (plan §2; see routing.ts).
 import type { ApiErrorCode } from "@frejsi/shared";
 import { ApiError } from "@frejsi/shared/schemas/api";
+import { GlucoseImportResult, type GlucoseImportRequest } from "@frejsi/shared/schemas/glucose";
 import { SpaceSettings, UserSettings } from "@frejsi/shared/schemas/settings";
 import type { z } from "zod";
 
@@ -70,6 +71,9 @@ export function settingsApi(fetchImpl: typeof fetch = (...args) => fetch(...args
       isMe ? patchMe(patch) : patchMember(spaceId, userId, patch),
     connectSource: (spaceId: string, body: ConnectSourceBody) =>
       call(`/api/spaces/${id(spaceId)}/source`, "POST", body, SpaceSettings, fetchImpl),
+    /** The export file as text; the answer is counts (#154). */
+    importGlucose: (spaceId: string, body: GlucoseImportRequest) =>
+      call(`/api/spaces/${id(spaceId)}/import`, "POST", body, GlucoseImportResult, fetchImpl),
   };
 }
 

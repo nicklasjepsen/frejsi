@@ -1,19 +1,10 @@
-import type { ProbeResult, Reading, Trend } from "../schemas/glucose";
+import type { ProbeResult, Reading } from "../schemas/glucose";
+import { trendFromRate } from "./import/trend";
 import type { GlucoseSource } from "./types";
 
 const FIVE_MINUTES = 5 * 60 * 1000;
 /** Like a real adapter's `maxCount`: a day is the most one call returns, however old `since` is. */
 const MAX_WINDOW_MS = 24 * 60 * 60 * 1000;
-
-/** Dexcom's trend thresholds in mg/dL per minute, converted to mmol/L per minute. */
-function trendFromSlope(mmolPerMinute: number): Trend {
-  const mgdlPerMinute = mmolPerMinute * 18.016;
-  const magnitude = Math.abs(mgdlPerMinute);
-  if (magnitude < 1) return "flat";
-  if (magnitude < 2) return mgdlPerMinute > 0 ? "forty-five-up" : "forty-five-down";
-  if (magnitude < 3) return mgdlPerMinute > 0 ? "single-up" : "single-down";
-  return mgdlPerMinute > 0 ? "double-up" : "double-down";
-}
 
 /** A smooth, synthetic day: nothing here is a real person's trace. */
 function curve(epochMs: number): number {
@@ -47,7 +38,7 @@ export class FakeGlucoseSource implements GlucoseSource {
     for (; t <= end; t += FIVE_MINUTES) {
       const mmol = Math.round(curve(t) * 10) / 10;
       const slope = (curve(t) - curve(t - FIVE_MINUTES)) / 5;
-      readings.push({ ts: new Date(t).toISOString(), mmol, trend: trendFromSlope(slope) });
+      readings.push({ ts: new Date(t).toISOString(), mmol, trend: trendFromRate(slope) });
     }
     return Promise.resolve(readings);
   }

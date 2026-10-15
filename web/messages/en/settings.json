@@ -91,6 +91,30 @@
     "noteSelf": "Meals are always terracotta and the number is always black – whatever the colour."
   },
   "data": {
-    "lead": "Export for the clinic"
+    "lead": "Export for the clinic",
+    "importRow": "Import from {format}",
+    "importRowSub": "Glucose history and carbs from an export file"
+  },
+  "import": {
+    "format": {
+      "clarity": "Dexcom Clarity"
+    },
+    "title": "Import from {format}",
+    "lead": "Export from {format} (Export → CSV) and choose the file here. The readings and the carbs from the Dexcom app come along. Everything else in the file is skipped and not kept.",
+    "file": "File from {format}",
+    "createMeals": "Create meals from the carbs in the file",
+    "createMealsHint": "Each meal gets one line with the carbs as they were entered in the Dexcom app. They are not checked – correct them when you can.",
+    "timezone": "The times in the file are read as {timezone}.",
+    "submit": "Import",
+    "submitting": "Importing …",
+    "cancel": "Cancel",
+    "done": "Done",
+    "readings": "{added, plural, =0 {No new readings} one {# new reading} other {# new readings}} · {skipped, plural, =0 {none were there already} one {# was there already} other {# were there already}}",
+    "range": "From {from} to {to}",
+    "meals": "{added, plural, =0 {No new meals} one {# new meal} other {# new meals}} · {skipped, plural, =0 {none skipped} one {# skipped} other {# skipped}}",
+    "otherRows": "{count, plural, =0 {Nothing else in the file.} one {# other row in the file was skipped and is not kept.} other {# other rows in the file were skipped and are not kept.}}",
+    "again": "You can safely import the same file again – nothing comes in twice.",
+    "mealNote": "From the Dexcom app",
+    "carbItem": "Carbs from the Dexcom app"
   }
 }

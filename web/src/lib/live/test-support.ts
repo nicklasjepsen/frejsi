@@ -136,7 +136,11 @@ export class FakeLiveDb {
     };
     const eventDelegate = {
       findMany: (args: {
-        where: { spaceId: string; seq: { gt: number; lte?: number }; type?: { not: string } };
+        where: {
+          spaceId: string;
+          seq: { gt: number; lte?: number };
+          type?: { not: string } | { notIn: string[] };
+        };
         take: number;
       }) => {
         this.duringEventQuery?.();
@@ -147,7 +151,11 @@ export class FakeLiveDb {
                 e.spaceId === args.where.spaceId &&
                 e.seq > args.where.seq.gt &&
                 (args.where.seq.lte === undefined || e.seq <= args.where.seq.lte) &&
-                (args.where.type ? e.type !== args.where.type.not : true),
+                (args.where.type
+                  ? "notIn" in args.where.type
+                    ? !args.where.type.notIn.includes(e.type)
+                    : e.type !== args.where.type.not
+                  : true),
             )
             .sort((a, b) => a.seq - b.seq)
             .slice(0, args.take),

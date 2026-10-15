@@ -556,6 +556,13 @@ export class LiveFeed {
       case "source.status":
         this.set({ sourceStatus: envelope.payload.status, sourceSince: envelope.payload.since });
         return;
+      case "readings.imported":
+        // Readings arrived in bulk, maybe inside the window: load it again rather than apply
+        // thousands of rows one by one. Only an owner or carer's feed can hear this.
+        if (!this.withReadings) return;
+        this.windowStale = true;
+        void this.loadWindow(gen);
+        return;
       case "space.updated":
       case "member.updated":
       case "member.removed":

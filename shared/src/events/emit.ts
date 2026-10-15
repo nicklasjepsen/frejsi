@@ -1,6 +1,12 @@
 import { prisma } from "../db/client";
 import { log as defaultLog } from "../log";
-import { EventEnvelope, EventPayloads, type EventPayload, type EventType } from "../schemas/events";
+import {
+  EventEnvelope,
+  EventPayloads,
+  isGlucoseEvent,
+  type EventPayload,
+  type EventType,
+} from "../schemas/events";
 import { createEventSinkFromEnv } from "./pubsub";
 import type { EventSink } from "./types";
 
@@ -38,9 +44,9 @@ export type EmitFn = <T extends EventType>(
   payload: EventPayload<T>,
 ) => Promise<EventEnvelope>;
 
-/** `reading` goes to the glucose group that viewers cannot join; everything else to the space group. */
+/** Glucose events go to the glucose group that viewers cannot join; everything else to the space group. */
 export function groupFor(spaceId: string, type: EventType): string {
-  return type === "reading" ? `space-${spaceId}-glucose` : `space-${spaceId}`;
+  return isGlucoseEvent(type) ? `space-${spaceId}-glucose` : `space-${spaceId}`;
 }
 
 /**

@@ -70,10 +70,25 @@ describe("GET /api/spaces/:id/events?since= (plan §5)", () => {
     expect(JSON.stringify(page)).not.toContain("mmol");
     expect(page?.lastSeq).toBe(4);
 
+    // An import's event is about glucose too: the owner hears it, the viewer never does.
+    fake.addEvent("s1", "readings.imported", {
+      count: 12,
+      from: T0.toISOString(),
+      to: T0.toISOString(),
+    });
+    expect((await events("sess-owner-1", "4")).page?.events.map((e) => e.type)).toEqual([
+      "readings.imported",
+    ]);
+    expect((await events("sess-viewer-1", "4")).page).toEqual({
+      lastSeq: 5,
+      events: [],
+      more: false,
+    });
+
     // Only readings after the cursor: the viewer's page is empty but the cursor still advances.
     fake.addReading("s1", { ts: "2026-10-15T13:15:00.000Z", mmol: 6.4, trend: "flat" });
-    const next = (await events("sess-viewer-1", "4")).page;
-    expect(next).toEqual({ lastSeq: 5, events: [], more: false });
+    const next = (await events("sess-viewer-1", "5")).page;
+    expect(next).toEqual({ lastSeq: 6, events: [], more: false });
   });
 
   it("never moves the cursor past an event committed while the page was being read", async () => {

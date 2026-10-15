@@ -21,6 +21,8 @@ export const ApiErrorCode = z.enum([
   "photo-unavailable",
   "barcode-invalid",
   "lookup-unavailable",
+  "import-unrecognised",
+  "import-empty",
 ]);
 export type ApiErrorCode = z.infer<typeof ApiErrorCode>;
 

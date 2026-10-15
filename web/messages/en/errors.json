@@ -26,6 +26,8 @@
     "photo-type": "Choose a JPEG, PNG or WebP photo.",
     "photo-unavailable": "Photos are unavailable right now. Try again later.",
     "barcode-invalid": "Check the barcode and try again.",
-    "lookup-unavailable": "Food search is unavailable right now. Try again or enter your own numbers."
+    "lookup-unavailable": "Food search is unavailable right now. Try again or enter your own numbers.",
+    "import-unrecognised": "That does not look like an export file Frejsi knows. Choose the CSV file from Clarity and try again.",
+    "import-empty": "There were no readings or carbs in the file."
   }
 }

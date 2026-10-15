@@ -91,6 +91,30 @@
     "noteSelf": "Måltider er altid teglrøde, og tallet er altid sort – uanset farve."
   },
   "data": {
-    "lead": "Eksport til klinikken"
+    "lead": "Eksport til klinikken",
+    "importRow": "Importér fra {format}",
+    "importRowSub": "Glukosehistorik og kulhydrater fra en eksportfil"
+  },
+  "import": {
+    "format": {
+      "clarity": "Dexcom Clarity"
+    },
+    "title": "Importér fra {format}",
+    "lead": "Eksportér fra {format} (Eksport → CSV) og vælg filen her. Målingerne og kulhydraterne fra Dexcom-appen kommer med. Alt andet i filen springes over og gemmes ikke.",
+    "file": "Fil fra {format}",
+    "createMeals": "Opret måltider af kulhydraterne i filen",
+    "createMealsHint": "Hvert måltid får én linje med kulhydraterne, som de blev tastet i Dexcom-appen. De er ikke tjekket – ret dem, når I kan.",
+    "timezone": "Tiderne i filen læses som {timezone}.",
+    "submit": "Importér",
+    "submitting": "Importerer …",
+    "cancel": "Annullér",
+    "done": "Færdig",
+    "readings": "{added, plural, =0 {Ingen nye målinger} one {# ny måling} other {# nye målinger}} · {skipped, plural, =0 {ingen fandtes i forvejen} one {# fandtes i forvejen} other {# fandtes i forvejen}}",
+    "range": "Fra {from} til {to}",
+    "meals": "{added, plural, =0 {Ingen nye måltider} one {# nyt måltid} other {# nye måltider}} · {skipped, plural, =0 {ingen sprunget over} one {# sprunget over} other {# sprunget over}}",
+    "otherRows": "{count, plural, =0 {Intet andet i filen.} one {# anden række i filen blev sprunget over og er ikke gemt.} other {# andre rækker i filen blev sprunget over og er ikke gemt.}}",
+    "again": "Du kan roligt importere den samme fil igen – intet kommer med to gange.",
+    "mealNote": "Fra Dexcom-appen",
+    "carbItem": "Kulhydrater fra Dexcom-appen"
   }
 }

@@ -4,7 +4,7 @@
 
 Frejsi is a web app — on your phone for the moment you're eating, on your desktop for the evening you want to understand the week — that answers two questions fast: _how many carbs is this?_ and _what did that meal do to my glucose?_ A space brings one person's food library, meals and glucose together, with access for the people they invite.
 
-> **Status: v0.3.0 is live at [frejsi.jepsen.ninja](https://frejsi.jepsen.ninja).** The v0.1.0 foundation (passkeys, roles and live glucose), v0.2.0 food lookup and meal logging, and v0.3.0 meal curves and history are implemented and deployed. Merging does not deploy: a version tag runs the release pipeline, and a [GitHub release](https://github.com/nicklasjepsen/frejsi/releases) is published only after deployment and smoke checks succeed. An existing tag alone does not mean deployment succeeded.
+> **Status: v0.3.0 is live at [frejsi.jepsen.ninja](https://frejsi.jepsen.ninja); v0.3.1 (the Dexcom Clarity import) is being released.** The v0.1.0 foundation (passkeys, roles and live glucose), v0.2.0 food lookup and meal logging, and v0.3.0 meal curves and history are implemented and deployed. Merging does not deploy: a version tag runs the release pipeline, and a [GitHub release](https://github.com/nicklasjepsen/frejsi/releases) is published only after deployment and smoke checks succeed. An existing tag alone does not mean deployment succeeded.
 
 ## What it does
 
@@ -13,6 +13,7 @@ Frejsi is a web app — on your phone for the moment you're eating, on your desk
 - **Simple mode** — a large, picture-first picker with verified foods only, plus a simpler Now screen and meal detail. It is a per-person setting, independent of their role.
 - **Live glucose and meals together** — Dexcom Share readings fetched every five minutes, pushed to the app with a polling fallback. Now shows the reading with its age, the curve and meal markers. A meal detail shows its following three hours, peak and time in range, and previous occurrences of the same dish for comparison.
 - **Day and week history** — browse daily curves and meals, a week of daily curves and summary statistics, or the week's meals table. Viewers get meal-only days and carb totals; the server never sends them glucose.
+- **Import glucose history** — an owner loads a Dexcom Clarity CSV export into the space: its readings fill History and the meal curves, and its carb entries can become meals to correct later. Importing the same file twice adds nothing; rows of any other kind in the file are counted and never kept.
 - **People and settings** — passkey sign-in, single-use invitations by link or QR code, extra devices and owner/carer/viewer roles. Danish and English, light and dark themes, mmol/L or mg/dL, target range and a personal accent. Responsive phone and desktop layouts, with an installable PWA shell.
 
 On a phone, log a meal from the food picker and tap its marker on Now to open the meal curve. On a desktop, review the week, compare earlier meals and manage the food library and people. Photos are uploaded when you save; the app does not estimate their contents.
@@ -54,6 +55,9 @@ For the owner of an installation, once the site is deployed. This one is
 4. **Connect live glucose:** Indstillinger → Glukosekilde → Dexcom Share, with the Dexcom login of
    the person who shares (region EU or US). Until then the screens say the source is not connected,
    the curve stays empty, and the "no reading for 35 minutes" alert e-mails the alert address.
+5. **Bring the history along:** export a CSV from Dexcom Clarity and load it under Indstillinger →
+   Data og eksport → Importér fra Dexcom Clarity. Weeks of readings appear in Historik and on the
+   meal curves at once; see the [operations runbook](docs/operations.md#import-a-dexcom-clarity-export).
 
 ## Stack
 

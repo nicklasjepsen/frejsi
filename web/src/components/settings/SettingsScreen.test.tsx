@@ -443,3 +443,18 @@ describe("SettingsScreen · language, simpleMode and colour (per person)", () =>
     expect(screen.getByText("Almas rum · only owners can change things here")).toBeInTheDocument();
   });
 });
+
+describe("SettingsScreen · data (import, #154)", () => {
+  it("offers an owner the import under Data, named by the format's message", () => {
+    mount(connected);
+    const row = screen.getByTestId("import-row");
+    expect(row).toHaveTextContent("Importér fra Dexcom Clarity");
+    expect(row).toHaveAttribute("href", "/da/settings/import");
+    expect(screen.getAllByText("Eksport til klinikken").length).toBeGreaterThan(0);
+  });
+
+  it("shows no import to a carer", () => {
+    mount({ ...connected, role: "carer", me: grandma, people: [grandma] });
+    expect(screen.queryByTestId("import-row")).toBeNull();
+  });
+});

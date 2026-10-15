@@ -1,0 +1,27 @@
+Index,Timestamp (YYYY-MM-DDThh:mm:ss),Event Type,Event Subtype,Patient Info,Device Info,Source Device ID,Glucose Value (mmol/L),Insulin Value (u),Carb Value (grams),Duration (hh:mm:ss),Glucose Rate of Change (mmol/L/min),Transmitter Time (Long Integer),Transmitter ID
+1,,FirstName,,Alma,,,,,,,,,
+2,,LastName,,Example,,,,,,,,,
+3,,DateOfBirth,,2016-01-01,,,,,,,,,
+4,,Device,,,Android G7,SM-EXAMPLE,,,,,,,
+5,,Alert,Urgent Low,,Android G7,SM-EXAMPLE,3.1,,,,,,
+6,,Alert,Low,,Android G7,SM-EXAMPLE,3.9,,,,,,
+7,,Alert,High,,Android G7,SM-EXAMPLE,13.9,,,,,,
+8,,Alert,Signal Loss,,Android G7,SM-EXAMPLE,,,,00:20:00,,,
+9,2026-10-14T07:00:12,EGV,,,Android G7,SM-EXAMPLE,6.4,,,,0.00,500001,EXAMPLE1
+10,2026-10-14T07:05:12,EGV,,,Android G7,SM-EXAMPLE,6.6,,,,0.04,500301,EXAMPLE1
+11,2026-10-14T07:10:12,EGV,,,Android G7,SM-EXAMPLE,7.1,,,,0.10,500601,EXAMPLE1
+12,2026-10-14T07:12:00,Carbs,,,Android G7,SM-EXAMPLE,,,35,,,,
+13,2026-10-14T07:12:30,Insulin,Fast-Acting,,Android G7,SM-EXAMPLE,,4.5,,,,,
+14,2026-10-14T07:15:12,EGV,,,Android G7,SM-EXAMPLE,7.9,,,,0.16,500901,EXAMPLE1
+15,2026-10-14T07:20:12,EGV,,,Android G7,SM-EXAMPLE,8.8,,,,0.18,501201,EXAMPLE1
+16,2026-10-14T07:25:12,EGV,,,Android G7,SM-EXAMPLE,High,,,,,501501,EXAMPLE1
+17,2026-10-14T07:30:00,Exercise,Light,,Android G7,SM-EXAMPLE,,,,00:30:00,,,
+18,2026-10-14T07:30:12,EGV,,,Android G7,SM-EXAMPLE,9.4,,,,-0.03,501801,EXAMPLE1
+19,2026-10-14T07:35:12,Calibration,,,Android G7,SM-EXAMPLE,9.1,,,,,,
+20,2026-10-14T07:35:12,EGV,,,Android G7,SM-EXAMPLE,9.0,,,,-0.08,502101,EXAMPLE1
+21,2026-10-14T07:40:12,EGV,,,Android G7,SM-EXAMPLE,Low,,,,,502401,EXAMPLE1
+22,2026-10-14T07:45:12,EGV,,,Android G7,SM-EXAMPLE,8.2,,,,-0.19,502701,EXAMPLE1
+23,2026-10-14T07:45:12,EGV,,,Android G7,SM-EXAMPLE,8.2,,,,-0.19,502701,EXAMPLE1
+24,2026-10-14T07:50:00,Insulin,Long-Acting,,Android G7,SM-EXAMPLE,,12,,,,,
+25,2026-10-14T08:00:00,Health,Stress,,Android G7,SM-EXAMPLE,,,,,,,
+26,2026-10-14T12:30:00,Carbs,,,Android G7,SM-EXAMPLE,,,50,,,,

@@ -357,6 +357,14 @@ export function SettingsScreen({ locale, data, now, api = settingsApi() }: Setti
           <section id="data" className={styles.section}>
             <h2 className={styles.sectionTitle}>{t("sections.data")}</h2>
             <Card className={styles.list}>
+              {isOwner && (
+                <Row
+                  title={t("data.importRow", { format: t("import.format.clarity") })}
+                  sub={t("data.importRowSub")}
+                  href={settingsHref("/import")}
+                  testId="import-row"
+                />
+              )}
               <Row title={t("data.lead")} sub={t("comingLater")} />
             </Card>
           </section>

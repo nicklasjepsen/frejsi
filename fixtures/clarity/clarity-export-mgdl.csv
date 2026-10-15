@@ -1,0 +1,9 @@
+Index,Timestamp (YYYY-MM-DDThh:mm:ss),Event Type,Event Subtype,Patient Info,Device Info,Source Device ID,Glucose Value (mg/dL),Insulin Value (u),Carb Value (grams),Duration (hh:mm:ss),Glucose Rate of Change (mg/dL/min),Transmitter Time (Long Integer),Transmitter ID
+1,,FirstName,,Alma,,,,,,,,,
+2,,LastName,,Example,,,,,,,,,
+3,,Device,,,iPhone G6,IPHONE-EXAMPLE,,,,,,,
+4,2026-10-14 7:00:12,EGV,,,iPhone G6,IPHONE-EXAMPLE,115,,,,0.0,600001,EXAMPLE2
+5,2026-10-14 7:05:12,EGV,,,iPhone G6,IPHONE-EXAMPLE,124,,,,1.5,600301,EXAMPLE2
+6,2026-10-14 7:10:12,EGV,,,iPhone G6,IPHONE-EXAMPLE,High,,,,,600601,EXAMPLE2
+7,2026-10-14 7:11:00,Carbs,,,iPhone G6,IPHONE-EXAMPLE,,,20,,,,
+8,2026-10-14 7:11:30,Insulin,Fast-Acting,,iPhone G6,IPHONE-EXAMPLE,,2,,,,,

@@ -1,7 +1,7 @@
 # Operations
 
-How to run Frejsi in production: the first space, the one alert, rolling back and changing the
-Dexcom login. It assumes the Azure setup in `infra/README.md` ("What the owner does once") is done.
+How to run Frejsi in production: the first space, the one alert, rolling back, changing the
+Dexcom login and importing a Clarity export. It assumes the Azure setup in `infra/README.md` ("What the owner does once") is done.
 Spec §7 and §9; plan `docs/superpowers/plans/2026-10-14-v0.1.0-foundation.md` §7, §9 and task 10.
 
 Everything below uses the Azure CLI signed in as you (`az login`) and the resource group `frejsi`.
@@ -124,6 +124,50 @@ invitations or alert settings on the Dexcom account, and the adapter refuses any
      again later.
 
 Carers see the source and its status but cannot change it; viewers do not see it.
+
+## Import a Dexcom Clarity export
+
+An owner can load glucose history from a Dexcom Clarity CSV export (Clarity → Export; a parent's
+Clarity account can export a dependent's profile). No Dexcom login is involved. The file is read in
+the browser and sent to the server as text; the server keeps its readings and its carb entries,
+answers with counts, and logs counts and ids only. Nothing else in the file is stored, shown or
+logged.
+
+1. Sign in as an **owner** and open **Indstillinger → Data og eksport → Importér fra Dexcom
+   Clarity** (on the phone, Indstillinger is the Mere tab). Carers and viewers do not see the row,
+   and the route refuses them.
+2. Choose the CSV file. Leave **"Opret måltider af kulhydraterne i filen"** on to turn the file's
+   carb entries into meals: one manual line each with the grams as they were entered in the Dexcom
+   app, the note "Fra Dexcom-appen", no linked food, so a carer corrects them like any typed entry.
+   Switch it off for readings only.
+3. **Importér.** The result card says how many readings were new and how many were there already,
+   the range they cover, the same for meals, and how many rows of other kinds the file held.
+
+What the import does:
+
+- **Readings** (`EGV` rows) are stored with source `import:clarity`, once: a reading within a minute
+  of one the space already has (from Dexcom Share before, or delivered by Share later) is skipped,
+  so importing the same file twice, or importing a period Share already covers, adds nothing.
+  `Low` and `High` become 2.2 and 22.2 mmol/L, the ends of the sensor's range; the rate-of-change
+  column becomes the arrow, and no rate means no arrow. mmol/L and mg/dL exports both work, as do
+  locales that write `;` between columns and `,` as the decimal.
+- **Times** in a Clarity export are wall-clock times with no offset. They are read in the space's
+  timezone, which the import screen names; an export made in another timezone shifts by the
+  difference.
+- **One event** (`readings.imported`, counts and range) is emitted per import, in the glucose group:
+  owners' and carers' screens reload their window, a viewer never receives it. Meals emit
+  `meal.created` as usual.
+- **Everything else** in the file (the patient, device and alert rows, calibrations, exercise,
+  health and the dosing rows) is counted and otherwise left unread; a test on the fixture proves no
+  value or word of those rows survives the parse, the rows, the events, the answer or the log.
+- **Refusals**, each a stable code the screen translates: "Det ligner ikke en eksportfil, Frejsi
+  kender." (`import-unrecognised`, no Clarity header or no unit in the glucose column), "Der var
+  ingen målinger eller kulhydrater i filen." (`import-empty`), and `validation` for a file over
+  20 MB of text.
+
+Other export formats (LibreView, a Nightscout dump) implement `GlucoseImportSource` under
+`shared/src/glucose/import/` and add a name to `GlucoseImportFormat`; nothing else changes.
+Fixtures with the layout, fictional throughout, are under `fixtures/clarity/`.
 
 ## Roll back to an earlier version
 

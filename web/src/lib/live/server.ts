@@ -3,6 +3,7 @@
 import {
   createEventSinkFromEnv,
   EventEnvelope,
+  GLUCOSE_EVENT_TYPES,
   GlucoseSourceConfig,
   HttpError,
   log,
@@ -234,8 +235,8 @@ export async function loadReadingsWindow(
  * The events after `since` in sequence order, bounded by the space's `lastSeq` as it was before
  * the rows were read: the page can say "you have seen everything up to here" only for a stretch
  * it actually covered, so an event committed while the query ran is on the next page, never
- * skipped. A viewer's page never carries a `reading`: the filter is in the query, so the rows do
- * not even leave the database, and the cursor still moves past them.
+ * skipped. A viewer's page never carries a `reading` or a `readings.imported`: the filter is in
+ * the query, so the rows do not even leave the database, and the cursor still moves past them.
  */
 export async function loadEventsPage(
   spaceId: string,
@@ -253,7 +254,7 @@ export async function loadEventsPage(
     where: {
       spaceId,
       seq: { gt: since, lte: upper },
-      ...(role === "viewer" ? { type: { not: "reading" } } : {}),
+      ...(role === "viewer" ? { type: { notIn: [...GLUCOSE_EVENT_TYPES] } } : {}),
     },
     orderBy: { seq: "asc" },
     take: EVENTS_PAGE_SIZE,

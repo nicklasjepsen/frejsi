@@ -23,6 +23,8 @@ describe("ApiError", () => {
       "photo-unavailable",
       "barcode-invalid",
       "lookup-unavailable",
+      "import-unrecognised",
+      "import-empty",
     ]);
   });
 

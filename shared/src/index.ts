@@ -89,3 +89,22 @@ export { PrismaFoodRepository } from "./food/repository";
 export { dayRange } from "./meals/day-range";
 export { mealTitle, mealSlot } from "./meals/title";
 export * from "./stats";
+export {
+  GLUCOSE_IMPORT_SOURCES,
+  GlucoseImportError,
+  IMPORT_BATCH,
+  IMPORT_TOLERANCE_MS,
+  clarityImport,
+  isTimezone,
+  localToUtc,
+  parseGlucoseImport,
+  storeImportedReadings,
+  trendFromRate,
+  type GlucoseImportOptions,
+  type GlucoseImportParse,
+  type GlucoseImportSource,
+  type ImportDb,
+  type ImportedCarbs,
+  type StoreImportDeps,
+  type StoredImport,
+} from "./glucose/import/index";

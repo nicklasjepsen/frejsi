@@ -23,6 +23,7 @@ export const samplePayloads: { [T in EventType]: EventPayload<T> } = {
   "meal.created": { mealId: "m1", ts, totalCarbs: 18 },
   "meal.updated": { mealId: "m1" },
   "meal.deleted": { mealId: "m1" },
+  "readings.imported": { count: 288, from: ts, to: ts },
 };
 
 describe("EventEnvelope", () => {
@@ -45,6 +46,7 @@ describe("EventEnvelope", () => {
       "meal.created",
       "meal.updated",
       "meal.deleted",
+      "readings.imported",
     ]);
     expect(Object.keys(EventPayloads).sort()).toEqual([...EventType.options].sort());
   });

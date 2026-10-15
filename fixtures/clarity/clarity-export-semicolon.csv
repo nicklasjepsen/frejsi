@@ -1,0 +1,5 @@
+Index;Timestamp (YYYY-MM-DDThh:mm:ss);Event Type;Event Subtype;Patient Info;Device Info;Source Device ID;Glucose Value (mmol/L);Insulin Value (u);Carb Value (grams);Duration (hh:mm:ss);Glucose Rate of Change (mmol/L/min);Transmitter Time (Long Integer);Transmitter ID
+1;;FirstName;;Alma;;;;;;;;;
+2;2026-10-14T07:00:12;EGV;;;Android G7;SM-EXAMPLE;6,4;;;;0,00;500001;EXAMPLE1
+3;2026-10-14T07:05:12;EGV;;;Android G7;SM-EXAMPLE;6,6;;;;0,04;500301;EXAMPLE1
+4;2026-10-14T07:12:00;Carbs;;;Android G7;SM-EXAMPLE;;;35;;;;
