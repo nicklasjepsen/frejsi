@@ -35,6 +35,9 @@ it("the real event-only feed calls only week, negotiate and events, and refreshe
     </NextIntlClientProvider>,
   );
   await screen.findByText("81 %");
+  expect(net.calls.findIndex((url) => url.includes("/events?"))).toBeLessThan(
+    net.calls.findIndex((url) => url.includes("/history/week?")),
+  );
   await waitFor(() => {
     expect(sockets).toHaveLength(1);
   });

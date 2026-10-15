@@ -9,6 +9,8 @@ import { HistoryWeekScreen } from "./HistoryWeekScreen";
 
 const mocks = vi.hoisted(() => ({
   push: vi.fn(),
+  refresh: vi.fn(),
+  loaded: true,
   handlers: new Map<string, () => void>(),
   subscribe: (type: string, handler: () => void) => {
     mocks.handlers.set(type, handler);
@@ -18,11 +20,13 @@ const mocks = vi.hoisted(() => ({
   },
   error: null as string | null,
 }));
-vi.mock("next/navigation", () => ({ useRouter: () => ({ push: mocks.push }) }));
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ push: mocks.push, refresh: mocks.refresh }),
+}));
 vi.mock("@/lib/live/useLiveFeed", () => ({
   useLiveFeed: (_id: string, options: { readings?: boolean }) => {
     expect(options.readings).toBe(false);
-    return { subscribe: mocks.subscribe, error: mocks.error };
+    return { loaded: mocks.loaded, subscribe: mocks.subscribe, error: mocks.error };
   },
 }));
 function required<T>(value: T | undefined): T {
@@ -53,6 +57,8 @@ function mount(
 beforeEach(() => {
   data = structuredClone(initial);
   mocks.error = null;
+  mocks.loaded = true;
+  mocks.refresh.mockClear();
   request = vi.fn<typeof fetch>(() => Promise.resolve(new Response(JSON.stringify(data))));
   mocks.push.mockClear();
 });
@@ -251,4 +257,68 @@ it("shows partial night episode counts and an after-meal mean without advice", a
   mount();
   expect(await screen.findByText("3 gange, 1 om natten")).toBeVisible();
   expect(screen.getByText("5 min efter måltidet")).toBeVisible();
+});
+it.each(["member.updated", "member.removed"])(
+  "clears a historical week and reauthorizes on %s",
+  async (type) => {
+    mount("maaltider");
+    await screen.findByRole("table");
+    request.mockImplementationOnce(() => Promise.resolve(new Response("{}", { status: 403 })));
+    act(() => {
+      mocks.handlers.get(type)?.();
+    });
+    expect(screen.queryByRole("table")).toBeNull();
+    await screen.findByRole("alert");
+    expect(request).toHaveBeenCalledTimes(2);
+    expect(mocks.refresh).toHaveBeenCalledTimes(1);
+    expect(screen.queryByRole("img")).toBeNull();
+  },
+);
+it("establishes the event cursor before the first week snapshot", async () => {
+  mocks.loaded = false;
+  const tree = mount();
+  expect(request).not.toHaveBeenCalled();
+  data.numbers.inRangePercent = 73;
+  mocks.loaded = true;
+  tree.rerender(
+    <NextIntlClientProvider locale="da" messages={getMessages("da")}>
+      <HistoryWeekScreen
+        spaceId="s1"
+        locale="da"
+        unit="mmol"
+        start={data.weekStart}
+        view="uge"
+        fetch={request}
+      />
+    </NextIntlClientProvider>,
+  );
+  await screen.findByText("73 %");
+  expect(request).toHaveBeenCalledTimes(1);
+});
+it("reloads targets and server display preferences on a space change", async () => {
+  const tree = mount("maaltider");
+  await screen.findByRole("table");
+  data.target = { low: 5, high: 9 };
+  data.numbers.inRangePercent = 72;
+  act(() => {
+    mocks.handlers.get("space.updated")?.();
+  });
+  expect(screen.queryByRole("table")).toBeNull();
+  expect(mocks.refresh).toHaveBeenCalledTimes(1);
+  tree.rerender(
+    <NextIntlClientProvider locale="da" messages={getMessages("da")}>
+      <HistoryWeekScreen
+        spaceId="s1"
+        locale="da"
+        unit="mgdl"
+        start={data.weekStart}
+        view="maaltider"
+        fetch={request}
+      />
+    </NextIntlClientProvider>,
+  );
+  await screen.findByText("I mål 90–162");
+  expect(screen.getByText("72 %")).toBeVisible();
+  expect(screen.getAllByRole("img", { name: /Top 173 kl. 13:15/ })).toHaveLength(2);
+  expect(request).toHaveBeenCalledTimes(2);
 });

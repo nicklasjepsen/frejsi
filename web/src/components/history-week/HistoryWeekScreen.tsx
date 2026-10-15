@@ -88,29 +88,41 @@ export function HistoryWeekScreen({
     if (id === generation.current && !controller.signal.aborted) setState(next);
   }, [fetchImpl, key, spaceId, start]);
   useEffect(() => {
+    // Establish the cursor first: a meal committed before it is included in this snapshot;
+    // later events refresh it, including while the first read is in flight.
+    if (!feed.loaded) return;
     void load();
     return () => {
       ++generation.current;
       pending.current?.abort();
     };
-  }, [load]);
+  }, [feed.loaded, load]);
   const week = state.key === key && state.status === "ready" ? state.week : null;
   const current =
     week !== null && start >= mondayOf(localDateOf(new Date(week.now), week.timezone));
   const { subscribe } = feed;
   useEffect(() => {
     const refresh = () => {
-      if (current) void load();
+      if (!week || current) void load();
+    };
+    const revalidate = () => {
+      // Hide protected data immediately, including an old week, while the API checks access.
+      setState({ key, status: "loading" });
+      router.refresh();
+      void load();
     };
     const offs = [
       subscribe("meal.created", refresh),
       subscribe("meal.updated", refresh),
       subscribe("meal.deleted", refresh),
+      subscribe("member.updated", revalidate),
+      subscribe("member.removed", revalidate),
+      subscribe("space.updated", revalidate),
     ];
     return () => {
       for (const off of offs) off();
     };
-  }, [subscribe, current, load]);
+  }, [subscribe, current, key, load, router, week]);
   const weekHref = useCallback(
     (date: string) => localeHref(locale, `/history/week?start=${date}&view=${view}`),
     [locale, view],
