@@ -30,6 +30,9 @@ vi.mock("next/headers", () => ({
 vi.mock("next/navigation", () => ({
   usePathname: () => "/da/now",
   useRouter: () => ({ push: vi.fn(), replace: vi.fn(), prefetch: vi.fn() }),
+  redirect: (href: string) => {
+    throw new Error(`NEXT_REDIRECT:${href}`);
+  },
 }));
 vi.mock("@/components/shell/actions", () => ({ switchSpace: vi.fn() }));
 
@@ -55,10 +58,15 @@ afterEach(() => {
 });
 
 describe("(app) layout (plan §6)", () => {
-  it("calls getSession and renders nothing for a null session", async () => {
-    const tree = await AppLayout({ children: <p>secret</p>, params });
-    expect(tree).toBeNull();
+  it("renders nothing of the page for a null session and sends the browser to welcome in its locale", async () => {
+    // A frejsi_session cookie whose row expired or was deleted passes the middleware's check.
+    await expect(AppLayout({ children: <p>secret</p>, params })).rejects.toThrow(
+      "NEXT_REDIRECT:/da/welcome",
+    );
     expect(mocks.loadCalls).toEqual([]);
+    await expect(
+      AppLayout({ children: <p>secret</p>, params: Promise.resolve({ locale: "en" }) }),
+    ).rejects.toThrow("NEXT_REDIRECT:/en/welcome");
   });
 
   it("renders the shell around the page for a session, with the device's chosen space", async () => {
@@ -69,6 +77,7 @@ describe("(app) layout (plan §6)", () => {
         id: "s1",
         name: "Almas rum",
         role: "owner",
+        timezone: "Europe/Copenhagen",
         subjectName: "Alma",
         ownerName: "Jonas",
       },
