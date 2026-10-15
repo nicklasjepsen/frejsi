@@ -1,0 +1,33 @@
+{
+  "edit": "Edit",
+  "editKey": "E",
+  "summary": "{carbs} g carbs · {count, plural, one {# item} other {# items}}",
+  "metaPhone": "{day} {time} · {name}",
+  "metaDesktop": "{date} · {time} · logged by {name}",
+  "afterwards": "What happened afterwards",
+  "previousBehind": "{count, plural, one {Last time behind} other {Last # times behind}}",
+  "compare": {
+    "label": "Show earlier times",
+    "onlyThis": "Only this time",
+    "withPrevious": "{count, plural, one {With the last time} other {With the last # times}}"
+  },
+  "noReadings": "No readings in this period",
+  "itemLine": "{name} · {portion}",
+  "grams": "{grams} g",
+  "total": "Total",
+  "totalLine": "Total · {grams} g",
+  "leadShort": {
+    "before": "before",
+    "after": "after"
+  },
+  "tiles": "Numbers for the three hours after the meal",
+  "loading": "Loading the meal",
+  "failed": "The meal could not be loaded. Try again in a moment.",
+  "retry": "Try again",
+  "notFound": "This meal no longer exists.",
+  "toNow": "To Now",
+  "simple": {
+    "youAte": "You ate at {time}",
+    "total": "{grams} g carbs"
+  }
+}

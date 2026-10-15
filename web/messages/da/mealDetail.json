@@ -1,0 +1,33 @@
+{
+  "edit": "Ret",
+  "editKey": "E",
+  "summary": "{carbs} g kulhydrat · {count} ting",
+  "metaPhone": "{day} {time} · {name}",
+  "metaDesktop": "{date} · {time} · logget af {name}",
+  "afterwards": "Hvad skete der bagefter",
+  "previousBehind": "{count, plural, one {Sidste gang bagved} other {Sidste # gange bagved}}",
+  "compare": {
+    "label": "Vis tidligere gange",
+    "onlyThis": "Kun denne gang",
+    "withPrevious": "{count, plural, one {Sammen med sidste gang} other {Sammen med de sidste # gange}}"
+  },
+  "noReadings": "Ingen målinger i dette tidsrum",
+  "itemLine": "{name} · {portion}",
+  "grams": "{grams} g",
+  "total": "I alt",
+  "totalLine": "I alt · {grams} g",
+  "leadShort": {
+    "before": "før",
+    "after": "efter"
+  },
+  "tiles": "Tal for de tre timer efter måltidet",
+  "loading": "Henter måltidet",
+  "failed": "Måltidet kunne ikke hentes. Prøv igen om lidt.",
+  "retry": "Prøv igen",
+  "notFound": "Måltidet findes ikke længere.",
+  "toNow": "Til Nu",
+  "simple": {
+    "youAte": "Du spiste kl. {time}",
+    "total": "{grams} g kulhydrat"
+  }
+}

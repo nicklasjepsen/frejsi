@@ -12,6 +12,7 @@ import invite from "./invite.json";
 import library from "./library.json";
 import locale from "./locale.json";
 import log from "./log.json";
+import mealDetail from "./mealDetail.json";
 import nav from "./nav.json";
 import now from "./now.json";
 import passkey from "./passkey.json";
@@ -38,6 +39,7 @@ const messages = {
   library,
   locale,
   log,
+  mealDetail,
   nav,
   now,
   passkey,
