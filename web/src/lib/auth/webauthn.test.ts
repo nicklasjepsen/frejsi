@@ -305,8 +305,11 @@ describe("login", () => {
       userId: registered.userId,
       memberships: [{ spaceId: "s1", role: "carer" }],
     });
-    // lastSeen at login is sign-in bookkeeping, not a member write: no event.
-    expect(w.events.map((e) => e.type)).toEqual(["member.joined"]);
+    // People shows lastSeen, so the touch is a member write: member.updated to each of the
+    // user's spaces, after the commit (loadSession() does the same for its hourly touch).
+    expect(w.events.slice(1)).toEqual([
+      { spaceId: "s1", type: "member.updated", payload: { userId: registered.userId } },
+    ]);
   });
 
   it("enforces the signature counter: a cloned authenticator replaying an old counter is refused", async () => {

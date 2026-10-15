@@ -242,8 +242,8 @@ describe("POST /api/auth/login/options and /verify", () => {
     expect(fake.rows("user").find((u) => u.id === registered.userId)).toMatchObject({
       lastSeen: T0,
     });
-    // Sign-in bookkeeping emits nothing; the only event is the registration's.
-    expect(events.map((e) => e.type)).toEqual(["member.joined"]);
+    // The lastSeen touch is a member write People shows: member.updated follows the registration's event.
+    expect(events.map((e) => e.type)).toEqual(["member.joined", "member.updated"]);
     expect(logLines.join("\n")).not.toContain("Example Carer");
   });
 
