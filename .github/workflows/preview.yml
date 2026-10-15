@@ -179,9 +179,9 @@ jobs:
 
   remove:
     if: >-
-      (github.event.action == 'closed'
-        && contains(github.event.pull_request.labels.*.name, 'preview'))
-      || (github.event.action == 'unlabeled' && github.event.label.name == 'preview')
+      vars.AZURE_CLIENT_ID != ''
+      && (github.event.action == 'closed'
+        || (github.event.action == 'unlabeled' && github.event.label.name == 'preview'))
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
