@@ -88,6 +88,10 @@ The rules that keep merges flowing, in order of importance:
 1. **PR CI is fast or it is not PR CI.** `ci.yml` runs typecheck, lint, unit tests and the dosing
    vocabulary test, on the affected packages only, with a hard 10-minute timeout and a 5-minute target.
    No deploy, no database, no browser, no Azure login. Anything slower belongs in the release pipeline.
+   **Docs-only changes** (Markdown anywhere, or anything under `docs/`) skip the code checks: `ci`
+   runs only the secrets scan, the docs declaration and the docs checker, and still reports, so it
+   stays the one required check. They merge to main whenever they are ready and need no milestone
+   or release (owner, 2026-10-15); the site serves none of them.
 2. **Merging to main deploys nothing.** Main runs the same fast suite after a merge, as a tripwire.
    There is no test environment that every merge has to pass through, so there is nothing to serialize
    and no merge lock.

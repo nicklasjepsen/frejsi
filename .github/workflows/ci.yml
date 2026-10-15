@@ -60,6 +60,14 @@ jobs:
           else
             echo "evals=false" >> "$GITHUB_OUTPUT"
           fi
+          # Docs only (Markdown anywhere, or anything under docs/): nothing builds or deploys from
+          # these, so the code checks are skipped. The secrets scan, the docs declaration and the
+          # docs checker still run, and this job still reports, as the required check.
+          if [ -n "$BASE" ] && [ -n "$CHANGED" ] && ! echo "$CHANGED" | grep -Evq '(\.md$|^docs/)'; then
+            echo "docs_only=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "docs_only=false" >> "$GITHUB_OUTPUT"
+          fi
 
       - uses: pnpm/action-setup@v6
 
@@ -78,6 +86,7 @@ jobs:
       # Affected packages only: `...[<base>]` selects packages changed since the base and their
       # dependents. With no usable base, or a change outside the packages, everything runs.
       - name: Typecheck, lint, unit tests
+        if: steps.changes.outputs.docs_only != 'true'
         run: |
           pnpm -r ${{ steps.changes.outputs.filter }} typecheck
           pnpm -r ${{ steps.changes.outputs.filter }} lint
@@ -88,12 +97,14 @@ jobs:
 
       # The schema and the committed migration must agree; no database involved (plan task 1).
       - name: Prisma schema matches the migration
+        if: steps.changes.outputs.docs_only != 'true'
         run: pnpm --filter ./shared prisma:check
 
       # The guardrail the spec names: a test asserts dosing vocabulary is absent from UI strings
       # and schema keys. It runs on every change, affected or not; it is seconds.
       # pnpm forwards a bare `--` to vitest, which then ignores the pattern; pass the flags directly.
       - name: Dosing vocabulary test
+        if: steps.changes.outputs.docs_only != 'true'
         run: pnpm --filter ./shared test --run --testNamePattern "dosing"
 
       - name: AI evals (prompts or evals changed)
