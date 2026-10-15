@@ -47,6 +47,9 @@ function fakeServer(initial: { readings: Reading[]; lastSeq: number }) {
       readings: initial.readings,
     } satisfies ReadingsWindow as ReadingsWindow,
     readingsStatus: 200,
+    /** When true, the readings request never answers (a stalled connection). */
+    readingsHangs: false,
+    eventsStatus: 200,
     /** Delivery delay in ms for the next pages/windows; the content is fixed when the request is made. */
     delayMs: 0,
     append(payload: Reading): EventEnvelope {
@@ -66,11 +69,13 @@ function fakeServer(initial: { readings: Reading[]; lastSeq: number }) {
       : response;
   const { fetch, calls } = fakeFetch({
     "/readings": () =>
-      delayed(
-        server.readingsStatus === 200
-          ? jsonResponse(server.window)
-          : jsonResponse({ error: { code: "forbidden", message: "" } }, server.readingsStatus),
-      ),
+      server.readingsHangs
+        ? new Promise<Response>(() => undefined)
+        : delayed(
+            server.readingsStatus === 200
+              ? jsonResponse(server.window)
+              : jsonResponse({ error: { code: "forbidden", message: "" } }, server.readingsStatus),
+          ),
     "/negotiate": () =>
       server.negotiateHangs
         ? new Promise<Response>(() => undefined)
@@ -78,6 +83,9 @@ function fakeServer(initial: { readings: Reading[]; lastSeq: number }) {
           ? jsonResponse({ url: server.socketUrl() })
           : jsonResponse({ error: { code: "internal", message: "" } }, 503),
     "/events": (url) => {
+      if (server.eventsStatus !== 200) {
+        return jsonResponse({ error: { code: "internal", message: "" } }, server.eventsStatus);
+      }
       const since = Number(url.searchParams.get("since"));
       const events = server.events.filter((e) => e.seq > since);
       const page: EventsPage = {
@@ -243,6 +251,57 @@ describe("LiveFeed (plan §5)", () => {
       "token-2",
       "token-3",
     ]);
+  });
+
+  it("retries a failed catch-up on the timer while the socket stays live, then stops the timer", async () => {
+    const { server, fetch, calls } = fakeServer({ readings: [], lastSeq: 1 });
+    const { feed } = start(fetch);
+    await flush();
+    // The source went down while nobody was connected; the catch-up on open fails.
+    server.events.push({
+      spaceId: "s1",
+      seq: 2,
+      ts: minutesAgo(1),
+      type: "source.status",
+      payload: { status: "disconnected", since: minutesAgo(1) },
+    });
+    server.eventsStatus = 500;
+    sockets[0]?.open();
+    await flush();
+    expect(feed.getState().connection).toBe("live");
+    expect(feed.getState().sourceStatus).toBe("connected");
+
+    server.eventsStatus = 200;
+    calls.length = 0;
+    await vi.advanceTimersByTimeAsync(POLL_MS);
+    expect(calls).toEqual(["/api/spaces/s1/events?since=1"]);
+    expect(feed.getState().sourceStatus).toBe("disconnected");
+    expect(feed.getState().connection).toBe("live");
+    expect(sockets).toHaveLength(1);
+
+    await vi.advanceTimersByTimeAsync(POLL_MS * 3);
+    expect(calls).toHaveLength(1);
+  });
+
+  it("asks for the window again on the next tick when the first request never answers", async () => {
+    const { server, fetch, calls } = fakeServer({
+      readings: [reading(minutesAgo(3), 6.2)],
+      lastSeq: 4,
+    });
+    server.readingsHangs = true;
+    const { feed } = start(fetch);
+    await flush();
+    expect(calls).toEqual(["/api/spaces/s1/readings?hours=24"]);
+
+    server.readingsHangs = false;
+    await vi.advanceTimersByTimeAsync(POLL_MS);
+    expect(calls).toEqual([
+      "/api/spaces/s1/readings?hours=24",
+      "/api/spaces/s1/readings?hours=24",
+      "/api/spaces/s1/negotiate",
+    ]);
+    expect(feed.getState().loaded).toBe(true);
+    expect(feed.getState().readings.map((r) => r.mmol)).toEqual([6.2]);
   });
 
   it("falls back to polling when negotiate answers 503 (no Web PubSub), without a socket", async () => {

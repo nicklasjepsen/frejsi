@@ -108,6 +108,10 @@ export class LiveFeed {
   private negotiation: AbortController | null = null;
   /** A window reload (`space.updated`) that has not succeeded yet; the tick retries it. */
   private windowStale = false;
+  /** The readings request in flight; a newer load or `stop()` abandons it. */
+  private windowRequest: AbortController | null = null;
+  /** A catch-up that failed; the tick retries it, even while the socket is live. */
+  private catchUpFailed = false;
   private catchingUp = false;
   private catchUpAgain = false;
 
@@ -146,6 +150,8 @@ export class LiveFeed {
     this.stopped = true;
     this.generation += 1;
     this.abandonNegotiation();
+    this.windowRequest?.abort();
+    this.windowRequest = null;
     this.stopPolling();
     this.discardSocket();
     if (this.state.connection === "live") this.set({ connection: "polling" });
@@ -173,10 +179,19 @@ export class LiveFeed {
    * again so nothing received meanwhile is lost.
    */
   private async loadWindow(gen: number): Promise<void> {
+    // A request that never answers would leave the screen loading: the timer runs while it is out,
+    // and the next tick abandons it and asks again.
+    this.windowRequest?.abort();
+    const controller = new AbortController();
+    this.windowRequest = controller;
+    this.ensureTimer();
+    const superseded = () => this.cancelled(gen) || this.windowRequest !== controller;
     let body: unknown = null;
     try {
-      const response = await this.fetchImpl(this.url("readings", { hours: String(this.hours) }));
-      if (this.cancelled(gen)) return;
+      const response = await this.fetchImpl(this.url("readings", { hours: String(this.hours) }), {
+        signal: controller.signal,
+      });
+      if (superseded()) return;
       if (response.status === 403 || response.status === 404) {
         this.stop();
         this.set({ error: response.status === 403 ? "forbidden" : "not-found", loaded: false });
@@ -186,7 +201,8 @@ export class LiveFeed {
     } catch {
       body = null;
     }
-    if (this.cancelled(gen)) return;
+    if (superseded()) return;
+    this.windowRequest = null;
     const parsed = body === null ? null : ReadingsWindow.safeParse(body);
     if (!parsed?.success) {
       // Retried on the timer: as the first load, or as a stale window while the socket stays up.
@@ -208,7 +224,7 @@ export class LiveFeed {
       space: window.space,
     });
     if (before.loaded && before.lastSeq > window.lastSeq) void this.catchUp(gen);
-    if (this.state.connection === "live") this.stopPolling();
+    if (this.state.connection === "live") this.settleTimer();
     else this.connect(gen);
   }
 
@@ -251,9 +267,8 @@ export class LiveFeed {
     socket.onopen = () => {
       if (this.socket !== socket || this.cancelled(gen)) return;
       // A window reload that failed before the socket opened is retried only by the timer.
-      if (this.windowStale) this.ensureTimer();
-      else this.stopPolling();
       this.set({ connection: "live" });
+      this.settleTimer();
       void this.catchUp(gen);
     };
     socket.onmessage = (event) => {
@@ -294,7 +309,8 @@ export class LiveFeed {
       return;
     }
     if (this.state.connection === "live") {
-      this.stopPolling();
+      if (this.catchUpFailed) void this.catchUp(gen);
+      else this.stopPolling();
       return;
     }
     if (this.state.connection !== "polling") this.set({ connection: "polling" });
@@ -317,6 +333,12 @@ export class LiveFeed {
     this.ensureTimer();
   }
 
+  /** While live, the timer runs only to retry a failed window reload or catch-up. */
+  private settleTimer(): void {
+    if (this.windowStale || this.catchUpFailed) this.ensureTimer();
+    else this.stopPolling();
+  }
+
   private stopPolling(): void {
     if (this.pollTimer) clearInterval(this.pollTimer);
     this.pollTimer = null;
@@ -334,6 +356,7 @@ export class LiveFeed {
       return;
     }
     this.catchingUp = true;
+    let ok = false;
     try {
       let more = true;
       while (more) {
@@ -349,10 +372,15 @@ export class LiveFeed {
         this.set({ lastSeq: Math.max(this.state.lastSeq, parsed.data.lastSeq) });
         more = parsed.data.more;
       }
+      ok = true;
     } catch {
       // The next tick or the next message tries again.
     } finally {
       this.catchingUp = false;
+      if (!this.cancelled(gen)) {
+        this.catchUpFailed = !ok;
+        if (this.state.connection === "live") this.settleTimer();
+      }
       if (this.catchUpAgain) {
         this.catchUpAgain = false;
         void this.catchUp(gen);
