@@ -13,10 +13,11 @@ set -e
 S=${CODEX_LANE_DIR:-$HOME/.cache/frejsi-codex-lanes}
 mkdir -p "$S"
 N=$1; SLUG=$2; T=$3; AREA=$4; OWNS=$5; ADJ=$6; NOTES=$7
-B=feat/gh-$N-$SLUG; W=$HOME/dev/frejsi-lanes/gh-$N-$SLUG
-cd /home/nick/dev/frejsi && git fetch -q origin && git worktree add -q $W -b $B origin/main
+B=feat/gh-$N-$SLUG; W=${LANES_DIR:-$HOME/dev/frejsi-lanes}/gh-$N-$SLUG
+REPO=$(git -C "$(dirname "$0")" rev-parse --show-toplevel)
+cd "$REPO" && git fetch -q origin && git worktree add -q $W -b $B origin/main
 cat > $S/brief-$N.md <<BRIEF
-You are building one lane of Frejsi, an open-source diabetes carb-and-glucose web app (pnpm monorepo: web/ Next.js, poller/ Azure Function, shared/, infra/ Bicep), end to end: build, commit, push, PR, merge. The owner is not available; ask nothing. A real product decision you cannot make goes in the PR body under "For the owner" with the assumption you took.
+You are building one lane of Frejsi, an open-source diabetes carb-and-glucose web app (pnpm monorepo: web/ Next.js, poller/ Azure Function, shared/, infra/ Bicep), end to end: build, commit, push, PR, merge. The owner is not available; ask nothing. Small choices the spec leaves open: decide, and list them in the PR body under "For the owner" with the assumption you took. A genuine product, clinical-wording or cost decision that only the owner can make: build what does not depend on it, open the PR as a draft with the label needs-owner and the question in the body, and do NOT merge; that is how this lane finishes.
 
 Lane: issue #$N (milestone ${MS:-v0.2.0}). Worktree: $W, branch $B, already created from origin/main. Read first: AGENTS.md, CLAUDE.md (hard rules: never violate them), docs/agent-workflow.md §3 and §12, \`gh issue view $N\`, the plan ${PLAN:-docs/superpowers/plans/2026-10-15-v0.2.0-food.md} task $T and the sections it cites, and the code on main you build on. UI work follows docs/design/ (README.md, tokens.json, artboards).
 
