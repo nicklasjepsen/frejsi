@@ -36,9 +36,10 @@ describe("challenges", () => {
     await expect(
       consumeChallenge(id, "login", { db: fake.db, now: () => at(1000) }),
     ).resolves.toEqual({ challenge: "abc", inviteToken: null, userId: null });
+    // The message stays at the code: the client translates codes, so no English prose here.
     await expect(
       consumeChallenge(id, "login", { db: fake.db, now: () => at(2000) }),
-    ).rejects.toMatchObject({ status: 400, code: "validation" });
+    ).rejects.toMatchObject({ status: 400, code: "validation", message: "validation" });
     expect(fake.rows("authChallenge")).toEqual([]);
   });
 
