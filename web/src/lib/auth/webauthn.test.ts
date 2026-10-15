@@ -1,11 +1,12 @@
 // @vitest-environment node
+import { createEmit } from "@frejsi/shared";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import { CHALLENGE_TTL_MS } from "./challenges";
 import { appOrigin, rpId } from "./core";
 import { createInvite } from "./invites";
 import { loadSession, SESSION_MAX_AGE_SECONDS } from "./session";
-import { FakeAuthDb, recordingEmit, VirtualAuthenticator } from "./test-support";
+import { FakeAuthDb, recordingSink, VirtualAuthenticator } from "./test-support";
 import {
   assertOrigin,
   finishLogin,
@@ -35,10 +36,12 @@ function world() {
   fake.rows("space").push({ id: "s1", name: "Example space", timezone: "Europe/Copenhagen" });
   fake.rows("user").push({ id: "o1", name: "Example Owner" });
   fake.rows("membership").push({ userId: "o1", spaceId: "s1", role: "owner", createdAt: T0 });
-  const { emit, events } = recordingEmit();
-  const deps = { db: fake.db, emit, now: () => T0 };
+  const { sink, events } = recordingSink();
+  const deps = { db: fake.db, sink, now: () => T0 };
   const authenticator = new VirtualAuthenticator(rpId(), ORIGIN);
-  return { fake, emit, events, deps, authenticator };
+  // loadSession() (task 1) takes an emit; one over the same fake and sink keeps the events in one list.
+  const emit = createEmit({ db: fake.db, sink, now: () => T0 });
+  return { fake, sink, emit, events, deps, authenticator };
 }
 
 async function carerInvite(w: ReturnType<typeof world>, forUserId?: string) {
@@ -158,6 +161,7 @@ describe("registration", () => {
     const { challengeId, options } = await startRegistration(token, w.deps);
     const response = w.authenticator.register(options);
     w.fake.failNextWrite = "session";
+    const eventsBefore = w.fake.rows("event").length;
     await expect(finishRegistration({ challengeId, response }, w.deps)).rejects.toThrow(
       /injected failure/,
     );
@@ -165,7 +169,23 @@ describe("registration", () => {
     expect(w.fake.rows("passkey")).toEqual([]);
     expect(w.fake.rows("membership")).toHaveLength(1);
     expect(w.fake.rows("invite")[0]).toMatchObject({ usedAt: null });
+    expect(w.fake.rows("event")).toHaveLength(eventsBefore);
     expect(w.events).toEqual([]);
+  });
+
+  it("writes the event row in the same transaction as the membership, so a committed write always has its event", async () => {
+    const w = world();
+    const result = await registerCarer(w);
+    // seq 1 is the invite.created row from the setup.
+    expect(w.fake.rows("event").map((e) => [e.seq, e.type])).toEqual([
+      [1, "invite.created"],
+      [2, "member.joined"],
+    ]);
+    expect(w.fake.rows("event")[1]).toMatchObject({
+      spaceId: "s1",
+      payload: JSON.stringify({ userId: result.userId, role: "carer" }),
+    });
+    expect(w.fake.rows("space")[0]).toMatchObject({ lastSeq: 2 });
   });
 
   it("the session it creates is what loadSession() returns", async () => {
@@ -265,9 +285,7 @@ describe("registration", () => {
     const carer = await registerCarer(w);
     const token = await carerInvite(w, carer.userId);
     // The owner removes the carer after creating the link.
-    w.fake.tables.membership = w.fake
-      .rows("membership")
-      .filter((m) => m.userId !== carer.userId);
+    w.fake.tables.membership = w.fake.rows("membership").filter((m) => m.userId !== carer.userId);
     await expect(startRegistration(token, w.deps)).rejects.toMatchObject({
       status: 404,
       code: "not-found",
@@ -293,6 +311,7 @@ describe("registration", () => {
     expect(w.fake.rows("user").map((u) => u.id)).toEqual(["o1"]);
     expect(w.fake.rows("passkey")).toEqual([]);
     expect(w.fake.rows("invite")[0]).toMatchObject({ usedAt: null });
+    expect(w.fake.rows("event").map((e) => e.type)).toEqual(["invite.created"]);
     expect(w.events).toEqual([]);
   });
 

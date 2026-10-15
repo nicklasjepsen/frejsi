@@ -67,7 +67,7 @@ export async function bootstrapSpace(
   input: BootstrapInput,
   deps: BootstrapDeps = {},
 ): Promise<BootstrapResult> {
-  const { db, emit, now } = resolve(deps);
+  const { db, sink, now, log } = resolve(deps);
   const expectedToken = "expectedToken" in deps ? deps.expectedToken : process.env.BOOTSTRAP_TOKEN;
 
   if ((await db.space.count()) > 0) throw new HttpError(404, "not-found");
@@ -78,12 +78,12 @@ export async function bootstrapSpace(
 
   return transact(
     db,
-    emit,
-    async (tx, emitLater) => {
+    sink,
+    async (tx, emit) => {
       // Rechecked under serializable isolation: two bootstraps racing past the check above
       // cannot both create a space.
       if ((await tx.space.count()) > 0) throw new HttpError(404, "not-found");
-      const txDeps = { db: tx, emit: emitLater, now };
+      const txDeps = { db: tx, emit, now };
       const space = await tx.space.create({
         data: { name: body.spaceName, timezone: body.timezone },
       });
@@ -101,6 +101,6 @@ export async function bootstrapSpace(
       );
       return { spaceId: space.id, inviteUrl: invite.url, expiresAt: invite.expiresAt };
     },
-    { serializable: true },
+    { serializable: true, now, log },
   );
 }

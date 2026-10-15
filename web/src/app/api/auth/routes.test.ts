@@ -1,11 +1,12 @@
 // @vitest-environment node
+import type { EventSink } from "@frejsi/shared";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { createInvite } from "@/lib/auth/invites";
 import { loadSession } from "@/lib/auth/session";
 import {
   FakeAuthDb,
-  recordingEmit,
+  recordingSink,
   VirtualAuthenticator,
   type RecordedEvent,
 } from "@/lib/auth/test-support";
@@ -16,22 +17,24 @@ import { POST as logoutRoute } from "./logout/route";
 import { POST as registerOptions } from "./register/options/route";
 import { POST as registerVerify } from "./register/verify/route";
 
-/** The routes read `prisma` and `emit` from @frejsi/shared; both are swapped for the fakes. */
+/** The routes read `prisma` and the event sink from @frejsi/shared; both are swapped for fakes. */
 const shared = vi.hoisted(() => {
-  const holder: { db: Record<string, unknown>; emit: (...args: unknown[]) => Promise<unknown> } = {
+  const holder: { db: Record<string, unknown>; sink: EventSink } = {
     db: {},
-    emit: () => Promise.resolve({}),
+    sink: { publish: () => Promise.resolve() },
   };
+  // core.ts caches the sink it builds once, so this one forwards to whatever the test set.
+  const sink: EventSink = { publish: (group, envelope) => holder.sink.publish(group, envelope) };
   return {
     holder,
     prisma: new Proxy({}, { get: (_target, key: string) => holder.db[key] }),
-    emit: (...args: unknown[]) => holder.emit(...args),
+    sink,
   };
 });
 vi.mock("@frejsi/shared", async (importOriginal) => ({
   ...(await importOriginal<Record<string, unknown>>()),
   prisma: shared.prisma,
-  emit: shared.emit,
+  createEventSinkFromEnv: () => shared.sink,
 }));
 
 const ORIGIN = "https://frejsi.example";
@@ -46,10 +49,10 @@ beforeEach(() => {
   vi.useFakeTimers({ now: T0, toFake: ["Date"] });
   process.env.APP_ORIGIN = ORIGIN;
   fake = new FakeAuthDb(() => T0);
-  const recorder = recordingEmit();
+  const recorder = recordingSink();
   events = recorder.events;
   shared.holder.db = fake.db as unknown as Record<string, unknown>;
-  shared.holder.emit = recorder.emit as unknown as (...args: unknown[]) => Promise<unknown>;
+  shared.holder.sink = recorder.sink;
   fake.rows("space").push({ id: "s1", name: "Example space", timezone: "Europe/Copenhagen" });
   fake.rows("user").push({ id: "o1", name: "Example Owner" });
   fake.rows("membership").push({ userId: "o1", spaceId: "s1", role: "owner", createdAt: T0 });
@@ -77,7 +80,7 @@ function post(url: string, body?: unknown, headers: Record<string, string> = {})
 async function invite(name: string, role = "carer") {
   const { token } = await createInvite(
     { spaceId: "s1", role: role as "carer", name, createdBy: "o1" },
-    { db: fake.db, emit: shared.emit, now: () => T0 },
+    { db: fake.db, sink: shared.sink, now: () => T0 },
   );
   events.length = 0;
   return token;

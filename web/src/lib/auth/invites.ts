@@ -4,7 +4,7 @@ import { createHash, randomBytes } from "node:crypto";
 
 import { HttpError, type Role } from "@frejsi/shared";
 
-import { appOrigin, resolveTx, type TxDeps } from "./core";
+import { appOrigin, resolveTx, run, type AuthDeps, type DbDeps, type TxDeps } from "./core";
 
 /** An invitation link is good for seven days (spec §2b). */
 export const INVITE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
@@ -40,29 +40,36 @@ export interface CreatedInvite {
   expiresAt: Date;
 }
 
-/** Creates a single-use invite and emits `invite.created` with the token's hash. */
-export async function createInvite(input: NewInvite, deps: TxDeps = {}): Promise<CreatedInvite> {
-  const { db, emit, now } = resolveTx(deps);
-  const token = newInviteToken();
-  const expiresAt = new Date(now().getTime() + INVITE_TTL_MS);
-  await db.invite.create({
-    data: {
-      token,
-      spaceId: input.spaceId,
+/**
+ * Creates a single-use invite and emits `invite.created` with the token's hash, in one
+ * transaction (its own, or the bootstrap's).
+ */
+export function createInvite(
+  input: NewInvite,
+  deps: AuthDeps | TxDeps = {},
+): Promise<CreatedInvite> {
+  return run(deps, async (db, emit, now) => {
+    const token = newInviteToken();
+    const expiresAt = new Date(now().getTime() + INVITE_TTL_MS);
+    await db.invite.create({
+      data: {
+        token,
+        spaceId: input.spaceId,
+        role: input.role,
+        name: input.name,
+        forUserId: input.forUserId ?? null,
+        createdBy: input.createdBy,
+        expiresAt,
+      },
+    });
+    await emit(input.spaceId, "invite.created", {
+      tokenHash: hashToken(token),
       role: input.role,
       name: input.name,
-      forUserId: input.forUserId ?? null,
-      createdBy: input.createdBy,
-      expiresAt,
-    },
+      ...(input.forUserId ? { forUserId: input.forUserId } : {}),
+    });
+    return { token, url: inviteUrl(token), expiresAt };
   });
-  await emit(input.spaceId, "invite.created", {
-    tokenHash: hashToken(token),
-    role: input.role,
-    name: input.name,
-    ...(input.forUserId ? { forUserId: input.forUserId } : {}),
-  });
-  return { token, url: inviteUrl(token), expiresAt };
 }
 
 /**
@@ -70,7 +77,7 @@ export async function createInvite(input: NewInvite, deps: TxDeps = {}): Promise
  * landing page. Otherwise `not-found`, `invite-used`, `invite-revoked` or `invite-expired`, in
  * that order of precedence (plan §9).
  */
-export async function loadInvite(token: string, deps: TxDeps = {}) {
+export async function loadInvite(token: string, deps: DbDeps = {}) {
   const { db, now } = resolveTx(deps);
   const invite = await db.invite.findUnique({
     where: { token },
@@ -88,7 +95,7 @@ export async function loadInvite(token: string, deps: TxDeps = {}) {
  * on one link cannot both succeed. Called inside the registration transaction. A failed claim
  * names its cause: the link may have been revoked or have expired since the ceremony started.
  */
-export async function markInviteUsed(token: string, deps: TxDeps = {}): Promise<void> {
+export async function markInviteUsed(token: string, deps: DbDeps = {}): Promise<void> {
   const { db, now } = resolveTx(deps);
   const at = now();
   const { count } = await db.invite.updateMany({
@@ -102,19 +109,20 @@ export async function markInviteUsed(token: string, deps: TxDeps = {}): Promise<
 }
 
 /** Revokes an unused invite and emits `invite.revoked`; People's "send again" calls this first. */
-export async function revokeInvite(token: string, deps: TxDeps = {}): Promise<void> {
-  const { db, emit, now } = resolveTx(deps);
-  const invite = await db.invite.findUnique({ where: { token } });
-  if (!invite) throw new HttpError(404, "not-found");
-  const { count } = await db.invite.updateMany({
-    where: { token, usedAt: null, revokedAt: null },
-    data: { revokedAt: now() },
-  });
-  if (count !== 1) throw new HttpError(410, invite.usedAt ? "invite-used" : "invite-revoked");
-  await emit(invite.spaceId, "invite.revoked", {
-    tokenHash: hashToken(token),
-    role: invite.role as Role,
-    name: invite.name,
-    ...(invite.forUserId ? { forUserId: invite.forUserId } : {}),
+export function revokeInvite(token: string, deps: AuthDeps | TxDeps = {}): Promise<void> {
+  return run(deps, async (db, emit, now) => {
+    const invite = await db.invite.findUnique({ where: { token } });
+    if (!invite) throw new HttpError(404, "not-found");
+    const { count } = await db.invite.updateMany({
+      where: { token, usedAt: null, revokedAt: null },
+      data: { revokedAt: now() },
+    });
+    if (count !== 1) throw new HttpError(410, invite.usedAt ? "invite-used" : "invite-revoked");
+    await emit(invite.spaceId, "invite.revoked", {
+      tokenHash: hashToken(token),
+      role: invite.role as Role,
+      name: invite.name,
+      ...(invite.forUserId ? { forUserId: invite.forUserId } : {}),
+    });
   });
 }

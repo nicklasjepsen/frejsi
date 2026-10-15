@@ -10,7 +10,7 @@ import {
   sign,
 } from "node:crypto";
 
-import type { EmitFn, EventEnvelope, EventPayload, EventType } from "@frejsi/shared";
+import type { EventEnvelope, EventSink, EventType } from "@frejsi/shared";
 import { isoCBOR } from "@simplewebauthn/server/helpers";
 import type {
   AuthenticationResponseJSON,
@@ -25,7 +25,7 @@ type Row = Record<string, unknown>;
 type Where = Record<string, unknown>;
 
 export type TableName =
-  "user" | "space" | "membership" | "invite" | "passkey" | "session" | "authChallenge";
+  "user" | "space" | "membership" | "invite" | "passkey" | "session" | "authChallenge" | "event";
 
 export type Tables = Record<TableName, Row[]>;
 
@@ -37,6 +37,7 @@ const emptyTables = (): Tables => ({
   passkey: [],
   session: [],
   authChallenge: [],
+  event: [],
 });
 
 /** Column defaults the schema gives (plan §3), applied on create when the caller leaves them out. */
@@ -76,6 +77,7 @@ const defaults: Record<TableName, (now: Date) => Row> = {
   }),
   session: (now) => ({ passkeyId: null, createdAt: now, lastSeenAt: now }),
   authChallenge: () => ({ id: randomUUID(), inviteToken: null, userId: null }),
+  event: (now) => ({ ts: now }),
 };
 
 /** Primary and unique keys, so a duplicate insert fails the way SQL Server would. */
@@ -87,6 +89,7 @@ const uniqueKeys: Record<TableName, string[][]> = {
   passkey: [["id"], ["credentialId"]],
   session: [["id"]],
   authChallenge: [["id"]],
+  event: [["spaceId", "seq"]],
 };
 
 interface Relation {
@@ -298,17 +301,23 @@ export class FakeAuthDb {
       rows()
         .filter((r) => matches(r, args.where))
         .map((r) => this.include(table, r, args.include));
-    const strip = (data: Row): Row => {
-      // Nested writes are not modelled; the auth code uses flat data only.
+    const strip = (data: Row, base?: Row): Row => {
+      // Of the nested writes only `increment` is modelled: `emit()` allocates `Space.lastSeq` with it.
       const out: Row = {};
       for (const [k, v] of Object.entries(data)) {
-        if (isOperator(v) && ("increment" in v || "set" in v || "connect" in v)) {
+        if (isOperator(v) && "increment" in v && base) {
+          // A seeded row may lack the column; the schema's default is 0.
+          out[k] = ((base[k] as number | undefined) ?? 0) + (v.increment as number);
+        } else if (isOperator(v) && ("increment" in v || "set" in v || "connect" in v)) {
           throw new Error(`fake db: nested write ${table}.${k} is not supported`);
+        } else {
+          out[k] = v;
         }
-        out[k] = v;
       }
       return out;
     };
+    const select = (row: Row, keys: Record<string, unknown> | undefined): Row =>
+      keys ? Object.fromEntries(Object.keys(keys).map((k) => [k, row[k]])) : row;
     return {
       create: (args: { data: Row; include?: Record<string, unknown> }) => {
         record("create");
@@ -334,17 +343,22 @@ export class FakeAuthDb {
         record("count");
         return Promise.resolve(rows().filter((r) => matches(r, args.where)).length);
       },
-      update: (args: { where: Where; data: Row; include?: Record<string, unknown> }) => {
+      update: (args: {
+        where: Where;
+        data: Row;
+        include?: Record<string, unknown>;
+        select?: Record<string, unknown>;
+      }) => {
         record("update");
         this.failIfAsked(table);
         const row = rows().find((r) => matches(r, args.where));
         if (!row) {
           return Promise.reject(new FakeDbError("P2025", `Record to update not found in ${table}`));
         }
-        const next = { ...row, ...strip(args.data) };
+        const next = { ...row, ...strip(args.data, row) };
         this.checkUnique(table, next, row);
         Object.assign(row, next);
-        return Promise.resolve(this.include(table, row, args.include));
+        return Promise.resolve(select(this.include(table, row, args.include), args.select));
       },
       updateMany: (args: { where: Where; data: Row }) => {
         record("updateMany");
@@ -380,25 +394,25 @@ export interface RecordedEvent {
   payload: unknown;
 }
 
-/** An `emit` that records instead of writing, with the envelope shape `emit()` would return. */
-export function recordingEmit(): { emit: EmitFn; events: RecordedEvent[] } {
+/**
+ * An `EventSink` that records what `transact()` publishes after each commit, in order, as
+ * `{ spaceId, type, payload }`. The rows themselves are in the fake's `event` table.
+ */
+export function recordingSink(): {
+  sink: EventSink;
+  events: RecordedEvent[];
+  published: { group: string; envelope: EventEnvelope }[];
+} {
   const events: RecordedEvent[] = [];
-  const emit: EmitFn = <T extends EventType>(
-    spaceId: string,
-    type: T,
-    payload: EventPayload<T>,
-  ) => {
-    events.push({ spaceId, type, payload });
-    const envelope = {
-      spaceId,
-      seq: events.length,
-      ts: new Date().toISOString(),
-      type,
-      payload,
-    } as unknown as EventEnvelope;
-    return Promise.resolve(envelope);
+  const published: { group: string; envelope: EventEnvelope }[] = [];
+  const sink: EventSink = {
+    publish: (group, envelope) => {
+      published.push({ group, envelope });
+      events.push({ spaceId: envelope.spaceId, type: envelope.type, payload: envelope.payload });
+      return Promise.resolve();
+    },
   };
-  return { emit, events };
+  return { sink, events, published };
 }
 
 const b64 = (bytes: Uint8Array): string => Buffer.from(bytes).toString("base64url");

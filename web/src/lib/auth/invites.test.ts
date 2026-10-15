@@ -11,7 +11,7 @@ import {
   newInviteToken,
   revokeInvite,
 } from "./invites";
-import { FakeAuthDb, recordingEmit } from "./test-support";
+import { FakeAuthDb, recordingSink } from "./test-support";
 
 const T0 = new Date("2026-10-15T08:00:00.000Z");
 const days = (n: number) => new Date(T0.getTime() + n * 24 * 60 * 60 * 1000);
@@ -49,10 +49,10 @@ describe("invite tokens", () => {
 describe("createInvite", () => {
   it("stores a single-use token valid 7 days and emits invite.created with the hash", async () => {
     const fake = seeded();
-    const { emit, events } = recordingEmit();
+    const { sink, events } = recordingSink();
     const invite = await createInvite(
       { spaceId: "s1", role: "carer", name: "Example Carer", createdBy: "owner" },
-      { db: fake.db, emit, now: () => T0 },
+      { db: fake.db, sink, now: () => T0 },
     );
     expect(invite.expiresAt).toEqual(days(7));
     expect(INVITE_TTL_MS).toBe(7 * 24 * 60 * 60 * 1000);
@@ -82,10 +82,10 @@ describe("createInvite", () => {
 
   it("carries forUserId for an add-a-device link", async () => {
     const fake = seeded();
-    const { emit, events } = recordingEmit();
+    const { sink, events } = recordingSink();
     await createInvite(
       { spaceId: "s1", role: "carer", name: "Example Carer", forUserId: "u2", createdBy: "owner" },
-      { db: fake.db, emit, now: () => T0 },
+      { db: fake.db, sink, now: () => T0 },
     );
     expect(fake.rows("invite")[0]).toMatchObject({ forUserId: "u2" });
     expect(events[0]?.payload).toMatchObject({ forUserId: "u2" });
@@ -95,10 +95,10 @@ describe("createInvite", () => {
 describe("loadInvite", () => {
   async function withInvite(overrides: Record<string, unknown> = {}) {
     const fake = seeded();
-    const { emit } = recordingEmit();
+    const { sink } = recordingSink();
     const { token } = await createInvite(
       { spaceId: "s1", role: "viewer", name: "Example Viewer", createdBy: "owner" },
-      { db: fake.db, emit, now: () => T0 },
+      { db: fake.db, sink, now: () => T0 },
     );
     Object.assign(fake.rows("invite")[0] ?? {}, overrides);
     return { fake, token };
@@ -144,10 +144,10 @@ describe("loadInvite", () => {
 describe("markInviteUsed", () => {
   it("marks the token used once; the second attempt is invite-used", async () => {
     const fake = seeded();
-    const { emit } = recordingEmit();
+    const { sink } = recordingSink();
     const { token } = await createInvite(
       { spaceId: "s1", role: "viewer", name: "Example Viewer", createdBy: "owner" },
-      { db: fake.db, emit, now: () => T0 },
+      { db: fake.db, sink, now: () => T0 },
     );
     await markInviteUsed(token, { db: fake.db, now: () => days(1) });
     expect(fake.rows("invite")[0]).toMatchObject({ usedAt: days(1) });
@@ -158,10 +158,13 @@ describe("markInviteUsed", () => {
 
   it("names the real cause when the claim fails: revoked, expired or gone, not always invite-used", async () => {
     const fake = seeded();
-    const { emit } = recordingEmit();
-    const deps = { db: fake.db, emit, now: () => T0 };
+    const { sink } = recordingSink();
+    const deps = { db: fake.db, sink, now: () => T0 };
     const make = () =>
-      createInvite({ spaceId: "s1", role: "viewer", name: "Example Viewer", createdBy: "owner" }, deps);
+      createInvite(
+        { spaceId: "s1", role: "viewer", name: "Example Viewer", createdBy: "owner" },
+        deps,
+      );
 
     // Revoked between the landing page's check and the claim at the end of the ceremony.
     const revoked = await make();
@@ -189,12 +192,12 @@ describe("markInviteUsed", () => {
 describe("revokeInvite", () => {
   it("sets revokedAt and emits invite.revoked; a used or revoked token is left alone", async () => {
     const fake = seeded();
-    const { emit, events } = recordingEmit();
+    const { sink, events } = recordingSink();
     const { token } = await createInvite(
       { spaceId: "s1", role: "viewer", name: "Example Viewer", createdBy: "owner" },
-      { db: fake.db, emit, now: () => T0 },
+      { db: fake.db, sink, now: () => T0 },
     );
-    await revokeInvite(token, { db: fake.db, emit, now: () => days(1) });
+    await revokeInvite(token, { db: fake.db, sink, now: () => days(1) });
     expect(fake.rows("invite")[0]).toMatchObject({ revokedAt: days(1) });
     expect(events.map((e) => e.type)).toEqual(["invite.created", "invite.revoked"]);
     expect(events[1]?.payload).toEqual({
@@ -204,7 +207,7 @@ describe("revokeInvite", () => {
     });
 
     await expect(
-      revokeInvite(token, { db: fake.db, emit, now: () => days(2) }),
+      revokeInvite(token, { db: fake.db, sink, now: () => days(2) }),
     ).rejects.toMatchObject({ code: "invite-revoked" });
     expect(events).toHaveLength(2);
   });
