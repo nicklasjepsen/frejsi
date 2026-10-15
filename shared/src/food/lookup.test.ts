@@ -368,14 +368,31 @@ describe("lookup", () => {
       const repo = new MemoryFoodRepository([
         row("existing", { spaceId, barcode, sourceRef: `fake-remote:${barcode}` }),
       ]);
-      const result = await lookup(repo, plugins(), { ...options, query: { barcode } });
+      const sources = plugins();
+      const result = await lookup(repo, sources, { ...options, query: { barcode } });
       expect(result.results.map((item) => item.source)).toEqual([
         spaceId === null ? "cache" : "library",
         "fake-local",
       ]);
-      expect(result.sources).toEqual({ "fake-remote": "ok", "fake-local": "ok" });
+      expect(result.sources).toEqual({ "fake-remote": "skipped", "fake-local": "ok" });
+      expect(sources[0]?.calls).toEqual([]);
+      expect(repo.writes).toEqual([]);
     },
   );
+
+  it("rejects an oversized folded source name before any cache write", async () => {
+    const repo = new MemoryFoodRepository();
+    const source = new FakeFoodSource({
+      id: "fake-remote",
+      kind: "remote",
+      candidates: [{ ...candidate("æ".repeat(101)), sourceRef: "fake-remote:oversized" }],
+    });
+    const result = await lookup(repo, [source], { ...options, query: { barcode } });
+    expect(result.results).toEqual([]);
+    expect(result.sources).toEqual({ "fake-remote": "error" });
+    expect(result.manual).toEqual({ barcode });
+    expect(repo.writes).toEqual([]);
+  });
 
   it("returns and caches a barcode candidate with unknown nutrition without losing healthy sources", async () => {
     const unknown = { ...candidate(), carbsPer100g: null, portions: [] };
