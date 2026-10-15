@@ -17,7 +17,8 @@
     "lint": "eslint .",
     "test": "vitest run",
     "prisma:check": "prisma validate && prisma migrate diff --from-empty --to-schema-datamodel prisma/foundation.prisma --script | diff - prisma/migrations/0001_foundation/migration.sql && prisma migrate diff --from-schema-datamodel prisma/foundation.prisma --to-schema-datamodel prisma/schema.prisma --script | diff - prisma/migrations/0002_food/migration.sql",
-    "test:integration": "vitest run --config test/integration/vitest.config.ts"
+    "test:integration": "vitest run --config test/integration/vitest.config.ts",
+    "frida:import": "node --experimental-strip-types scripts/import-frida.ts"
   },
   "dependencies": {
     "@azure/identity": "4.14.0",
@@ -27,6 +28,7 @@
     "@opentelemetry/api-logs": "0.221.0",
     "@prisma/client": "6.19.3",
     "applicationinsights": "3.17.0",
+    "csv-parse": "6.1.0",
     "sharp": "0.35.5",
     "zod": "4.6.7"
   },

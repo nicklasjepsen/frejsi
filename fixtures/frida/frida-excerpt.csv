@@ -1,0 +1,11 @@
+FoodID,FødevareNavn,FoodName,FoodGroup,Available carbohydrates,Carbohydrate by difference,Dietary fibre
+910,"Fiktivt rugbrød, fiberrigt","Fictional rye bread, high fibre",Cereals,32.5,48.5,16
+902,Fiktiv grød,Fictional porridge,Cereals,12.25,18,5.75
+903,Fiktiv suppe,Fictional soup,Meals,,8,2
+904,Fiktiv drik,Fictional drink,Drinks,0,0,0
+905,Fiktiv frugt,Fictional fruit,Fruit,11.1,13.1,2
+906,Fiktivt grønt,Fictional vegetable,Vegetables,4.5,7,2.5
+907,Fiktive bønner,Fictional beans,Vegetables,14.2,22,7.8
+908,Fiktive flager,Fictional flakes,Cereals,60.3,68.3,8
+909,Fiktiv dej,Fictional dough,Cereals,40,42,2
+901,Fiktiv blanding,Fictional mixture,Meals,15.8,20,4.2
