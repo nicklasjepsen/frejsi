@@ -50,6 +50,16 @@ describe("QrCode", () => {
     expect(svg).toHaveAttribute("width", "96");
     const { size } = qrModules(LINK);
     expect(svg).toHaveAttribute("viewBox", `0 0 ${size + 8} ${size + 8}`);
-    expect(container.querySelector("path")).toHaveAttribute("fill", "currentColor");
+  });
+
+  it("is dark on light in every theme, quiet zone included: many scanners refuse an inverted code", () => {
+    const { container } = render(<QrCode value={LINK} label="Scan" />);
+    const { size } = qrModules(LINK);
+    const ground = container.querySelector("rect");
+    expect(ground).toHaveAttribute("width", String(size + 8));
+    expect(ground).toHaveAttribute("height", String(size + 8));
+    expect(ground).toHaveAttribute("fill", "#ffffff");
+    expect(container.querySelector("path")).toHaveAttribute("fill", "#000000");
+    expect(container.innerHTML).not.toContain("currentColor");
   });
 });
