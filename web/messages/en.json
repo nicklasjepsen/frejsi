@@ -328,5 +328,49 @@
     },
     "notYet": "not yet",
     "lastOwnerDevice": "This is the last device an owner can sign in with. Add a new device for an owner first, so the space is never left without a way in."
+  },
+  "glucose": {
+    "unit": {
+      "mmol": "mmol/L",
+      "mgdl": "mg/dL"
+    },
+    "noReadings": "No readings yet",
+    "age": {
+      "justNow": "just now",
+      "minutes": "{minutes} min ago",
+      "hours": "{hours} h {minutes} min ago",
+      "overADay": "more than a day ago"
+    },
+    "trend": {
+      "double-up": "rising fast",
+      "single-up": "rising",
+      "forty-five-up": "rising slowly",
+      "flat": "steady",
+      "forty-five-down": "falling slowly",
+      "single-down": "falling",
+      "double-down": "falling fast",
+      "not-computable": "direction unknown",
+      "rate-out-of-range": "changing fast"
+    },
+    "target": "Target {low}–{high}",
+    "targetWithUnit": "Target {low}–{high} {unit}",
+    "last3h": "Last 3 hours",
+    "today": "Today",
+    "chartLast3h": "Glucose over the last 3 hours",
+    "chartToday": "Glucose today from {from} to {to}",
+    "source": {
+      "connected": "{source} connected",
+      "lastReading": "{source} · last reading {time}",
+      "noReading": "{source} · no reading yet",
+      "none": "No glucose source chosen yet"
+    }
+  },
+  "now": {
+    "title": "Right now",
+    "simpleTitle": "Your number right now",
+    "eatingNow": "I'm eating now",
+    "lastMeal": "Last meal",
+    "lastMealSoon": "Meals are coming in a later version.",
+    "glucoseCard": "Glucose"
   }
 }
