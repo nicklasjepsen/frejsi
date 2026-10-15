@@ -27,5 +27,15 @@ export interface LiveTokenIssuer {
  * (issue #79). A no-op when no live transport is configured.
  */
 export interface LiveGroupRevoker {
-  removeUserFromGroup(group: string, userId: string): Promise<void>;
+  removeUserFromGroup(group: string, userId: string, options?: LiveCallOptions): Promise<void>;
+  /**
+   * Drops every open connection of the user. The fallback when a group removal fails: the client
+   * reconnects through `negotiate`, which issues a token for the role the user has now.
+   */
+  closeUserConnections(userId: string, options?: LiveCallOptions): Promise<void>;
+}
+
+/** `signal` cuts a slow service call short, so a committed change is not held up by it. */
+export interface LiveCallOptions {
+  signal?: AbortSignal;
 }

@@ -16,28 +16,43 @@ const ROUTE = "spaces/members/user";
 
 let live: LiveGroupRevoker | undefined;
 
+/** Each live-transport call gets this long; the change has committed and the owner is waiting. */
+const ATTEMPT_MS = 2_000;
+
+/** Runs one call with its own deadline, aborting it (and the SDK's retries) when it passes. */
+function bounded(call: (signal: AbortSignal) => Promise<void>): Promise<void> {
+  const controller = new AbortController();
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const deadline = new Promise<never>((_resolve, reject) => {
+    timer = setTimeout(() => {
+      controller.abort();
+      reject(new Error("live call timed out"));
+    }, ATTEMPT_MS);
+  });
+  return Promise.race([call(controller.signal), deadline]).finally(() => {
+    clearTimeout(timer);
+  });
+}
+
 /**
  * Takes the member's open sockets out of the groups they may no longer hear, after the change has
- * committed (issue #79). A failed removal is tried once more; if it still fails it is logged with
- * ids only and the change stands. The socket then keeps the group until it disconnects; on
- * reconnect `negotiate` issues a token for the new role.
+ * committed (issue #79). A failed or slow removal is tried once more. If a group still keeps
+ * them, every socket of theirs is closed instead: the client reconnects through `negotiate`,
+ * which issues a token for the role they have now. Only if that fails too is it logged as
+ * `live-revoke-failed`, with ids only; the change stands either way.
  */
 async function leaveGroups(spaceId: string, userId: string, groups: string[]): Promise<void> {
   const transport = (live ??= createEventSinkFromEnv());
-  const leave = (group: string) =>
-    transport
-      .removeUserFromGroup(group, userId)
-      .catch(() => transport.removeUserFromGroup(group, userId));
-  const results = await Promise.allSettled(groups.map(leave));
-  const failed = results.filter((r) => r.status === "rejected").length;
-  if (failed > 0) {
-    log.error("people.live-revoke-failed", {
-      route: ROUTE,
-      spaceId,
-      userId,
-      code: "live-revoke-failed",
-      count: failed,
-    });
+  const remove = (group: string) =>
+    bounded((signal) => transport.removeUserFromGroup(group, userId, { signal }));
+  const results = await Promise.allSettled(groups.map((g) => remove(g).catch(() => remove(g))));
+  if (results.every((r) => r.status === "fulfilled")) return;
+  const fields = { route: ROUTE, spaceId, userId };
+  try {
+    await bounded((signal) => transport.closeUserConnections(userId, { signal }));
+    log.warn("people.live-revoke-closed", { ...fields, code: "live-revoke-closed" });
+  } catch {
+    log.error("people.live-revoke-failed", { ...fields, code: "live-revoke-failed" });
   }
 }
 
