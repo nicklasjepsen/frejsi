@@ -1,42 +1,24 @@
-/* Frejsi service worker: the shell loads offline after the first visit (plan §6).
+/* Frejsi service worker: the app is installable and opens offline after the first visit (plan §6).
  *
- * Strategy: the shell routes, the manifest, the icons and the offline page are precached on
- * install; Next's hashed static assets are cached on first use; navigations go network first and
- * fall back to the cached route, then to the offline page. The API is never cached: a glucose
- * value is never served from a cache, and nothing under /api/ is stored here.
+ * What is cached: the offline page, the manifest, the icons and Next's hashed static assets.
+ * What is never cached: any page under a locale (they carry the signed-in person's name, space
+ * names and roles, and a cache would outlive the session on a shared device) and anything under
+ * /api/ (a glucose value is never served from a cache). Offline, every navigation gets the
+ * offline page; online, pages come from the network as always.
  */
-const CACHE = "frejsi-shell-v1";
+const CACHE = "frejsi-shell-v2";
 const PRECACHE = [
-  "/da",
-  "/en",
-  "/da/now",
-  "/en/now",
-  "/da/soon",
-  "/en/soon",
-  "/da/welcome",
-  "/en/welcome",
+  "/offline.html",
   "/manifest.webmanifest",
   "/icons/icon-192.png",
   "/icons/icon-512.png",
-  "/icons/icon-maskable-512.png",
-  "/offline.html"
+  "/icons/icon-maskable-512.png"
 ];
 const NEVER_CACHE = ["/api/"];
+const OFFLINE_PAGE = "/offline.html";
 
 self.addEventListener("install", (event) => {
-  event.waitUntil(
-    caches.open(CACHE).then((cache) =>
-      Promise.allSettled(
-        PRECACHE.map((url) =>
-          fetch(url, { credentials: "same-origin" }).then((response) => {
-            // A redirect (not signed in) or an error is skipped; the route is cached on first use.
-            if (response.ok && !response.redirected) return cache.put(url, response);
-            return undefined;
-          }),
-        ),
-      ),
-    ),
-  );
+  event.waitUntil(caches.open(CACHE).then((cache) => cache.addAll(PRECACHE)));
   self.skipWaiting();
 });
 
@@ -49,6 +31,10 @@ self.addEventListener("activate", (event) => {
   );
 });
 
+function isStaticAsset(pathname) {
+  return pathname.startsWith("/_next/static/") || PRECACHE.includes(pathname);
+}
+
 self.addEventListener("fetch", (event) => {
   const request = event.request;
   if (request.method !== "GET") return;
@@ -57,23 +43,13 @@ self.addEventListener("fetch", (event) => {
   if (NEVER_CACHE.some((prefix) => url.pathname.startsWith(prefix))) return;
 
   if (request.mode === "navigate") {
-    event.respondWith(
-      fetch(request)
-        .then((response) => {
-          if (response.ok && !response.redirected) {
-            const copy = response.clone();
-            caches.open(CACHE).then((cache) => cache.put(url.pathname, copy));
-          }
-          return response;
-        })
-        .catch(() =>
-          caches.match(url.pathname).then((cached) => cached || caches.match("/offline.html")),
-        ),
-    );
+    // Network only; nothing personal is stored. Offline, the calm offline page.
+    event.respondWith(fetch(request).catch(() => caches.match(OFFLINE_PAGE)));
     return;
   }
 
-  if (url.pathname.startsWith("/_next/static/") || PRECACHE.includes(url.pathname)) {
+  if (isStaticAsset(url.pathname)) {
+    // Hashed, immutable and impersonal: cache first.
     event.respondWith(
       caches.match(request).then(
         (cached) =>
