@@ -108,6 +108,9 @@ export function ConnectSourceForm({
               disabled={busy}
             />
           </label>
+          {/* The region options follow the shared contract today (ConnectSourceRequest.region is a
+              DexcomShareRegion). When a second GlucoseSource lands, they come from that source
+              type's own config schema instead of being fixed here. */}
           <fieldset className={styles.field} style={{ border: 0, padding: 0, margin: 0 }}>
             <legend>{t("connect.region")}</legend>
             <div className={styles.radios}>
