@@ -67,7 +67,8 @@ describe("/[locale]/welcome · the returning sign-in (plan §6, design gap 23)",
     expect(container.textContent).toContain(
       "Så skal du have et invitationslink fra en ejer af rummet.",
     );
-    expect(container.textContent).toContain("regner aldrig insulin");
+    expect(container.textContent).toContain("Frejsi · åben kildekode · regner aldrig insulin");
+    expect(container.textContent).not.toContain("erstatter ikke");
     // No shell: no navigation, no tabs, no sidebar, and no field for a name or a password.
     expect(screen.queryByRole("navigation")).toBeNull();
     expect(screen.queryByTestId("phone-tabs")).toBeNull();
@@ -140,8 +141,20 @@ describe("Log ind runs task 5's sign-in and lands on Now (§2b)", () => {
 
     mocks.signIn.mockRejectedValueOnce(new TypeError("Failed to fetch"));
     fireEvent.click(button);
-    expect(await screen.findByText(/Det lykkedes ikke denne gang/)).toBeInTheDocument();
+    expect(
+      await screen.findByText("Det lykkedes ikke denne gang. Prøv igen om et øjeblik."),
+    ).toBeInTheDocument();
     expect(screen.getAllByRole("alert")).toHaveLength(1);
+    // A returning user is never sent to ask for a link: that only makes sense on an invitation.
+    expect(screen.getByRole("alert")).not.toHaveTextContent(/link/);
+
+    // An authenticator that refused (rpId, unsupported algorithm) is not a cancellation.
+    mocks.signIn.mockRejectedValueOnce(new CeremonyError("authenticator"));
+    fireEvent.click(button);
+    await waitFor(() => {
+      expect(screen.getByRole("alert")).toHaveTextContent(/Det lykkedes ikke denne gang/);
+    });
+    expect(screen.getByRole("alert")).not.toHaveTextContent(/når du er klar/);
   });
 
   it("disables the button and shows Et øjeblik while the prompt is open", async () => {

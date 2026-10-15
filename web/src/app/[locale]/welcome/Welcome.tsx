@@ -51,7 +51,7 @@ export function Welcome({ locale }: { locale: AppLocale }) {
   };
 
   return (
-    <PublicPage footer={root("invite.footer")}>
+    <PublicPage>
       <div className={pub.hero}>
         <h1 className={pub.title}>{t("title")}</h1>
         <p className={pub.lead}>{t("body")}</p>

@@ -71,9 +71,13 @@ export function InviteLanding({
     if (error instanceof CeremonyError) {
       if (error.kind === "cancelled") return root("passkey.cancelled");
       if (error.kind === "unsupported") return root("passkey.unsupported");
+      // An add-device link opened on a device that already signs in as this user: trying again
+      // would throw the same way, so say what to do instead.
+      if (error.kind === "already-registered") return t("alreadyRegistered");
       if (error.code && INVITE_CODES.has(error.code)) return root(`errors.api.${error.code}`);
     }
-    return root("passkey.failed");
+    // The invitation's own general line: here a new link is the way out if it keeps failing.
+    return t("failed");
   };
 
   const create = async () => {
@@ -111,7 +115,7 @@ export function InviteLanding({
   );
 
   return (
-    <PublicPage footer={t("footer")}>
+    <PublicPage>
       <div className={pub.hero}>
         <Avatar name={view.spaceName} size={72} />
         <h1 className={pub.title}>

@@ -104,7 +104,7 @@
     "working": "One moment …",
     "cancelled": "That didn't go through this time. Try again when you're ready.",
     "unsupported": "This browser can't use passkeys. Try a newer browser, or open the link on your phone.",
-    "failed": "That didn't work this time. Try again – and if it keeps happening, ask for a new link."
+    "failed": "That didn't work this time. Try again in a moment."
   },
   "invite": {
     "pageTitle": "Invitation",
@@ -133,11 +133,12 @@
       "alsoPhone": "Want to use your phone as well? Ask {inviter} for an “add device” link afterwards.",
       "button": "Create access with this computer"
     },
+    "failed": "That didn't work this time. Try again – and if it keeps happening, ask for a new link.",
+    "alreadyRegistered": "This device can already sign in as you. Sign in instead, or open the link on the phone or computer you want to add.",
     "expires": "The link is valid {days, plural, one {# more day} other {# more days}} and can be used only once.",
-    "footer": "Frejsi is open source, never calculates insulin and does not replace your sensor app or pump app.",
     "unavailable": {
       "title": "This link no longer works",
-      "invite-expired": "The link has expired. An invitation link is valid for 7 days.",
+      "invite-expired": "The link has expired. An invitation link is valid for {days, plural, one {# day} other {# days}}.",
       "invite-used": "The link has already been used. An invitation link can be used only once.",
       "invite-revoked": "The link was withdrawn by the person who sent it.",
       "whoCanHelp": "The person who sent you the link – or another owner of the space – can send you a new one. It only takes a moment.",

@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
 import { inviteView } from "@/app/api/invites/invite-view";
+import { INVITE_TTL_MS } from "@/lib/auth/invites";
 import { getMessages } from "@/lib/i18n/messages";
 import { resolveLocale } from "@/lib/i18n/routing";
 
@@ -11,6 +12,9 @@ import { InviteUnavailable } from "../InviteUnavailable";
 import { isDeadInviteCode } from "../dead-link";
 
 type Params = Promise<{ locale: string; token: string }>;
+
+/** How long a link lives, in whole days, as the auth core sets it: the expired line says so. */
+const INVITE_TTL_DAYS = Math.round(INVITE_TTL_MS / (24 * 60 * 60 * 1000));
 
 export async function generateMetadata({ params }: { params: Params }): Promise<Metadata> {
   const locale = resolveLocale((await params).locale);
@@ -32,7 +36,7 @@ export default async function InvitePage({ params }: { params: Params }) {
   } catch (error) {
     if (error instanceof HttpError && error.code === "not-found") notFound();
     if (error instanceof HttpError && isDeadInviteCode(error.code)) {
-      return <InviteUnavailable locale={locale} code={error.code} />;
+      return <InviteUnavailable locale={locale} code={error.code} ttlDays={INVITE_TTL_DAYS} />;
     }
     throw error;
   }
