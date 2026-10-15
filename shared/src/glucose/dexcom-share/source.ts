@@ -19,8 +19,11 @@ import {
 /** The slice of `fetch` the adapter uses; tests pass one that serves the fixtures. */
 export type FetchLike = (
   input: string | URL,
-  init?: { method?: string; headers?: Record<string, string>; body?: string },
+  init?: { method?: string; headers?: Record<string, string>; body?: string; signal?: AbortSignal },
 ) => Promise<Pick<Response, "ok" | "status" | "text">>;
+
+/** Well under the Function's four-minute invocation timeout, so one stalled space cannot starve the rest. */
+export const DEFAULT_TIMEOUT_MS = 30_000;
 
 export interface DexcomShareSourceOptions {
   region: DexcomShareRegion;
@@ -30,6 +33,8 @@ export interface DexcomShareSourceOptions {
   now?: () => Date;
   /** Receives outcome codes only; never a credential, an id or a body. */
   log?: Logger;
+  /** Deadline per call, headers and body together. */
+  timeoutMs?: number;
 }
 
 /**
@@ -66,6 +71,7 @@ export class DexcomShareSource implements GlucoseSource {
   private readonly password: string;
   private readonly now: () => Date;
   private readonly log: Logger | undefined;
+  private readonly timeoutMs: number;
   private sessionId: string | null = null;
   private loggingIn: Promise<string> | null = null;
 
@@ -76,6 +82,7 @@ export class DexcomShareSource implements GlucoseSource {
     this.fetch = options.fetch ?? ((input, init) => globalThis.fetch(input, init));
     this.now = options.now ?? (() => new Date());
     this.log = options.log;
+    this.timeoutMs = options.timeoutMs ?? DEFAULT_TIMEOUT_MS;
   }
 
   async fetchSince(since: Date): Promise<Reading[]> {
@@ -163,18 +170,27 @@ export class DexcomShareSource implements GlucoseSource {
     body: Record<string, string> | undefined,
   ): Promise<unknown> {
     const url = `https://${HOSTS[this.region]}${pathAndQuery}`;
-    let response: Awaited<ReturnType<FetchLike>>;
+    // One signal for the request and the body: a stall anywhere ends as a timeout, not a hang.
+    const signal = AbortSignal.timeout(this.timeoutMs);
+    let text: string;
     try {
-      response = await this.fetch(url, {
+      const response = await this.fetch(url, {
         method: "POST",
         headers: HEADERS,
+        signal,
         ...(body === undefined ? {} : { body: JSON.stringify(body) }),
       });
-    } catch {
-      this.log?.warn("dexcom.unreachable", { code: "network" });
-      throw new DexcomShareError("Network", 0);
+      text = await response.text();
+      return this.decode(response, text);
+    } catch (error) {
+      if (error instanceof DexcomShareError) throw error;
+      const code = signal.aborted ? "Timeout" : "Network";
+      this.log?.warn("dexcom.unreachable", { code });
+      throw new DexcomShareError(code, 0);
     }
-    const text = await response.text();
+  }
+
+  private decode(response: Pick<Response, "ok" | "status">, text: string): unknown {
     let json: unknown = null;
     try {
       json = text === "" ? null : (JSON.parse(text) as unknown);
