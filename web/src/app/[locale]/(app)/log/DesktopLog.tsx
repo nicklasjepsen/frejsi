@@ -174,6 +174,7 @@ export function DesktopLog({ controller, spaceId, timeZone, userName, simpleMode
               busy={controller.manualBusy}
               failed={controller.manualFailed}
               onCreate={(request) => void controller.createManual(request)}
+              onCancel={controller.closeManual}
             />
           ) : response ? (
             <LookupResults

@@ -414,6 +414,8 @@ describe("?meal= reopens a saved meal", () => {
     await within(confirm).findByText("Æble");
     expect(screen.getByTestId("total-bar")).toHaveTextContent("50 g");
     expect(within(confirm).getByText("Bolus 11:58")).toBeVisible();
+    // A saved tap cannot be cleared through PATCH, so no undo is offered for it.
+    expect(within(confirm).queryByRole("button", { name: "Fortryd" })).toBeNull();
     fireEvent.click(within(confirm).getByRole("button", { name: "Fjern Æble" }));
     fireEvent.change(within(confirm).getByLabelText("Tidspunkt"), { target: { value: "11:45" } });
     fireEvent.click(within(confirm).getByRole("button", { name: "Gem måltid" }));
@@ -429,6 +431,28 @@ describe("?meal= reopens a saved meal", () => {
         bolusTs: meal.bolusTs,
       },
     });
+  });
+
+  it("does not relink a stored item when two library foods share its name", async () => {
+    api();
+    const twin = { ...pickedBread, id: "f-twin", portions: [{ label: "1 skive", carbs: 20 }] };
+    fake.on("GET /api/spaces/s1/meals/m1", meal).on(
+      "GET /api/spaces/s1/lookup",
+      lookup({
+        results: [
+          { source: "library", verified: false, food: pickedBread },
+          { source: "library", verified: false, food: twin },
+        ],
+      }),
+    );
+    mount({ mealId: "m1" });
+    const confirm = await screen.findByTestId("log-confirm");
+    await waitFor(() => {
+      expect(lookups()).toHaveLength(2);
+    });
+    expect(
+      within(confirm).getByRole("button", { name: /^Rugbrød, Fiktivt Bageri/ }),
+    ).toBeDisabled();
   });
 
   it("finds a stored item's food again so its portion can be changed", async () => {
@@ -610,6 +634,20 @@ describe("Log-Desktop", () => {
       expect(lookups().at(-1)).toBe("/api/spaces/s1/lookup?q=%C3%A6ble&remote=true");
     });
     expect(writes()).toEqual([]);
+  });
+
+  it("leaves the manual form with Annullér or by typing a new search", async () => {
+    api();
+    mount({ layout: "desktop" });
+    await typeAndSubmit("Søg mad eller skriv en stregkode", "rugbrød");
+    fireEvent.click(screen.getByRole("button", { name: /Jeg kender tallet selv/ }));
+    fireEvent.click(screen.getByRole("button", { name: "Annullér" }));
+    expect(screen.getByTestId("lookup-results")).toBeVisible();
+    fireEvent.click(screen.getByRole("button", { name: /Jeg kender tallet selv/ }));
+    fireEvent.change(screen.getByRole("searchbox", { name: "Søg mad eller skriv en stregkode" }), {
+      target: { value: "rugbrø" },
+    });
+    expect(screen.queryByRole("form", { name: "Jeg kender tallet selv" })).toBeNull();
   });
 
   it("runs ?q= from the Now header on load", async () => {

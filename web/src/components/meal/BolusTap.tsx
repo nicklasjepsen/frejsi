@@ -15,8 +15,11 @@ export function BolusTap({
   timeZone,
   onTap,
   onUndo,
+  canUndo = true,
 }: {
   bolusTs: string | null;
+  /** False for a tap already saved on a reopened meal, which this screen cannot clear. */
+  canUndo?: boolean;
   timeZone: string;
   onTap: () => void;
   onUndo: () => void;
@@ -28,15 +31,17 @@ export function BolusTap({
         <div className={styles.bolusDone} data-testid="bolus-done">
           <BolusIcon />
           <span>{t("at", { time: formatClock(new Date(bolusTs), timeZone) })}</span>
-          <button
-            type="button"
-            className={styles.linkButton}
-            onClick={() => {
-              onUndo();
-            }}
-          >
-            {t("undo")}
-          </button>
+          {canUndo && (
+            <button
+              type="button"
+              className={styles.linkButton}
+              onClick={() => {
+                onUndo();
+              }}
+            >
+              {t("undo")}
+            </button>
+          )}
         </div>
       ) : (
         <button

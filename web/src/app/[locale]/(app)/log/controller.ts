@@ -111,6 +111,7 @@ export function useLogController({
   const [deleteFailed, setDeleteFailed] = useState(false);
   const [loadFailed, setLoadFailed] = useState(false);
   const [mealLoaded, setMealLoaded] = useState(!mealId);
+  const [savedBolusTs, setSavedBolusTs] = useState<string | null>(null);
   const [barcodeInvalid, setBarcodeInvalid] = useState(false);
   const abort = useRef<AbortController | null>(null);
   /** The query an Enter is searching every source for; a pending as-you-type lookup yields to it. */
@@ -264,17 +265,19 @@ export function useLogController({
         .then((meal) => {
           const reopened = draftFromMeal(meal);
           setDraft(reopened);
+          setSavedBolusTs(reopened.bolusTs);
           setMealLoaded(true);
           // Find each stored item's food in the library again so its portions can be changed;
           // until one is, the item keeps its stored snapshot (§2).
           for (const item of reopened.items) {
             lookupText(spaceId, item.name, false)
               .then((answer) => {
-                const match = answer.results.find(
+                // Only an unambiguous match: two foods with this name could carry other portions.
+                const matches = answer.results.filter(
                   (result) => result.source === "library" && result.food.name === item.name,
                 );
-                if (match && isLibraryFood(match.food)) {
-                  const food = match.food;
+                const food = matches.length === 1 ? matches[0]?.food : undefined;
+                if (food && isLibraryFood(food)) {
                   setDraft((current) => relinkFood(current, item.key, food));
                 }
               })
@@ -346,7 +349,11 @@ export function useLogController({
 
   return {
     query,
-    setQuery,
+    /** Typing starts a new search: a manual form left open on desktop closes. */
+    setQuery: (value: string) => {
+      setManual(null);
+      setQuery(value);
+    },
     response: answered?.key === query.trim() ? answered.response : null,
     submitted,
     lookupFailed,
@@ -388,9 +395,14 @@ export function useLogController({
     tapBolus: () => {
       setDraft((d) => ({ ...d, bolusTs: new Date().toISOString() }));
     },
+    /**
+     * Undo returns to the saved meal's tap (none for a new meal). A saved tap cannot be cleared:
+     * an omitted `bolusTs` in `PATCH meals` means unchanged, and the contract has no null.
+     */
     undoBolus: () => {
-      setDraft((d) => ({ ...d, bolusTs: null }));
+      setDraft((d) => ({ ...d, bolusTs: savedBolusTs }));
     },
+    canUndoBolus: draft.bolusTs !== savedBolusTs,
     photo,
     setPhoto,
     save,
