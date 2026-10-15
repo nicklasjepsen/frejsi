@@ -76,6 +76,21 @@ describe("GET /api/spaces/:id/events?since= (plan §5)", () => {
     expect(next).toEqual({ lastSeq: 5, events: [], more: false });
   });
 
+  it("never moves the cursor past an event committed while the page was being read", async () => {
+    // Between reading the space's lastSeq (4) and the rows, a reading and a member event commit.
+    fake.duringEventQuery = () => {
+      fake.duringEventQuery = null;
+      fake.addReading("s1", { ts: "2026-10-15T13:15:00.000Z", mmol: 6.4, trend: "flat" });
+      fake.addEvent("s1", "member.joined", { userId: "carer-10", role: "carer" });
+    };
+    const first = (await events("sess-viewer-1", "0")).page;
+    expect(first?.events.map((e) => e.seq)).toEqual([2, 4]);
+    expect(first?.lastSeq).toBe(4);
+    const second = (await events("sess-viewer-1", "4")).page;
+    expect(second?.events.map((e) => [e.seq, e.type])).toEqual([[6, "member.joined"]]);
+    expect(second?.lastSeq).toBe(6);
+  });
+
   it("pages at EVENTS_PAGE_SIZE and says there is more", async () => {
     for (let i = 0; i < EVENTS_PAGE_SIZE; i += 1) {
       fake.addEvent("s1", "member.updated", { userId: "owner-1" });

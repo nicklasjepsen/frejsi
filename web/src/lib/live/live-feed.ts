@@ -11,7 +11,7 @@ import {
   ReadingsWindow,
 } from "./contracts";
 
-/** How often the feed asks for events while the socket is down (spec §3b). */
+/** How often the feed asks for events while the socket is not live (spec §3b). */
 export const POLL_MS = 30_000;
 
 /** The slice of `WebSocket` the feed uses; tests pass a fake. */
@@ -97,6 +97,9 @@ export class LiveFeed {
   private socket: SocketLike | null = null;
   private pollTimer: ReturnType<typeof setInterval> | null = null;
   private stopped = true;
+  /** Bumped by every `start()` and `stop()`: async work from an earlier life bails out. */
+  private generation = 0;
+  private negotiating = false;
   private catchingUp = false;
   private catchUpAgain = false;
 
@@ -122,27 +125,27 @@ export class LiveFeed {
   start(): void {
     if (!this.stopped) return;
     this.stopped = false;
-    void this.loadWindow().then((ok) => {
-      if (ok) this.connect();
-    });
+    this.generation += 1;
+    void this.loadWindow(this.generation);
   }
 
-  /** Closes the socket and clears the timer; `start()` begins again from the window. */
+  /**
+   * Closes the socket, clears the timer and invalidates every request in flight; `start()` begins
+   * again from the window. React strict mode runs start–stop–start before the first request
+   * answers, and only the last life may open a socket.
+   */
   stop(): void {
     this.stopped = true;
+    this.generation += 1;
+    this.negotiating = false;
     this.stopPolling();
-    const socket = this.socket;
-    this.socket = null;
-    if (socket) {
-      socket.onopen = socket.onmessage = socket.onclose = socket.onerror = null;
-      socket.close();
-    }
+    this.discardSocket();
     if (this.state.connection === "live") this.set({ connection: "polling" });
   }
 
-  /** `stopped` as a call, so a check after an `await` is not narrowed away by the one before it. */
-  private halted(): boolean {
-    return this.stopped;
+  /** True when `gen` is not the running life: its result is thrown away. */
+  private cancelled(gen: number): boolean {
+    return this.stopped || gen !== this.generation;
   }
 
   private set(patch: Partial<LiveState>): void {
@@ -156,30 +159,33 @@ export class LiveFeed {
   }
 
   /**
-   * `readings?hours=`: the window and the cursor it is consistent with. False when it could not be
-   * loaded: a refusal stops the feed, anything else is retried on the poll timer.
+   * `readings?hours=`: the window and the cursor it is consistent with, then `connect()`. A refusal
+   * stops the feed; anything else is retried on the poll timer. On a reload (`space.updated`) a
+   * message may already have moved the cursor past the window's: the stretch between is fetched
+   * again so nothing received meanwhile is lost.
    */
-  private async loadWindow(): Promise<boolean> {
+  private async loadWindow(gen: number): Promise<void> {
     let response: Response;
     try {
       response = await this.fetchImpl(this.url("readings", { hours: String(this.hours) }));
     } catch {
-      this.startPolling();
-      return false;
+      if (!this.cancelled(gen)) this.startPolling();
+      return;
     }
-    if (this.stopped) return false;
+    if (this.cancelled(gen)) return;
     if (response.status === 403 || response.status === 404) {
-      this.stopPolling();
-      this.stopped = true;
+      this.stop();
       this.set({ error: response.status === 403 ? "forbidden" : "not-found", loaded: false });
-      return false;
+      return;
     }
     const parsed = response.ok ? ReadingsWindow.safeParse(await response.json()) : null;
+    if (this.cancelled(gen)) return;
     if (!parsed?.success) {
       this.startPolling();
-      return false;
+      return;
     }
     const window = parsed.data;
+    const before = this.state;
     this.set({
       loaded: true,
       error: null,
@@ -189,74 +195,96 @@ export class LiveFeed {
       sourceSince: window.sourceSince,
       space: window.space,
     });
-    return true;
+    if (before.loaded && before.lastSeq > window.lastSeq) void this.catchUp(gen);
+    this.connect(gen);
   }
 
-  /** Negotiates a token and opens the socket; without one (503, offline) the feed polls instead. */
-  private connect(): void {
-    if (this.stopped || this.socket) return;
+  /**
+   * Negotiates a token and opens the socket; one attempt at a time. Without a token (503, offline)
+   * the feed polls instead. The poll timer keeps running until the socket has actually opened, so
+   * a handshake that never finishes still leaves the screen fed over HTTP.
+   */
+  private connect(gen: number): void {
+    if (this.cancelled(gen) || this.socket || this.negotiating) return;
+    this.negotiating = true;
     void this.fetchImpl(this.url("negotiate"))
       .then(async (response) =>
         response.ok ? NegotiateResult.safeParse(await response.json()) : null,
       )
       .catch(() => null)
       .then((parsed) => {
-        if (this.stopped) return;
+        if (this.cancelled(gen)) return;
+        this.negotiating = false;
         if (!parsed?.success) {
-          this.set({ connection: "polling" });
           this.startPolling();
-          void this.catchUp();
           return;
         }
-        this.open(parsed.data.url);
+        this.ensureTimer();
+        this.open(parsed.data.url, gen);
       });
   }
 
-  private open(url: string): void {
+  private open(url: string, gen: number): void {
     const socket = this.socketFactory(url);
     this.socket = socket;
     socket.onopen = () => {
-      if (this.socket !== socket) return;
+      if (this.socket !== socket || this.cancelled(gen)) return;
       this.stopPolling();
       this.set({ connection: "live" });
-      void this.catchUp();
+      void this.catchUp(gen);
     };
     socket.onmessage = (event) => {
-      if (this.socket !== socket) return;
-      this.receive(event.data);
+      if (this.socket !== socket || this.cancelled(gen)) return;
+      this.receive(event.data, gen);
     };
     socket.onclose = () => {
       if (this.socket !== socket) return;
       this.socket = null;
-      if (this.stopped) return;
-      this.set({ connection: "polling" });
-      void this.catchUp();
+      if (this.cancelled(gen)) return;
       this.startPolling();
+      void this.catchUp(gen);
     };
     socket.onerror = () => {
       // `close` follows an error; nothing to do here.
     };
   }
 
-  /** One tick: reload the window if it never loaded, else re-negotiate (which catches up). */
+  /** Drops the current socket without hearing its `close`. */
+  private discardSocket(): void {
+    const socket = this.socket;
+    this.socket = null;
+    if (!socket) return;
+    socket.onopen = socket.onmessage = socket.onclose = socket.onerror = null;
+    socket.close();
+  }
+
+  /**
+   * One tick while not live: reload the window if it never loaded; otherwise fetch events, drop a
+   * socket whose handshake has not finished since the last tick, and try to connect again.
+   */
   private tick(): void {
-    if (this.stopped) return;
+    const gen = this.generation;
+    if (this.cancelled(gen) || this.state.connection === "live") return;
     if (!this.state.loaded) {
-      void this.loadWindow().then((ok) => {
-        if (ok) this.connect();
-      });
+      void this.loadWindow(gen);
       return;
     }
-    this.connect();
+    if (this.socket) this.discardSocket();
+    void this.catchUp(gen);
+    this.connect(gen);
+  }
+
+  private ensureTimer(): void {
+    if (this.pollTimer || this.stopped) return;
+    this.pollTimer = setInterval(() => {
+      this.tick();
+    }, this.pollMs);
   }
 
   private startPolling(): void {
     if (this.stopped) return;
     if (this.state.connection !== "polling") this.set({ connection: "polling" });
-    if (this.pollTimer) return;
-    this.pollTimer = setInterval(() => {
-      this.tick();
-    }, this.pollMs);
+    this.ensureTimer();
   }
 
   private stopPolling(): void {
@@ -264,9 +292,13 @@ export class LiveFeed {
     this.pollTimer = null;
   }
 
-  /** `events?since=lastSeq` until the server has no more; one at a time, a request for a rerun queues. */
-  private async catchUp(): Promise<void> {
-    if (!this.state.loaded) return;
+  /**
+   * `events?since=lastSeq` until the server has no more; one at a time, a request for a rerun
+   * queues. A page can answer after messages have moved the cursor on: only envelopes past the
+   * cursor are applied, so an old page never restores an old status.
+   */
+  private async catchUp(gen: number): Promise<void> {
+    if (!this.state.loaded || this.cancelled(gen)) return;
     if (this.catchingUp) {
       this.catchUpAgain = true;
       return;
@@ -274,13 +306,16 @@ export class LiveFeed {
     this.catchingUp = true;
     try {
       let more = true;
-      while (more && !this.halted()) {
+      while (more) {
         const response = await this.fetchImpl(
           this.url("events", { since: String(this.state.lastSeq) }),
         );
+        if (this.cancelled(gen)) return;
         const parsed = response.ok ? EventsPage.safeParse(await response.json()) : null;
-        if (!parsed?.success || this.halted()) return;
-        for (const envelope of parsed.data.events) this.apply(envelope);
+        if (!parsed?.success || this.cancelled(gen)) return;
+        for (const envelope of parsed.data.events) {
+          if (envelope.seq > this.state.lastSeq) this.apply(envelope, gen);
+        }
         this.set({ lastSeq: Math.max(this.state.lastSeq, parsed.data.lastSeq) });
         more = parsed.data.more;
       }
@@ -290,13 +325,13 @@ export class LiveFeed {
       this.catchingUp = false;
       if (this.catchUpAgain) {
         this.catchUpAgain = false;
-        void this.catchUp();
+        void this.catchUp(gen);
       }
     }
   }
 
   /** A pushed message: applied when it is the next sequence, fetched when there is a gap. */
-  private receive(data: unknown): void {
+  private receive(data: unknown, gen: number): void {
     let raw: unknown;
     try {
       raw = typeof data === "string" ? JSON.parse(data) : data;
@@ -308,14 +343,14 @@ export class LiveFeed {
     const envelope = parsed.data;
     if (envelope.seq <= this.state.lastSeq) return;
     if (envelope.seq > this.state.lastSeq + 1) {
-      void this.catchUp();
+      void this.catchUp(gen);
       return;
     }
-    this.apply(envelope);
+    this.apply(envelope, gen);
     this.set({ lastSeq: envelope.seq });
   }
 
-  private apply(envelope: EventEnvelope): void {
+  private apply(envelope: EventEnvelope, gen: number): void {
     switch (envelope.type) {
       case "reading": {
         const others = this.state.readings.filter((r) => r.ts !== envelope.payload.ts);
@@ -330,7 +365,7 @@ export class LiveFeed {
         return;
       case "space.updated":
         // Unit, target range or timezone may have changed: the window carries them.
-        void this.loadWindow();
+        void this.loadWindow(gen);
         return;
       default:
         return;

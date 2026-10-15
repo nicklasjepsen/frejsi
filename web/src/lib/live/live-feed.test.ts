@@ -43,6 +43,8 @@ function fakeServer(initial: { readings: Reading[]; lastSeq: number }) {
       readings: initial.readings,
     } satisfies ReadingsWindow as ReadingsWindow,
     readingsStatus: 200,
+    /** Delivery delay in ms for the next pages/windows; the content is fixed when the request is made. */
+    delayMs: 0,
     append(payload: Reading): EventEnvelope {
       const seq = (server.events.at(-1)?.seq ?? server.window.lastSeq) + 1;
       const env = envelope(seq, payload);
@@ -50,11 +52,21 @@ function fakeServer(initial: { readings: Reading[]; lastSeq: number }) {
       return env;
     },
   };
+  const delayed = (response: Response): Response | Promise<Response> =>
+    server.delayMs > 0
+      ? new Promise((resolve) => {
+          setTimeout(() => {
+            resolve(response);
+          }, server.delayMs);
+        })
+      : response;
   const { fetch, calls } = fakeFetch({
     "/readings": () =>
-      server.readingsStatus === 200
-        ? jsonResponse(server.window)
-        : jsonResponse({ error: { code: "forbidden", message: "" } }, server.readingsStatus),
+      delayed(
+        server.readingsStatus === 200
+          ? jsonResponse(server.window)
+          : jsonResponse({ error: { code: "forbidden", message: "" } }, server.readingsStatus),
+      ),
     "/negotiate": () =>
       server.live
         ? jsonResponse({ url: SOCKET_URL })
@@ -67,7 +79,7 @@ function fakeServer(initial: { readings: Reading[]; lastSeq: number }) {
         events,
         more: false,
       };
-      return jsonResponse(page);
+      return delayed(jsonResponse(page));
     },
   });
   return { server, fetch, calls };
@@ -167,24 +179,25 @@ describe("LiveFeed (plan §5)", () => {
 
     server.live = false;
     await vi.advanceTimersByTimeAsync(POLL_MS);
-    expect(calls.slice(1)).toEqual(["/api/spaces/s1/negotiate", "/api/spaces/s1/events?since=2"]);
+    expect(calls.slice(1)).toEqual(["/api/spaces/s1/events?since=2", "/api/spaces/s1/negotiate"]);
     await vi.advanceTimersByTimeAsync(POLL_MS);
-    expect(calls.slice(3)).toEqual(["/api/spaces/s1/negotiate", "/api/spaces/s1/events?since=2"]);
+    expect(calls.slice(3)).toEqual(["/api/spaces/s1/events?since=2", "/api/spaces/s1/negotiate"]);
     expect(sockets).toHaveLength(1);
 
-    // The transport is back: a new token, a new socket, one catch-up, and no more polling.
+    // The transport is back: the tick's catch-up, a new token, a new socket, one catch-up on open,
+    // and no more polling.
     server.live = true;
     server.append(reading(minutesAgo(1), 7.2));
     await vi.advanceTimersByTimeAsync(POLL_MS);
-    expect(calls.slice(5)).toEqual(["/api/spaces/s1/negotiate"]);
+    expect(calls.slice(5)).toEqual(["/api/spaces/s1/events?since=2", "/api/spaces/s1/negotiate"]);
     expect(sockets).toHaveLength(2);
     sockets[1]?.open();
     await flush();
-    expect(calls.slice(6)).toEqual(["/api/spaces/s1/events?since=2"]);
+    expect(calls.slice(7)).toEqual(["/api/spaces/s1/events?since=3"]);
     expect(feed.getState().connection).toBe("live");
     expect(feed.getState().readings.map((r) => r.mmol)).toEqual([7.0, 7.2]);
     await vi.advanceTimersByTimeAsync(POLL_MS * 3);
-    expect(calls).toHaveLength(7);
+    expect(calls).toHaveLength(8);
   });
 
   it("falls back to polling when negotiate answers 503 (no Web PubSub), without a socket", async () => {
@@ -195,16 +208,108 @@ describe("LiveFeed (plan §5)", () => {
     expect(sockets).toHaveLength(0);
     expect(feed.getState().connection).toBe("polling");
     expect(feed.getState().loaded).toBe(true);
-    expect(calls).toEqual([
-      "/api/spaces/s1/readings?hours=24",
-      "/api/spaces/s1/negotiate",
-      "/api/spaces/s1/events?since=0",
-    ]);
+    // The window is current: no catch-up until the first tick.
+    expect(calls).toEqual(["/api/spaces/s1/readings?hours=24", "/api/spaces/s1/negotiate"]);
     server.append(reading(minutesAgo(1), 8.0));
     await vi.advanceTimersByTimeAsync(POLL_MS);
-    expect(calls.slice(3)).toEqual(["/api/spaces/s1/negotiate", "/api/spaces/s1/events?since=0"]);
+    expect(calls.slice(2)).toEqual(["/api/spaces/s1/events?since=0", "/api/spaces/s1/negotiate"]);
     expect(feed.getState().readings.map((r) => r.mmol)).toEqual([8.0]);
     expect(feed.getState().lastSeq).toBe(1);
+  });
+
+  it("keeps polling while a socket handshake never finishes, and replaces that socket on the next tick", async () => {
+    const { server, fetch, calls } = fakeServer({ readings: [], lastSeq: 1 });
+    const { feed } = start(fetch);
+    await flush();
+    expect(sockets).toHaveLength(1);
+    expect(feed.getState().connection).toBe("connecting");
+    calls.length = 0;
+
+    // A network that lets HTTPS through but stalls WebSockets: the screen is still fed over HTTP.
+    server.append(reading(minutesAgo(1), 6.6));
+    await vi.advanceTimersByTimeAsync(POLL_MS);
+    expect(calls).toEqual(["/api/spaces/s1/events?since=1", "/api/spaces/s1/negotiate"]);
+    expect(feed.getState().readings.map((r) => r.mmol)).toEqual([6.6]);
+    expect(sockets[0]?.closed).toBe(true);
+    expect(sockets).toHaveLength(2);
+
+    sockets[1]?.open();
+    await flush();
+    expect(feed.getState().connection).toBe("live");
+    const before = calls.length;
+    await vi.advanceTimersByTimeAsync(POLL_MS * 2);
+    expect(calls).toHaveLength(before);
+  });
+
+  it("opens one socket when start–stop–start races the first window (React strict mode)", async () => {
+    const { fetch, calls } = fakeServer({ readings: [], lastSeq: 1 });
+    const feed = new LiveFeed({ spaceId: "s1", fetch, socketFactory: factory });
+    feed.start();
+    feed.stop();
+    feed.start();
+    await flush();
+    expect(calls.filter((c) => c.includes("/negotiate"))).toHaveLength(1);
+    expect(sockets).toHaveLength(1);
+    feed.stop();
+    expect(sockets[0]?.closed).toBe(true);
+  });
+
+  it("does not let a catch-up page that answers late restore a status messages have moved past", async () => {
+    const { server, fetch } = fakeServer({ readings: [], lastSeq: 10 });
+    const { feed } = start(fetch);
+    await flush();
+    sockets[0]?.open();
+    await flush();
+
+    const status = (seq: number, value: "connected" | "disconnected"): EventEnvelope => ({
+      spaceId: "s1",
+      seq,
+      ts: T0.toISOString(),
+      type: "source.status",
+      payload: { status: value, since: T0.toISOString() },
+    });
+    server.events.push(status(11, "disconnected"));
+    server.delayMs = 100;
+    // A gap message starts a catch-up whose page (seq 11 only) is slow to arrive.
+    sockets[0]?.receive(status(13, "connected"));
+    // Meanwhile the socket delivers 11 and 12 in order.
+    sockets[0]?.receive(status(11, "disconnected"));
+    sockets[0]?.receive(status(12, "connected"));
+    expect(feed.getState().sourceStatus).toBe("connected");
+    expect(feed.getState().lastSeq).toBe(12);
+
+    await vi.advanceTimersByTimeAsync(100);
+    expect(feed.getState().sourceStatus).toBe("connected");
+    expect(feed.getState().lastSeq).toBe(12);
+  });
+
+  it("keeps a reading that arrived while the window was reloading after space.updated", async () => {
+    const { server, fetch, calls } = fakeServer({ readings: [], lastSeq: 1 });
+    const { feed } = start(fetch);
+    await flush();
+    sockets[0]?.open();
+    await flush();
+
+    // The reload's window is captured at seq 2, but seq 3 reaches the socket before it arrives.
+    server.window = { ...server.window, lastSeq: 2 };
+    server.delayMs = 100;
+    sockets[0]?.receive({
+      spaceId: "s1",
+      seq: 2,
+      ts: T0.toISOString(),
+      type: "space.updated",
+      payload: { fields: ["targetHigh"] },
+    });
+    const three = server.append(reading(minutesAgo(1), 9.1));
+    sockets[0]?.receive(three);
+    expect(feed.getState().lastSeq).toBe(3);
+
+    server.delayMs = 0;
+    await vi.advanceTimersByTimeAsync(100);
+    await flush();
+    expect(calls.at(-1)).toBe("/api/spaces/s1/events?since=2");
+    expect(feed.getState().lastSeq).toBe(3);
+    expect(feed.getState().readings.map((r) => r.mmol)).toEqual([9.1]);
   });
 
   it("stops everything on stop(): the socket closes and no timer fires", async () => {
