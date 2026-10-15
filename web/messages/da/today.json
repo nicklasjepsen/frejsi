@@ -1,0 +1,13 @@
+{
+  "dateLine": "I dag, {date}",
+  "totalSuffix": "g kulhydrat indtil nu",
+  "summary": "{count, plural, one {# måltid} other {# måltider}} · sidst kl. {time}",
+  "empty": "Ingen måltider i dag endnu",
+  "notice": "Som »ser med« kan du se dagens måltider og kulhydrater. Blodsukker vises ikke her – spørg {owners}, hvis du er i tvivl.",
+  "noticeNoOwners": "Som »ser med« kan du se dagens måltider og kulhydrater. Blodsukker vises ikke her.",
+  "loadFailed": "Dagens måltider kunne ikke hentes lige nu. Vi prøver igen om lidt.",
+  "mealCarbs": "{carbs} g kulhydrat · {name}",
+  "mealMeta": "{time} · {carbs} g kulhydrat · {name}",
+  "youAte": "Du spiste kl. {time}",
+  "listLabel": "Dagens måltider"
+}

@@ -1,0 +1,13 @@
+{
+  "dateLine": "Today, {date}",
+  "totalSuffix": "g carbs so far",
+  "summary": "{count, plural, one {# meal} other {# meals}} · last at {time}",
+  "empty": "No meals today yet",
+  "notice": "Watching along, you can see today's meals and carbs. Blood sugar is not shown here – ask {owners} if you are unsure.",
+  "noticeNoOwners": "Watching along, you can see today's meals and carbs. Blood sugar is not shown here.",
+  "loadFailed": "Today's meals could not be loaded just now. We will try again shortly.",
+  "mealCarbs": "{carbs} g carbs · {name}",
+  "mealMeta": "{time} · {carbs} g carbs · {name}",
+  "youAte": "You ate at {time}",
+  "listLabel": "Today's meals"
+}

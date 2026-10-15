@@ -17,6 +17,7 @@ import settings from "./settings.json";
 import shell from "./shell.json";
 import soon from "./soon.json";
 import source from "./source.json";
+import today from "./today.json";
 import viewer from "./viewer.json";
 import welcome from "./welcome.json";
 
@@ -37,6 +38,7 @@ const messages = {
   shell,
   soon,
   source,
+  today,
   viewer,
   welcome,
 };
