@@ -104,7 +104,8 @@ export class LiveFeed {
   private stopped = true;
   /** Bumped by every `start()` and `stop()`: async work from an earlier life bails out. */
   private generation = 0;
-  private negotiating = false;
+  /** The negotiate request in flight, if any. */
+  private negotiation: AbortController | null = null;
   /** A window reload (`space.updated`) that has not succeeded yet; the tick retries it. */
   private windowStale = false;
   private catchingUp = false;
@@ -144,7 +145,7 @@ export class LiveFeed {
   stop(): void {
     this.stopped = true;
     this.generation += 1;
-    this.negotiating = false;
+    this.abandonNegotiation();
     this.stopPolling();
     this.discardSocket();
     if (this.state.connection === "live") this.set({ connection: "polling" });
@@ -213,27 +214,35 @@ export class LiveFeed {
 
   /**
    * Negotiates a token and opens the socket; one attempt at a time. Without a token (503, offline)
-   * the feed polls instead. The poll timer keeps running until the socket has actually opened, so
-   * a handshake that never finishes still leaves the screen fed over HTTP.
+   * the feed polls instead. The poll timer runs from before the request until the socket has
+   * actually opened, so a negotiate or a handshake that never finishes still leaves the screen fed
+   * over HTTP; the next tick abandons the hung attempt and tries again.
    */
   private connect(gen: number): void {
-    if (this.cancelled(gen) || this.socket || this.negotiating) return;
-    this.negotiating = true;
-    void this.fetchImpl(this.url("negotiate"))
+    if (this.cancelled(gen) || this.socket || this.negotiation) return;
+    this.ensureTimer();
+    const controller = new AbortController();
+    this.negotiation = controller;
+    void this.fetchImpl(this.url("negotiate"), { signal: controller.signal })
       .then(async (response) =>
         response.ok ? NegotiateResult.safeParse(await response.json()) : null,
       )
       .catch(() => null)
       .then((parsed) => {
-        if (this.cancelled(gen)) return;
-        this.negotiating = false;
+        if (this.cancelled(gen) || this.negotiation !== controller) return;
+        this.negotiation = null;
         if (!parsed?.success) {
           this.startPolling();
           return;
         }
-        this.ensureTimer();
         this.open(parsed.data.url, gen);
       });
+  }
+
+  /** Gives up on a negotiate still in flight; its answer, if it ever comes, is ignored. */
+  private abandonNegotiation(): void {
+    this.negotiation?.abort();
+    this.negotiation = null;
   }
 
   private open(url: string, gen: number): void {
@@ -272,8 +281,8 @@ export class LiveFeed {
 
   /**
    * One tick: reload the window if it never loaded or a reload failed; otherwise, while not live,
-   * fetch events, drop a socket whose handshake has not finished since the last tick, and try to
-   * connect again.
+   * fetch events, drop a socket whose handshake or a negotiate that has not finished since the last
+   * tick, and try to connect again.
    */
   private tick(): void {
     const gen = this.generation;
@@ -286,7 +295,9 @@ export class LiveFeed {
       this.stopPolling();
       return;
     }
+    if (this.state.connection !== "polling") this.set({ connection: "polling" });
     if (this.socket) this.discardSocket();
+    this.abandonNegotiation();
     void this.catchUp(gen);
     this.connect(gen);
   }
