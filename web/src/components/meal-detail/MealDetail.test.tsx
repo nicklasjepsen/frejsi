@@ -12,6 +12,7 @@ const live = vi.hoisted(() => {
   type Handler = (envelope: { payload: { mealId: string } }) => void;
   const handlers = new Map<string, Set<Handler>>();
   return {
+    loaded: true,
     readings: [] as Reading[],
     calls: [] as unknown[],
     handlers,
@@ -31,12 +32,17 @@ const live = vi.hoisted(() => {
 vi.mock("@/lib/live/useLiveFeed", () => ({
   useLiveFeed: (...args: unknown[]) => {
     live.calls.push(args);
-    return { readings: live.readings, subscribe: live.subscribe };
+    return { loaded: live.loaded, readings: live.readings, subscribe: live.subscribe };
   },
 }));
-const navigation = vi.hoisted(() => ({ push: vi.fn() }));
+const navigation = vi.hoisted(() => ({ push: vi.fn(), refresh: vi.fn() }));
 vi.mock("next/navigation", () => ({
-  useRouter: () => ({ push: navigation.push, replace: vi.fn(), prefetch: vi.fn() }),
+  useRouter: () => ({
+    push: navigation.push,
+    refresh: navigation.refresh,
+    replace: vi.fn(),
+    prefetch: vi.fn(),
+  }),
 }));
 
 import { MealDetail, type MealDetailProps } from "./MealDetail";
@@ -85,6 +91,8 @@ beforeEach(() => {
   live.calls.length = 0;
   live.handlers.clear();
   navigation.push.mockClear();
+  navigation.refresh.mockClear();
+  live.loaded = true;
   api = mealApi(
     curveView({
       previous: [
@@ -411,6 +419,43 @@ describe("Måltid · live (plan §8)", () => {
       expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("Rye bread with cheese");
     });
     expect(api.calls).toHaveLength(2);
+  });
+
+  it("reads the curve again once the feed has its cursor", async () => {
+    live.loaded = false;
+    const { rerender } = mount();
+    await ready();
+    expect(api.calls).toHaveLength(1);
+    live.loaded = true;
+    rerender(
+      <I18nProvider locale="da" messages={getMessages("da")}>
+        <MealDetail
+          spaceId="s1"
+          mealId="m1"
+          locale="da"
+          timeZone="Europe/Copenhagen"
+          unit="mmol"
+          layout="phone"
+        />
+      </I18nProvider>,
+    );
+    await waitFor(() => {
+      expect(api.calls).toHaveLength(2);
+    });
+    expect(screen.getByTestId("curve-card")).toBeInTheDocument();
+  });
+
+  it("reads the curve and the page again on space.updated (target, unit, timezone)", async () => {
+    mount();
+    await ready();
+    api.curve = curveView({ target: { low: 5, high: 9 } });
+    act(() => {
+      live.emit("space.updated", "");
+    });
+    expect(navigation.refresh).toHaveBeenCalledTimes(1);
+    await waitFor(() => {
+      expect(within(screen.getByTestId("meal-tiles")).getByText("I mål 5–9")).toBeInTheDocument();
+    });
   });
 
   it("goes to Nu on meal.deleted for this meal only", async () => {

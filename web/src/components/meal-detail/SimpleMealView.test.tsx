@@ -10,6 +10,7 @@ const live = vi.hoisted(() => {
   type Handler = (envelope: { payload: { mealId: string } }) => void;
   const handlers = new Map<string, Set<Handler>>();
   return {
+    loaded: true,
     calls: [] as unknown[],
     handlers,
     subscribe: (type: string, handler: Handler) => {
@@ -28,12 +29,17 @@ const live = vi.hoisted(() => {
 vi.mock("@/lib/live/useLiveFeed", () => ({
   useLiveFeed: (...args: unknown[]) => {
     live.calls.push(args);
-    return { readings: [], subscribe: live.subscribe };
+    return { loaded: live.loaded, readings: [], subscribe: live.subscribe };
   },
 }));
-const navigation = vi.hoisted(() => ({ push: vi.fn() }));
+const navigation = vi.hoisted(() => ({ push: vi.fn(), refresh: vi.fn() }));
 vi.mock("next/navigation", () => ({
-  useRouter: () => ({ push: navigation.push, replace: vi.fn(), prefetch: vi.fn() }),
+  useRouter: () => ({
+    push: navigation.push,
+    refresh: navigation.refresh,
+    replace: vi.fn(),
+    prefetch: vi.fn(),
+  }),
 }));
 
 import { SimpleMealView } from "./SimpleMealView";
@@ -54,6 +60,8 @@ beforeEach(() => {
   live.calls.length = 0;
   live.handlers.clear();
   navigation.push.mockClear();
+  navigation.refresh.mockClear();
+  live.loaded = true;
   api = mealApi(curveView());
   vi.stubGlobal("fetch", api.fetch);
 });
