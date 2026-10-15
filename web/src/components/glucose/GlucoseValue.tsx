@@ -67,7 +67,9 @@ export function GlucoseValue({
       : age.kind === "minutes"
         ? t("age.minutes", { minutes: age.minutes })
         : age.kind === "hours"
-          ? t("age.hours", { hours: age.hours, minutes: age.minutes })
+          ? age.minutes === 0
+            ? t("age.wholeHours", { hours: age.hours })
+            : t("age.hours", { hours: age.hours, minutes: age.minutes })
           : t("age.overADay");
   const trendWord = t(`trend.${reading.trend}`);
   const unitText = t(`unit.${unit}`);
