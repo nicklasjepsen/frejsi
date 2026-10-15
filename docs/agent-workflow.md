@@ -242,3 +242,21 @@ Facts an agent needs that the docs of the tools do not say:
   deployments only from `v*` tags. Secrets present: `CLAUDE_CODE_OAUTH_TOKEN`, `CI_SQL_SA_PASSWORD`.
   Still to add with the infra lane: `ANTHROPIC_API_KEY_EVALS`, the `AZURE_*` repository variables.
 
+## 12. Codex lanes
+
+The owner's Codex subscription builds lanes alongside Claude (owner, 2026-10-15). A Codex lane is
+always allowed to finish: it runs `codex exec -m gpt-6.1-sol -c model_reasoning_effort=high
+--dangerously-bypass-approvals-and-sandbox -C <worktree>` in its own worktree under
+`~/dev/frejsi-lanes/`, commits with sign-off, pushes, opens the PR, and rebase-merges on green `ci`
+with every Codex review thread resolved, exactly like a Claude lane. Never stop a Codex lane halfway
+to ask; questions go in its PR body.
+
+- Give it the issue's owned paths **plus the adjacent files its tests need** (package exports and
+  scripts, fixtures, the shared test files, `infra/main.bicep` wiring), touched minimally. Codex
+  follows an owned-paths list literally; the first two Codex runs stopped short because the list was
+  too narrow.
+- Do not run it in the `workspace-write` sandbox: that makes a worktree's git metadata read-only and
+  nothing gets committed.
+- Wait on it by pid (`while kill -0 <pid>`), not `pgrep -f "codex exec"`, which matches the waiting
+  shell itself.
+- `gpt-6-astra` is for a lane that has failed twice.
