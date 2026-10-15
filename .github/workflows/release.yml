@@ -1,4 +1,7 @@
 name: release
+# The tag in every run's title, for pushes and redeploys alike: the verify job reads it back to find
+# the tag whose infrastructure was last applied.
+run-name: release ${{ github.event.inputs.tag || github.ref_name }}
 
 # The only path to production (docs/agent-workflow.md section 6). Runs on a pushed `vX.Y.Z` tag whose
 # title is a milestone with zero open issues, and on workflow_dispatch with an existing tag to redeploy
@@ -33,6 +36,7 @@ permissions:
   contents: write
   issues: write
   id-token: write
+  actions: read
 
 env:
   TAG: ${{ github.event.inputs.tag || github.ref_name }}
@@ -65,19 +69,30 @@ jobs:
           fi
           echo "number=$(echo "$MS" | jq -r .number)" >> "$GITHUB_OUTPUT"
 
-      - name: Did infra change since the previous release?
+      - name: Did infra change since the infra last applied?
         id: infra
         # Also true when a redeploy asks for it: the parameters come from repository variables, which
         # a file diff cannot see (README step 7, the custom domain).
-        # The baseline is the last published GitHub release, not the last tag: a failed release keeps
-        # its tag but may have deployed nothing (v0.1.0 failed in its suite, before infra), and
-        # diffing against it would skip the infra job and deploy into resources that do not exist.
+        # The baseline is the newest other tag whose infra job succeeded, read from this workflow's
+        # runs; not the previous tag or release. A failed release keeps its tag but may have applied
+        # nothing (v0.1.0 failed in its suite, before infra), and a run that applied infra and failed
+        # later changed production without publishing. Runs that skipped infra changed nothing and
+        # are passed over. No baseline, or one that is not a tag here, means infra runs.
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          RELEASES=$(gh release list --repo "${{ github.repository }}" --exclude-drafts --limit 50 --json tagName --jq '.[].tagName')
-          PREV=$(printf '%s\n' "$RELEASES" | grep -v -x -e "$TAG" -e '' | head -1 || true)
-          echo "Previous release: ${PREV:-none}"
+          RUNS=$(gh run list --repo "${{ github.repository }}" --workflow release.yml --limit 100 \
+            --json databaseId,displayTitle --jq '.[] | "\(.databaseId) \(.displayTitle)"')
+          PREV=""
+          while read -r id title; do
+            tag="${title#release }"
+            if [ -z "$id" ] || [ "$tag" = "$TAG" ]; then continue; fi
+            infra=$(gh run view "$id" --repo "${{ github.repository }}" --json jobs \
+              --jq '[.jobs[] | select(.name == "infra") | .conclusion][0] // ""')
+            if [ "$infra" = "success" ]; then PREV="$tag"; break; fi
+          done <<< "$RUNS"
+          if [ -n "$PREV" ] && ! git rev-parse -q --verify "refs/tags/$PREV" >/dev/null; then PREV=""; fi
+          echo "Infra last applied from: ${PREV:-nothing}"
           if [ "${{ github.event.inputs.infra }}" = "true" ] || [ -z "$PREV" ] || git diff --name-only "$PREV" "$TAG" -- infra/ | grep -q .; then
             echo "changed=true" >> "$GITHUB_OUTPUT"
           else
