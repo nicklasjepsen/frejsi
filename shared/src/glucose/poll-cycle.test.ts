@@ -66,6 +66,18 @@ function fakeDb(initial: Partial<SpaceState>[]) {
         Object.assign(must(args.where.id), args.data);
         return Promise.resolve(undefined);
       },
+      updateMany: (args) => {
+        const space = must(args.where.id);
+        const current = space.lastReadingAt;
+        const newer = args.where.OR.some((c) =>
+          "lastReadingAt" in c && c.lastReadingAt === null
+            ? current === null
+            : current !== null && "lt" in c.lastReadingAt && current < c.lastReadingAt.lt,
+        );
+        if (!newer) return Promise.resolve({ count: 0 });
+        space.lastReadingAt = args.data.lastReadingAt;
+        return Promise.resolve({ count: 1 });
+      },
     },
     reading: {
       findMany: (args) =>
@@ -259,7 +271,7 @@ describe("runPollCycle storing and emitting", () => {
       mmol: 8.0,
       trend: "forty-five-down",
     };
-    const h = harness([{ id: "s1", lastReadingAt: new Date(now.getTime() - MINUTE) }], () =>
+    const h = harness([{ id: "s1", lastReadingAt: new Date(now.getTime() - 10 * MINUTE) }], () =>
       recordingSource([reading]),
     );
     await h.run();
@@ -461,5 +473,67 @@ describe("runPollCycle and a failing emit", () => {
     const [outcome] = await h.run();
     expect(outcome).toMatchObject({ outcome: "failed", code: "status-update-failed" });
     expect(h.spaces.get("s1")).toMatchObject({ sourceFailures: 3, sourceStatus: "disconnected" });
+  });
+});
+
+describe("runPollCycle across spaces", () => {
+  it("polls spaces concurrently, bounded, and keeps the outcomes in space order", async () => {
+    let releaseSlow: (() => void) | undefined;
+    const slow: GlucoseSource = {
+      fetchSince: () =>
+        new Promise((resolve) => {
+          releaseSlow = () => {
+            resolve([]);
+          };
+        }),
+      probe: () => Promise.resolve("ok"),
+    };
+    const fast: GlucoseSource = {
+      fetchSince: () => {
+        // The slow space is still waiting when this one is asked: they run side by side.
+        releaseSlow?.();
+        return Promise.resolve([]);
+      },
+      probe: () => Promise.resolve("ok"),
+    };
+    const h = harness([{ id: "s1" }, { id: "s2" }, { id: "s3" }], (space) =>
+      space.id === "s1" ? slow : fast,
+    );
+    const outcomes = await h.run();
+    expect(outcomes.map((o) => o.spaceId)).toEqual(["s1", "s2", "s3"]);
+    expect(outcomes.every((o) => o.outcome === "ok")).toBe(true);
+  });
+
+  it("does not count a storage failure against the source", async () => {
+    const reading: Reading = { ts: "2026-10-15T10:25:00.000Z", mmol: 6.2, trend: "flat" };
+    const h = harness([{ id: "s1", lastReadingAt: new Date(now.getTime() - 10 * MINUTE) }], () =>
+      recordingSource([reading]),
+    );
+    h.emitFailure.error = new Error("database unavailable");
+    const [outcome] = await h.run();
+    expect(outcome).toMatchObject({ outcome: "failed", code: "store-failed" });
+    expect(h.spaces.get("s1")).toMatchObject({ sourceFailures: 0, sourceStatus: "connected" });
+  });
+
+  it("never moves lastReadingAt backwards when an older batch lands after a newer one", async () => {
+    const newest = new Date("2026-10-15T10:26:00.000Z");
+    const older: Reading = { ts: "2026-10-15T10:20:00.000Z", mmol: 7.7, trend: "flat" };
+    const h = harness([{ id: "s1", lastReadingAt: newest }], () => recordingSource([older]));
+    const [outcome] = await h.run();
+    expect(outcome).toMatchObject({ outcome: "ok", stored: 1 });
+    expect(h.spaces.get("s1")?.lastReadingAt).toEqual(newest);
+  });
+
+  it("keeps lastReadingAt for the rows it stored even when a later row fails", async () => {
+    const readings: Reading[] = [
+      { ts: "2026-10-15T10:20:00.000Z", mmol: 7.7, trend: "flat" },
+      { ts: "2026-10-15T10:25:00.000Z", mmol: 99, trend: "flat" },
+    ];
+    const h = harness([{ id: "s1", lastReadingAt: new Date("2026-10-15T10:00:00.000Z") }], () =>
+      recordingSource(readings),
+    );
+    await h.run();
+    expect(h.spaces.get("s1")?.lastReadingAt).toEqual(new Date("2026-10-15T10:20:00.000Z"));
+    expect(h.spaces.get("s1")?.sourceFailures).toBe(0);
   });
 });
