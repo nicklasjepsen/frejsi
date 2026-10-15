@@ -1,6 +1,12 @@
 // @vitest-environment node
 import { randomUUID } from "node:crypto";
-import { createLogger, type EventEnvelope, type SessionContext } from "@frejsi/shared";
+import {
+  createLogger,
+  type EventEnvelope,
+  type FoodCandidate,
+  type FoodSourceStatus,
+  type SessionContext,
+} from "@frejsi/shared";
 import { MemoryPhotoStore } from "@frejsi/shared/photos/memory";
 import { expect, it } from "vitest";
 import { configureFoods, type FoodDb, type FoodDeps, type FoodTx } from "./core";
@@ -47,6 +53,9 @@ export function foodTestRig() {
     events: [] as EventEnvelope[],
     published: [] as EventEnvelope[],
     sourceKind: "remote" as "remote" | "local",
+    remoteCandidates: [candidate] as FoodCandidate[],
+    sourceStatus: "ok" as FoodSourceStatus,
+    sourcePending: false,
     failEvent: false,
     failPublish: false,
     failTransaction: false,
@@ -195,8 +204,14 @@ export function foodTestRig() {
         get kind() {
           return rig.sourceKind;
         },
-        search: () => Promise.resolve({ status: "ok", candidates: [] }),
-        byBarcode: () => Promise.resolve({ status: "ok", candidates: [] }),
+        search: () =>
+          rig.sourcePending
+            ? new Promise(() => undefined)
+            : Promise.resolve({ status: rig.sourceStatus, candidates: rig.remoteCandidates }),
+        byBarcode: () =>
+          rig.sourcePending
+            ? new Promise(() => undefined)
+            : Promise.resolve({ status: rig.sourceStatus, candidates: rig.remoteCandidates }),
       },
     ],
     photos: new MemoryPhotoStore(),
