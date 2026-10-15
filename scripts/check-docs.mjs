@@ -60,6 +60,11 @@ export function checkDocs(body, changedFiles, author) {
 
   const none = /^None needed:[ \t]*([^\n]*)$/i.exec(section);
   if (none) {
+    if (changedFiles.some(isDocFile)) {
+      throw new Error(
+        "Counted documentation changed; list its paths in ## Docs instead of None needed.",
+      );
+    }
     const reason = none[1].trim();
     if (
       reason.length >= 8 &&
