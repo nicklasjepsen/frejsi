@@ -1,0 +1,125 @@
+/* The day (Historik-Viewer): DayTotal, MealCard in three variants, DayList. Tokens only, so dark
+   mode and the accent come from the theme (design gaps 2 and 3). */
+
+.total {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.totalNumber {
+  font-size: 72px;
+  line-height: 1;
+  font-weight: 700;
+  letter-spacing: -0.04em;
+  font-variant-numeric: tabular-nums;
+}
+
+.totalSuffix {
+  font-size: 20px;
+  color: var(--text-muted);
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.empty {
+  font-size: 15px;
+  color: var(--text-muted);
+}
+
+.title {
+  font: 600 17px/1.15 var(--font-display-stack);
+  overflow-wrap: anywhere;
+}
+
+.meta {
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.photo {
+  flex-shrink: 0;
+  overflow: hidden;
+  border-radius: 12px;
+}
+
+/* The timeline row: 48 px time column, 48 px photo, title and meta. */
+.row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  border-radius: 18px;
+  background: var(--surface);
+  box-shadow: var(--card-shadow);
+  border: var(--card-border);
+}
+
+.time {
+  width: 48px;
+  flex-shrink: 0;
+  font-size: 15px;
+  font-weight: 700;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+/* The phone card ("Sidste måltid"): 64 px photo, serif 19 title. */
+.card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px;
+  border-radius: var(--radius-card);
+  background: var(--surface);
+  box-shadow: var(--card-shadow);
+  border: var(--card-border);
+}
+
+.card .title {
+  font-size: 19px;
+}
+
+.card .photo {
+  border-radius: 14px;
+}
+
+/* The simple variant: "Du spiste kl. 12:10" above the title, a large photo. */
+.simple {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px;
+  border-radius: var(--radius-card-simple);
+  background: var(--surface);
+  box-shadow: var(--card-shadow);
+  border: var(--card-border);
+}
+
+.simple .title {
+  font-size: 24px;
+}
+
+.simple .meta {
+  font-size: 17px;
+}
+
+.simple .photo {
+  border-radius: 16px;
+}
