@@ -1,0 +1,114 @@
+/* ChipGroup, ArrowNav and the "meta" PageHeader (Maaltid-*, Historik-Desktop). Tokens only. */
+.chipGroup {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  min-height: 38px;
+  padding: 0 14px;
+  border-radius: 999px;
+  border: 1px solid var(--hairline);
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-size: 14px;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.chip[aria-checked="true"] {
+  border: 2px solid var(--accent-base);
+  background: var(--kit-tint);
+  color: var(--accent-strong);
+  font-weight: 700;
+}
+
+.chip:focus-visible,
+.arrow:focus-visible,
+.metaBack:focus-visible {
+  outline: 2px solid var(--accent-base);
+  outline-offset: 2px;
+}
+
+.arrowNav {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.arrow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  border: 1px solid var(--hairline);
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.arrow:disabled {
+  color: var(--text-muted);
+  opacity: 0.5;
+  cursor: default;
+}
+
+.navLabel {
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.metaHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.metaBack {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 0;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 22px;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.metaLine {
+  flex: 1;
+  margin: 0;
+  text-align: center;
+  font-family: var(--font-body-stack);
+  font-size: 14px;
+  color: var(--text-muted);
+}
+
+.metaTrailing {
+  display: flex;
+  justify-content: flex-end;
+  min-width: 44px;
+  font-size: 15px;
+}
+
+.metaTrailing a {
+  padding: 10px 4px;
+  text-decoration: none;
+}

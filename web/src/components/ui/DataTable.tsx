@@ -7,6 +7,8 @@ export interface DataColumn<T> {
   key: string;
   header: ReactNode;
   render: (row: T) => ReactNode;
+  /** `end` right-aligns a numeric column (Maaltid-Desktop). */
+  align?: "start" | "end";
 }
 export interface DataTableProps<T> {
   rows: readonly T[];
@@ -16,6 +18,13 @@ export interface DataTableProps<T> {
   onSelectionChange?: (ids: string[]) => void;
   onActivate?: (row: T) => void;
   caption?: string;
+  /**
+   * `false` drops the checkbox column; the focused row is then the selection, moved with J/K
+   * and the arrow keys (MealStatsTable). Default `true`.
+   */
+  selectable?: boolean;
+  /** The row drawn at 700, e.g. the meal on screen. */
+  currentId?: string;
 }
 
 /** Roving row focus; native controls inside cells keep their own keyboard behaviour. */
@@ -27,6 +36,8 @@ export function DataTable<T extends { id: string }>({
   onSelectionChange,
   onActivate,
   caption,
+  selectable = true,
+  currentId,
 }: DataTableProps<T>) {
   const t = useTranslations("foodKit");
   const [active, setActive] = useState<string | null>(null);
@@ -47,9 +58,9 @@ export function DataTable<T extends { id: string }>({
         {caption && <caption>{caption}</caption>}
         <thead>
           <tr>
-            <th scope="col">{t("select")}</th>
+            {selectable && <th scope="col">{t("select")}</th>}
             {columns.map((column) => (
-              <th scope="col" key={column.key}>
+              <th scope="col" key={column.key} data-align={column.align}>
                 {column.header}
               </th>
             ))}
@@ -64,7 +75,8 @@ export function DataTable<T extends { id: string }>({
                 else refs.current.delete(row.id);
               }}
               tabIndex={row.id === activeId ? 0 : -1}
-              aria-selected={selected.includes(row.id)}
+              aria-selected={selectable ? selected.includes(row.id) : row.id === activeId}
+              data-current={row.id === currentId ? "true" : undefined}
               onFocus={() => {
                 setActive(row.id);
               }}
@@ -80,15 +92,20 @@ export function DataTable<T extends { id: string }>({
                 )
                   return;
                 const key = event.key.toLowerCase();
-                if (key === "j" || key === "k") {
+                const step =
+                  key === "j" || key === "arrowdown"
+                    ? 1
+                    : key === "k" || key === "arrowup"
+                      ? -1
+                      : 0;
+                if (step !== 0) {
                   event.preventDefault();
-                  const next =
-                    rows[Math.max(0, Math.min(rows.length - 1, index + (key === "j" ? 1 : -1)))];
+                  const next = rows[Math.max(0, Math.min(rows.length - 1, index + step))];
                   if (next) {
                     setActive(next.id);
                     refs.current.get(next.id)?.focus();
                   }
-                } else if (key === " ") {
+                } else if (key === " " && selectable) {
                   event.preventDefault();
                   toggle(row.id);
                 } else if (key === "enter") {
@@ -97,18 +114,22 @@ export function DataTable<T extends { id: string }>({
                 }
               }}
             >
-              <td>
-                <input
-                  type="checkbox"
-                  aria-label={t("selectRow", { name: rowLabel(row) })}
-                  checked={selected.includes(row.id)}
-                  onChange={() => {
-                    toggle(row.id);
-                  }}
-                />
-              </td>
+              {selectable && (
+                <td>
+                  <input
+                    type="checkbox"
+                    aria-label={t("selectRow", { name: rowLabel(row) })}
+                    checked={selected.includes(row.id)}
+                    onChange={() => {
+                      toggle(row.id);
+                    }}
+                  />
+                </td>
+              )}
               {columns.map((column) => (
-                <td key={column.key}>{column.render(row)}</td>
+                <td key={column.key} data-align={column.align}>
+                  {column.render(row)}
+                </td>
               ))}
             </tr>
           ))}
