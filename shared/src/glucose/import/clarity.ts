@@ -21,18 +21,37 @@ import {
  *   Source Device ID, Glucose Value (mmol/L | mg/dL), …, Carb Value (grams), …,
  *   Glucose Rate of Change (mmol/L/min | mg/dL/min), Transmitter Time (Long Integer), Transmitter ID
  *
- * Event types: `EGV` is a reading (`Low`/`High` for a value past the sensor's range); `Carbs` is
- * a carb entry from the Dexcom app. Every other type (calibrations, exercise, health, alerts,
- * the patient rows and the dosing rows) is counted and otherwise left unread. Timestamps are
- * wall-clock times without an offset; the space's timezone places them.
+ * Clarity writes the header and the event types in the account's language, and some locales
+ * quote every field, put `;` between columns and write a comma decimal. Columns are therefore
+ * found by role, not by their English name, and event types by a synonym set per role.
+ *
+ * Event types: a reading (`EGV`; `Low`/`High` for a value past the sensor's range) and a carb
+ * entry from the Dexcom app (`Carbs`). Every other type (calibrations, exercise, health, alerts,
+ * the patient rows and the dosing rows, in any language) is counted and otherwise left unread.
+ * Timestamps are wall-clock times without an offset; the space's timezone places them.
+ */
+
+/**
+ * The start of each column's header, per language, lower case. To add a language, add the header
+ * starts from a real export in that language next to the others; do not guess them.
  */
 const COLUMNS = {
-  timestamp: "timestamp",
-  type: "event type",
-  subtype: "event subtype",
-  glucose: "glucose value",
-  carbs: "carb value",
-  rate: "glucose rate of change",
+  timestamp: ["timestamp", "tidsstempel"],
+  type: ["event type", "hændelsestype"],
+  subtype: ["event subtype", "hændelsesundertype"],
+  glucose: ["glucose value", "glukoseværdi"],
+  carbs: ["carb value", "kulhydratværdi"],
+  rate: ["glucose rate of change", "ændringshastighed for glukose"],
+} as const satisfies Record<string, readonly string[]>;
+
+/**
+ * The event types this reads, per role, lower case, in every language it knows. The Danish carb
+ * name is inferred from the Danish carb column's header ("Kulhydratværdi"); no Danish export seen
+ * so far held a carb row. Any type not listed here is never read beyond its name.
+ */
+const EVENT_TYPES = {
+  reading: new Set(["egv", "estimeret glukoseværdi"]),
+  carbs: new Set(["carbs", "kulhydrater"]),
 } as const;
 
 /** Clarity's sensor range, as the Dexcom app shows it: 2.2–22.2 mmol/L (40–400 mg/dL). */
@@ -51,9 +70,20 @@ interface Layout {
 
 const firstLine = (text: string): string => text.replace(/^\uFEFF/, "").split(/\r?\n/, 1)[0] ?? "";
 
+/** A header cell or event type as compared: no BOM, no surrounding quotes, NFC, lower case. */
+const keyOf = (text: string | undefined): string =>
+  (text ?? "")
+    .replace(/^\uFEFF/, "")
+    .trim()
+    .replace(/^"(.*)"$/, "$1")
+    .trim()
+    .normalize("NFC")
+    .toLowerCase();
+
 function layoutOf(header: string[], delimiter: string): Layout | null {
-  const lower = header.map((h) => h.trim().toLowerCase());
-  const index = (prefix: string) => lower.findIndex((h) => h.startsWith(prefix));
+  const lower = header.map(keyOf);
+  const index = (starts: readonly string[]) =>
+    lower.findIndex((h) => starts.some((start) => h.startsWith(start)));
   const columns = {
     timestamp: index(COLUMNS.timestamp),
     type: index(COLUMNS.type),
@@ -83,7 +113,7 @@ function numberOf(text: string | undefined): number | null {
 }
 
 function mmolOf(text: string | undefined, unit: Unit): number | null {
-  const word = (text ?? "").trim().toLowerCase();
+  const word = keyOf(text);
   if (BELOW_RANGE_WORDS.has(word)) return BELOW_RANGE_MMOL;
   if (ABOVE_RANGE_WORDS.has(word)) return ABOVE_RANGE_MMOL;
   const value = numberOf(text);
@@ -138,8 +168,8 @@ export const clarityImport: GlucoseImportSource = {
     let otherRows = 0;
 
     for (const row of rows.slice(1)) {
-      const type = (row[columns.type] ?? "").trim().toLowerCase();
-      if (type === "egv") {
+      const type = keyOf(row[columns.type]);
+      if (EVENT_TYPES.reading.has(type)) {
         const ts = localToUtc(row[columns.timestamp] ?? "", options.timezone);
         const mmol = mmolOf(row[columns.glucose], unit);
         if (!ts || mmol === null) {
@@ -160,7 +190,7 @@ export const clarityImport: GlucoseImportSource = {
         if (!byInstant.has(ts.getTime())) byInstant.set(ts.getTime(), reading.data);
         continue;
       }
-      if (type === "carbs") {
+      if (EVENT_TYPES.carbs.has(type)) {
         const ts = localToUtc(row[columns.timestamp] ?? "", options.timezone);
         const grams = columns.carbs >= 0 ? numberOf(row[columns.carbs]) : null;
         if (!ts || grams === null || grams <= 0) {

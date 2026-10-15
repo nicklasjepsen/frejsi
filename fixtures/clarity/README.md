@@ -11,6 +11,11 @@ transmitter id and value is fictional; no file here came from a real export.
 - `clarity-export-mgdl.csv`: the US layout in mg/dL with the newer space-separated,
   non-padded timestamp.
 - `clarity-export-semicolon.csv`: a locale that writes `;` between columns and `,` as the decimal.
+- `clarity-export-da.csv`: a Danish-locale export in the shape a Danish Clarity account writes
+  (UTF-8 with BOM, CRLF, `;` between columns, every field quoted, `,` as the decimal): the Danish
+  header and event types, the patient, device and `Advisering` rows, `Estimeret glukoseværdi`
+  readings including one `Høj`, one `Lav` and one without a value, one `Kulhydrater` entry and
+  one dosing row. Its structure mirrors a real export; every value in it is made up.
 
 Frejsi reads readings and carb entries from these and nothing else; the dosing rows exist in the
 fixtures only so the tests can prove they leave no trace.

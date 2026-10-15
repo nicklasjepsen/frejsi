@@ -19,6 +19,7 @@ describe("Dexcom Clarity import (#154)", () => {
       "clarity-export-mmol.csv",
       "clarity-export-mgdl.csv",
       "clarity-export-semicolon.csv",
+      "clarity-export-da.csv",
     ]) {
       expect(clarityImport.detect(fixture(name)), name).toBe(true);
     }
@@ -105,6 +106,51 @@ describe("Dexcom Clarity import (#154)", () => {
       { ts: "2026-10-14T05:05:12.000Z", mmol: 6.6, trend: "flat" },
     ]);
     expect(parsed.carbs).toEqual([{ ts: "2026-10-14T05:12:00.000Z", grams: 35 }]);
+  });
+
+  it("reads a Danish-locale export: quoted fields, BOM, CRLF, Danish headers and event types (#155)", () => {
+    const text = fixture("clarity-export-da.csv");
+    expect(text.startsWith("\uFEFF")).toBe(true);
+    expect(text).toContain("\r\n");
+    expect(clarityImport.detect(text)).toBe(true);
+    const parsed = parseGlucoseImport(text, copenhagen);
+    expect(parsed.format).toBe("clarity");
+    expect(parsed.readings).toEqual([
+      { ts: "2026-10-14T05:00:12.000Z", mmol: 6.4, trend: "not-computable" },
+      { ts: "2026-10-14T05:05:12.000Z", mmol: 7.1, trend: "single-up" },
+      { ts: "2026-10-14T05:15:12.000Z", mmol: 22.2, trend: "not-computable" },
+      { ts: "2026-10-14T05:20:12.000Z", mmol: 2.2, trend: "not-computable" },
+      { ts: "2026-10-14T05:25:12.000Z", mmol: 5.8, trend: "not-computable" },
+    ]);
+    expect(parsed.carbs).toEqual([{ ts: "2026-10-14T05:12:00.000Z", grams: 35 }]);
+    // Patient (3), device (2), alerts (7), the reading without a value and the dosing row.
+    expect(parsed.otherRows).toBe(14);
+  });
+
+  it("keeps nothing of a Danish export's other rows: no dosing row, value or word survives", () => {
+    const text = fixture("clarity-export-da.csv");
+    expect(text).toContain('"Insulin"');
+    const parsed = clarityImport.parse(text, copenhagen);
+    const json = JSON.stringify(parsed).toLowerCase();
+    for (const word of [
+      "insulin",
+      "3,5",
+      "3.5",
+      "alma",
+      "example",
+      "advisering",
+      "fødselsdato",
+      "2016",
+    ]) {
+      expect(json, word).not.toContain(word);
+    }
+    expect(Object.keys(parsed).sort()).toEqual(["carbs", "format", "otherRows", "readings"]);
+  });
+
+  it("matches headers case-insensitively and refuses a Danish header without the glucose column", () => {
+    const text = fixture("clarity-export-da.csv");
+    expect(clarityImport.detect(text.replace("Hændelsestype", "HÆNDELSESTYPE"))).toBe(true);
+    expect(clarityImport.detect(text.replace("Glukoseværdi (mmol/L)", "Glukose"))).toBe(false);
   });
 
   it("places the wall-clock times in the space's timezone", () => {

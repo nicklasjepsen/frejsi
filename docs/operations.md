@@ -150,7 +150,11 @@ What the import does:
   so importing the same file twice, or importing a period Share already covers, adds nothing.
   `Low` and `High` become 2.2 and 22.2 mmol/L, the ends of the sensor's range; the rate-of-change
   column becomes the arrow, and no rate means no arrow. mmol/L and mg/dL exports both work, as do
-  locales that write `;` between columns and `,` as the decimal.
+  locales that write `;` between columns and `,` as the decimal. English and Danish Clarity exports
+  are both read: the columns are found by their header in either language, a Danish
+  `Estimeret glukoseværdi` is a reading and `Kulhydrater` a carb entry, and fields may be quoted.
+  Another language needs its header starts and event names added to `COLUMNS` and
+  `EVENT_TYPES` in `shared/src/glucose/import/clarity.ts`, taken from a real export in it.
 - **Times** in a Clarity export are wall-clock times with no offset. They are read in the space's
   timezone, which the import screen names; an export made in another timezone shifts by the
   difference.
