@@ -1,0 +1,209 @@
+/* Log et måltid (Log-Telefon, Log-Portioner, Log-Desktop). Tokens only: light, dark and accent. */
+.phone {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding-bottom: 24px;
+}
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.section h2 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+}
+.sectionHead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+}
+.sectionHead a {
+  color: var(--accent-strong);
+  font-size: 14px;
+}
+.tiles {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.list li {
+  border-bottom: 1px solid var(--hairline);
+}
+.phoneTotal {
+  position: sticky;
+  bottom: 0;
+  margin: 0 calc(-1 * var(--phone-gutter));
+}
+
+/* The confirm screen covers the shell (no tab bar on Log-Portioner). */
+.confirm {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  background: var(--ground);
+  color: var(--text);
+}
+.confirmHeader {
+  display: grid;
+  grid-template-columns: 44px 1fr auto;
+  align-items: center;
+  gap: 8px;
+  padding: var(--phone-safe-top) 16px 0 12px;
+}
+.confirmTitle {
+  text-align: center;
+}
+.confirmTitle h1 {
+  margin: 0;
+  font: 600 22px/1.2 var(--font-display-stack);
+}
+.confirmTitle p {
+  margin: 0;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+.iconButton {
+  width: 44px;
+  height: 44px;
+  border: 0;
+  border-radius: 50%;
+  background: none;
+  color: var(--text-muted);
+  font-size: 22px;
+  cursor: pointer;
+}
+.cancel {
+  min-height: 44px;
+  padding: 10px 4px;
+  border: 0;
+  background: none;
+  color: var(--accent-strong);
+  font: inherit;
+  font-size: 15px;
+  cursor: pointer;
+}
+.confirmBody {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 16px;
+  overflow-y: auto;
+  padding: 16px var(--phone-gutter) 24px;
+}
+.confirmFooter {
+  position: sticky;
+  bottom: 0;
+}
+.card {
+  overflow: hidden;
+  border-radius: var(--radius-card);
+  background: var(--surface);
+  box-shadow: var(--card-shadow);
+  border: var(--card-border);
+}
+.timeField {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 14px;
+  color: var(--text-muted);
+}
+.timeField input {
+  min-height: 44px;
+  padding: 0 12px;
+  border: 1px solid var(--hairline);
+  border-radius: 12px;
+  background: var(--surface-input);
+  color: var(--text);
+  font: inherit;
+  font-variant-numeric: tabular-nums;
+}
+.photoField {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.photoPreview {
+  width: 56px;
+  height: 56px;
+  overflow: hidden;
+  border-radius: 12px;
+}
+.deleteButton {
+  align-self: flex-start;
+  min-height: 44px;
+  border: 0;
+  background: none;
+  color: var(--destructive);
+  font: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+/* Desktop from 1280 px (Log-Desktop): search and results left, the meal right. */
+.desktop {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  max-width: 1120px;
+  padding: 28px 32px 40px;
+}
+.desktopHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+}
+.headerGlucose {
+  flex-shrink: 0;
+}
+.columns {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 24px;
+}
+.searchColumn {
+  display: flex;
+  flex: 1 1 460px;
+  min-width: 0;
+  flex-direction: column;
+  gap: 14px;
+}
+.mealColumn {
+  display: flex;
+  flex: 1 1 420px;
+  min-width: 0;
+  flex-direction: column;
+  gap: 14px;
+  padding: 20px 24px;
+  border-radius: var(--radius-card);
+  background: var(--surface);
+  box-shadow: var(--card-shadow);
+  border: var(--card-border);
+}
+.mealHead h2 {
+  margin: 0;
+  font: 600 24px/1.2 var(--font-display-stack);
+}
+.mealHead p {
+  margin: 2px 0 0;
+  font-size: 13px;
+  color: var(--text-muted);
+}

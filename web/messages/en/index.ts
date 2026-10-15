@@ -8,6 +8,7 @@ import foodKit from "./foodKit.json";
 import glucose from "./glucose.json";
 import invite from "./invite.json";
 import locale from "./locale.json";
+import log from "./log.json";
 import nav from "./nav.json";
 import now from "./now.json";
 import passkey from "./passkey.json";
@@ -28,6 +29,7 @@ const messages = {
   glucose,
   invite,
   locale,
+  log,
   nav,
   now,
   passkey,

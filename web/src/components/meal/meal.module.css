@@ -1,0 +1,353 @@
+/* Log a meal parts (design README: EntryTiles, PortionChips, TotalBar; Log-Portioner, Log-Desktop).
+   Colours come from the tokens only, so light, dark (design gap 2) and the person's accent follow. */
+.entryTiles {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+.entryTile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 104px;
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-card);
+  background: var(--surface);
+  box-shadow: var(--card-shadow);
+  color: var(--accent-strong);
+  font: 700 16px/1.2 var(--font-body-stack);
+  cursor: pointer;
+}
+.entryTile span {
+  color: var(--text);
+}
+.entryTile:focus-visible,
+.saveButton:focus-visible,
+.bolusButton:focus-visible,
+.manualRow:focus-visible {
+  outline: 2px solid var(--accent-base);
+  outline-offset: 2px;
+}
+
+.results {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.resultsMeta {
+  margin: 0;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+.resultList,
+.items {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.resultItem {
+  border-bottom: 1px solid var(--hairline);
+}
+.resultItem[data-highlighted="true"] {
+  background: var(--surface-selected);
+  border-radius: 12px;
+}
+.manualRow {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  width: 100%;
+  min-height: var(--touch-min);
+  padding: 12px 0;
+  border: 0;
+  background: none;
+  color: var(--accent-strong);
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+}
+.manualRow span {
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.portionSheet {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.portionQuestion {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+}
+.weigh {
+  max-width: 160px;
+}
+
+.item {
+  border-bottom: 1px solid var(--hairline);
+}
+.item:last-child {
+  border-bottom: 0;
+}
+.item[data-active="true"] {
+  background: var(--surface-selected);
+}
+.itemRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+}
+.itemThumb {
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  overflow: hidden;
+  border-radius: 12px;
+}
+.itemBody {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  flex-direction: column;
+  gap: 3px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+}
+.itemBody:disabled {
+  cursor: default;
+}
+.itemName {
+  font: 600 18px/1.15 var(--font-display-stack);
+  overflow-wrap: anywhere;
+}
+.itemMeta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+.itemCarbs {
+  font-size: 20px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.itemCarbs[data-zero="true"] {
+  color: var(--text-muted);
+}
+.removeButton {
+  flex-shrink: 0;
+  width: var(--touch-min);
+  height: var(--touch-min);
+  border: 0;
+  border-radius: 50%;
+  background: none;
+  color: var(--text-muted);
+  font-size: 22px;
+  cursor: pointer;
+}
+.item .portionSheet {
+  padding: 0 16px 12px 72px;
+}
+
+.bolus {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.bolusButton,
+.bolusDone {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 48px;
+  padding: 0 16px;
+  border: 1px solid var(--hairline);
+  border-radius: 14px;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-size: 14px;
+}
+.bolusButton {
+  cursor: pointer;
+}
+/* The allowed English label is lower case ("bolus given now"); the button starts with a capital. */
+.bolusLabel {
+  display: inline-block;
+}
+.bolusLabel::first-letter {
+  text-transform: uppercase;
+}
+.bolusDone {
+  justify-content: flex-start;
+  font-weight: 700;
+}
+.bolusNote {
+  margin: 0;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+.linkButton {
+  margin-inline-start: auto;
+  min-height: var(--touch-min);
+  border: 0;
+  background: none;
+  color: var(--accent-strong);
+  font: inherit;
+  font-weight: 400;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.totalBar {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px var(--phone-gutter) max(20px, env(safe-area-inset-bottom));
+  border-top: 1px solid var(--hairline);
+  background: var(--surface);
+}
+.totalText {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+}
+.totalLabel {
+  font-size: 13px;
+  color: var(--text-muted);
+}
+.totalAmount {
+  font-size: 28px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.05;
+}
+.totalUnit {
+  font-size: 15px;
+  font-weight: 400;
+  color: var(--text-muted);
+}
+.saveButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 56px;
+  padding: 0 26px;
+  border: 0;
+  border-radius: var(--radius-primary-phone);
+  background: var(--accent-base);
+  color: var(--accent-on);
+  font: 700 17px/1 var(--font-body-stack);
+  cursor: pointer;
+}
+.saveButton:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.manualForm {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.manualPortion {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 10px;
+}
+.sectionTitle {
+  margin: 0;
+  font: 600 22px/1.15 var(--font-display-stack);
+}
+.muted {
+  margin: 0;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+/* The scanner covers everything, the shell's tabs included. */
+.scanner {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  background: #000;
+  color: #fff;
+}
+.scannerVideo {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.scannerFrame {
+  position: absolute;
+  left: 50%;
+  top: 42%;
+  width: min(78vw, 320px);
+  aspect-ratio: 3 / 2;
+  transform: translate(-50%, -50%);
+  border: 3px solid #fff;
+  border-radius: 20px;
+  box-shadow: 0 0 0 100vmax rgb(0 0 0 / 45%);
+}
+.scannerClose {
+  position: absolute;
+  top: max(16px, env(safe-area-inset-top));
+  left: 12px;
+  width: 44px;
+  height: 44px;
+  border: 0;
+  border-radius: 50%;
+  background: rgb(0 0 0 / 50%);
+  color: #fff;
+  font-size: 26px;
+  cursor: pointer;
+}
+.scannerFooter {
+  position: absolute;
+  inset: auto 0 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 16px var(--phone-gutter) max(32px, env(safe-area-inset-bottom));
+  text-align: center;
+}
+.scannerFooter p {
+  margin: 0;
+}
+.scannerType {
+  min-height: var(--touch-min);
+  border: 0;
+  background: none;
+  color: #fff;
+  font: 700 16px/1 var(--font-body-stack);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+@media (min-width: 1280px) {
+  .totalBar {
+    padding: 14px 0 0;
+    background: transparent;
+  }
+  .saveButton {
+    min-height: 46px;
+    border-radius: 14px;
+    font-size: 16px;
+  }
+}
