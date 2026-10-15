@@ -31,6 +31,11 @@ export const SPACE_QUERY = "spaceId";
 
 export const WindowHours = z.coerce.number().int().min(1).max(MAX_WINDOW_HOURS);
 export const SinceSeq = z.coerce.number().int().min(0);
+/**
+ * `events?since=` past the end of the log answers no events and the space's current cursor: how a
+ * feed without readings (the viewer's day) learns where to start without a readings window.
+ */
+export const CURSOR_ONLY_SINCE = Number.MAX_SAFE_INTEGER;
 
 /** The space columns the Now screen renders by; `space.updated` makes the client fetch them again. */
 export const LiveSpace = z.object({
