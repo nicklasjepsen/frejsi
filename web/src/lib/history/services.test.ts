@@ -141,6 +141,24 @@ describe("history read services", () => {
     expect(repo.calls.filter((c) => c.method === "readingsBetween")).toHaveLength(2);
     expect((await loadHistoryDay("s1", "2026-10-18", false, "en", deps)).readings).toEqual([]);
   });
+  it("navigates every meal when timestamps are identical, using IDs as the tie break", async () => {
+    const { repo, meal, deps } = setup();
+    repo.meals.push(
+      { ...meal, id: "a-before" },
+      { ...meal, id: "z-after" },
+      { ...meal, id: "b-foreign", spaceId: "s2" },
+    );
+    expect((await loadMealCurve("s1", meal.id, "en", deps)).neighbours).toEqual({
+      previousMealId: "a-before",
+      nextMealId: "z-after",
+    });
+    expect((await loadMealCurve("s1", "a-before", "en", deps)).neighbours).toEqual({
+      nextMealId: meal.id,
+    });
+    expect((await loadMealCurve("s1", "z-after", "en", deps)).neighbours).toEqual({
+      previousMealId: meal.id,
+    });
+  });
   it("includes name matches even when the current meal has food references", async () => {
     const { repo, meal, deps } = setup();
     repo.meals.push({

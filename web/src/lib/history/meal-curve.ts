@@ -60,7 +60,7 @@ export async function loadMealCurve(
     readings,
     stats: mealStats(readings, row, space.target, now),
     previous,
-    neighbours: await deps.repo.neighbours(spaceId, row.ts),
+    neighbours: await deps.repo.neighbours(spaceId, row.ts, row.id),
     now: now.toISOString(),
   });
 }

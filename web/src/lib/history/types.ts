@@ -32,7 +32,7 @@ export interface HistoryRepository {
     limit: number,
   ): Promise<HistoryMeal[]>;
   recentMeals(spaceId: string, before: string, limit: number): Promise<HistoryMeal[]>;
-  neighbours(spaceId: string, ts: string): Promise<Neighbours>;
+  neighbours(spaceId: string, ts: string, mealId: string): Promise<Neighbours>;
   hasAnythingBefore(spaceId: string, ts: Date): Promise<boolean>;
 }
 export interface HistoryDeps {
