@@ -31,7 +31,7 @@ export function logOutcome(
  * and one log line with the route, the code and the `spaceId` from the path; anything else is a
  * 500 `internal` with the error's class name only.
  */
-export function settingsRoute<P extends Record<string, string>>(
+export function settingsRoute<P extends { spaceId?: string }>(
   name: string,
   handler: (request: Request, params: P) => Promise<Response>,
 ): (request: Request, context?: { params: Promise<P> }) => Promise<Response> {
