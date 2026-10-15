@@ -58,7 +58,7 @@ jobs:
         run: pnpm --filter ./web build
 
       # The standalone Next.js build; `.next` is a hidden directory.
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: preview-${{ env.ENVIRONMENT_NAME }}-${{ github.event.pull_request.head.sha }}
           include-hidden-files: true

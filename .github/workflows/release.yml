@@ -120,7 +120,7 @@ jobs:
           FAKE_GLUCOSE_SOURCE: '1'
         run: pnpm --filter ./web test:e2e
       # The standalone Next.js build and the poller bundle; `.next` is a hidden directory.
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: build-${{ env.TAG }}
           include-hidden-files: true
