@@ -2,13 +2,18 @@
 // dropped afterwards. The integration tests never write to the database the URL points at.
 import { execFileSync } from "node:child_process";
 import { randomBytes } from "node:crypto";
+import { existsSync } from "node:fs";
 import path from "node:path";
 
 import { PrismaClient } from "@prisma/client";
 
 const SHARED = path.resolve(import.meta.dirname, "../..");
 export const SCHEMA = path.join(SHARED, "prisma/schema.prisma");
-const PRISMA_BIN = path.join(SHARED, "node_modules/.bin/prisma");
+// The workspace's flat node_modules (.npmrc node-linker=hoisted) keeps bins at the root.
+const PRISMA_BIN =
+  [SHARED, path.dirname(SHARED)]
+    .map((dir) => path.join(dir, "node_modules/.bin/prisma"))
+    .find((file) => existsSync(file)) ?? path.join(SHARED, "node_modules/.bin/prisma");
 
 /** The URL from the environment; the suite cannot run without it. */
 export function baseUrl(): string {

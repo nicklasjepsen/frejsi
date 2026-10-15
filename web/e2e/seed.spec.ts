@@ -2,13 +2,12 @@
 // gap-free sequence and each stored reading has exactly one `reading` event; and it will not
 // run with NODE_ENV=production.
 import { spawnSync } from "node:child_process";
-import path from "node:path";
 
 import { prisma, type EventEnvelope } from "@frejsi/shared";
 import { expect, test } from "./test";
 
 import { SEED_PEOPLE } from "../scripts/seed";
-import { WEB } from "./env";
+import { WEB, bin } from "./env";
 import { seededSpace } from "./support";
 
 test("the seeded space has a gap-free seq and one reading event per reading", async () => {
@@ -49,7 +48,7 @@ test("the seeded space has a gap-free seq and one reading event per reading", as
 
 test("the seed refuses to run when NODE_ENV=production", async () => {
   const before = await prisma.event.count();
-  const result = spawnSync(path.join(WEB, "node_modules/.bin/tsx"), ["scripts/seed.ts"], {
+  const result = spawnSync(bin(WEB, "tsx"), ["scripts/seed.ts"], {
     cwd: WEB,
     env: { ...process.env, NODE_ENV: "production" },
     encoding: "utf8",

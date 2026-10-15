@@ -246,9 +246,13 @@ The web build runs `scripts/prepare-standalone.ts` after Next.js. It adds the ge
 client/engine that pnpm's file trace misses and puts the static assets beside the server. It also
 writes the root `server.js` that Static Web Apps starts, because the monorepo trace nests the app
 under `web/`; without it the deploy ends in "Web app warm up timed out", and `deploy.sh` refuses
-such a bundle. The browser suite copies the bundle as built into a temporary directory outside the
-workspace and runs that root `server.js`, preventing missing dependencies or assets from resolving
-through the checkout. Its photo check uploads generated pixels
+such a bundle. The bundle must contain no symlinks: the GitHub artifact between release jobs drops
+them, and a copied pnpm link cannot find its package's dependencies (the server then dies on start
+with "Cannot find module", which Static Web Apps also reports as a warm-up timeout). `.npmrc` sets
+`node-linker=hoisted` for a flat `node_modules`, and the script fails the build if a link appears.
+The browser suite copies the bundle with links dereferenced, as the deploy job receives it, into a
+temporary directory outside the workspace and runs that root `server.js`, preventing missing
+dependencies or assets from resolving through the checkout. Its photo check uploads generated pixels
 through the real food-photo route, which runs `processPhoto` with the bundled native `sharp`, reads
 both JPEGs from the Blob fake, asserts orientation, 1200×1600 and 320×320 dimensions and removal of injected EXIF/ICC, then verifies
 food deletion removes both. **No photo fallback is enabled**: a missing native binary fails release.
