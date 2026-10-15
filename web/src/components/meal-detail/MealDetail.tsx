@@ -45,7 +45,8 @@ const typing = (target: EventTarget | null) =>
  * from one hour before to four hours after with the same dish's earlier curves behind, the three
  * tiles and the items. Read once from `GET meals/[id]/curve`; then the live feed's readings grow
  * the curve and the tiles are recomputed on the client. The feed is opened without its readings
- * window, so the screen calls `curve`, `negotiate` and `events` and nothing else (plan §8).
+ * window, so the screen calls `curve`, `negotiate` and `events` and nothing else (plan §8). The
+ * curve is read again once the feed has its cursor, on `meal.updated` and on `space.updated`.
  */
 export function MealDetail({ spaceId, mealId, locale, timeZone, unit, layout }: MealDetailProps) {
   const router = useRouter();
@@ -58,7 +59,13 @@ export function MealDetail({ spaceId, mealId, locale, timeZone, unit, layout }: 
     (signal: AbortSignal) => fetchMealCurve(spaceId, mealId, signal),
     [spaceId, mealId],
   );
-  const { state, retry } = useMealResource(load, mealId, feed.subscribe, toNow);
+  const { state, retry } = useMealResource(load, mealId, feed, {
+    onDeleted: toNow,
+    // The unit and the timezone come from the server page: render it again.
+    onSpaceUpdated: () => {
+      router.refresh();
+    },
+  });
   const edit = editHref(locale, mealId);
 
   useEffect(() => {

@@ -42,7 +42,12 @@ export function SimpleMealView({ spaceId, mealId, locale, timeZone }: SimpleMeal
     (signal: AbortSignal) => fetchMeal(spaceId, mealId, signal),
     [spaceId, mealId],
   );
-  const { state, retry } = useMealResource(load, mealId, feed.subscribe, toNow);
+  const { state, retry } = useMealResource(load, mealId, feed, {
+    onDeleted: toNow,
+    onSpaceUpdated: () => {
+      router.refresh();
+    },
+  });
   const meal = state.status === "ready" ? state.data : null;
   return (
     <div className={styles.simple} data-testid="simple-meal">
