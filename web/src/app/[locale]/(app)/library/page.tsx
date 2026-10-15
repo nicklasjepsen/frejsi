@@ -16,11 +16,13 @@ export default async function LibraryPage({
   if (!access) return null;
   // Fixed filters also satisfy FoodOrigin, the same format accepted by GET foods.
   const filter = FoodOrigin.safeParse((await searchParams)?.filter);
+  const initialFilter = filter.success ? filter.data : "all";
   return (
     <LibraryScreen
+      key={initialFilter}
       spaceId={access.spaceId}
       locale={access.locale}
-      initialFilter={filter.success ? filter.data : "all"}
+      initialFilter={initialFilter}
     />
   );
 }
