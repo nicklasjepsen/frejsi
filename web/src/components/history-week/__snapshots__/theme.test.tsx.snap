@@ -1,0 +1,232 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`uses inherited theme variables for the week, phone, and meals views at 360 and 1280 > dark forest 1`] = `
+{
+  "--accent-band": "#86bbad",
+  "--accent-band-opacity": "0.14",
+  "--accent-base": "#86bbad",
+  "--accent-strong": "#a3d0c4",
+  "--accent-tint": "#27403a",
+  "--card-border": "1px solid #3a332c",
+  "--card-shadow": "none",
+  "--font-body-stack": "var(--font-body, "Atkinson Hyperlegible"), system-ui, sans-serif",
+  "--gridline": "#6e6458",
+  "--hairline": "#3a332c",
+  "--meal-bolus-marker": "#e08a6c",
+  "--meal-marker": "#e08a6c",
+  "--surface": "#2a2521",
+  "--surface-sunken": "#26211c",
+  "--text": "#f1eadf",
+  "--text-muted": "#b5aa9a",
+}
+`;
+
+exports[`uses inherited theme variables for the week, phone, and meals views at 360 and 1280 > dark garnet 1`] = `
+{
+  "--accent-band": "#c98a9c",
+  "--accent-band-opacity": "0.14",
+  "--accent-base": "#c98a9c",
+  "--accent-strong": "#dba7b6",
+  "--accent-tint": "#43303a",
+  "--card-border": "1px solid #3a332c",
+  "--card-shadow": "none",
+  "--font-body-stack": "var(--font-body, "Atkinson Hyperlegible"), system-ui, sans-serif",
+  "--gridline": "#6e6458",
+  "--hairline": "#3a332c",
+  "--meal-bolus-marker": "#e08a6c",
+  "--meal-marker": "#e08a6c",
+  "--surface": "#2a2521",
+  "--surface-sunken": "#26211c",
+  "--text": "#f1eadf",
+  "--text-muted": "#b5aa9a",
+}
+`;
+
+exports[`uses inherited theme variables for the week, phone, and meals views at 360 and 1280 > dark olive 1`] = `
+{
+  "--accent-band": "#9dae78",
+  "--accent-band-opacity": "0.14",
+  "--accent-base": "#9dae78",
+  "--accent-strong": "#b8c797",
+  "--accent-tint": "#353b2a",
+  "--card-border": "1px solid #3a332c",
+  "--card-shadow": "none",
+  "--font-body-stack": "var(--font-body, "Atkinson Hyperlegible"), system-ui, sans-serif",
+  "--gridline": "#6e6458",
+  "--hairline": "#3a332c",
+  "--meal-bolus-marker": "#e08a6c",
+  "--meal-marker": "#e08a6c",
+  "--surface": "#2a2521",
+  "--surface-sunken": "#26211c",
+  "--text": "#f1eadf",
+  "--text-muted": "#b5aa9a",
+}
+`;
+
+exports[`uses inherited theme variables for the week, phone, and meals views at 360 and 1280 > dark plum 1`] = `
+{
+  "--accent-band": "#b59ad0",
+  "--accent-band-opacity": "0.14",
+  "--accent-base": "#b59ad0",
+  "--accent-strong": "#cdb8e3",
+  "--accent-tint": "#3a2f47",
+  "--card-border": "1px solid #3a332c",
+  "--card-shadow": "none",
+  "--font-body-stack": "var(--font-body, "Atkinson Hyperlegible"), system-ui, sans-serif",
+  "--gridline": "#6e6458",
+  "--hairline": "#3a332c",
+  "--meal-bolus-marker": "#e08a6c",
+  "--meal-marker": "#e08a6c",
+  "--surface": "#2a2521",
+  "--surface-sunken": "#26211c",
+  "--text": "#f1eadf",
+  "--text-muted": "#b5aa9a",
+}
+`;
+
+exports[`uses inherited theme variables for the week, phone, and meals views at 360 and 1280 > dark sea 1`] = `
+{
+  "--accent-band": "#8fb0cd",
+  "--accent-band-opacity": "0.14",
+  "--accent-base": "#8fb0cd",
+  "--accent-strong": "#aac6de",
+  "--accent-tint": "#2c3a47",
+  "--card-border": "1px solid #3a332c",
+  "--card-shadow": "none",
+  "--font-body-stack": "var(--font-body, "Atkinson Hyperlegible"), system-ui, sans-serif",
+  "--gridline": "#6e6458",
+  "--hairline": "#3a332c",
+  "--meal-bolus-marker": "#e08a6c",
+  "--meal-marker": "#e08a6c",
+  "--surface": "#2a2521",
+  "--surface-sunken": "#26211c",
+  "--text": "#f1eadf",
+  "--text-muted": "#b5aa9a",
+}
+`;
+
+exports[`uses inherited theme variables for the week, phone, and meals views at 360 and 1280 > light forest 1`] = `
+{
+  "--accent-band": "#2f6b5e",
+  "--accent-band-opacity": "0.12",
+  "--accent-base": "#2f6b5e",
+  "--accent-strong": "#22514a",
+  "--accent-tint": "#ddebe6",
+  "--card-border": "1px solid transparent",
+  "--card-shadow": "0 1px 0 #e7dfd0",
+  "--font-body-stack": "var(--font-body, "Atkinson Hyperlegible"), system-ui, sans-serif",
+  "--gridline": "#b9ae98",
+  "--hairline": "#e7dfd0",
+  "--meal-bolus-marker": "#a3503a",
+  "--meal-marker": "#c4674a",
+  "--surface": "#fffcf6",
+  "--surface-sunken": "#eee7da",
+  "--text": "#2b2622",
+  "--text-muted": "#6e6458",
+}
+`;
+
+exports[`uses inherited theme variables for the week, phone, and meals views at 360 and 1280 > light garnet 1`] = `
+{
+  "--accent-band": "#7a3a4b",
+  "--accent-band-opacity": "0.12",
+  "--accent-base": "#7a3a4b",
+  "--accent-strong": "#5c2a38",
+  "--accent-tint": "#f0e0e4",
+  "--card-border": "1px solid transparent",
+  "--card-shadow": "0 1px 0 #e7dfd0",
+  "--font-body-stack": "var(--font-body, "Atkinson Hyperlegible"), system-ui, sans-serif",
+  "--gridline": "#b9ae98",
+  "--hairline": "#e7dfd0",
+  "--meal-bolus-marker": "#a3503a",
+  "--meal-marker": "#c4674a",
+  "--surface": "#fffcf6",
+  "--surface-sunken": "#eee7da",
+  "--text": "#2b2622",
+  "--text-muted": "#6e6458",
+}
+`;
+
+exports[`uses inherited theme variables for the week, phone, and meals views at 360 and 1280 > light olive 1`] = `
+{
+  "--accent-band": "#6b7a4b",
+  "--accent-band-opacity": "0.12",
+  "--accent-base": "#5a6a3b",
+  "--accent-strong": "#3f4c28",
+  "--accent-tint": "#e9ecdf",
+  "--card-border": "1px solid transparent",
+  "--card-shadow": "0 1px 0 #e7dfd0",
+  "--font-body-stack": "var(--font-body, "Atkinson Hyperlegible"), system-ui, sans-serif",
+  "--gridline": "#b9ae98",
+  "--hairline": "#e7dfd0",
+  "--meal-bolus-marker": "#a3503a",
+  "--meal-marker": "#c4674a",
+  "--surface": "#fffcf6",
+  "--surface-sunken": "#eee7da",
+  "--text": "#2b2622",
+  "--text-muted": "#6e6458",
+}
+`;
+
+exports[`uses inherited theme variables for the week, phone, and meals views at 360 and 1280 > light plum 1`] = `
+{
+  "--accent-band": "#5b3f73",
+  "--accent-band-opacity": "0.12",
+  "--accent-base": "#5b3f73",
+  "--accent-strong": "#432c57",
+  "--accent-tint": "#eae3ef",
+  "--card-border": "1px solid transparent",
+  "--card-shadow": "0 1px 0 #e7dfd0",
+  "--font-body-stack": "var(--font-body, "Atkinson Hyperlegible"), system-ui, sans-serif",
+  "--gridline": "#b9ae98",
+  "--hairline": "#e7dfd0",
+  "--meal-bolus-marker": "#a3503a",
+  "--meal-marker": "#c4674a",
+  "--surface": "#fffcf6",
+  "--surface-sunken": "#eee7da",
+  "--text": "#2b2622",
+  "--text-muted": "#6e6458",
+}
+`;
+
+exports[`uses inherited theme variables for the week, phone, and meals views at 360 and 1280 > light sea 1`] = `
+{
+  "--accent-band": "#3b5f7e",
+  "--accent-band-opacity": "0.12",
+  "--accent-base": "#3b5f7e",
+  "--accent-strong": "#2b4660",
+  "--accent-tint": "#e0e8ef",
+  "--card-border": "1px solid transparent",
+  "--card-shadow": "0 1px 0 #e7dfd0",
+  "--font-body-stack": "var(--font-body, "Atkinson Hyperlegible"), system-ui, sans-serif",
+  "--gridline": "#b9ae98",
+  "--hairline": "#e7dfd0",
+  "--meal-bolus-marker": "#a3503a",
+  "--meal-marker": "#c4674a",
+  "--surface": "#fffcf6",
+  "--surface-sunken": "#eee7da",
+  "--text": "#2b2622",
+  "--text-muted": "#6e6458",
+}
+`;
+
+exports[`uses inherited theme variables for the week, phone, and meals views at 360 and 1280 > variables used by the week, chart and stat tiles 1`] = `
+[
+  "--accent-band",
+  "--accent-band-opacity",
+  "--accent-base",
+  "--accent-strong",
+  "--accent-tint",
+  "--card-border",
+  "--card-shadow",
+  "--font-body-stack",
+  "--gridline",
+  "--hairline",
+  "--meal-bolus-marker",
+  "--meal-marker",
+  "--surface",
+  "--surface-sunken",
+  "--text",
+  "--text-muted",
+]
+`;
