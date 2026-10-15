@@ -27,6 +27,7 @@ const row = (
   space: {
     id: spaceId,
     name: `${spaceId} rum`,
+    timezone: "Europe/Copenhagen",
     subjectUser: null,
     memberships: [{ user: { name: "Mette" } }],
     ...extra,
@@ -63,6 +64,7 @@ describe("loadShellData", () => {
     expect(calls[0]).toMatchObject({
       where: { userId: "u1" },
       orderBy: { createdAt: "asc" },
+      select: { space: { select: { timezone: true } } },
     });
   });
 
@@ -76,6 +78,7 @@ describe("loadShellData", () => {
       id: "s1",
       name: "s1 rum",
       role: "owner",
+      timezone: "Europe/Copenhagen",
       subjectName: "s1 rum",
       ownerName: "Mette",
     });
