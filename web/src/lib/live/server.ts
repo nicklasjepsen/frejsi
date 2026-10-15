@@ -81,9 +81,14 @@ export async function requireSpaceRole(
   spaceId: string,
   roles: Role[] = [],
   db?: SessionDb,
+  now?: () => Date,
 ): Promise<{ session: SessionContext; role: Role }> {
   const sessionId = sessionIdFrom(request);
-  const session = sessionId ? await loadSession(sessionId, db ? { db } : {}) : null;
+  // The session's expiry is judged by the route's own clock, so a route and its session check
+  // never disagree about what time it is (tests inject a fixed clock; production uses real time).
+  const session = sessionId
+    ? await loadSession(sessionId, { ...(db ? { db } : {}), ...(now ? { now } : {}) })
+    : null;
   return assertRole(session, spaceId, ...roles);
 }
 

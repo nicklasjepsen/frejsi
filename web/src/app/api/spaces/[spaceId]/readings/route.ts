@@ -18,7 +18,7 @@ const ROUTE = "spaces.readings";
  */
 export const GET = spaceRoute(ROUTE, async (request, spaceId) => {
   const { db, now } = liveDeps();
-  const { session } = await requireSpaceRole(request, spaceId, ["owner", "carer"], db);
+  const { session } = await requireSpaceRole(request, spaceId, ["owner", "carer"], db, now);
   const hours = queryNumber(request, "hours", WindowHours, DEFAULT_WINDOW_HOURS);
   const window = await loadReadingsWindow(spaceId, hours, { db, now });
   log.info("live.readings", {
