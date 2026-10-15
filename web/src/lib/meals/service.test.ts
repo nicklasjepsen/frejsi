@@ -92,7 +92,7 @@ beforeEach(() => {
       EventEnvelope.parse({ spaceId, seq: events.length, type, payload, ts: at.toISOString() }),
     );
   };
-  deps = { repo, photos, now: () => at, emit };
+  deps = { repo, photos, now: () => at, write: (work) => work(repo, emit) };
 });
 
 describe("meal services", () => {

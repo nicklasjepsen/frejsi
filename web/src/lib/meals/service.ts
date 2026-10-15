@@ -6,11 +6,9 @@ import {
   MealView,
   HttpError,
   carbsFor,
-  emit,
   log,
   mealSlot,
   mealTitle,
-  type EmitFn,
   type Locale,
   type MealItemInput,
   type SessionContext,
@@ -29,10 +27,12 @@ import {
   type MealSnapshot,
 } from "./repository";
 
+import { createMealWriter, type MealWriter } from "./transaction";
+
 export interface MealDeps {
   repo: MealRepository;
   photos: PhotoStore | null;
-  emit: EmitFn;
+  write: MealWriter;
   now: () => Date;
 }
 export function mealDeps(overrides: Partial<MealDeps> = {}): MealDeps {
@@ -40,7 +40,7 @@ export function mealDeps(overrides: Partial<MealDeps> = {}): MealDeps {
     repo: overrides.repo ?? new PrismaMealRepository(),
     photos:
       overrides.photos !== undefined ? overrides.photos : createPhotoStoreFromEnv(process.env),
-    emit: overrides.emit ?? emit,
+    write: overrides.write ?? createMealWriter(undefined, undefined, overrides.now),
     now: overrides.now ?? (() => new Date()),
   };
 }
@@ -174,22 +174,29 @@ export async function createMeal(
   const key = data.photoDataUrl ? await upload(spaceId, id, data.photoDataUrl, deps) : undefined;
   let row: MealRecord;
   try {
-    row = await deps.repo.create({
-      id,
-      spaceId,
-      byUserId: session.userId,
-      ts: data.ts ?? deps.now().toISOString(),
-      note: data.note,
-      bolusTs: data.bolusTs,
-      photoKey: key,
-      totalCarbs: items.reduce((sum, item) => sum + item.carbs, 0),
-      items,
+    row = await deps.write(async (repo, emit) => {
+      const saved = await repo.create({
+        id,
+        spaceId,
+        byUserId: session.userId,
+        ts: data.ts ?? deps.now().toISOString(),
+        note: data.note,
+        bolusTs: data.bolusTs,
+        photoKey: key,
+        totalCarbs: items.reduce((sum, item) => sum + item.carbs, 0),
+        items,
+      });
+      await emit(spaceId, "meal.created", {
+        mealId: id,
+        ts: saved.ts,
+        totalCarbs: saved.totalCarbs,
+      });
+      return saved;
     });
   } catch (error) {
     await cleanup(key, deps);
     throw error;
   }
-  await deps.emit(spaceId, "meal.created", { mealId: id, ts: row.ts, totalCarbs: row.totalCarbs });
   return view(row, session.locale, deps);
 }
 export async function updateMeal(
@@ -213,12 +220,15 @@ export async function updateMeal(
   if (key) changes.photoKey = key;
   let row: MealRecord;
   try {
-    row = await deps.repo.update(spaceId, id, changes);
+    row = await deps.write(async (repo, emit) => {
+      const saved = await repo.update(spaceId, id, changes);
+      await emit(spaceId, "meal.updated", { mealId: id });
+      return saved;
+    });
   } catch (error) {
     await cleanup(key, deps);
     throw error;
   }
-  await deps.emit(spaceId, "meal.updated", { mealId: id });
   if (key) await cleanup(previous.photoKey, deps);
   return view(row, session.locale, deps);
 }
@@ -229,8 +239,10 @@ export async function deleteMeal(
 ): Promise<void> {
   const deps = mealDeps(overrides);
   const previous = await load(spaceId, id, deps);
-  await deps.repo.delete(spaceId, id);
-  await deps.emit(spaceId, "meal.deleted", { mealId: id });
+  await deps.write(async (repo, emit) => {
+    await repo.delete(spaceId, id);
+    await emit(spaceId, "meal.deleted", { mealId: id });
+  });
   await cleanup(previous.photoKey, deps);
 }
 export async function setMealPhoto(
@@ -246,12 +258,15 @@ export async function setMealPhoto(
   const key = dataUrl === null ? undefined : await upload(spaceId, id, dataUrl, deps);
   let row: MealRecord;
   try {
-    row = await deps.repo.update(spaceId, id, { photoKey: key });
+    row = await deps.write(async (repo, emit) => {
+      const saved = await repo.update(spaceId, id, { photoKey: key });
+      await emit(spaceId, "meal.updated", { mealId: id });
+      return saved;
+    });
   } catch (error) {
     await cleanup(key, deps);
     throw error;
   }
-  await deps.emit(spaceId, "meal.updated", { mealId: id });
   await cleanup(previous.photoKey, deps);
   return view(row, session.locale, deps);
 }
