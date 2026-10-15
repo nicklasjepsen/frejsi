@@ -1,0 +1,205 @@
+/* GlucoseValue, TrendArrow, GlucoseChart and SourcePill (tokens.json#type.glucoseHero, #chart).
+   Every colour is a token: the Nu-Moerk values and the five accents arrive through tokens.css. */
+
+.value {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  color: var(--text);
+}
+
+.hero {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+/* The number is always the text colour, never coloured by its value (design README). */
+.number {
+  font-weight: 700;
+  line-height: 0.95;
+  letter-spacing: -0.04em;
+  color: var(--text);
+}
+
+.meta,
+.empty {
+  color: var(--text-muted);
+}
+
+.value[data-size="phone"] .number {
+  font-size: 100px;
+}
+
+.value[data-size="phone"] .meta {
+  font-size: 17px;
+}
+
+.value[data-size="desktop"] .number {
+  font-size: 92px;
+}
+
+.value[data-size="desktop"] .meta {
+  font-size: 16px;
+}
+
+.value[data-size="simple"] {
+  align-items: center;
+  gap: 8px;
+}
+
+.value[data-size="simple"] .hero {
+  gap: 18px;
+}
+
+.value[data-size="simple"] .number {
+  font-size: 148px;
+  letter-spacing: -0.05em;
+}
+
+.value[data-size="simple"] .meta {
+  font-size: 22px;
+  text-align: center;
+}
+
+.value[data-size="preview"] .number {
+  font-size: 56px;
+}
+
+.value[data-size="preview"] .meta {
+  font-size: 14px;
+}
+
+.value[data-size="inline"] {
+  flex-direction: row;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.value[data-size="inline"] .hero {
+  gap: 6px;
+}
+
+.value[data-size="inline"] .number {
+  font-size: 22px;
+  letter-spacing: -0.02em;
+}
+
+.value[data-size="inline"] .meta {
+  font-size: 13px;
+}
+
+.value[data-empty="true"] .empty {
+  font-size: 17px;
+  padding: 12px 0;
+}
+
+.value[data-size="simple"][data-empty="true"] .empty {
+  font-size: 26px;
+  text-align: center;
+}
+
+.arrow {
+  flex-shrink: 0;
+  color: var(--accent-base);
+}
+
+.arrowCircle {
+  fill: var(--accent-tint);
+}
+
+/* The chart (tokens.json#chart): band, dashed bounds, the line, the end dot, the axis. */
+.chart {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+
+.band {
+  fill: var(--accent-band);
+  opacity: var(--accent-band-opacity);
+}
+
+.bound {
+  stroke: var(--gridline);
+  stroke-width: 1;
+  stroke-dasharray: 3 4;
+}
+
+.chartLabel {
+  fill: var(--text-muted);
+  font-family: var(--font-body-stack);
+  font-variant-numeric: tabular-nums;
+}
+
+.tickStrong {
+  fill: var(--text);
+  font-family: var(--font-body-stack);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.line {
+  fill: none;
+  stroke: var(--text);
+  stroke-width: 2.5;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+
+.endDot {
+  fill: var(--text);
+}
+
+/* The source status: a dot and one line. */
+.source {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.source[data-variant="pill"] {
+  gap: 6px;
+}
+
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--accent-base);
+  flex-shrink: 0;
+}
+
+.dot[data-muted="true"] {
+  background: var(--text-muted);
+}
+
+@media (min-width: 1280px) {
+  .value[data-size="simple"] {
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .value[data-size="simple"] .hero {
+    gap: 24px;
+  }
+
+  .value[data-size="simple"] .number {
+    font-size: 200px;
+    line-height: 0.9;
+  }
+
+  .value[data-size="simple"] .meta {
+    font-size: 26px;
+    text-align: left;
+  }
+
+  .value[data-size="simple"] .arrow {
+    width: 88px;
+    height: 88px;
+  }
+}
