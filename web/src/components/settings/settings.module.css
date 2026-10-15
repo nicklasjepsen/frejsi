@@ -1,0 +1,543 @@
+/* Settings (Indstillinger-Telefon, Indstillinger-Desktop, Farve-Indstilling). Phone first; from
+   1280 px the desktop layout: section nav left, sections right (design: `SectionNav`). Elements
+   that differ between the two are both in the DOM and CSS shows one, as the shell does. */
+
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 20px 0 0;
+}
+
+.head {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.head h1 {
+  font-size: 26px;
+}
+
+.subtitle {
+  font-size: 14px;
+  color: var(--text-muted);
+}
+
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.sectionNav {
+  display: none;
+}
+
+.sections {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  min-width: 0;
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  scroll-margin-top: 24px;
+}
+
+.sectionTitle {
+  font-size: 20px;
+}
+
+.lead {
+  font-size: 14px;
+  color: var(--text-muted);
+}
+
+.phoneOnly {
+  display: block;
+}
+
+.desktopOnly {
+  display: none;
+}
+
+/* List cards: hairline-separated rows (design: `Card.list`, `ListRow`). */
+.list {
+  padding: 0 16px;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 56px;
+  padding: 12px 0;
+  border-top: 1px solid var(--hairline);
+}
+
+.row:first-child {
+  border-top: 0;
+}
+
+.rowLink {
+  color: var(--text);
+  text-decoration: none;
+}
+
+.rowLink:hover {
+  color: var(--text);
+}
+
+.rowText {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.rowTitle {
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.rowSub {
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.rowControl {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.rowAction {
+  flex-shrink: 0;
+}
+
+/* Person rows in Simpel visning: avatar, name, the switch, and for owners a small language control. */
+.person {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 56px;
+  padding: 12px 0;
+  border-top: 1px solid var(--hairline);
+}
+
+.person:first-child {
+  border-top: 0;
+}
+
+.personText {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+  min-width: 0;
+}
+
+.personName {
+  font-size: 16px;
+  font-weight: 700;
+}
+
+/* Segmented control: sunken track, cream selected segment (design: `SegmentedControl`). */
+.segmented {
+  display: inline-flex;
+  padding: 3px;
+  border-radius: var(--radius-pill);
+  background: var(--surface-sunken);
+}
+
+.segment {
+  min-height: 34px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.segment[aria-checked="true"] {
+  background: var(--surface);
+  color: var(--text);
+  font-weight: 700;
+  box-shadow: var(--card-shadow);
+  border: var(--card-border);
+}
+
+.segment:disabled {
+  cursor: default;
+}
+
+.segmented[data-size="small"] .segment {
+  min-height: 28px;
+  padding: 0 10px;
+  font-size: 12px;
+}
+
+/* Switch 52×32, knob 26 (design: `Switch`). */
+.switch {
+  position: relative;
+  width: 52px;
+  height: 32px;
+  flex-shrink: 0;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: var(--switch-off);
+  cursor: pointer;
+  padding: 0;
+}
+
+.switch[aria-checked="true"] {
+  background: var(--accent-base);
+}
+
+.switch:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+
+.switchKnob {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--surface);
+  transition: transform 120ms ease-out;
+}
+
+.switch[aria-checked="true"] .switchKnob {
+  transform: translateX(20px);
+}
+
+/* Desktop source cards (design: `SourceCard`). */
+.sourceCards {
+  flex-direction: column;
+  gap: 10px;
+}
+
+.sourceCard {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 18px;
+  border-radius: var(--radius-card-small);
+  border: 1px solid var(--hairline);
+  background: var(--surface);
+}
+
+.sourceCard[data-selected="true"] {
+  border: 2px solid var(--accent-base);
+  background: var(--accent-tint);
+}
+
+.cardText {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.cardTitle {
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.cardSub {
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+/* Target range: two small number inputs and a save button (design: `NumberInput`). */
+.range {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 0;
+  border-top: 1px solid var(--hairline);
+}
+
+.rangeFields {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.input {
+  min-height: 42px;
+  padding: 0 12px;
+  border-radius: var(--radius-button-small);
+  border: 1px solid var(--hairline-strong);
+  background: var(--surface-input);
+  color: var(--text);
+  font: inherit;
+  font-size: 15px;
+}
+
+.rangeInput {
+  width: 72px;
+  min-height: 36px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.rangeDash {
+  padding-bottom: 10px;
+  color: var(--text-muted);
+}
+
+.footer {
+  font-size: 13px;
+  color: var(--text-muted);
+  text-align: center;
+  padding: 8px 0 0;
+}
+
+/* Sub-screen header (design: `PageHeader`, phone). */
+.pageHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.backButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--touch-min);
+  height: var(--touch-min);
+  border-radius: 50%;
+  color: var(--text);
+}
+
+.backButton:hover {
+  background: var(--surface-selected);
+  color: var(--text);
+}
+
+.backChevron {
+  display: inline-flex;
+  transform: rotate(180deg);
+}
+
+.backSpacer {
+  width: var(--touch-min);
+  height: var(--touch-min);
+}
+
+.pageTitle {
+  font-size: 24px;
+  text-align: center;
+  flex: 1;
+}
+
+/* Farve: person chips, swatches, the preview card (design: `ColourPicker`, `Chip`). */
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 0 14px 0 6px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--hairline-strong);
+  background: var(--surface);
+  color: var(--text);
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.chip[aria-checked="true"] {
+  border: 2px solid var(--accent-base);
+  background: var(--accent-tint);
+  color: var(--accent-strong);
+  font-weight: 700;
+}
+
+.swatches {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+}
+
+.swatchButton {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 6px;
+  border: 0;
+  border-radius: var(--radius-card-small);
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.swatchButton[aria-checked="true"] {
+  color: var(--text);
+  font-weight: 700;
+}
+
+.swatch {
+  display: block;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: var(--accent-base);
+  border: 3px solid transparent;
+}
+
+.swatchButton[aria-checked="true"] .swatch {
+  border-color: var(--text);
+}
+
+.preview {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.previewTitle {
+  font-size: 14px;
+  color: var(--text-muted);
+}
+
+.previewBand {
+  position: relative;
+  min-height: 96px;
+  border-radius: var(--radius-card-small);
+  background: color-mix(in srgb, var(--accent-band) 12%, transparent);
+  display: flex;
+  align-items: center;
+  padding: 0 16px;
+}
+
+.previewStatus {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: var(--text-muted);
+}
+
+.dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--accent-base);
+}
+
+/* The connect form. */
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.radios {
+  display: flex;
+  gap: 16px;
+  font-size: 15px;
+}
+
+.radio {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 4px;
+}
+
+@media (min-width: 1280px) {
+  .page {
+    padding-top: 0;
+    gap: 24px;
+  }
+
+  .head h1 {
+    font-size: 30px;
+  }
+
+  .body {
+    flex-direction: row;
+    align-items: flex-start;
+    gap: 40px;
+  }
+
+  .sectionNav {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    flex: 0 0 200px;
+    position: sticky;
+    top: 28px;
+  }
+
+  .navItem {
+    padding: 10px 12px;
+    border-radius: var(--radius-button-small);
+    color: var(--text);
+    text-decoration: none;
+    font-size: 15px;
+  }
+
+  .navItem:hover {
+    background: var(--surface-selected);
+    color: var(--text);
+  }
+
+  .sections {
+    flex: 1;
+    gap: 32px;
+  }
+
+  .phoneOnly {
+    display: none;
+  }
+
+  .desktopOnly {
+    display: flex;
+  }
+
+  .pageTitle {
+    text-align: left;
+    font-size: 30px;
+  }
+
+  .backSpacer {
+    display: none;
+  }
+}
