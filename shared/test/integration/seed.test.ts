@@ -18,7 +18,7 @@ afterAll(async () => {
   vi.unstubAllEnvs();
 });
 
-it("seeds nine foods and today's three meals through the emitting services", async () => {
+it("seeds nine foods, fourteen reading days and seven meals through the emitting services", async () => {
   const { seed } = (await import(SEED)) as {
     seed: (options: { db: PrismaClient; now: () => Date }) => Promise<{ spaceId: string }>;
   };
@@ -69,20 +69,50 @@ it("seeds nine foods and today's three meals through the emitting services", asy
     orderBy: { ts: "asc" },
     include: { byUser: true, items: { orderBy: { position: "asc" } } },
   });
-  expect(meals.map((meal) => [meal.ts.toISOString(), meal.totalCarbs, meal.byUser.name])).toEqual([
+  const today = meals.slice(-3);
+  expect(today.map((meal) => [meal.ts.toISOString(), meal.totalCarbs, meal.byUser.name])).toEqual([
     ["2026-10-15T05:15:00.000Z", 38, "Mette"],
     ["2026-10-15T07:50:00.000Z", 14, "Alma"],
     ["2026-10-15T10:10:00.000Z", 50, "Jonas"],
   ]);
-  expect(meals[2]?.bolusTs?.toISOString()).toBe("2026-10-15T09:58:00.000Z");
-  expect(meals.map((meal) => meal.items.map((item) => item.name))).toEqual([
+  expect(today[2]?.bolusTs?.toISOString()).toBe("2026-10-15T09:58:00.000Z");
+  expect(today.map((meal) => meal.items.map((item) => item.name))).toEqual([
     ["Havregrød med æble"],
     ["Æble"],
-    ["Rugbrød med ost", "et æble"],
+    ["Rugbrød med ost", "Æble"],
   ]);
+  expect(JSON.parse(foods.find((food) => food.name === "Æble")?.portions ?? "[]")).toEqual(
+    expect.arrayContaining([
+      { label: "1 mellem", carbs: 14 },
+      { label: "½ mellem", carbs: 7 },
+    ]),
+  );
+  expect(
+    meals.slice(0, 4).map((meal) => (+meal.ts - +(meal.bolusTs ?? new Date(0))) / 60_000),
+  ).toEqual([15, 5, 0, 10]);
+  expect(new Set(meals.slice(0, 4).map((meal) => meal.totalCarbs)).size).toBeGreaterThan(1);
+  const readings = await db.reading.findMany({ where: { spaceId }, orderBy: { ts: "asc" } });
+  expect(readings).toHaveLength(13 * 288 + 181);
+  expect(
+    new Set(
+      readings.map((row) =>
+        new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Copenhagen" }).format(row.ts),
+      ),
+    ).size,
+  ).toBe(14);
+  expect(+(readings.at(-1)?.ts ?? new Date(0)) - +(readings[0]?.ts ?? new Date(0))).toBe(
+    (readings.length - 1) * 300_000,
+  );
+  const events = await db.event.findMany({ where: { spaceId }, orderBy: { seq: "asc" } });
+  expect(events.map((event) => event.seq)).toEqual(events.map((_, i) => i + 1));
+  const readingEvents = events.filter((event) => event.type === "reading");
+  expect(readingEvents).toHaveLength(readings.length);
+  expect(
+    new Set(readingEvents.map((event) => (JSON.parse(event.payload) as { ts: string }).ts)),
+  ).toEqual(new Set(readings.map((reading) => reading.ts.toISOString())));
   const mealEvents = await db.event.findMany({ where: { spaceId, type: "meal.created" } });
-  expect(mealEvents).toHaveLength(3);
+  expect(mealEvents).toHaveLength(7);
   expect(
     new Set(mealEvents.map((event) => (JSON.parse(event.payload) as { mealId: string }).mealId)),
   ).toEqual(new Set(meals.map((meal) => meal.id)));
-});
+}, 180_000);

@@ -30,7 +30,13 @@ process.env.E2E_NOW = seedTime(new Date(), 15, 13);
 
 fs.mkdirSync(OUTPUT, { recursive: true });
 
-const appProjects = ["simple-mode.spec.ts", "viewer.spec.ts", "pwa.spec.ts"];
+const appProjects = [
+  "simple-mode.spec.ts",
+  "viewer.spec.ts",
+  "pwa.spec.ts",
+  "meal-detail.spec.ts",
+  "history.spec.ts",
+];
 
 export default defineConfig({
   testDir: "./e2e",
