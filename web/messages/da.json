@@ -100,6 +100,61 @@
       "internal": "Noget gik galt hos os. Prøv igen om et øjeblik."
     }
   },
+  "passkey": {
+    "working": "Et øjeblik …",
+    "cancelled": "Det blev ikke til noget denne gang. Prøv igen, når du er klar.",
+    "unsupported": "Den her browser kan ikke bruge adgangsnøgler. Prøv en nyere browser, eller åbn linket på din telefon.",
+    "failed": "Det lykkedes ikke denne gang. Prøv igen om et øjeblik."
+  },
+  "invite": {
+    "pageTitle": "Invitation",
+    "greeting": "Hej {name},",
+    "greetingSpace": "du er inviteret til {space}.",
+    "greetingDevice": "du er ved at tilføje en enhed til {space}.",
+    "invitedAs": {
+      "owner": "{inviter} har inviteret dig som <role>ejer</role>.",
+      "carer": "{inviter} har inviteret dig som <role>hjælper</role>.",
+      "viewer": "{inviter} har inviteret dig til at <role>se med</role>."
+    },
+    "roleExplained": {
+      "owner": "Du kan alt – også personer, enheder og indstillinger.",
+      "carer": "Du kan logge måltider, godkende mad og se kurven.",
+      "viewer": "Du kan se dagens måltider og kulhydrater. Blodsukker vises ikke."
+    },
+    "deviceExplained": "{inviter} har sendt dig linket, så den her enhed også kan logge ind som dig. Du beholder din rolle i rummet.",
+    "phone": {
+      "noPassword": "Ingen adgangskode. Du logger ind med dit ansigt eller din finger.",
+      "newPhone": "Ny telefon senere? Så beder du {inviter} eller en anden ejer om et nyt link.",
+      "button": "Opret adgang med denne telefon"
+    },
+    "desktop": {
+      "noPassword": "Ingen adgangskode og ingen e-mail. Du logger ind med Windows Hello, Touch ID eller din telefon.",
+      "alsoPhone": "Vil du også bruge telefonen? Bed {inviter} om et »tilføj enhed«-link bagefter.",
+      "button": "Opret adgang med denne computer"
+    },
+    "failed": "Det lykkedes ikke denne gang. Prøv igen – og hvis det bliver ved, så bed om et nyt link.",
+    "alreadyRegistered": "Den her enhed kan allerede logge ind som dig. Så log ind i stedet, eller åbn linket på den telefon eller computer, du vil tilføje.",
+    "expires": "Linket gælder i {days, plural, one {# dag} other {# dage}} endnu og kan kun bruges én gang.",
+    "unavailable": {
+      "title": "Det her link virker ikke længere",
+      "invite-expired": "Linket er udløbet. Et invitationslink gælder i {days, plural, one {# dag} other {# dage}}.",
+      "invite-used": "Linket er allerede brugt. Et invitationslink kan kun bruges én gang.",
+      "invite-revoked": "Linket er trukket tilbage af den, der sendte det.",
+      "whoCanHelp": "Den, der sendte dig linket – eller en anden ejer af rummet – kan sende dig et nyt. Det tager kun et øjeblik.",
+      "alreadyIn": "Har du allerede adgang?"
+    },
+    "createTitle": "Opret din adgang",
+    "login": "Log ind"
+  },
+  "welcome": {
+    "pageTitle": "Velkommen",
+    "title": "Velkommen tilbage",
+    "body": "Log ind med dit ansigt, din finger eller din telefon – som sidst.",
+    "login": "Log ind",
+    "failed": "Vi kender ikke den adgangsnøgle. Er det en ny telefon eller computer? Så bed en ejer af rummet om et »tilføj enhed«-link.",
+    "firstTimeTitle": "Første gang her?",
+    "firstTimeBody": "Så skal du have et invitationslink fra en ejer af rummet. Åbn linket på den telefon eller computer, du vil bruge."
+  },
   "glucose": {
     "unit": {
       "mmol": "mmol/L",
