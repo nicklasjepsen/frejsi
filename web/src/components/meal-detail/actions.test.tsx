@@ -6,10 +6,11 @@ import { fetchFake, type FetchFake } from "@/components/meal/test-support";
 import { I18nProvider } from "@/lib/i18n/Provider";
 import { getMessages } from "@/lib/i18n/messages";
 
-vi.mock("@/lib/photos/downscale", () => ({
-  downscale: () =>
+const photos = vi.hoisted(() => ({
+  process: (_file: File): Promise<{ arrayBuffer: () => Promise<ArrayBuffer> }> =>
     Promise.resolve({ arrayBuffer: () => Promise.resolve(new Uint8Array([1, 2, 3]).buffer) }),
 }));
+vi.mock("@/lib/photos/downscale", () => ({ downscale: (file: File) => photos.process(file) }));
 
 const nav = vi.hoisted(() => ({ push: vi.fn(), refresh: vi.fn() }));
 vi.mock("next/navigation", () => ({ useRouter: () => nav }));
@@ -198,6 +199,50 @@ describe("edit and delete inside meal detail", () => {
       photoDataUrl: "data:image/jpeg;base64,AQID",
       bolusTs: shift(MEAL_TS, 360),
     });
+  });
+
+  it("waits for selected-photo processing before Save, including failed processing", async () => {
+    let finish: (() => void) | undefined;
+    const original = photos.process;
+    photos.process = () =>
+      new Promise((resolve) => {
+        finish = () => {
+          resolve({ arrayBuffer: () => Promise.resolve(new Uint8Array([4, 5, 6]).buffer) });
+        };
+      });
+    try {
+      const sheet = await edit();
+      const save = sheet.getByRole("button", { name: "Gem" });
+      fireEvent.change(sheet.getByLabelText("Vedhæft billede"), {
+        target: { files: [new File(["fictional"], "meal.heic", { type: "image/heic" })] },
+      });
+      expect(save).toBeDisabled();
+      fireEvent.click(save);
+      expect(writes()).toEqual([]);
+      if (!finish) throw new Error("Photo processing did not start");
+      finish();
+      await waitFor(() => {
+        expect(save).toBeEnabled();
+      });
+      fireEvent.click(save);
+      await waitFor(() => {
+        expect(writes()).toHaveLength(1);
+      });
+      expect(writes()[0]?.body).toMatchObject({ photoDataUrl: "data:image/jpeg;base64,BAUG" });
+      await waitFor(() => {
+        expect(screen.queryByRole("dialog")).toBeNull();
+      });
+      cleanup();
+      photos.process = () => Promise.reject(new Error("invalid fictional photo"));
+      const retry = await edit();
+      fireEvent.change(retry.getByLabelText("Vedhæft billede"), {
+        target: { files: [new File(["fictional"], "broken.heic", { type: "image/heic" })] },
+      });
+      expect(await retry.findByRole("alert")).toBeVisible();
+      expect(retry.getByRole("button", { name: "Gem" })).toBeEnabled();
+    } finally {
+      photos.process = original;
+    }
   });
 
   it("retries reading a saved edit without writing it twice", async () => {
