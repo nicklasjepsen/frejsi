@@ -37,13 +37,32 @@ test('bicep build, lint and build-params succeed with no warnings', () => {
   assert.doesNotMatch(lint.stderr + lint.stdout, /warning|error/i, lint.stderr + lint.stdout);
 
   const params = run(bicep, ['build-params', path.join(infraDir, 'main.bicepparam'), '--stdout'], {
-    env: { ...process.env, ALERT_EMAIL: 'alerts@example.invalid', CUSTOM_DOMAIN: '' },
+    env: { ...process.env, ALERT_EMAIL: 'alerts@example.invalid', CUSTOM_DOMAIN: '', SQL_SERVER_ID: '' },
   });
   assert.equal(params.status, 0, params.stderr);
   assert.doesNotMatch(params.stderr, /warning|error/i, params.stderr);
   const parsed = JSON.parse(params.stdout);
   const values = parsed.parametersJson ? JSON.parse(parsed.parametersJson) : parsed;
   assert.equal(values.parameters.alertEmail.value, 'alerts@example.invalid');
+  assert.equal(values.parameters.sqlServerId.value, '');
+});
+
+test('an existing SQL server: SQL_SERVER_ID reaches sqlServerId and the dedicated server module is skipped', () => {
+  const id = '/subscriptions/11111111-1111-1111-1111-111111111111/resourceGroups/shared-rg/providers/Microsoft.Sql/servers/shared-sql';
+  const params = run(bicepBin(), ['build-params', path.join(infraDir, 'main.bicepparam'), '--stdout'], {
+    env: { ...process.env, ALERT_EMAIL: 'alerts@example.invalid', CUSTOM_DOMAIN: '', SQL_SERVER_ID: id },
+  });
+  assert.equal(params.status, 0, params.stderr);
+  const parsed = JSON.parse(params.stdout);
+  const values = parsed.parametersJson ? JSON.parse(parsed.parametersJson) : parsed;
+  assert.equal(values.parameters.sqlServerId.value, id);
+  assert.equal(template.parameters.sqlServerId.defaultValue, '', 'a dedicated server unless the variable is set');
+  const list = Array.isArray(template.resources) ? template.resources : Object.values(template.resources);
+  const sqlModule = list.find((r) => r.type === 'Microsoft.Resources/deployments' && r.name === 'sql');
+  assert.ok(sqlModule, 'no sql module');
+  assert.equal(sqlModule.condition, "[empty(parameters('sqlServerId'))]");
+  // Nothing in the template targets another resource group: the shared server is never deployed to.
+  assert.ok(!list.some((r) => r.resourceGroup), 'a module deploys outside the resource group');
 });
 
 test('baseName is bounded so every generated name fits its Azure limit', () => {

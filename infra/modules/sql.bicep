@@ -2,9 +2,12 @@
 // five-minute poller would never let it pause).
 //
 // Authentication (plan decision 11): the deploy principal is the server's Entra admin, so
-// infra/deploy.sh can create the application's SQL login with a password it generates once and
-// stores in Key Vault. Bicep never holds a password: the server is created Entra-only (which lets
-// the SQL admin login be omitted) and the child resource below turns SQL authentication back on.
+// infra/deploy.sh can create the application's contained database user with a password it
+// generates once and stores in Key Vault. Bicep never holds a password: the server is created
+// Entra-only (which lets the SQL admin login be omitted) and the child resource below turns SQL
+// authentication back on.
+//
+// main.bicep skips this module when `sqlServerId` names an existing server instead.
 //
 // `administrators` in the server body counts at create time only (the ARM reference: on an update
 // it is ignored). It stays there because it is what allows a server without a SQL admin password;

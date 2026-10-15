@@ -7,9 +7,10 @@ name: release
 # milestone closed. A failed run creates no release; fix forward with the next patch.
 #
 # Azure access: OIDC federated credentials on the environments `production-infra` and `production`,
-# repository variables AZURE_CLIENT_ID, AZURE_TENANT_ID, AZURE_SUBSCRIPTION_ID, ALERT_EMAIL and the
-# optional CUSTOM_DOMAIN (infra/README.md, "What the owner does once"). The infra job deploys
-# infra/main.bicep with infra/main.bicepparam; the deploy job calls infra/deploy.sh.
+# repository variables AZURE_CLIENT_ID, AZURE_TENANT_ID, AZURE_SUBSCRIPTION_ID and the optional
+# CUSTOM_DOMAIN and SQL_SERVER_ID, and the repository secret ALERT_EMAIL (a secret, so the address
+# stays out of this public repository's run logs) (infra/README.md, "What the owner does once"). The
+# infra job deploys infra/main.bicep with infra/main.bicepparam; the deploy job calls infra/deploy.sh.
 
 on:
   push:
@@ -138,8 +139,9 @@ jobs:
     environment: production-infra
     env:
       # Read by infra/main.bicepparam through readEnvironmentVariable(); never committed.
-      ALERT_EMAIL: ${{ vars.ALERT_EMAIL }}
+      ALERT_EMAIL: ${{ secrets.ALERT_EMAIL }}
       CUSTOM_DOMAIN: ${{ vars.CUSTOM_DOMAIN }}
+      SQL_SERVER_ID: ${{ vars.SQL_SERVER_ID }}
     steps:
       - uses: actions/checkout@v7
         with:
@@ -149,7 +151,7 @@ jobs:
           test -n "${{ vars.AZURE_CLIENT_ID }}" || { echo "::error::repository variable AZURE_CLIENT_ID is not set (infra/README.md)"; exit 1; }
           test -n "${{ vars.AZURE_TENANT_ID }}" || { echo "::error::repository variable AZURE_TENANT_ID is not set (infra/README.md)"; exit 1; }
           test -n "${{ vars.AZURE_SUBSCRIPTION_ID }}" || { echo "::error::repository variable AZURE_SUBSCRIPTION_ID is not set (infra/README.md)"; exit 1; }
-          test -n "$ALERT_EMAIL" || { echo "::error::repository variable ALERT_EMAIL is not set; the 35-minute alert needs an address (infra/README.md)"; exit 1; }
+          test -n "$ALERT_EMAIL" || { echo "::error::repository secret ALERT_EMAIL is not set; the 35-minute alert needs an address (infra/README.md)"; exit 1; }
       - uses: azure/login@v3
         with:
           client-id: ${{ vars.AZURE_CLIENT_ID }}
@@ -213,6 +215,7 @@ jobs:
         env:
           AZURE_SUBSCRIPTION_ID: ${{ vars.AZURE_SUBSCRIPTION_ID }}
           CUSTOM_DOMAIN: ${{ vars.CUSTOM_DOMAIN }}
+          SQL_SERVER_ID: ${{ vars.SQL_SERVER_ID }}
           APP_VERSION: ${{ env.TAG }}
         run: bash infra/deploy.sh
 

@@ -18,7 +18,7 @@ param location string = resourceGroup().location
 @maxLength(7)
 param baseName string = 'frejsi'
 
-@description('Address that receives the "no reading for 35 minutes" alert. Passed from the ALERT_EMAIL repository variable; never in the repository.')
+@description('Address that receives the "no reading for 35 minutes" alert. Passed from the ALERT_EMAIL repository secret; never in the repository or a log.')
 @minLength(3)
 param alertEmail string
 
@@ -31,6 +31,9 @@ param bootstrapToken string = newGuid()
 
 @description('Web PubSub hub name; the web app and the poller read it from their settings.')
 param webPubSubHub string = 'frejsi'
+
+@description('Resource ID of an existing Azure SQL server that holds the database, for a subscription that cannot create one in this region or an owner who already has one. Empty: a dedicated server in this resource group. The server\'s owner prepares it once (infra/README.md); Bicep never touches it.')
+param sqlServerId string = ''
 
 @description('Tags applied to every resource. The infra test asserts project=frejsi on all of them.')
 param tags object = {
@@ -60,7 +63,7 @@ module keyVault 'modules/keyvault.bicep' = {
   }
 }
 
-module sql 'modules/sql.bicep' = {
+module sql 'modules/sql.bicep' = if (empty(sqlServerId)) {
   name: 'sql'
   params: {
     location: location
@@ -127,8 +130,8 @@ module alerts 'modules/alerts.bicep' = {
 }
 
 output keyVaultName string = keyVault.outputs.vaultName
-output sqlServerFqdn string = sql.outputs.serverFqdn
-output sqlDatabaseName string = sql.outputs.databaseName
+output sqlServerFqdn string = empty(sqlServerId) ? sql!.outputs.serverFqdn : '${last(split(sqlServerId, '/'))}${environment().suffixes.sqlServerHostname}'
+output sqlDatabaseName string = empty(sqlServerId) ? sql!.outputs.databaseName : 'frejsi'
 output webPubSubName string = webPubSub.outputs.name
 output functionAppName string = functionApp.outputs.name
 output staticWebAppName string = staticWebApp.outputs.name
