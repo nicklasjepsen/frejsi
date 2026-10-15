@@ -252,18 +252,39 @@ describe("SettingsScreen · unit and target range (per space, owners only)", () 
 });
 
 describe("SettingsScreen · language, simpleMode and colour (per person)", () => {
-  it("lists every non-viewer for an owner, with a switch each and a language control for the others", () => {
+  it("lists every member for an owner: a switch for everyone but the viewer, a language control for everyone but oneself", () => {
     mount(connected);
     const rows = screen.getAllByTestId("person-row");
-    expect(rows.map((r) => within(r).getByRole("switch").getAttribute("aria-label"))).toEqual([
+    expect(rows.map((r) => within(r).queryByRole("switch")?.getAttribute("aria-label") ?? null)).toEqual([
       "Simpel visning for Jonas",
       "Simpel visning for Alma",
       "Simpel visning for Farmor Birthe",
+      null,
+    ]);
+    expect(rows.map((r) => within(r).queryByRole("radiogroup")?.getAttribute("aria-label") ?? null)).toEqual([
+      null,
+      "Sprog for Alma",
+      "Sprog for Farmor Birthe",
+      "Sprog for Laerke",
     ]);
     expect(nth(rows, 0)).toHaveTextContent("Jonas (dig)");
     expect(within(nth(rows, 1)).getByRole("switch")).toHaveAttribute("aria-checked", "true");
-    expect(within(nth(rows, 1)).getByRole("radiogroup", { name: "Sprog for Alma" })).toBeInTheDocument();
-    expect(within(nth(rows, 0)).queryByRole("radiogroup")).toBeNull();
+  });
+
+  it("lets an owner set a viewer's language, but offers no simpleMode switch for them", async () => {
+    const { api, calls } = fakeApi();
+    mount(connected, "da", api);
+    expect(screen.queryByRole("switch", { name: "Simpel visning for Laerke" })).toBeNull();
+    const group = screen.getByRole("radiogroup", { name: "Sprog for Laerke" });
+    fireEvent.click(within(group).getByRole("radio", { name: "English" }));
+    await waitFor(() => {
+      expect(calls).toHaveLength(1);
+    });
+    expect(calls[0]).toEqual({
+      url: "/api/spaces/s1/settings/members/u-viewer",
+      method: "PATCH",
+      body: { locale: "en" },
+    });
   });
 
   it("lets an owner set a member's view through the owner route and re-renders from the response", async () => {

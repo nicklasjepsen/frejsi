@@ -260,9 +260,9 @@
   color: var(--text-muted);
 }
 
-/* Target range: two small number inputs and a save button (design: `NumberInput`). */
+/* Target range: two small number inputs and a save button (design: `NumberInput`). Its display
+   comes from `.desktopOnly` alone, so nothing here can show it on a phone. */
 .range {
-  display: flex;
   flex-direction: column;
   gap: 8px;
   padding: 12px 0;
