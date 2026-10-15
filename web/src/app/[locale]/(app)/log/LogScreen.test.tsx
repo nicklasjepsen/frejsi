@@ -1,7 +1,6 @@
 import "@testing-library/jest-dom/vitest";
 import type { Reading } from "@frejsi/shared/schemas/glucose";
 import type { FoodView, LookupResponse } from "@frejsi/shared/schemas/food";
-import type { MealView } from "@frejsi/shared/schemas/meal";
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
@@ -391,113 +390,12 @@ describe("scanning", () => {
   });
 });
 
-describe("?meal= reopens a saved meal", () => {
-  const meal: MealView = {
-    id: "m1",
-    ts: "2026-10-14T10:10:00.000Z",
-    title: "Rugbrød og æble",
-    slot: "lunch",
-    totalCarbs: 50,
-    byUser: { id: "u1", name: "Jonas" },
-    items: [
-      { name: "Rugbrød, Fiktivt Bageri", portionLabel: "2 skiver", carbs: 36 },
-      { name: "Æble", portionLabel: "1 mellem", carbs: 14 },
-    ],
-    bolusTs: "2026-10-14T09:58:00.000Z",
-  };
-
-  it("shows the stored items and bolus, saves through PATCH and can change the time", async () => {
-    api();
-    fake.on("GET /api/spaces/s1/meals/m1", meal).on("PATCH /api/spaces/s1/meals/m1", meal);
-    mount({ mealId: "m1" });
-    const confirm = await screen.findByTestId("log-confirm");
-    await within(confirm).findByText("Æble");
-    expect(screen.getByTestId("total-bar")).toHaveTextContent("50 g");
-    expect(within(confirm).getByText("Bolus 11:58")).toBeVisible();
-    // A saved tap cannot be cleared through PATCH, so no undo is offered for it.
-    expect(within(confirm).queryByRole("button", { name: "Fortryd" })).toBeNull();
-    fireEvent.click(within(confirm).getByRole("button", { name: "Fjern Æble" }));
-    fireEvent.change(within(confirm).getByLabelText("Tidspunkt"), { target: { value: "11:45" } });
-    fireEvent.click(within(confirm).getByRole("button", { name: "Gem måltid" }));
-    await waitFor(() => {
-      expect(nav.push).toHaveBeenCalledWith("/da/now");
-    });
-    expect(writes()[0]).toEqual({
-      method: "PATCH",
-      path: "/api/spaces/s1/meals/m1",
-      body: {
-        ts: "2026-10-14T09:45:00.000Z",
-        items: [{ name: "Rugbrød, Fiktivt Bageri", portionLabel: "2 skiver", carbs: 36 }],
-        bolusTs: meal.bolusTs,
-      },
-    });
-  });
-
-  it("does not relink a stored item when two library foods share its name", async () => {
-    api();
-    const twin = { ...pickedBread, id: "f-twin", portions: [{ label: "1 skive", carbs: 20 }] };
-    fake.on("GET /api/spaces/s1/meals/m1", meal).on(
-      "GET /api/spaces/s1/lookup",
-      lookup({
-        results: [
-          { source: "library", verified: false, food: pickedBread },
-          { source: "library", verified: false, food: twin },
-        ],
-      }),
-    );
-    mount({ mealId: "m1" });
-    const confirm = await screen.findByTestId("log-confirm");
-    await waitFor(() => {
-      expect(lookups()).toHaveLength(2);
-    });
-    expect(
-      within(confirm).getByRole("button", { name: /^Rugbrød, Fiktivt Bageri/ }),
-    ).toBeDisabled();
-  });
-
-  it("finds a stored item's food again so its portion can be changed", async () => {
-    api();
-    fake
-      .on("GET /api/spaces/s1/meals/m1", meal)
-      .on("PATCH /api/spaces/s1/meals/m1", meal)
-      .on("GET /api/spaces/s1/lookup", (call: { path: string }) =>
-        call.path.includes("Bageri")
-          ? lookup({ results: [{ source: "library", verified: false, food: pickedBread }] })
-          : lookup({ results: [] }),
-      );
-    mount({ mealId: "m1" });
-    const confirm = await screen.findByTestId("log-confirm");
-    const bread = await within(confirm).findByRole("button", { name: /^Rugbrød, Fiktivt Bageri/ });
-    await waitFor(() => {
-      expect(bread).toBeEnabled();
-    });
-    fireEvent.click(bread);
-    fireEvent.click(within(confirm).getByRole("button", { name: "1 skive · 18 g" }));
-    expect(screen.getByTestId("total-bar")).toHaveTextContent("32 g");
-    fireEvent.click(within(confirm).getByRole("button", { name: "Gem måltid" }));
-    await waitFor(() => {
-      expect(nav.push).toHaveBeenCalled();
-    });
-    expect(writes()[0]?.body).toMatchObject({
-      items: [
-        { foodId: "f-bread", name: "Rugbrød, Fiktivt Bageri", portionLabel: "1 skive", carbs: 18 },
-        { name: "Æble", portionLabel: "1 mellem", carbs: 14 },
-      ],
-    });
-  });
-
-  it("deletes the meal with Slet måltid", async () => {
-    api();
-    fake.on("GET /api/spaces/s1/meals/m1", meal).on("DELETE /api/spaces/s1/meals/m1", null, 204);
-    mount({ mealId: "m1" });
-    fireEvent.click(await screen.findByRole("button", { name: "Slet måltid" }));
-    await waitFor(() => {
-      expect(nav.push).toHaveBeenCalledWith("/da/now");
-    });
-    expect(writes()).toEqual([
-      { method: "DELETE", path: "/api/spaces/s1/meals/m1", body: undefined },
-    ]);
-  });
+it("creates new meals only; edit and delete live in meal detail", async () => {
+  api();
+  mount();
+  expect(await screen.findByTestId("log-phone")).toBeVisible();
+  expect(screen.queryByRole("button", { name: "Slet måltid" })).toBeNull();
+  expect(fake.calls.some((call) => call.path.includes("meals/"))).toBe(false);
 });
 
 describe("Log-Desktop", () => {

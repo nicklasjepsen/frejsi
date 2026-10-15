@@ -22,15 +22,7 @@ import { useLiveFeed } from "@/lib/live/useLiveFeed";
 import { useOnline, type LogController } from "./controller";
 import type { LogScreenProps } from "./LogScreen";
 import styles from "./log.module.css";
-import {
-  Bolus,
-  DeleteMeal,
-  PhotoField,
-  SaveNotices,
-  TimeField,
-  useMealTime,
-  useSlotLabel,
-} from "./parts";
+import { Bolus, PhotoField, SaveNotices, TimeField, useMealTime, useSlotLabel } from "./parts";
 
 type Props = LogScreenProps & { controller: LogController };
 
@@ -241,13 +233,12 @@ export function DesktopLog({ controller, spaceId, timeZone, userName, simpleMode
           <TimeField controller={controller} at={at} timeZone={timeZone} />
           <PhotoField controller={controller} />
           <Bolus controller={controller} timeZone={timeZone} simpleMode={simpleMode} />
-          <DeleteMeal controller={controller} />
           <TotalBar
             total={controller.total}
             actionLabel={t("save")}
             shortcut={t("saveShortcut")}
             onAction={() => void controller.save()}
-            disabled={!controller.complete || controller.saving || !controller.mealLoaded}
+            disabled={!controller.complete || controller.saving}
           />
         </section>
       </div>

@@ -80,8 +80,5 @@
   "carbs": "kulhydrat",
   "save": "Gem måltid",
   "saveShortcut": "⌘↩",
-  "saveFailed": "Måltidet blev ikke gemt – prøv igen",
-  "delete": "Slet måltid",
-  "deleteFailed": "Måltidet blev ikke slettet – prøv igen",
-  "loadFailed": "Måltidet kunne ikke hentes – prøv igen"
+  "saveFailed": "Måltidet blev ikke gemt – prøv igen"
 }

@@ -80,8 +80,5 @@
   "carbs": "carbs",
   "save": "Save meal",
   "saveShortcut": "Ctrl+↩",
-  "saveFailed": "The meal was not saved – try again",
-  "delete": "Delete meal",
-  "deleteFailed": "The meal was not deleted – try again",
-  "loadFailed": "The meal could not be loaded – try again"
+  "saveFailed": "The meal was not saved – try again"
 }

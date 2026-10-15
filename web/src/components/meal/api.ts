@@ -9,7 +9,11 @@ import {
   LookupResponse,
   type FoodCandidate,
 } from "@frejsi/shared/schemas/food";
-import { MealView, type CreateMealRequest } from "@frejsi/shared/schemas/meal";
+import {
+  MealView,
+  type CreateMealRequest,
+  type UpdateMealRequest,
+} from "@frejsi/shared/schemas/meal";
 import { z } from "zod";
 
 export class LogApiError extends Error {
@@ -139,7 +143,7 @@ export async function getMeal(spaceId: string, mealId: string): Promise<MealView
 export async function updateMeal(
   spaceId: string,
   mealId: string,
-  request: CreateMealRequest,
+  request: UpdateMealRequest,
 ): Promise<void> {
   await send(`${base(spaceId)}/meals/${encodeURIComponent(mealId)}`, {
     method: "PATCH",

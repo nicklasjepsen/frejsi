@@ -27,7 +27,6 @@ import type { LogScreenProps } from "./LogScreen";
 import styles from "./log.module.css";
 import {
   Bolus,
-  DeleteMeal,
   PhotoField,
   SaveNotices,
   TimeField,
@@ -341,14 +340,13 @@ function ConfirmView({ controller, phone, timeZone, simpleMode }: Props) {
         <TimeField controller={controller} at={at} timeZone={timeZone} />
         <PhotoField controller={controller} />
         <Bolus controller={controller} timeZone={timeZone} simpleMode={simpleMode} />
-        <DeleteMeal controller={controller} />
       </div>
       <div className={styles.confirmFooter}>
         <TotalBar
           total={controller.total}
           actionLabel={t("save")}
           onAction={() => void controller.save()}
-          disabled={!controller.complete || controller.saving || !controller.mealLoaded}
+          disabled={!controller.complete || controller.saving}
         />
       </div>
     </div>

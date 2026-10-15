@@ -233,7 +233,7 @@
 }
 
 /* "Ret" as drawn: a 36 px r10 secondary button with the 11 px key. */
-.actions > a {
+.actions > button {
   min-height: 36px;
   padding: 0 14px;
   border-radius: 10px;
@@ -388,5 +388,183 @@
   .simpleHeader {
     margin: 0;
     padding: 0;
+  }
+}
+
+.editLink {
+  border: 0;
+  background: transparent;
+  color: var(--accent-base);
+  font: inherit;
+  cursor: pointer;
+  min-height: 44px;
+}
+
+.detailNav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 28px 32px 0;
+  font-size: 14px;
+}
+.detailNav a {
+  color: var(--accent-base);
+}
+.detailNav + .columns {
+  padding-top: 0;
+}
+.actions {
+  flex-wrap: wrap;
+}
+.actions > button,
+.saveDish > button {
+  min-height: 36px;
+  padding: 0 14px;
+  border-radius: 10px;
+  font-size: 14px;
+}
+.saveDish {
+  display: contents;
+}
+.saveDish p,
+.saveDish a {
+  margin: 0;
+  font-size: 13px;
+}
+.saveDish a {
+  color: var(--accent-base);
+}
+.compareSection {
+  min-width: 0;
+  border-radius: var(--radius-card);
+  background: var(--surface);
+  box-shadow: var(--card-shadow);
+  overflow: hidden;
+}
+.compareSection table {
+  font-size: 14px;
+}
+.compareSection caption {
+  padding: 14px 24px 10px;
+  text-align: left;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.editSheet {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  width: 100%;
+  max-width: none;
+  height: 100dvh;
+  max-height: none;
+  background: var(--ground);
+  color: var(--text);
+  font-family: var(--font-body-stack);
+  overflow-y: auto;
+}
+.editSheet[open] {
+  display: flex;
+  flex-direction: column;
+}
+.editSheet > * {
+  flex-shrink: 0;
+}
+.editSheet > .sheetBody {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+.editSheet > [data-testid="total-bar"] {
+  padding: 14px 24px max(20px, env(safe-area-inset-bottom));
+  background: var(--surface);
+}
+.sheetFeedback {
+  padding: 12px 24px;
+}
+.editSheet::backdrop {
+  background: var(--ground);
+  opacity: 0.7;
+}
+.sheetHeader {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: var(--phone-safe-top) 24px 12px;
+}
+.sheetHeader h2 {
+  margin: 0;
+  font: 600 22px/1.2 var(--font-display-stack);
+}
+.sheetBack {
+  width: 44px;
+  height: 44px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--surface);
+  color: var(--text-muted);
+  font: inherit;
+  cursor: pointer;
+}
+.sheetBack:focus-visible {
+  outline: 2px solid var(--accent-base);
+}
+.sheetBody {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin: 0;
+  padding: 12px 24px 24px;
+  border: 0;
+  min-width: 0;
+}
+.sheetBody > * {
+  flex-shrink: 0;
+}
+.sheetField {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 15px;
+}
+.sheetField input,
+.sheetField textarea {
+  padding: 12px;
+  border: 1px solid var(--hairline);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-variant-numeric: tabular-nums;
+}
+.sheetField textarea {
+  min-height: 80px;
+  resize: vertical;
+}
+.deleteConfirm {
+  padding: 16px;
+  border: 1px solid var(--hairline);
+  border-radius: 16px;
+}
+.deleteConfirm p {
+  margin: 0 0 12px;
+}
+.deleteConfirm button {
+  margin-inline-end: 8px;
+}
+@media (min-width: 1280px) {
+  .editSheet {
+    left: auto;
+    width: 440px;
+    border-left: 1px solid var(--hairline);
+    box-shadow: var(--card-shadow);
+  }
+  .sheetHeader {
+    padding-top: 28px;
   }
 }

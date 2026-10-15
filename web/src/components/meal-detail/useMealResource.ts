@@ -31,7 +31,7 @@ export function useMealResource<T>(
   mealId: string,
   feed: MealFeed,
   handlers: { onDeleted: () => void; onSpaceUpdated?: () => void },
-): { state: MealResource<T>; retry: () => void } {
+): { state: MealResource<T>; retry: () => void; refresh: () => Promise<boolean> } {
   const { loaded, subscribe } = feed;
   const [state, setState] = useState<MealResource<T>>({ status: "loading" });
   const latest = useRef(0);
@@ -50,17 +50,18 @@ export function useMealResource<T>(
     try {
       next = { status: "ready", data: await loadRef.current(controller.signal) };
     } catch (error) {
-      if (controller.signal.aborted) return;
+      if (controller.signal.aborted) return false;
       next =
         error instanceof MealDetailError && error.status === 404
           ? { status: "not-found" }
           : { status: "failed" };
     }
-    if (id !== latest.current) return;
+    if (id !== latest.current) return false;
     inFlight.current = null;
     setState((current) =>
       next.status === "failed" && current.status === "ready" ? current : next,
     );
+    return next.status === "ready";
   }, []);
 
   useEffect(() => {
@@ -96,6 +97,7 @@ export function useMealResource<T>(
 
   return {
     state,
+    refresh,
     retry: () => {
       setState({ status: "loading" });
       void refresh();

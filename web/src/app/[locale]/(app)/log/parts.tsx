@@ -36,7 +36,7 @@ export function useSlotLabel(at: Date, timeZone: string): string {
   return t(mealSlot(at, timeZone));
 }
 
-/** "I dag 12:10", or the date for a reopened meal from another day. */
+/** "I dag 12:10", or the date for a meal from another day. */
 export function useWhenLabel(at: Date, timeZone: string): string {
   const t = useTranslations("log");
   const locale = useLocale();
@@ -120,7 +120,7 @@ export function Bolus({
   );
 }
 
-/** Offline, failed save, failed delete and failed load notices (design gap 6). */
+/** Offline and failed save notices (design gap 6). */
 export function SaveNotices({
   controller,
   online,
@@ -136,19 +136,7 @@ export function SaveNotices({
           {t("offline")}
         </Notice>
       )}
-      {controller.loadFailed && <p role="alert">{t("loadFailed")}</p>}
       {controller.saveFailed && <p role="alert">{t("saveFailed")}</p>}
-      {controller.deleteFailed && <p role="alert">{t("deleteFailed")}</p>}
     </>
-  );
-}
-
-export function DeleteMeal({ controller }: { controller: LogController }) {
-  const t = useTranslations("log");
-  if (!controller.editing) return null;
-  return (
-    <button type="button" className={styles.deleteButton} onClick={() => void controller.remove()}>
-      {t("delete")}
-    </button>
   );
 }

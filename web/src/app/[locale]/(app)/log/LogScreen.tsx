@@ -17,7 +17,6 @@ export interface LogScreenProps {
   simpleMode: boolean;
   initialQuery?: string | undefined;
   initialBarcode?: string | undefined;
-  mealId?: string | undefined;
   /** Forces a layout (tests); otherwise 1280 px and up is desktop, as in the shell. */
   layout?: "phone" | "desktop";
 }
@@ -46,13 +45,12 @@ function useDesktop(forced?: "phone" | "desktop"): boolean {
  */
 export function LogScreen(props: LogScreenProps) {
   const desktop = useDesktop(props.layout);
-  const phone = usePhoneView(props.mealId ? "confirm" : "entry");
+  const phone = usePhoneView("entry");
   const controller = useLogController({
     spaceId: props.spaceId,
     locale: props.locale,
     initialQuery: props.initialQuery,
     initialBarcode: props.initialBarcode,
-    mealId: props.mealId,
     onAdded: () => {
       phone.setView("confirm");
     },

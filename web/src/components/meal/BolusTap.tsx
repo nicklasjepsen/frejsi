@@ -18,7 +18,7 @@ export function BolusTap({
   canUndo = true,
 }: {
   bolusTs: string | null;
-  /** False for a tap already saved on a reopened meal, which this screen cannot clear. */
+  /** False for a tap already saved on a saved meal, which this screen cannot clear. */
   canUndo?: boolean;
   timeZone: string;
   onTap: () => void;
