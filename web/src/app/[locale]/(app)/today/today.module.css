@@ -1,0 +1,32 @@
+/* I dag (Historik-Viewer). One centred column on every width: on desktop the list stays the
+   phone's column inside the shell (design gap 17). */
+
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  width: 100%;
+  max-width: 560px;
+  margin: 0 auto;
+  padding-top: 28px;
+}
+
+.head {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.date,
+.summary {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 400;
+  color: var(--text-muted);
+}
+
+@media (min-width: 1280px) {
+  .page {
+    padding-top: 0;
+  }
+}
