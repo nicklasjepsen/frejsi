@@ -97,7 +97,13 @@
       "source-bad-credentials": "The username or password doesn't match. Try again.",
       "source-unreachable": "We couldn't reach the source right now. Try again in a little while.",
       "validation": "Something in what you entered couldn't be used. Look it over and try again.",
-      "internal": "Something went wrong on our side. Try again in a moment."
+      "internal": "Something went wrong on our side. Try again in a moment.",
+      "simple-mode": "This action is not available in simple view. Ask a carer for help.",
+      "photo-too-large": "The photo is too large. Choose a smaller photo.",
+      "photo-type": "Choose a JPEG, PNG or WebP photo.",
+      "photo-unavailable": "Photos are unavailable right now. Try again later.",
+      "barcode-invalid": "Check the barcode and try again.",
+      "lookup-unavailable": "Food search is unavailable right now. Try again or enter your own numbers."
     }
   },
   "passkey": {

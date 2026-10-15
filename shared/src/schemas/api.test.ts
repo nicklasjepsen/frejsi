@@ -17,6 +17,12 @@ describe("ApiError", () => {
       "source-unreachable",
       "validation",
       "internal",
+      "simple-mode",
+      "photo-too-large",
+      "photo-type",
+      "photo-unavailable",
+      "barcode-invalid",
+      "lookup-unavailable",
     ]);
   });
 

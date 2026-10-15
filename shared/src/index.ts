@@ -72,3 +72,19 @@ export {
 } from "./glucose/poll-cycle";
 export { CREDENTIAL_RETRY_MS } from "./glucose/dexcom-share/index";
 export type { LiveGroupRevoker } from "./events/types";
+export * from "./schemas/food";
+export * from "./schemas/meal";
+export { normaliseBarcode } from "./food/barcode";
+export { foldForSearch } from "./food/search";
+export { carbsFor } from "./food/portions";
+export type {
+  FoodRepository,
+  FoodSource,
+  FoodSourceResult,
+  CacheFoodInput,
+  LibraryOptions,
+} from "./food/types";
+export { lookup, type LookupOptions } from "./food/lookup";
+export { PrismaFoodRepository } from "./food/repository";
+export { dayRange } from "./meals/day-range";
+export { mealTitle, mealSlot } from "./meals/title";

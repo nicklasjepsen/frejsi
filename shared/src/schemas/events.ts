@@ -2,6 +2,7 @@ import { z } from "zod";
 
 import { Role } from "./auth";
 import { Reading, SourceStatus } from "./glucose";
+import { FoodOrigin } from "./food";
 
 /** Later milestones append `meal.*` and `food.*` here; never reorder. */
 export const EventType = z.enum([
@@ -15,6 +16,13 @@ export const EventType = z.enum([
   "invite.revoked",
   "device.added",
   "device.removed",
+  "food.created",
+  "food.updated",
+  "food.verified",
+  "food.deleted",
+  "meal.created",
+  "meal.updated",
+  "meal.deleted",
 ]);
 export type EventType = z.infer<typeof EventType>;
 
@@ -30,6 +38,18 @@ export const InvitePayload = z.object({
   forUserId: z.string().min(1).optional(),
 });
 export const DevicePayload = z.object({ userId: z.string().min(1), passkeyId: z.string().min(1) });
+export const FoodCreatedPayload = z.strictObject({ foodId: z.string().min(1), origin: FoodOrigin });
+export const FoodIdPayload = z.strictObject({ foodId: z.string().min(1) });
+export const FoodVerifiedPayload = z.strictObject({
+  foodId: z.string().min(1),
+  verifiedBy: z.string().min(1),
+});
+export const MealCreatedPayload = z.strictObject({
+  mealId: z.string().min(1),
+  ts: z.iso.datetime(),
+  totalCarbs: z.number().int().nonnegative(),
+});
+export const MealIdPayload = z.strictObject({ mealId: z.string().min(1) });
 
 /** One payload schema per type. `emit()` validates against this map before it writes. */
 export const EventPayloads = {
@@ -43,6 +63,13 @@ export const EventPayloads = {
   "invite.revoked": InvitePayload,
   "device.added": DevicePayload,
   "device.removed": DevicePayload,
+  "food.created": FoodCreatedPayload,
+  "food.updated": FoodIdPayload,
+  "food.verified": FoodVerifiedPayload,
+  "food.deleted": FoodIdPayload,
+  "meal.created": MealCreatedPayload,
+  "meal.updated": MealIdPayload,
+  "meal.deleted": MealIdPayload,
 } as const satisfies Record<EventType, z.ZodType>;
 
 export type EventPayload<T extends EventType> = z.infer<(typeof EventPayloads)[T]>;
@@ -68,6 +95,13 @@ export const EventEnvelope = z.discriminatedUnion("type", [
   envelope("invite.revoked"),
   envelope("device.added"),
   envelope("device.removed"),
+  envelope("food.created"),
+  envelope("food.updated"),
+  envelope("food.verified"),
+  envelope("food.deleted"),
+  envelope("meal.created"),
+  envelope("meal.updated"),
+  envelope("meal.deleted"),
 ]);
 export type EventEnvelope = z.infer<typeof EventEnvelope>;
 export type EventEnvelopeOf<T extends EventType> = Extract<EventEnvelope, { type: T }>;
