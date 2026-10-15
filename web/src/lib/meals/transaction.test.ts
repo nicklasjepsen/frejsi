@@ -25,8 +25,22 @@ function setup() {
   let sequence = 0;
   let failEvent = false;
   let failCommit = false;
+  let tail = Promise.resolve();
+  let gate: { entered: () => void; wait: Promise<void> } | null = null;
   const sql = {
     async $transaction<T>(work: (tx: unknown) => Promise<T>): Promise<T> {
+      const previous = tail;
+      let release: () => void = () => undefined;
+      tail = new Promise<void>((resolve) => {
+        release = resolve;
+      });
+      await previous;
+      if (gate) {
+        const paused = gate;
+        gate = null;
+        paused.entered();
+        await paused.wait;
+      }
       const before = structuredClone(rows);
       const count = events.length;
       const seq = sequence;
@@ -52,6 +66,8 @@ function setup() {
         events.splice(count);
         sequence = seq;
         throw error;
+      } finally {
+        release();
       }
     },
   };
@@ -62,6 +78,18 @@ function setup() {
     sink,
     photos,
     rows,
+    pauseNext: () => {
+      let entered: () => void = () => undefined;
+      let resume: () => void = () => undefined;
+      const ready = new Promise<void>((resolve) => {
+        entered = resolve;
+      });
+      const wait = new Promise<void>((resolve) => {
+        resume = resolve;
+      });
+      gate = { entered, wait };
+      return { ready, resume };
+    },
     fail: (commit = false) => {
       failCommit = commit;
       failEvent = !commit;
@@ -126,6 +154,31 @@ describe("atomic meal writes and events", () => {
       expect(test.sink.published).toHaveLength(1);
     },
   );
+  it("cleans up the actual displaced photo across concurrent replacements and deletion", async () => {
+    const test = setup();
+    const meal = await createMeal(
+      "s1",
+      session,
+      { items: [{ name: "Fictional toast", carbs: 12 }], photoDataUrl: png },
+      test.deps,
+    );
+    const initial = [...test.photos.photos.keys()];
+    await Promise.all([
+      setMealPhoto("s1", meal.id, session, png, test.deps),
+      setMealPhoto("s1", meal.id, session, png, test.deps),
+    ]);
+    expect(test.photos.photos.size).toBe(1);
+    expect([...test.photos.photos.keys()]).not.toEqual(initial);
+    // Both operations pass the initial read, then deletion waits for replacement to commit.
+    const paused = test.pauseNext();
+    const replacing = setMealPhoto("s1", meal.id, session, png, test.deps);
+    await paused.ready;
+    const deleting = deleteMeal("s1", meal.id, test.deps);
+    paused.resume();
+    await Promise.all([replacing, deleting]);
+    expect(test.photos.photos.size).toBe(0);
+    expect(test.rows.size).toBe(0);
+  });
   it("publishes after commit, and keeps committed rows/events when publication fails", async () => {
     const test = setup();
     vi.spyOn(test.sink, "publish").mockRejectedValue(new Error("unavailable"));

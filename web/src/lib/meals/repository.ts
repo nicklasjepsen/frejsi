@@ -31,6 +31,7 @@ export interface MealChanges {
 export interface MealRepository {
   food(spaceId: string, id: string): Promise<Food | null>;
   find(spaceId: string, id: string): Promise<MealRecord | null>;
+  lock(spaceId: string, id: string): Promise<MealRecord>;
   create(data: MealData): Promise<MealRecord>;
   update(spaceId: string, id: string, data: MealChanges): Promise<MealRecord>;
   delete(spaceId: string, id: string): Promise<void>;
@@ -98,6 +99,22 @@ export class PrismaMealRepository implements MealRepository {
   async find(spaceId: string, id: string): Promise<MealRecord | null> {
     const row = await this.readRow(spaceId, id);
     return row ? record(row) : null;
+  }
+  /** A no-op numeric update takes SQL Server's exclusive row lock until the outer commit. */
+  async lock(spaceId: string, id: string): Promise<MealRecord> {
+    try {
+      return record(
+        await this.db.meal.update({
+          where: { id, spaceId },
+          data: { totalCarbs: { increment: 0 } },
+          include,
+        }),
+      );
+    } catch (error) {
+      if (error instanceof Error && "code" in error && error.code === "P2025")
+        throw new HttpError(404, "not-found");
+      throw error;
+    }
   }
   async create(data: MealData): Promise<MealRecord> {
     const { items, ts, bolusTs, ...fields } = data;

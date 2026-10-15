@@ -20,6 +20,7 @@ describe("Prisma meal persistence", () => {
     // A database may return physical row order unrelated to creation order.
     rows.get("m1")?.items.reverse();
     expect(await repo.find("s1", "m1")).toEqual(saved);
+    expect(await repo.lock("s1", "m1")).toEqual(saved);
     expect(saved).toMatchObject({
       timezone: "Europe/Copenhagen",
       byUser: { id: "u1" },
@@ -42,6 +43,7 @@ describe("Prisma meal persistence", () => {
     expect(replaced.bolusTs).toBe(at.toISOString());
     expect((await repo.update("s1", "m1", { photoKey: undefined })).photoKey).toBeUndefined();
     expect(await repo.find("s2", "m1")).toBeNull();
+    await expect(repo.lock("s2", "m1")).rejects.toMatchObject({ code: "not-found" });
     await expect(repo.update("s2", "m1", { note: "Wrong space" })).rejects.toMatchObject({
       code: "not-found",
     });
