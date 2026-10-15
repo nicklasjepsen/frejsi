@@ -1,0 +1,193 @@
+// @vitest-environment node
+import { describe, expect, it } from "vitest";
+import { dayStats, mealStats, weekStats, weekRange } from "@frejsi/shared";
+import { MemoryHistoryRepository } from "./memory";
+import { loadMealCurve } from "./meal-curve";
+import { loadHistoryDay } from "./day";
+import { loadHistoryWeek } from "./week";
+import type { HistoryMeal } from "./types";
+function required<T>(value: T | undefined): T {
+  if (value === undefined) throw new Error("Missing test value");
+  return value;
+}
+const now = new Date("2026-10-19T06:00:00Z");
+const target = { low: 4, high: 10 };
+function setup() {
+  const repo = new MemoryHistoryRepository();
+  repo.spaces.set("s1", { timezone: "Europe/Copenhagen", target });
+  repo.spaces.set("s2", { timezone: "Europe/Copenhagen", target });
+  const meal: HistoryMeal = {
+    id: "meal-private",
+    spaceId: "s1",
+    ts: "2026-10-18T21:30:00.000Z",
+    totalCarbs: 40,
+    byUser: { id: "u1", name: "Fictional member" },
+    note: "private-note",
+    photoKey: "photo",
+    items: [
+      {
+        name: "Test dish",
+        carbs: 40,
+        grams: 100,
+        foodId: "f1",
+        food: { portions: [{ label: "slice", grams: 50, carbs: 20 }], carbsPer100g: 40 },
+      },
+    ],
+    bolusTs: "2026-10-18T21:20:00.000Z",
+  };
+  repo.meals.push(meal);
+  for (let i = -65; i <= 245; i += 5)
+    repo.readings.push({
+      spaceId: "s1",
+      ts: new Date(Date.parse(meal.ts) + i * 60000).toISOString(),
+      mmol: i === 65 ? 9.6 : 6,
+      trend: "flat",
+    });
+  const deps = { repo, now: () => now, photos: null };
+  return { repo, meal, deps };
+}
+describe("history read services", () => {
+  it("returns the inclusive ordered chart, shared stats, current edit data, photo and scoped neighbours", async () => {
+    const { repo, meal, deps } = setup();
+    repo.meals.push(
+      { ...meal, id: "later", ts: "2026-10-19T05:00:00Z" },
+      { ...meal, id: "foreign", spaceId: "s2" },
+    );
+    const photos = {
+      readUrl: (key: string, size: string) =>
+        Promise.resolve(`https://photos.invalid/${key}/${size}`),
+      put: () => Promise.resolve(),
+      delete: () => Promise.resolve(),
+    };
+    const view = await loadMealCurve("s1", meal.id, "en", { ...deps, photos });
+    expect(view.readings).toHaveLength(61);
+    expect(view.readings[0]?.ts).toBe("2026-10-18T20:30:00.000Z");
+    expect(view.readings.at(-1)?.ts).toBe("2026-10-19T01:30:00.000Z");
+    expect(view.stats).toEqual(mealStats(view.readings, meal, target, now));
+    expect(view.stats.peak).toEqual({
+      mmol: 9.6,
+      ts: "2026-10-18T22:35:00.000Z",
+      minutesAfterMeal: 65,
+    });
+    expect(view.editItems[0]).toMatchObject({
+      foodId: "f1",
+      portions: [{ label: "slice", grams: 50, carbs: 20 }],
+      carbsPer100g: 40,
+    });
+    expect(view.meal.photo?.thumbUrl).toBe("https://photos.invalid/photo/thumb");
+    expect(view.neighbours).toEqual({ nextMealId: "later" });
+    expect(view.now).toBe(now.toISOString());
+    await expect(loadMealCurve("s2", meal.id, "en", deps)).rejects.toMatchObject({ status: 404 });
+  });
+  it("selects five newest matching occurrences, ignores portions, extra foods and other spaces, and uses bounded fallback for deleted foods", async () => {
+    const { repo, meal, deps } = setup();
+    for (let i = 1; i <= 7; i++)
+      repo.meals.push({
+        ...meal,
+        id: `earlier-${i}`,
+        ts: new Date(Date.parse(meal.ts) - i * 86400000).toISOString(),
+        items: [{ ...required(meal.items[0]), grams: i * 10 }],
+      });
+    repo.meals.push(
+      {
+        ...meal,
+        id: "extra",
+        ts: "2026-10-18T20:00:00Z",
+        items: [...meal.items, { name: "Extra", carbs: 2 }],
+      },
+      { ...meal, id: "foreign", spaceId: "s2", ts: "2026-10-18T20:00:00Z" },
+    );
+    const view = await loadMealCurve("s1", meal.id, "en", deps);
+    expect(view.previous.map((m) => m.mealId)).toEqual([1, 2, 3, 4, 5].map((i) => `earlier-${i}`));
+    expect(repo.calls.filter((c) => c.method === "readingsBetween")).toHaveLength(6);
+    expect(repo.calls.some((c) => c.method === "candidateMeals")).toBe(true);
+    meal.items = [{ name: "TEST DISH", carbs: 20 }];
+    repo.calls.length = 0;
+    const fallback = await loadMealCurve("s1", meal.id, "en", deps);
+    expect(fallback.previous).toHaveLength(5);
+    expect(fallback.editItems[0]).toEqual({ name: "TEST DISH", carbs: 20 });
+    expect(repo.calls.find((c) => c.method === "recentMeals")?.args.at(-1)).toBe(200);
+  });
+  it("keeps late-meal stats identical across curve, day and week with one/two range queries", async () => {
+    const { repo, meal, deps } = setup();
+    const curve = await loadMealCurve("s1", meal.id, "en", deps);
+    repo.calls.length = 0;
+    const day = await loadHistoryDay("s1", "2026-10-18", true, "en", deps);
+    expect(day.meals[0]?.stats).toEqual(curve.stats);
+    expect(day.to).toBe("2026-10-18T22:00:00.000Z");
+    expect(day.readings.every((r) => r.ts <= day.to)).toBe(true);
+    expect(day.meals[0]?.bolusTs).toBe(meal.bolusTs);
+    expect(repo.calls.filter((c) => c.method === "readingsBetween")).toHaveLength(1);
+    expect(day.inRange).toEqual(
+      dayStats(repo.readings, [meal], target, { from: day.from, to: day.to }, now).inRange,
+    );
+    repo.calls.length = 0;
+    const week = await loadHistoryWeek("s1", "2026-10-12", "en", deps);
+    expect(week.meals[0]?.stats).toEqual(curve.stats);
+    expect(week.days).toHaveLength(7);
+    expect(week.days.every((d) => d.curve.length <= 48)).toBe(true);
+    expect(week.days[6]?.mealTimes).toEqual([meal.ts]);
+    expect(week.numbers).toEqual(
+      weekStats({
+        readings: repo.readings,
+        previousWeekReadings: [],
+        meals: [meal],
+        target,
+        weekRange: weekRange("2026-10-12", "Europe/Copenhagen"),
+        timezone: "Europe/Copenhagen",
+        now,
+      }),
+    );
+    expect(repo.calls.filter((c) => c.method === "readingsBetween")).toHaveLength(2);
+    expect((await loadHistoryDay("s1", "2026-10-18", false, "en", deps)).readings).toEqual([]);
+  });
+  it("includes name matches even when the current meal has food references", async () => {
+    const { repo, meal, deps } = setup();
+    repo.meals.push({
+      ...meal,
+      id: "manual",
+      ts: "2026-10-17T12:00:00.000Z",
+      items: [{ name: "TEST DISH", carbs: 20 }],
+    });
+    expect((await loadMealCurve("s1", meal.id, "en", deps)).previous.map((m) => m.mealId)).toEqual([
+      "manual",
+    ]);
+  });
+  it("preserves predecessor and successor coverage at day and ISO-week boundaries", async () => {
+    for (const ts of ["2026-10-12T00:01:00.000Z", "2026-10-18T23:59:00.000Z"]) {
+      const { repo, meal, deps } = setup();
+      repo.spaces.set("s1", { timezone: "UTC", target });
+      meal.ts = ts;
+      repo.readings.length = 0;
+      for (let i = -3; i <= 242; i += 5)
+        repo.readings.push({
+          spaceId: "s1",
+          ts: new Date(Date.parse(ts) + i * 60000).toISOString(),
+          mmol: 6,
+          trend: "flat",
+        });
+      const curve = await loadMealCurve("s1", meal.id, "en", deps);
+      const day = await loadHistoryDay("s1", ts.slice(0, 10), true, "en", deps);
+      const week = await loadHistoryWeek("s1", "2026-10-12", "en", deps);
+      expect(curve.stats.inRange.coveredMinutes).toBe(180);
+      expect(day.meals[0]?.stats).toEqual(curve.stats);
+      expect(week.meals[0]?.stats).toEqual(curve.stats);
+      expect(day.readings.every((r) => r.ts >= day.from && r.ts <= day.to)).toBe(true);
+    }
+  });
+  it("uses local today/current ISO week, reports older data, handles DST and rejects non-Mondays", async () => {
+    const { repo, deps } = setup();
+    const day = await loadHistoryDay("s1", null, true, "en", deps);
+    expect(day.date).toBe("2026-10-19");
+    expect(day.hasOlder).toBe(true);
+    expect((await loadHistoryWeek("s1", null, "en", deps)).weekStart).toBe("2026-10-19");
+    const dst = await loadHistoryDay("s1", "2026-10-25", true, "en", deps);
+    expect(Date.parse(dst.to) - Date.parse(dst.from)).toBe(25 * 3600000);
+    await expect(loadHistoryWeek("s1", "2026-10-13", "en", deps)).rejects.toMatchObject({
+      status: 400,
+    });
+    repo.meals.length = 0;
+    repo.readings.length = 0;
+    expect((await loadHistoryWeek("s1", null, "en", deps)).numbers.inRangePercent).toBeUndefined();
+  });
+});
