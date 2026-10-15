@@ -13,6 +13,7 @@ export async function authorizeMeal(request: Request, spaceId: string) {
     spaceId,
     ["owner", "carer"],
     overrides.sessionDb ?? prisma,
+    overrides.now,
   );
   return { session, deps: mealDeps(overrides) };
 }
