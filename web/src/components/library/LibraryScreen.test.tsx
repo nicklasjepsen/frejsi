@@ -72,7 +72,7 @@ describe("Bibliotek on the phone (Bibliotek-Telefon)", () => {
     expect(chips[1]).toHaveAttribute("data-variant", "unverified");
 
     const text = rows.map((row) => row.textContent);
-    expect(text[0]).toContain("Rugbrød, Schulstad Det Gode");
+    expect(text[0]).toContain("Rugbrød, Eksempelbageriet");
     expect(text[0]).toContain("40 g pr. 100 g · 1 skive 45 g");
     expect(text[1]).toContain("Egen ret · 1 portion 55 g · ½ portion 28 g");
     expect(text[2]).toContain("Egen ret · 1 madpakke 42 g · vises i simpel visning");
@@ -83,7 +83,7 @@ describe("Bibliotek on the phone (Bibliotek-Telefon)", () => {
     expect(marked).toEqual([true, true, false, true, false]);
     // A row opens its phone edit page.
     expect(
-      within(at(rows, 0)).getByRole("link", { name: "Rugbrød, Schulstad Det Gode" }),
+      within(at(rows, 0)).getByRole("link", { name: "Rugbrød, Eksempelbageriet" }),
     ).toHaveAttribute("href", "/da/library/f-rye");
     expect(lists()[0]?.query).toEqual({ filter: "all" });
   });
@@ -92,9 +92,7 @@ describe("Bibliotek on the phone (Bibliotek-Telefon)", () => {
     mount();
     const [rye] = await phoneRows();
     if (!rye) throw new Error("no row");
-    fireEvent.click(
-      within(rye).getByRole("button", { name: "Godkend Rugbrød, Schulstad Det Gode" }),
-    );
+    fireEvent.click(within(rye).getByRole("button", { name: "Godkend Rugbrød, Eksempelbageriet" }));
     await waitFor(() => {
       expect(within(rye).getByRole("img", { name: "Tjekket" })).toBeInTheDocument();
     });
@@ -203,7 +201,7 @@ describe("Bibliotek on desktop (Bibliotek-Desktop)", () => {
         .map((cell) => cell.textContent),
     ).toEqual([
       "",
-      "Rugbrød, Schulstad Det Gode",
+      "Rugbrød, Eksempelbageriet",
       "40 g",
       "1 skive 45 g",
       "Open Food Facts",
@@ -268,9 +266,7 @@ describe("Bibliotek on desktop (Bibliotek-Desktop)", () => {
     fireEvent.keyDown(document.body, { key: "j" });
     fireEvent.keyDown(at(rows, 0), { key: "e" });
     const panel = within(desktop().getByTestId("edit-panel"));
-    expect(panel.getByRole("heading", { level: 2 })).toHaveTextContent(
-      "Rugbrød, Schulstad Det Gode",
-    );
+    expect(panel.getByRole("heading", { level: 2 })).toHaveTextContent("Rugbrød, Eksempelbageriet");
     expect(panel.getByText("Open Food Facts · stregkode 2000…")).toBeInTheDocument();
     fireEvent.click(panel.getByRole("button", { name: "Gem og godkend" }));
     await waitFor(() => {
