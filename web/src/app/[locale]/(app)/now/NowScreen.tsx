@@ -1,7 +1,11 @@
 "use client";
 
 import { useTranslations } from "next-intl";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 
+import { MealCard, MealsTable, useDay } from "@/components/day";
+import { PhotoTile } from "@/components/food/PhotoTile";
 import {
   dayStart,
   formatBound,
@@ -16,15 +20,24 @@ import { SourceStatusBanner } from "@/components/shell/SourceStatusBanner";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Notice } from "@/components/ui/Notice";
+import { QuickLinkCard } from "@/components/ui/QuickLinkCard";
 import { localeHref, type AppLocale } from "@/lib/i18n/routing";
 import { formatClock } from "@/lib/i18n/time";
 import { useLiveFeed } from "@/lib/live/useLiveFeed";
 
 import styles from "./now.module.css";
+import { NowSearch } from "./NowSearch";
+import { useNowFoods } from "./useNowFoods";
 
 const SPARKLINE_HOURS = 3;
 const DAY_START_HOUR = 6;
 const WINDOW_HOURS = 24;
+/** The "Min mad" tiles on Nu-Simpel-Desktop: two rows of four. */
+const MY_FOOD_TILES = 8;
+
+/** Until v0.3.0's meal detail, a meal opens on the log screen for correction (decision 29). */
+const mealHref = (locale: AppLocale, id: string) =>
+  localeHref(locale, `/log?${new URLSearchParams({ meal: id }).toString()}`);
 
 export interface NowScreenProps {
   spaceId: string;
@@ -35,17 +48,25 @@ export interface NowScreenProps {
 }
 
 /**
- * Nu (Main, Nu-Desktop, Nu-Simpel, Nu-Simpel-Desktop): everything on it comes from `useLiveFeed`;
- * nothing here fetches. Phone and desktop are both in the DOM and CSS shows one, as the shell
- * does. The meal regions of the artboards are left out until v0.2.0 (plan decision 15); the last
- * meal card is a placeholder.
+ * Nu (Main, Nu-Desktop, Nu-Simpel, Nu-Simpel-Desktop): glucose comes from `useLiveFeed` only;
+ * the meal regions read `GET day` and `GET foods` through `useDay` and `useNowFoods`, again on
+ * every `meal.*` (and `food.*`) event the same feed delivers. Phone and desktop are both in the DOM
+ * and CSS shows one, as the shell does. Nothing here writes: logging is the log screen or the
+ * picker. "Spørg en voksen" (v0.4.0), the "Top" column and "Ugens opsummering" (v0.3.0) are left
+ * out, not drawn disabled (decision 30).
  */
 export function NowScreen({ spaceId, locale, simpleMode, timeZone }: NowScreenProps) {
   const t = useTranslations("now");
   const g = useTranslations("glucose");
   const errors = useTranslations("errors.api");
+  const meals = useTranslations("eat.now");
+  const router = useRouter();
   const feed = useLiveFeed(spaceId, { hours: WINDOW_HOURS });
   const now = useNow();
+  const day = useDay(spaceId, feed.subscribe);
+  const foods = useNowFoods(spaceId, simpleMode, feed.subscribe);
+  const lastMeal = day.status === "ready" ? (day.day.meals[0] ?? null) : null;
+  const mealZone = day.status === "ready" ? day.day.timezone : timeZone;
 
   // From the feed, not the window: a reading older than 24 hours still shows, with its age.
   const latest = feed.latest;
@@ -78,11 +99,40 @@ export function NowScreen({ spaceId, locale, simpleMode, timeZone }: NowScreenPr
       <div className={styles.simple} data-testid="now-simple">
         <p className={styles.simpleLabel}>{t("simpleTitle")}</p>
         <GlucoseValue reading={latest} unit={unit} now={now} size="simple" showUnit={false} />
+        {lastMeal && (
+          <div className={styles.simpleMeal}>
+            <MealCard meal={lastMeal} timeZone={mealZone} variant="simple" />
+          </div>
+        )}
         <div className={styles.simpleActions}>
-          <Button size="simple" href={localeHref(locale, "/soon/meals")}>
+          <Button size="simple" href={localeHref(locale, "/eat")}>
             {t("eatingNow")}
           </Button>
         </div>
+        {foods.myFood.length > 0 && (
+          <section className={styles.myFood} data-testid="my-food">
+            <h2 className={styles.myFoodTitle}>{meals("myFood")}</h2>
+            <div className={styles.myFoodGrid}>
+              {foods.myFood.slice(0, MY_FOOD_TILES).map((food) => (
+                <PhotoTile
+                  key={food.id}
+                  title={food.name}
+                  {...(food.photo ? { thumbUrl: food.photo.thumbUrl } : {})}
+                  verified={food.verified}
+                  size={140}
+                  onClick={() => {
+                    router.push(
+                      localeHref(
+                        locale,
+                        `/eat?${new URLSearchParams({ food: food.id }).toString()}`,
+                      ),
+                    );
+                  }}
+                />
+              ))}
+            </div>
+          </section>
+        )}
       </div>
     );
   }
@@ -140,9 +190,15 @@ export function NowScreen({ spaceId, locale, simpleMode, timeZone }: NowScreenPr
         </section>
 
         <section className={styles.desktop} data-testid="now-desktop">
-          <div className={styles.desktopHead}>
-            <h1>{t("title")}</h1>
-            <p className={styles.date}>{formatDayTitle(now, zone, locale)}</p>
+          <div className={styles.desktopTop}>
+            <div className={styles.desktopHead}>
+              <h1>{t("title")}</h1>
+              <p className={styles.date}>{formatDayTitle(now, zone, locale)}</p>
+            </div>
+            <div className={styles.desktopSearch}>
+              <NowSearch locale={locale} />
+            </div>
+            <Button href={localeHref(locale, "/log")}>{meals("logMeal")}</Button>
           </div>
           <div className={styles.desktopRow}>
             <Card className={styles.glucoseCard}>
@@ -180,14 +236,55 @@ export function NowScreen({ spaceId, locale, simpleMode, timeZone }: NowScreenPr
               />
             </Card>
           </div>
+          <div className={styles.desktopRow}>
+            <div className={styles.mealsColumn}>
+              {day.status === "failed" && <Notice tone="sunken">{meals("mealsFailed")}</Notice>}
+              {day.status === "ready" && (
+                <MealsTable
+                  meals={day.day.meals}
+                  totalCarbs={day.day.totalCarbs}
+                  timeZone={mealZone}
+                  hrefFor={(meal) => mealHref(locale, meal.id)}
+                  onOpen={(href) => {
+                    router.push(href);
+                  }}
+                />
+              )}
+            </div>
+            {foods.unverified > 0 && (
+              <aside
+                className={styles.sideColumn}
+                aria-label={meals("unverifiedLabel", { count: foods.unverified })}
+              >
+                <QuickLinkCard
+                  href={localeHref(locale, "/library?filter=unverified")}
+                  icon={foods.unverified}
+                  title={meals("unverifiedTitle")}
+                  subtitle={meals("unverifiedSubtitle")}
+                />
+              </aside>
+            )}
+          </div>
         </section>
 
-        <section className={styles.lastMeal}>
+        <section className={styles.lastMeal} data-testid="last-meal">
           <p className={styles.label}>{t("lastMeal")}</p>
-          <Card>
-            <Notice>{t("lastMealSoon")}</Notice>
-          </Card>
+          {day.status === "failed" && <Notice tone="sunken">{meals("mealsFailed")}</Notice>}
+          {day.status === "ready" &&
+            (lastMeal ? (
+              <Link href={mealHref(locale, lastMeal.id)} className={styles.mealLink}>
+                <MealCard meal={lastMeal} timeZone={mealZone} variant="card" />
+              </Link>
+            ) : (
+              <p className={styles.noMeals}>{meals("noMeals")}</p>
+            ))}
         </section>
+
+        <div className={styles.logAction}>
+          <Button size="phone" href={localeHref(locale, "/log")}>
+            {meals("logMeal")}
+          </Button>
+        </div>
       </div>
     </>
   );

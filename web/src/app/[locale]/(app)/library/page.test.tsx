@@ -54,7 +54,7 @@ describe("/[locale]/library and its phone pages (plan task 5)", () => {
 
   it("sends a viewer to their day: the library is never theirs", async () => {
     as(false, "viewer");
-    for (const page of pages) await expect(page()).rejects.toThrow("redirect:/da/soon/today");
+    for (const page of pages) await expect(page()).rejects.toThrow("redirect:/da/today");
   });
 
   it("sends a simpleMode session to Nu: the library is not in the simple shell", async () => {

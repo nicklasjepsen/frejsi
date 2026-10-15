@@ -51,7 +51,7 @@ describe("/[locale]/now", () => {
   it("sends a viewer to their own landing instead of an empty Nu", async () => {
     mocks.session = { ...alma, memberships: [{ spaceId: "s1", role: "viewer" }] };
     mocks.shell = { space: { id: "s1", role: "viewer", timezone: "Europe/Copenhagen" } };
-    await expect(NowPage({ params })).rejects.toThrow("NEXT_REDIRECT:/da/soon/today");
+    await expect(NowPage({ params })).rejects.toThrow("NEXT_REDIRECT:/da/today");
   });
 
   it("renders nothing without a session or a space (the layout has already redirected)", async () => {

@@ -49,6 +49,82 @@
   gap: 8px;
 }
 
+.mealLink {
+  display: block;
+  color: inherit;
+  text-decoration: none;
+  /* The card's own radius (MealCard, --radius-card). */
+  border-radius: 20px;
+}
+
+.mealLink:focus-visible {
+  outline: 2px solid var(--accent-base);
+  outline-offset: 2px;
+}
+
+.noMeals {
+  font-size: 15px;
+  color: var(--text-muted);
+}
+
+/* The primary "Log et måltid" sits above the tab bar (Main). */
+.logAction {
+  position: sticky;
+  bottom: 12px;
+  margin-top: 8px;
+  display: flex;
+  flex-direction: column;
+}
+
+.desktopTop {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.desktopSearch {
+  flex: 1 1 320px;
+  max-width: 520px;
+  margin-left: auto;
+}
+
+.mealsColumn {
+  flex: 3 1 480px;
+  min-width: 0;
+}
+
+.sideColumn {
+  flex: 1 1 260px;
+  max-width: 360px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.simpleMeal {
+  width: 100%;
+  margin-top: 28px;
+}
+
+/* "Min mad" (Nu-Simpel-Desktop): a 4-up grid of photo tiles; the phone keeps it to Min mad. */
+.myFood {
+  display: none;
+}
+
+/* An h2: the display face comes from globals.css. */
+.myFoodTitle {
+  font-size: 26px;
+  font-weight: 600;
+  line-height: 1.1;
+}
+
+.myFoodGrid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+}
+
 /* simpleMode (Nu-Simpel): the label, the big number, one button. */
 .simple {
   display: flex;
@@ -74,8 +150,22 @@
     padding-top: 0;
   }
 
-  .phone {
+  .phone,
+  .lastMeal,
+  .logAction {
     display: none;
+  }
+
+  .myFood {
+    width: 100%;
+    margin-top: 36px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .simpleMeal {
+    max-width: 560px;
   }
 
   .desktop {

@@ -45,7 +45,7 @@ describe("the locale index (plan §6)", () => {
     mocks.role = "owner";
     await expect(open("da")).rejects.toThrow("NEXT_REDIRECT:/da/now");
     mocks.role = "viewer";
-    await expect(open("da")).rejects.toThrow("NEXT_REDIRECT:/da/soon/today");
+    await expect(open("da")).rejects.toThrow("NEXT_REDIRECT:/da/today");
     mocks.role = null;
     await expect(open("da")).rejects.toThrow("NEXT_REDIRECT:/da/now");
   });
