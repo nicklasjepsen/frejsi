@@ -95,10 +95,23 @@ In this order. Everything after step 5 is one tap or one DNS record.
    client secret is needed, ever. Note its application (client) ID, the tenant ID and the
    subscription ID.
 3. **Federated credentials** on that app registration, issuer `https://token.actions.githubusercontent.com`,
-   audience `api://AzureADTokenExchange`, one per subject:
-   - `repo:nicklasjepsen/frejsi:environment:production-infra`
-   - `repo:nicklasjepsen/frejsi:environment:production`
-   - `repo:nicklasjepsen/frejsi:environment:preview` (optional; only for `preview.yml`)
+   audience `api://AzureADTokenExchange`, one per environment: `production-infra`, `production`
+   and `preview` (the opt-in PR previews, and the cleanup job that runs when any PR closes once the
+   Azure variables exist). The subject is `<prefix>:environment:<name>`, where `<prefix>` is what
+   GitHub presents for this repository:
+
+   ```
+   gh api repos/<owner>/<repo>/actions/oidc/customization/sub --jq .sub_claim_prefix
+   ```
+
+   Newer repositories use immutable subjects with the owner and repository IDs, so for this
+   repository the subjects are:
+   - `repo:nicklasjepsen@2478876/frejsi@1419802630:environment:production-infra`
+   - `repo:nicklasjepsen@2478876/frejsi@1419802630:environment:production`
+   - `repo:nicklasjepsen@2478876/frejsi@1419802630:environment:preview`
+
+   If the command prints nothing, the repository uses the older form `repo:<owner>/<repo>`. A wrong
+   subject fails the login with `AADSTS700213: No matching federated identity record found`.
 4. **Role assignments** for the app registration's service principal on the resource group:
    **Owner**, or Contributor plus User Access Administrator (the deployment creates role assignments
    for the Function App's identity and for the deploy principal itself). Key Vault data-plane access is
