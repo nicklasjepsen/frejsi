@@ -89,6 +89,15 @@ const aiBoundaryRule = {
     const infrastructure =
       /\/shared\/src\/ai\/(capped|tool-loop)\.ts$/.test(file) ||
       /\/shared\/src\/ai\/(anthropic|voyage|azure-openai|ollama)\//.test(file);
+    const rawNames = ["Reading", "reading", "readingsBetween", "HistoryRepository"];
+    const memoryNames = [
+      "FakeAiProvider",
+      "MemoryAiCallRepository",
+      "MemoryInsightRepository",
+      "MemoryPushSubscriptionRepository",
+    ];
+    const adapterNames = ["AnthropicProvider", "AzureOpenAiProvider", "OllamaProvider"];
+    const constructors = new Map();
     const registryNames = new Set(["aiProviders"]);
     const registryNamespaces = new Set();
     const name = (node) =>
@@ -129,6 +138,14 @@ const aiBoundaryRule = {
           );
         for (const specifier of node.specifiers) {
           if (name(specifier.imported) === "aiProviders") registryNames.add(specifier.local.name);
+          const imported = name(specifier.imported);
+          if (adapterNames.includes(imported) || imported === "CappedAiProvider")
+            constructors.set(specifier.local.name, imported);
+          if (
+            specifier.type === "ImportDefaultSpecifier" &&
+            /(?:^|\/)(anthropic|azure-openai|ollama)\//.test(source)
+          )
+            constructors.set(specifier.local.name, "adapter");
           if (specifier.type === "ImportNamespaceSpecifier")
             registryNamespaces.add(specifier.local.name);
         }
@@ -139,10 +156,38 @@ const aiBoundaryRule = {
         )
           report(node, "AI adapters are constructed through the registry only.");
       },
+      TSQualifiedName(node) {
+        if (aiFolder && rawNames.includes(name(node.right)))
+          report(node, "Raw readings stay outside AI code; pass aggregate contracts only.");
+      },
+      NewExpression(node) {
+        const constructor =
+          node.callee.type === "Identifier"
+            ? (constructors.get(node.callee.name) ?? node.callee.name)
+            : property(node.callee);
+        if (
+          !test &&
+          (adapterNames.includes(constructor) || constructor === "adapter") &&
+          !file.endsWith("/shared/src/ai/registry.ts")
+        )
+          report(node, "Construct AI adapters in the registry only.");
+        if (
+          !test &&
+          constructor === "CappedAiProvider" &&
+          file.includes("/web/") &&
+          !file.endsWith("/web/src/ai/provider.ts")
+        )
+          report(node, "Construct capped providers in the web provider factory only.");
+      },
       MemberExpression(node) {
         const prop = property(node);
-        if (aiFolder && prop === "reading")
+        if (aiFolder && rawNames.includes(prop))
           report(node, "Raw readings stay outside AI code; pass aggregate contracts only.");
+        if (!fakeConsumer && memoryNames.includes(prop))
+          report(
+            node,
+            "Fake and memory implementations are for tests, seed, CLI, registry and evals only.",
+          );
         if (
           property(node.object) === "aiCall" &&
           /^(create|createMany|createManyAndReturn|upsert|update|updateMany|delete|deleteMany)$/.test(

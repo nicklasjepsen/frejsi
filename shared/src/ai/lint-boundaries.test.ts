@@ -130,3 +130,35 @@ it("does not leak provider implementations through the public barrels", () => {
   };
   expect(pkg.exports["./ai"]).toBe("./src/ai/index.ts");
 });
+
+it("closes namespace and aliased-constructor escapes from the AI boundaries", async () => {
+  for (const code of [
+    'import * as shared from "@frejsi/shared"; export type Raw = shared.Reading;',
+    'import * as shared from "@frejsi/shared"; shared.readingsBetween();',
+    'import * as history from "@/lib/history";',
+  ])
+    expect(await errors("web/src/ai/provider.ts", code)).toContainEqual(
+      expect.stringContaining("Raw readings"),
+    );
+  expect(
+    await errors(
+      "web/src/app/api/spaces/x/route.ts",
+      'import * as repository from "@frejsi/shared/ai/calls"; new repository.MemoryAiCallRepository();',
+    ),
+  ).toContainEqual(expect.stringContaining("Fake and memory"));
+  for (const code of [
+    'import { CappedAiProvider as Wrapped } from "@frejsi/shared/ai"; new Wrapped();',
+    'import * as shared from "@frejsi/shared/ai"; new shared.CappedAiProvider();',
+  ]) {
+    expect(await errors("web/src/app/api/spaces/x/route.ts", code)).toContainEqual(
+      expect.stringContaining("web provider factory"),
+    );
+    expect(await errors("web/src/ai/provider.ts", code)).toEqual([]);
+  }
+  const direct =
+    'import { AnthropicProvider as Direct } from "../anthropic/provider"; new Direct();';
+  expect(await errors("shared/src/ai/parse/service.ts", direct)).toContainEqual(
+    expect.stringContaining("registry only"),
+  );
+  expect(await errors("shared/src/ai/registry.ts", direct)).toEqual([]);
+});
