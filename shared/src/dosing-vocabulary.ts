@@ -69,6 +69,9 @@ export const MEAL_CURVE_ALLOW_LIST = [
   "Bolus before meal",
 ] as const;
 
+/** Issue #143: remove a timestamp, with no other meaning. */
+const CLEAR_BOLUS_TIME_ALLOW_LIST = ["Fjern bolustidspunkt", "Remove bolus time"] as const;
+
 /** `Bolus HH:MM`, rendered or as its message template `Bolus {time}` (the BolusTap key). */
 const BOLUS_TIME = /^Bolus (?:\d{2}:\d{2}|\{time\})$/;
 
@@ -90,6 +93,7 @@ function isAllowed(text: string): boolean {
     (DOSING_ALLOW_LIST as readonly string[]).includes(text) ||
     (BOLUS_TAP_ALLOW_LIST as readonly string[]).includes(text) ||
     (MEAL_CURVE_ALLOW_LIST as readonly string[]).includes(text) ||
+    (CLEAR_BOLUS_TIME_ALLOW_LIST as readonly string[]).includes(text) ||
     BOLUS_TIME.test(text)
   );
 }

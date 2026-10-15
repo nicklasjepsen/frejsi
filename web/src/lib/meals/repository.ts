@@ -25,7 +25,7 @@ export interface MealChanges {
   totalCarbs?: number | undefined;
   items?: MealSnapshot[] | undefined;
   note?: string | undefined;
-  bolusTs?: string | undefined;
+  bolusTs?: string | null | undefined;
   photoKey?: string | undefined;
 }
 export interface MealRepository {
@@ -143,7 +143,9 @@ export class PrismaMealRepository implements MealRepository {
             ...(fields.note !== undefined ? { note: fields.note } : {}),
             ...("photoKey" in fields ? { photoKey: fields.photoKey ?? null } : {}),
             ...(ts ? { ts: new Date(ts) } : {}),
-            ...(bolusTs ? { bolusTs: new Date(bolusTs) } : {}),
+            ...(bolusTs !== undefined
+              ? { bolusTs: bolusTs === null ? null : new Date(bolusTs) }
+              : {}),
             ...(items ? { items: { deleteMany: {}, create: itemRows(items) } } : {}),
           },
           include,

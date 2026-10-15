@@ -114,7 +114,10 @@ function parsed<T>(
   if (!result.success) throw new HttpError(400, "validation");
   return result.data;
 }
-function checkTimestamp(session: SessionContext, input: { bolusTs?: string | undefined }): void {
+function checkTimestamp(
+  session: SessionContext,
+  input: { bolusTs?: string | null | undefined },
+): void {
   if (session.simpleMode && input.bolusTs !== undefined) throw new HttpError(400, "simple-mode");
 }
 async function upload(

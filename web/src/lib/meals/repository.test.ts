@@ -41,6 +41,12 @@ describe("Prisma meal persistence", () => {
     ]);
     expect(replaced.totalCarbs).toBe(9);
     expect(replaced.bolusTs).toBe(at.toISOString());
+    expect((await repo.update("s1", "m1", { note: "Fictional edit" })).bolusTs).toBe(
+      at.toISOString(),
+    );
+    expect((await repo.update("s1", "m1", { bolusTs: null })).bolusTs).toBeUndefined();
+    expect(rows.get("m1")?.bolusTs).toBeNull();
+    expect((await repo.find("s1", "m1"))?.bolusTs).toBeUndefined();
     expect((await repo.update("s1", "m1", { photoKey: undefined })).photoKey).toBeUndefined();
     expect(await repo.find("s2", "m1")).toBeNull();
     await expect(repo.lock("s2", "m1")).rejects.toMatchObject({ code: "not-found" });

@@ -179,6 +179,7 @@ export function realRoutes() {
       const row: MealRecord = {
         ...previous,
         ...Object.fromEntries(Object.entries(data).filter(([, v]) => v !== undefined)),
+        bolusTs: data.bolusTs === null ? undefined : (data.bolusTs ?? previous.bolusTs),
       };
       meals.set(id, row);
       syncItems();
