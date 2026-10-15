@@ -109,6 +109,12 @@ button.foodTitle {
   padding: 12px;
   border-bottom: 1px solid var(--hairline);
 }
+.table [data-align="end"] {
+  text-align: end;
+}
+.table tr[data-current="true"] {
+  font-weight: 700;
+}
 .table tr[aria-selected="true"] {
   background: var(--surface-selected);
 }
