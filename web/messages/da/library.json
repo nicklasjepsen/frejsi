@@ -1,0 +1,88 @@
+{
+  "title": "Mad",
+  "desktopTitle": "Bibliotek",
+  "summary": "{count, plural, one {# fødevare} other {# fødevarer}} · {unverified} ikke tjekket",
+  "search": "Søg i mad",
+  "searchDesktop": "Søg i biblioteket",
+  "newFood": "Ny fødevare",
+  "filters": "Vis",
+  "filter": {
+    "all": "Alle",
+    "unverified": "Ikke tjekket · {count}",
+    "own": "Egne retter",
+    "favourites": "Favoritter",
+    "recent": "Spist for nylig"
+  },
+  "origin": {
+    "off": "Fra Open Food Facts",
+    "frida": "Fra Frida",
+    "other": "Fra {origin}"
+  },
+  "sourceName": {
+    "off": "Open Food Facts",
+    "frida": "Frida",
+    "family": "Egen ret",
+    "manual": "Egen ret"
+  },
+  "line": {
+    "origin": {
+      "family": "Egen ret",
+      "manual": "Egen ret",
+      "frida": "Frida"
+    },
+    "per100g": "{amount} g pr. 100 g",
+    "portion": "{label} {amount} g",
+    "simple": "vises i simpel visning"
+  },
+  "keyboardHint": "J/K flytter · Mellemrum vælger · V godkender · E retter",
+  "columns": {
+    "food": "Fødevare",
+    "per100g": "Pr. 100 g",
+    "portions": "Portioner",
+    "source": "Kilde",
+    "status": "Status"
+  },
+  "gramsCell": "{amount} g",
+  "edit": "Ret {name}",
+  "batch": {
+    "selected": "{count} valgt",
+    "verify": "Godkend valgte",
+    "remove": "Fjern fra biblioteket",
+    "confirmRemove": "Fjern {count, plural, one {# fødevare} other {# fødevarer}} fra biblioteket?",
+    "confirmYes": "Ja, fjern",
+    "cancel": "Fortryd"
+  },
+  "verify": "Godkend {name}",
+  "verified": "Tjekket",
+  "empty": {
+    "title": "Biblioteket er tomt endnu",
+    "body": "Scan en stregkode, når I logger et måltid, eller tilføj jeres egen mad med Ny fødevare."
+  },
+  "noMatches": "Ingen mad passer til det, du søger efter.",
+  "loadFailed": "Biblioteket kunne ikke hentes lige nu.",
+  "retry": "Prøv igen",
+  "writeFailed": "Det blev ikke gemt – prøv igen",
+  "form": {
+    "newTitle": "Ny fødevare",
+    "editTitle": "Ret fødevare",
+    "close": "Luk",
+    "name": "Navn",
+    "carbsPer100g": "Kulhydrat pr. 100 g",
+    "portions": "Portioner",
+    "portionName": "Portion",
+    "portionGrams": "g",
+    "portionCarbs": "g kulhydrat",
+    "computed": "{amount} g kulhydrat",
+    "addPortion": "+ Portion",
+    "removePortion": "Fjern portion",
+    "favourite": "Favorit",
+    "saveAndVerify": "Gem og godkend",
+    "save": "Gem",
+    "saveFailed": "Kunne ikke gemme – prøv igen",
+    "needsCarbs": "Skriv kulhydrat pr. 100 g eller mindst én portion med kulhydrat.",
+    "needsName": "Skriv et navn.",
+    "source": "{source} · stregkode {barcode}…",
+    "photoPreview": "Det valgte billede",
+    "loadFailed": "Fødevaren kunne ikke hentes lige nu."
+  }
+}

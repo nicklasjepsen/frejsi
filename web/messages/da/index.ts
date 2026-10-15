@@ -7,6 +7,7 @@ import errors from "./errors.json";
 import foodKit from "./foodKit.json";
 import glucose from "./glucose.json";
 import invite from "./invite.json";
+import library from "./library.json";
 import locale from "./locale.json";
 import nav from "./nav.json";
 import now from "./now.json";
@@ -27,6 +28,7 @@ const messages = {
   foodKit,
   glucose,
   invite,
+  library,
   locale,
   nav,
   now,

@@ -1,0 +1,322 @@
+/* Bibliotek (Bibliotek-Telefon at 360 px, Bibliotek-Desktop at 1280 px). Colours come from the
+   tokens only, so light, dark (design gap 2) and every accent follow the user's settings; the
+   tint for sea, forest and garnet is derived as in the food kit (design gap 3). */
+.page {
+  --library-tint: var(--accent-tint);
+  --library-tint-border: var(--accent-tint-border);
+  display: flex;
+  flex-direction: column;
+  padding-top: 20px;
+}
+:global([data-accent="sea"]) .page,
+:global([data-accent="forest"]) .page,
+:global([data-accent="garnet"]) .page {
+  --library-tint: color-mix(in srgb, var(--accent-base) 12%, var(--surface));
+  --library-tint-border: color-mix(in srgb, var(--accent-base) 30%, var(--surface));
+}
+
+.phone {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 0;
+}
+.desktop {
+  display: none;
+}
+@media (min-width: 1280px) {
+  .phone {
+    display: none;
+  }
+  .desktop {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+}
+
+.addLink {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-pill);
+  color: var(--accent-strong);
+  font-size: 28px;
+  line-height: 1;
+  text-decoration: none;
+}
+.addLink:focus-visible {
+  outline: 2px solid var(--accent-base);
+}
+
+.chipScroll {
+  overflow-x: auto;
+  margin: 0 calc(-1 * var(--phone-gutter, 16px));
+  padding: 0 var(--phone-gutter, 16px);
+  scrollbar-width: none;
+}
+.filters {
+  display: flex;
+  gap: 8px;
+  flex-wrap: nowrap;
+}
+.desktop .filters {
+  flex-wrap: wrap;
+}
+.filters > * {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.verifyCircle {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 2px solid var(--accent-base);
+  background: var(--surface);
+  color: var(--accent-strong);
+  padding: 0;
+  cursor: pointer;
+}
+.verifyCircle[data-verified="true"] {
+  background: var(--library-tint);
+  border-color: var(--library-tint-border);
+  cursor: default;
+}
+.verifyCircle:disabled {
+  opacity: 0.6;
+}
+.verifyCircle:focus-visible {
+  outline: 2px solid var(--accent-base);
+  outline-offset: 2px;
+}
+
+.state {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 24px 0;
+}
+.state h2 {
+  font: 600 22px/1.2 var(--font-display-stack);
+  margin: 0;
+}
+.state p {
+  margin: 0;
+  color: var(--text-muted);
+  max-width: 46ch;
+}
+.muted {
+  color: var(--text-muted);
+  font-size: 14px;
+  margin: 0;
+}
+.problem {
+  margin: 0;
+  color: var(--destructive);
+  font-weight: 700;
+}
+
+/* Desktop */
+.desktopHead {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+.desktopTools {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 420px;
+}
+.desktopTools > :first-child {
+  flex: 1;
+}
+.hint {
+  margin: 0;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+.desktopBody {
+  display: flex;
+  align-items: flex-start;
+  gap: 24px;
+}
+.tableColumn {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.cellName {
+  font: 600 16px/1.2 var(--font-display-stack);
+  color: var(--text);
+  background: none;
+  border: 0;
+  padding: 0;
+  text-align: start;
+  cursor: pointer;
+}
+.batchBar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 10px 14px;
+  border-radius: var(--radius-button-medium);
+  background: var(--library-tint);
+  border: 1px solid var(--library-tint-border);
+  color: var(--accent-strong);
+}
+.batchVerify,
+.destructive,
+.textButton,
+.addPortion {
+  font: inherit;
+  min-height: 36px;
+  border-radius: var(--radius-button-small);
+  padding: 0 12px;
+  cursor: pointer;
+}
+.batchVerify {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--accent-base);
+  color: var(--accent-on);
+  border: 0;
+  font-weight: 700;
+}
+.destructive {
+  background: var(--surface);
+  color: var(--destructive);
+  border: 1px solid var(--hairline-strong);
+}
+.textButton {
+  background: none;
+  border: 0;
+  color: var(--text-muted);
+}
+.batchVerify:disabled,
+.destructive:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.panel {
+  position: relative;
+  width: 380px;
+  flex-shrink: 0;
+  background: var(--surface);
+  border: var(--card-border);
+  box-shadow: var(--card-shadow);
+  border-radius: var(--radius-card);
+  padding: 20px;
+}
+.panelClose {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 44px;
+  height: 44px;
+  border: 0;
+  background: none;
+  color: var(--text-muted);
+  font-size: 24px;
+  cursor: pointer;
+}
+
+/* The form (edit panel and the phone pages) */
+.editPage {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.formHead {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  padding-right: 36px;
+}
+.formPhoto {
+  width: 72px;
+  height: 72px;
+  flex-shrink: 0;
+  border-radius: 14px;
+  overflow: hidden;
+}
+.formTitle {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+.formTitle h2 {
+  font: 600 20px/1.2 var(--font-display-stack);
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.portionRows {
+  border: 0;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.portionRows legend {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin-bottom: 6px;
+}
+.portionRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 72px minmax(0, 104px) auto;
+  gap: 8px;
+  align-items: end;
+}
+.computed {
+  font-size: 14px;
+  color: var(--text-muted);
+  padding-bottom: 12px;
+}
+.addPortion {
+  align-self: flex-start;
+  background: none;
+  border: 1px dashed var(--hairline-strong);
+  color: var(--accent-strong);
+}
+.toggle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+}
+.toggle input {
+  width: 20px;
+  height: 20px;
+  accent-color: var(--accent-base);
+}
+.formActions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}

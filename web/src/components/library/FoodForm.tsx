@@ -1,0 +1,331 @@
+"use client";
+import { carbsFor } from "@frejsi/shared/food/portions";
+import {
+  CreateFoodRequest,
+  UpdateFoodRequest,
+  type FoodView,
+  type Portion,
+} from "@frejsi/shared/schemas/food";
+import { useTranslations } from "next-intl";
+import { useEffect, useId, useRef, useState, type FormEvent } from "react";
+
+import { FoodPhoto, PhotoPicker } from "@/components/food";
+import { Badge, Button, NumberInput, TextInput } from "@/components/ui";
+
+import { libraryApi } from "./api-client";
+import { useFoodText } from "./format";
+import styles from "./library.module.css";
+
+interface Row {
+  key: number;
+  label: string;
+  grams: string;
+  carbs: string;
+}
+
+/** "40,5" and "40.5" both read as 40.5; one decimal, as the contract stores it. */
+export function parseDecimal(value: string): number | undefined {
+  const trimmed = value.trim().replace(",", ".");
+  if (!/^\d+(\.\d+)?$/.test(trimmed)) return undefined;
+  return Math.round(Number(trimmed) * 10) / 10;
+}
+function parseWhole(value: string): number | undefined {
+  const parsed = parseDecimal(value);
+  return parsed === undefined ? undefined : Math.round(parsed);
+}
+
+/** A portion's carbs: computed from the per-100 g value when its grams are given, else typed. */
+function portionCarbs(per100g: number | undefined, row: Row): number | undefined {
+  const grams = parseWhole(row.grams);
+  if (per100g !== undefined && grams !== undefined && grams > 0)
+    return carbsFor({ carbsPer100g: per100g }, grams);
+  return parseWhole(row.carbs);
+}
+
+let rowKeys = 0;
+const toRow = (portion?: Portion): Row => ({
+  key: ++rowKeys,
+  label: portion?.label ?? "",
+  grams: portion?.grams === undefined ? "" : String(portion.grams),
+  carbs: portion === undefined ? "" : String(portion.carbs),
+});
+
+export interface FoodFormProps {
+  spaceId: string;
+  /** The food being edited; absent for "Ny fødevare". */
+  food?: FoodView;
+  onSaved: (food: FoodView, previous?: FoodView) => void;
+}
+
+/**
+ * The food form (Bibliotek-Desktop's edit panel; the phone pages reuse it): photo, name, source
+ * line, carbs per 100 g, first-class portions, "Favorit", "Gem og godkend" / "Gem".
+ *
+ * Hard rules: the body never carries `verified` (the tick is `verify: true` on create or the
+ * explicit `POST foods/verify`); a picked photo is only previewed until the form is saved, then
+ * sent to `PUT foods/[id]/photo`. A failed save keeps everything that was typed.
+ */
+export function FoodForm({ spaceId, food, onSaved }: FoodFormProps) {
+  const t = useTranslations("library.form");
+  const text = useFoodText();
+  const headingId = useId();
+  const [name, setName] = useState(food?.name ?? "");
+  const [per100g, setPer100g] = useState(
+    food?.carbsPer100g == null ? "" : text.number(food.carbsPer100g),
+  );
+  const [rows, setRows] = useState<Row[]>(() =>
+    food && food.portions.length > 0 ? food.portions.map(toRow) : [toRow()],
+  );
+  const [favourite, setFavourite] = useState(food?.favourite ?? false);
+  const [photo, setPhoto] = useState<Uint8Array | null>(null);
+  const [preview, setPreview] = useState<string>();
+  const [saving, setSaving] = useState(false);
+  const [problem, setProblem] = useState<"needsName" | "needsCarbs" | "saveFailed" | null>(null);
+  // After a create succeeded, a retry (say, the photo upload failed) updates that row instead of
+  // creating a second one.
+  const [saved, setSaved] = useState<FoodView | undefined>(food);
+  const submitter = useRef<"save" | "verify">("save");
+
+  useEffect(() => {
+    if (!photo || typeof URL.createObjectURL !== "function") return;
+    const url = URL.createObjectURL(
+      new Blob([photo as Uint8Array<ArrayBuffer>], { type: "image/jpeg" }),
+    );
+    setPreview(url);
+    return () => {
+      URL.revokeObjectURL(url);
+    };
+  }, [photo]);
+
+  const per100 = parseDecimal(per100g);
+
+  function fields(): { portions: Portion[]; carbsPer100g: number | undefined } | null {
+    const portions: Portion[] = [];
+    for (const row of rows) {
+      const label = row.label.trim();
+      if (!label && !row.grams.trim() && !row.carbs.trim()) continue;
+      const carbs = portionCarbs(per100, row);
+      if (!label || carbs === undefined) return null;
+      const grams = parseWhole(row.grams);
+      portions.push({ label, carbs, ...(grams !== undefined && grams > 0 ? { grams } : {}) });
+    }
+    return { portions, carbsPer100g: per100 };
+  }
+
+  async function submit(event: FormEvent) {
+    event.preventDefault();
+    if (saving) return;
+    const verify = submitter.current === "verify";
+    if (!name.trim()) {
+      setProblem("needsName");
+      return;
+    }
+    const values = fields();
+    if (!values || (values.carbsPer100g === undefined && values.portions.length === 0)) {
+      setProblem("needsCarbs");
+      return;
+    }
+    setSaving(true);
+    setProblem(null);
+    try {
+      let result: FoodView;
+      if (!saved) {
+        const body = CreateFoodRequest.parse({
+          name,
+          portions: values.portions,
+          favourite,
+          ...(values.carbsPer100g === undefined ? {} : { carbsPer100g: values.carbsPer100g }),
+        });
+        result = await libraryApi.create(spaceId, body, { verify });
+      } else {
+        const body = UpdateFoodRequest.parse({
+          name,
+          carbsPer100g: values.carbsPer100g ?? null,
+          portions: values.portions,
+          favourite,
+        });
+        result = await libraryApi.update(spaceId, saved.id, body);
+        if (verify && !result.verified) {
+          await libraryApi.verify(spaceId, [result.id]);
+          result = { ...result, verified: true };
+        }
+      }
+      setSaved(result);
+      if (photo) {
+        const withPhoto = await libraryApi.putPhoto(spaceId, result.id, photo);
+        if (withPhoto) result = { ...withPhoto, verified: withPhoto.verified || result.verified };
+        setPhoto(null);
+        setSaved(result);
+      }
+      onSaved(result, food);
+    } catch {
+      setProblem("saveFailed");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  const current = saved ?? food;
+  const sourceLine =
+    current && !text.isOwn(current.origin)
+      ? current.barcode
+        ? t("source", {
+            source: text.sourceName(current.origin),
+            barcode: current.barcode.slice(0, 4),
+          })
+        : text.sourceName(current.origin)
+      : undefined;
+
+  return (
+    <form
+      className={styles.form}
+      aria-labelledby={headingId}
+      noValidate
+      onSubmit={(event) => {
+        void submit(event);
+      }}
+    >
+      <div className={styles.formHead}>
+        <div className={styles.formPhoto}>
+          <FoodPhoto
+            src={preview ?? current?.photo?.thumbUrl}
+            alt={preview ? t("photoPreview") : ""}
+            size={72}
+          />
+        </div>
+        <div className={styles.formTitle}>
+          <h2 id={headingId}>{current ? current.name : t("newTitle")}</h2>
+          {sourceLine && <p className={styles.muted}>{sourceLine}</p>}
+          {current && <Badge verified={current.verified} />}
+        </div>
+      </div>
+      <PhotoPicker onPhoto={setPhoto} />
+      <TextInput
+        label={t("name")}
+        value={name}
+        maxLength={200}
+        autoComplete="off"
+        onChange={(event) => {
+          setName(event.target.value);
+        }}
+      />
+      <TextInput
+        label={t("carbsPer100g")}
+        inputMode="decimal"
+        value={per100g}
+        onChange={(event) => {
+          setPer100g(event.target.value);
+        }}
+      />
+      <fieldset className={styles.portionRows}>
+        <legend>{t("portions")}</legend>
+        {rows.map((row, index) => {
+          const computed =
+            per100 !== undefined && (parseWhole(row.grams) ?? 0) > 0
+              ? portionCarbs(per100, row)
+              : undefined;
+          const update = (patch: Partial<Row>) => {
+            setRows((list) =>
+              list.map((item) => (item.key === row.key ? { ...item, ...patch } : item)),
+            );
+          };
+          return (
+            <div className={styles.portionRow} key={row.key} data-testid="portion-row">
+              <TextInput
+                label={t("portionName")}
+                value={row.label}
+                maxLength={40}
+                onChange={(event) => {
+                  update({ label: event.target.value });
+                }}
+              />
+              <NumberInput
+                label={t("portionGrams")}
+                value={row.grams}
+                min={1}
+                max={5000}
+                step={1}
+                onChange={(event) => {
+                  update({ grams: event.target.value });
+                }}
+              />
+              {computed !== undefined ? (
+                <output className={styles.computed}>{t("computed", { amount: computed })}</output>
+              ) : (
+                <NumberInput
+                  label={t("portionCarbs")}
+                  value={row.carbs}
+                  min={0}
+                  max={1000}
+                  step={1}
+                  onChange={(event) => {
+                    update({ carbs: event.target.value });
+                  }}
+                />
+              )}
+              {rows.length > 1 && (
+                <button
+                  type="button"
+                  className={styles.textButton}
+                  aria-label={`${t("removePortion")} ${index + 1}`}
+                  onClick={() => {
+                    setRows((list) => list.filter((item) => item.key !== row.key));
+                  }}
+                >
+                  ×
+                </button>
+              )}
+            </div>
+          );
+        })}
+        <button
+          type="button"
+          className={styles.addPortion}
+          onClick={() => {
+            setRows((list) => [...list, toRow()]);
+          }}
+        >
+          {t("addPortion")}
+        </button>
+      </fieldset>
+      <label className={styles.toggle}>
+        <input
+          type="checkbox"
+          checked={favourite}
+          onChange={(event) => {
+            setFavourite(event.target.checked);
+          }}
+        />
+        {t("favourite")}
+      </label>
+      {problem && (
+        <p role="alert" className={styles.problem}>
+          {t(problem)}
+        </p>
+      )}
+      <div className={styles.formActions}>
+        {!current?.verified && (
+          <Button
+            type="submit"
+            disabled={saving}
+            onClick={() => {
+              submitter.current = "verify";
+            }}
+          >
+            {t("saveAndVerify")}
+          </Button>
+        )}
+        <Button
+          type="submit"
+          variant={current?.verified ? "primary" : "secondary"}
+          disabled={saving}
+          onClick={() => {
+            submitter.current = "save";
+          }}
+        >
+          {t("save")}
+        </Button>
+      </div>
+    </form>
+  );
+}

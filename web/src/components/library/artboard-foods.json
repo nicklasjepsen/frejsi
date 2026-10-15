@@ -1,0 +1,77 @@
+[
+  {
+    "id": "f-rye",
+    "name": "Rugbrød, Schulstad Det Gode",
+    "carbsPer100g": 40,
+    "portions": [
+      {
+        "label": "1 skive",
+        "grams": 45,
+        "carbs": 18
+      }
+    ],
+    "barcode": "2000000000015",
+    "origin": "off",
+    "verified": false,
+    "favourite": false,
+    "updatedAt": "2026-10-15T10:00:00.000Z"
+  },
+  {
+    "id": "f-pasta",
+    "name": "Pasta bolognese",
+    "portions": [
+      {
+        "label": "1 portion",
+        "carbs": 55
+      },
+      {
+        "label": "½ portion",
+        "carbs": 28
+      }
+    ],
+    "origin": "family",
+    "verified": false,
+    "favourite": true,
+    "updatedAt": "2026-10-15T10:00:00.000Z"
+  },
+  {
+    "id": "f-lunch",
+    "name": "Min madpakke",
+    "portions": [
+      {
+        "label": "1 madpakke",
+        "carbs": 42
+      }
+    ],
+    "origin": "family",
+    "verified": true,
+    "favourite": false,
+    "updatedAt": "2026-10-15T10:00:00.000Z"
+  },
+  {
+    "id": "f-potato",
+    "name": "Kartoffel, kogt",
+    "carbsPer100g": 17,
+    "portions": [],
+    "origin": "frida",
+    "verified": false,
+    "favourite": false,
+    "updatedAt": "2026-10-15T10:00:00.000Z"
+  },
+  {
+    "id": "f-porridge",
+    "name": "Havregrød",
+    "carbsPer100g": 10.5,
+    "portions": [
+      {
+        "label": "1 skål",
+        "grams": 300,
+        "carbs": 32
+      }
+    ],
+    "origin": "manual",
+    "verified": true,
+    "favourite": false,
+    "updatedAt": "2026-10-15T10:00:00.000Z"
+  }
+]
