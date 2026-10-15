@@ -1,0 +1,138 @@
+#!/usr/bin/env bash
+# pre-push: the local gate that mirrors .github/workflows/ci.yml, so a push to main can go
+# straight through without waiting for the remote run.
+#
+# Activate it once per clone with `pnpm hooks:install` (git config core.hooksPath scripts/git-hooks).
+#
+# For every ref being pushed it runs, in order:
+#   1. gitleaks on the commits the push adds (the repo's .gitleaks.toml, like ci.yml);
+#   2. typecheck, lint and unit tests on the affected packages (`...[<base>]`, everything when the
+#      base is unknown or the change touches files outside web/, poller/ and shared/);
+#   3. the root scripts' tests (`pnpm test:scripts`);
+#   4. `pnpm --filter ./shared prisma:check` when shared/prisma changed;
+#   5. the dosing-vocabulary test when the affected set did not already run shared's tests.
+# A docs-only change (Markdown anywhere, or anything under docs/) skips 2, 4 and 5, exactly as
+# ci.yml does. The checks in 2-5 run on the working tree, not on the pushed commit, so commit
+# before you push.
+#
+# Any failure exits non-zero and the push does not happen. The escape hatch is
+# `git push --no-verify`; CI still runs on main as the tripwire.
+#
+# gitleaks must be on PATH (CONTRIBUTING.md, "The pre-push hook"). The hook fails rather than
+# skips the scan when it is missing.
+set -euo pipefail
+
+remote_name="${1:-origin}"
+zero_sha="0000000000000000000000000000000000000000"
+placeholder_database_url="sqlserver://localhost:1433;database=frejsi;user=sa;password=placeholder;encrypt=true"
+
+cd "$(git rev-parse --show-toplevel)"
+
+say() { printf 'pre-push: %s\n' "$*"; }
+
+fail() {
+  printf 'pre-push: FAILED: %s\n' "$*" >&2
+  printf 'pre-push: fix it and push again, or bypass once with `git push --no-verify` (CI still runs on main).\n' >&2
+  exit 1
+}
+
+# run <stage name> <command...>: prints the stage, runs it, fails the push if it fails.
+run() {
+  local name="$1"
+  shift
+  say "$name"
+  "$@" || fail "$name"
+}
+
+command -v gitleaks >/dev/null 2>&1 ||
+  fail "gitleaks is not installed. Install it from https://github.com/gitleaks/gitleaks/releases (see CONTRIBUTING.md, \"The pre-push hook\") and put it on PATH."
+command -v pnpm >/dev/null 2>&1 || fail "pnpm is not on PATH."
+
+if [ -n "$(git status --porcelain --untracked-files=no)" ]; then
+  say "note: the working tree has uncommitted changes; the code checks run on the tree, not on the pushed commit."
+fi
+
+# git feeds one line per ref: <local ref> <local sha> <remote ref> <remote sha>.
+while read -r local_ref local_sha remote_ref remote_sha; do
+  [ -n "${local_ref:-}" ] || continue
+  if [ "$local_sha" = "$zero_sha" ]; then
+    say "$remote_ref: deleting, nothing to check."
+    continue
+  fi
+
+  # The base is what the remote already has. A new branch is measured against the remote's main;
+  # a base we do not have locally (a stale or force push) means every check runs on everything.
+  base=""
+  if [ "$remote_sha" = "$zero_sha" ]; then
+    if git rev-parse --verify --quiet "refs/remotes/$remote_name/main" >/dev/null; then
+      base="$(git merge-base "refs/remotes/$remote_name/main" "$local_sha" || true)"
+    fi
+  elif git cat-file -e "$remote_sha" 2>/dev/null; then
+    base="$remote_sha"
+  fi
+
+  if [ -n "$base" ]; then
+    if [ "$(git rev-list --count "$base..$local_sha")" = "0" ]; then
+      say "$remote_ref: nothing new to push."
+      continue
+    fi
+    scan_range="$base..$local_sha"
+    changed="$(git diff --name-only --no-renames "$base" "$local_sha")"
+  else
+    say "note: no usable base for $remote_ref; scanning the whole history and checking every package."
+    scan_range="$local_sha"
+    changed=""
+  fi
+
+  say "$remote_ref: $(git rev-list --count "$scan_range") commit(s), base ${base:-unknown}"
+
+  # 1. Secrets. gitleaks exits 1 on a leak and non-zero on an error; both stop the push.
+  run "secrets scan ($scan_range)" \
+    gitleaks git --no-banner --redact --config .gitleaks.toml --log-opts="$scan_range" .
+
+  # Classification, as in ci.yml "Classify the change". pnpm's `[<base>]` looks at the working
+  # tree, so an uncommitted root-level edit would select the root package too, whose `test`
+  # script runs every package again; `!.` keeps the root out, as a clean tree does in CI.
+  filter=()
+  if [ -z "$base" ] || printf '%s\n' "$changed" | grep -Evq '^(web|poller|shared)/'; then
+    filter=()
+  else
+    filter=(--filter "...[$base]" --filter '!.')
+  fi
+  docs_only=false
+  if [ -n "$base" ] && [ -n "$changed" ] && ! printf '%s\n' "$changed" | grep -Evq '(\.md$|^docs/)'; then
+    docs_only=true
+  fi
+
+  if [ "$docs_only" = true ]; then
+    say "docs-only change: skipping typecheck, lint, tests and the Prisma check."
+  else
+    # 2. Affected packages (or everything).
+    scope="${filter[*]:-everything}"
+    run "typecheck ($scope)" pnpm -r ${filter[@]+"${filter[@]}"} typecheck
+    run "lint ($scope)" pnpm -r ${filter[@]+"${filter[@]}"} lint
+    run "unit tests ($scope)" pnpm -r ${filter[@]+"${filter[@]}"} test
+  fi
+
+  # 3. The docs checker's own tests run on every push, docs-only or not, like ci.yml.
+  run "scripts tests" pnpm test:scripts
+
+  if [ "$docs_only" = false ]; then
+    # 4. Schema and migration agree; no database involved, the placeholder only lets Prisma load.
+    if [ -z "$base" ] || printf '%s\n' "$changed" | grep -Eq '^shared/prisma/'; then
+      run "prisma check" env DATABASE_URL="$placeholder_database_url" pnpm --filter ./shared prisma:check
+    else
+      say "prisma check: shared/prisma unchanged, skipped."
+    fi
+
+    # 5. The dosing guardrail runs on every change. Shared's tests already covered it when shared
+    #    was in the affected set or everything ran.
+    if [ ${#filter[@]} -gt 0 ] && ! printf '%s\n' "$changed" | grep -Eq '^shared/'; then
+      run "dosing vocabulary test" pnpm --filter ./shared test --run --testNamePattern "dosing"
+    else
+      say "dosing vocabulary test: covered by shared's tests."
+    fi
+  fi
+done
+
+say "all checks passed."

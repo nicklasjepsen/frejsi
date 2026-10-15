@@ -9,7 +9,7 @@ An open-source (AGPL-3.0) web app for one person with diabetes and the people ar
 ## Where things stand
 
 - Application code and Azure resources exist. `main` includes the v0.1.0 foundation (passkeys, roles, settings, Dexcom Share and live glucose), v0.2.0 food/library/photos and meal logging, and v0.3.0 meal curves, editing/comparison and day/week history. AI and the community/portability features remain planned.
-- A merge runs fast CI and deploys nothing. A version tag runs `release.yml`: full suites, infrastructure when changed, deployment and smoke checks, then a GitHub release and milestone closure. Check published GitHub releases for shipped versions; a failed run can leave Azure resources and a tag without a published release. See `docs/agent-workflow.md` §4–6.
+- A merge or a push to `main` runs fast CI and deploys nothing. A version tag runs `release.yml`: full suites, infrastructure when changed, deployment and smoke checks, then a GitHub release and milestone closure. Check published GitHub releases for shipped versions; a failed run can leave Azure resources and a tag without a published release. See `docs/agent-workflow.md` §4–6.
 - `README.md` describes current features; `CONTRIBUTING.md` covers contributing; `docs/operations.md` is the runbook; `infra/README.md` covers Azure/fork setup and `poller/README.md` the timer, adapter wiring and local CLI.
 - `docs/superpowers/specs/2026-10-14-frejsi-design.md` is the original design spec. **Read it before doing anything**, but distinguish its historical status and planned features from the implementation. `docs/ui-brief.md` is the original UI brief; `docs/design/` holds the hand-in and tokens; `docs/superpowers/plans/` holds versioned plans and the roadmap.
 
@@ -38,6 +38,17 @@ A milestone is a release: its title is the version, every issue carries it, and 
 name deploys production and creates the GitHub release. A lane owns only the paths its task names and
 merges itself when the gates are green; nothing deploys on merge; anything labelled `needs-owner` waits
 for the owner.
+
+## Ad-hoc mode until v1.0.0
+
+Decided 2026-10-15 to build faster before anyone uses the app (`docs/agent-workflow.md` §5):
+
+- The owner, and an interactive Claude Code session running with the owner's `gh` credentials, may commit and push straight to `main`. The `main` ruleset keeps every rule for everyone else; only the Repository admin role bypasses it.
+- Before any push, the local pre-push hook (`scripts/git-hooks/pre-push`, installed with `pnpm hooks:install`; needs gitleaks) runs the `ci.yml` gates: gitleaks on the pushed commits, typecheck, lint and unit tests on affected packages (including the dosing-vocabulary test), the docs checker tests and the Prisma schema check. About a minute. Never push to `main` with `--no-verify`.
+- An ad-hoc commit still follows the conventions: conventional commit, DCO sign-off, tests next to code, docs updated in the same commit. The PR docs-declaration check does not run on a direct push, so check the docs list yourself. Codex review is optional for ad-hoc commits, required for lane PRs.
+- The PR path stays for milestone lanes (`build-lanes`, implementer agents, `/land`), outside contributors, Dependabot and anything on the GitHub Actions token (`housekeeping.yml`, the triage agent).
+- Nothing deploys from `main`. `release.yml` on a version tag is still the only path to production; the CI push job on `main` is the tripwire, and a red `main` is fixed forward within the hour or reverted.
+- The mode ends at v1.0.0 with the pre-1.0 audit: the bypass is removed from the ruleset.
 
 ## Stack (decided)
 

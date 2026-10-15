@@ -92,7 +92,8 @@ The rules that keep merges flowing, in order of importance:
    runs only the secrets scan, the docs declaration and the docs checker, and still reports, so it
    stays the one required check. They merge to main whenever they are ready and need no milestone
    or release (owner, 2026-10-15); the site serves none of them.
-2. **Merging to main deploys nothing.** Main runs the same fast suite after a merge, as a tripwire.
+2. **Merging to main deploys nothing, and neither does pushing to it.** Main runs the same fast suite
+   after a merge or a direct push, as a tripwire.
    There is no test environment that every merge has to pass through, so there is nothing to serialize
    and no merge lock.
 3. **No "branches must be up to date", no merge queue.** Lanes own disjoint paths, so a PR green
@@ -107,9 +108,12 @@ The rules that keep merges flowing, in order of importance:
    infra scaffold task) deploys it to a Static Web App preview so the owner can look at a screen on a
    phone. Never required, never blocking.
 
-Branch protection on `main` (live since 2026-10-14): pull request required, required check `ci`,
-conversations resolved, no required reviewers, no up-to-date requirement, linear history, no force
-pushes, auto-merge enabled, branches deleted on merge, rebase the only merge method.
+A repository ruleset on `main` (since 2026-10-15; it replaced the branch protection live since
+2026-10-14 with the same rules): pull request required, required check `ci`, review threads resolved,
+no required reviewers, no up-to-date requirement, linear history, no force pushes, no deletion,
+rebase the only merge method. Auto-merge stays enabled and branches are deleted on merge. The
+Repository admin role bypasses the ruleset until v1.0.0: that is the ad-hoc path in §5. Everything
+else, including the GitHub Actions token, goes through a PR with `ci` green.
 
 ## 5. Gates on every PR
 
@@ -130,6 +134,33 @@ pushes, auto-merge enabled, branches deleted on merge, rebase the only merge met
    `.github/copilot-instructions.md`.
 
 `/gate-pr` runs gates 2 and 3 on any PR and refutes each finding twice before reporting it.
+
+### The ad-hoc path, until v1.0.0
+
+The owner decided on 2026-10-15 that pre-1.0 work should not wait for a PR when nobody is reviewing
+it anyway. **The owner, and an interactive Claude Code session running with the owner's `gh`
+credentials, commit and push straight to `main`.** The ruleset still holds for everyone else (§4).
+
+The gate is local: `scripts/git-hooks/pre-push`, installed with `pnpm hooks:install` (gitleaks must
+be on the machine), runs the same checks as `ci.yml` before any push: gitleaks on the pushed commits,
+typecheck, lint and unit tests on the affected packages (the dosing-vocabulary test among them), the
+docs checker tests and the Prisma schema check. About a minute. `git push --no-verify` skips it and
+is never used for a push to `main`. The secrets scan runs locally because a push to a public
+repository publishes instantly; a leaked secret is the one mistake a revert cannot undo.
+
+What does not change: nothing deploys from `main`, `release.yml` on a version tag stays the only
+path to production, the CI push job on `main` stays the tripwire, and a red `main` is fixed forward
+within the hour or reverted. An ad-hoc commit follows the same conventions as a lane: conventional
+commit, DCO sign-off, tests next to code, docs updated in the same commit. The PR docs declaration
+(§13) is not checked on a direct push, so the committer checks the docs list themselves. Codex review
+is optional for an ad-hoc commit and still required for a lane PR.
+
+What stays on the PR path: milestone lanes (`build-lanes`, the implementer agents, `/land`), outside
+contributors, Dependabot, and anything running on the GitHub Actions token, including
+`housekeeping.yml` and the `triage` agent, which reads issue text from strangers.
+
+The mode ends at v1.0.0, together with the audit above: the bypass is removed from the ruleset, and
+every change goes through a PR again.
 
 ## 6. Release
 
@@ -169,6 +200,10 @@ Azure change, a hard-rule fail the agent could not fix, a release that failed tw
 The owner reads PR summaries and gate reports, not every line. The gate agents and Codex read every
 line.
 
+Until v1.0.0 the owner also works on the ad-hoc path (§5): commits straight to `main` with the
+pre-push hook as the gate, keeps the docs current in the same commit, and fixes or reverts a red
+`main` within the hour. At v1.0.0 the owner removes the admin bypass from the `main` ruleset.
+
 ## 8. Running it
 
 ```
@@ -195,6 +230,8 @@ creates worktrees, issues, tags or PRs before showing the plan and getting an OK
 ## 9. What agents must never do
 
 - Force-push, delete or move a tag, or delete a branch they did not create.
+- Push to `main` with `--no-verify`, or push to `main` at all from anything but an interactive session
+  with the owner's credentials (§5).
 - Merge a PR with a red required check or a guardian fail, or merge with `--admin`.
 - Deploy production by any path other than `release.yml` on a tag. Never `az` from a session.
 - Create Azure resources outside `infra/`. Infra is Bicep in a PR; the release pipeline applies it.
@@ -231,8 +268,8 @@ sweeps in parallel.
 Facts an agent needs that the docs of the tools do not say:
 
 - **`gh pr checks <n> --watch` right after `gh pr create`** can exit at once with "no checks
-  reported" before the `ci` check registers, and a merge chained after it is refused by branch
-  protection. Poll `gh pr checks <n> --json name,state` until `ci` is `SUCCESS`, then merge.
+  reported" before the `ci` check registers, and a merge chained after it is refused by the `main`
+  ruleset. Poll `gh pr checks <n> --json name,state` until `ci` is `SUCCESS`, then merge.
 - **The Claude Code GitHub action runs only the workflow file that is on `main`.** A run triggered
   from a branch (`gh workflow run ... --ref <branch>`) is skipped with "workflow validation failed"
   and reports success in two seconds. A change to `housekeeping.yml` must merge before it can be
@@ -292,6 +329,8 @@ paths its diff actually changes, or `None needed: <concrete reason>` when no cou
 and none need changing. If counted docs changed, list them instead of claiming none were needed.
 Dependabot PRs are exempt. `scripts/check-docs.mjs` reads the PR event and its git diff without
 dependencies or network calls; the `ci` job runs it before installing packages, and rechecks body edits.
+A direct push to `main` on the ad-hoc path (§5) has no PR body to check, so the committer applies the
+same rule by hand: the docs the diff touches are in the same commit.
 
 Docs that count: `README.md`, `CONTRIBUTING.md`, `CLAUDE.md`, `AGENTS.md`, `docs/**` except
 `docs/design/**` and `docs/superpowers/plans/**`, `infra/README.md`, `poller/README.md`, `.env.example`.

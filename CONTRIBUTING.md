@@ -37,6 +37,18 @@ pnpm test
 
 `pnpm test` runs the root scripts' tests as well as all package unit tests. Unit tests use fictional fixtures and fakes; they need no database or Azure access. Database integration tests, browser flows and the production build run at release; local instructions are in [the operations runbook](docs/operations.md#run-the-release-suites-locally).
 
+### The pre-push hook
+
+`scripts/git-hooks/pre-push` runs the same checks as CI before a push leaves your machine: a gitleaks scan of the commits being pushed, then typecheck, lint and unit tests on the affected packages, the scripts' tests, the Prisma schema check when `shared/prisma` changed, and the dosing-vocabulary test. Docs-only changes skip the code checks, as in CI. Expect well under a minute for a small change.
+
+Activate it once per clone:
+
+```sh
+pnpm hooks:install
+```
+
+It needs [gitleaks](https://github.com/gitleaks/gitleaks/releases) on your PATH and fails, rather than skipping the scan, when it is missing. `git push --no-verify` bypasses the hook; CI still runs on `main`.
+
 ## Licence
 
 By contributing you agree your contribution is licensed under [AGPL-3.0](LICENSE).
