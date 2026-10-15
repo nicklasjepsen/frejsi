@@ -1,0 +1,56 @@
+/* StatTile and PeakValue (design README `StatTile`): label 12 muted, value 22–26 at 700 tabular,
+   footnote 12 muted, in 3-up (meal) or 2-up (week) grids. Numbers stay the text colour. */
+.grid {
+  display: grid;
+  gap: 10px;
+}
+
+.grid[data-columns="3"] {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.grid[data-columns="2"] {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.tile {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  padding: 12px;
+  border-radius: 16px;
+  background: var(--surface);
+  box-shadow: var(--card-shadow);
+  border: var(--card-border);
+  color: var(--text);
+}
+
+.tile[data-size="week"] {
+  padding: 14px;
+}
+
+.label {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.value {
+  font-size: 22px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+}
+
+.tile[data-size="week"] .value {
+  font-size: 26px;
+}
+
+.footnote {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.peak {
+  font-variant-numeric: tabular-nums;
+}
