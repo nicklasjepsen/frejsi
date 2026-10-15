@@ -97,7 +97,13 @@
       "source-bad-credentials": "Brugernavn eller kodeord passer ikke. Prøv igen.",
       "source-unreachable": "Vi kunne ikke få forbindelse til kilden lige nu. Prøv igen om lidt.",
       "validation": "Noget i det, du skrev, kunne ikke bruges. Kig det igennem og prøv igen.",
-      "internal": "Noget gik galt hos os. Prøv igen om et øjeblik."
+      "internal": "Noget gik galt hos os. Prøv igen om et øjeblik.",
+      "simple-mode": "Det kan du ikke gøre i simpel visning. Bed en voksen om hjælp.",
+      "photo-too-large": "Billedet er for stort. Vælg et mindre billede.",
+      "photo-type": "Vælg et billede i JPEG, PNG eller WebP.",
+      "photo-unavailable": "Billeder er ikke tilgængelige lige nu. Prøv igen senere.",
+      "barcode-invalid": "Tjek stregkoden og prøv igen.",
+      "lookup-unavailable": "Madsøgning er ikke tilgængelig lige nu. Prøv igen eller skriv dine egne tal."
     }
   },
   "passkey": {

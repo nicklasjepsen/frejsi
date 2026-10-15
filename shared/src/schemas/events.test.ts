@@ -4,7 +4,7 @@ import { EventEnvelope, EventPayloads, EventType, type EventPayload } from "./ev
 
 const ts = "2026-10-15T08:00:00.000Z";
 
-/** One valid payload per v0.1.0 event type. */
+/** One valid payload per event type. */
 export const samplePayloads: { [T in EventType]: EventPayload<T> } = {
   reading: { ts, mmol: 6.2, trend: "flat" },
   "source.status": { status: "disconnected", since: ts },
@@ -16,10 +16,17 @@ export const samplePayloads: { [T in EventType]: EventPayload<T> } = {
   "invite.revoked": { tokenHash: "abc", role: "viewer", name: "Example Person", forUserId: "u2" },
   "device.added": { userId: "u1", passkeyId: "p1" },
   "device.removed": { userId: "u1", passkeyId: "p1" },
+  "food.created": { foodId: "f1", origin: "manual" },
+  "food.updated": { foodId: "f1" },
+  "food.verified": { foodId: "f1", verifiedBy: "u1" },
+  "food.deleted": { foodId: "f1" },
+  "meal.created": { mealId: "m1", ts, totalCarbs: 18 },
+  "meal.updated": { mealId: "m1" },
+  "meal.deleted": { mealId: "m1" },
 };
 
 describe("EventEnvelope", () => {
-  it("lists every v0.1.0 event type", () => {
+  it("lists every event type", () => {
     expect(EventType.options).toEqual([
       "reading",
       "source.status",
@@ -31,6 +38,13 @@ describe("EventEnvelope", () => {
       "invite.revoked",
       "device.added",
       "device.removed",
+      "food.created",
+      "food.updated",
+      "food.verified",
+      "food.deleted",
+      "meal.created",
+      "meal.updated",
+      "meal.deleted",
     ]);
     expect(Object.keys(EventPayloads).sort()).toEqual([...EventType.options].sort());
   });
@@ -64,7 +78,7 @@ describe("EventEnvelope", () => {
 
   it("rejects an unknown type and a non-positive seq", () => {
     expect(
-      EventEnvelope.safeParse({ spaceId: "s1", seq: 1, ts, type: "meal.created", payload: {} })
+      EventEnvelope.safeParse({ spaceId: "s1", seq: 1, ts, type: "unknown.event", payload: {} })
         .success,
     ).toBe(false);
     expect(
