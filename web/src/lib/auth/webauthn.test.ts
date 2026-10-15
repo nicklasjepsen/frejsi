@@ -336,6 +336,25 @@ describe("login", () => {
     expect(w.fake.rows("session")).toHaveLength(2);
   });
 
+  it("refuses a login that raced another on the same passkey: the counter write is conditional and no session opens", async () => {
+    const w = world();
+    await registerCarer(w);
+    const { challengeId, options } = await startLogin(w.deps);
+    const response = w.authenticator.authenticate(options, { counter: 6 });
+    // Between this login's read of the passkey and its write, another login committed counter 7.
+    w.fake.beforeWrite = (table) => {
+      if (table === "passkey") Object.assign(w.fake.rows("passkey")[0] ?? {}, { counter: 7 });
+    };
+    await expect(finishLogin({ challengeId, response }, w.deps)).rejects.toMatchObject({
+      status: 403,
+      code: "forbidden",
+    });
+    // The stale counter never lands (the fake's rollback restores its own snapshot; a real
+    // database keeps the other login's 7), and this login opened no session.
+    expect(w.fake.rows("passkey")[0]?.counter).not.toBe(6);
+    expect(w.fake.rows("session")).toHaveLength(1);
+  });
+
   it("refuses an unknown credential, a wrong origin and a consumed challenge", async () => {
     const w = world();
     await registerCarer(w);

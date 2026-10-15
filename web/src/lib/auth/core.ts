@@ -16,8 +16,13 @@ export type AuthTx = Pick<
   "user" | "space" | "membership" | "invite" | "passkey" | "session" | "authChallenge"
 >;
 
+/** The one isolation level the auth modules ask for; the default (read committed) otherwise. */
+export interface TransactionOptions {
+  isolationLevel?: "Serializable";
+}
+
 export interface AuthDb extends AuthTx {
-  $transaction<T>(fn: (tx: AuthTx) => Promise<T>): Promise<T>;
+  $transaction<T>(fn: (tx: AuthTx) => Promise<T>, options?: TransactionOptions): Promise<T>;
 }
 
 /**
@@ -62,18 +67,26 @@ export function resolve(deps: AuthDeps): { db: AuthDb; emit: Emitter; now: () =>
  * Runs `fn` in one Prisma transaction and delivers every event it emitted after the commit, in
  * order. A write that rolls back therefore never has an event, and an event never precedes its
  * row (plan §5: every write is followed by its event).
+ *
+ * `serializable` is for a read-check-write that must not interleave with another request's
+ * (the last-owner guard, the one-shot bootstrap): Azure SQL's default read-committed snapshot
+ * would let both see the state before either wrote.
  */
 export async function transact<T>(
   db: AuthDb,
   emit: Emitter,
   fn: (tx: AuthTx, emit: Emitter) => Promise<T>,
+  options: { serializable?: boolean } = {},
 ): Promise<T> {
   const queued: (() => Promise<unknown>)[] = [];
   const deferred: Emitter = (spaceId, type, payload) => {
     queued.push(() => emit(spaceId, type, payload));
     return Promise.resolve();
   };
-  const result = await db.$transaction((tx) => fn(tx, deferred));
+  const result = await db.$transaction(
+    (tx) => fn(tx, deferred),
+    options.serializable ? { isolationLevel: "Serializable" } : undefined,
+  );
   for (const publish of queued) await publish();
   return result;
 }
