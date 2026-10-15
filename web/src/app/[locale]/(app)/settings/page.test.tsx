@@ -137,6 +137,6 @@ describe("settings pages (plan task 9)", () => {
     };
     mount(await ConnectSourcePage({ params }));
     expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("Skift login");
-    expect(screen.getByRole("radio", { name: "USA" })).toBeChecked();
+    expect(screen.getByRole("radio", { name: "US" })).toBeChecked();
   });
 });
