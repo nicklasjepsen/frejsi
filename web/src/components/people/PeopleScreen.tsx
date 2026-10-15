@@ -259,7 +259,7 @@ export function PeopleScreen({
   const inviteRow = (invite: PendingInviteView) => {
     const index = rowIndex++;
     const sentDays = calendarDaysBetween(new Date(invite.createdAt), now, timezone);
-    const left = daysLeft(new Date(invite.expiresAt), now);
+    const left = daysLeft(new Date(invite.expiresAt), now, timezone);
     return (
       <Fragment key={invite.id}>
         <div

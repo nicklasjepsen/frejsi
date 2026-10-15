@@ -74,12 +74,23 @@ describe("calendar days and days left (udløber om 6 dage)", () => {
     expect(calendarDaysBetween(hours(72), NOW, TZ)).toBe(3);
   });
 
-  it("daysLeft is whole days remaining, floored, never negative", () => {
+  it("daysLeft counts the calendar days to the expiry in the zone, never negative", () => {
     const day = 24 * 60 * 60 * 1000;
-    expect(daysLeft(new Date(NOW.getTime() + 7 * day), NOW)).toBe(7);
-    expect(daysLeft(new Date(NOW.getTime() + 6.2 * day), NOW)).toBe(6);
-    expect(daysLeft(new Date(NOW.getTime() + 0.5 * day), NOW)).toBe(0);
-    expect(daysLeft(new Date(NOW.getTime() - day), NOW)).toBe(0);
+    expect(daysLeft(new Date(NOW.getTime() + 7 * day), NOW, TZ)).toBe(7);
+    expect(daysLeft(new Date(NOW.getTime() + 6.2 * day), NOW, TZ)).toBe(6);
+    // 16:52 today to 04:52 tomorrow is half a day away but expires tomorrow, not today.
+    expect(daysLeft(new Date(NOW.getTime() + 0.5 * day), NOW, TZ)).toBe(1);
+    expect(daysLeft(new Date(NOW.getTime() + 2 * 60 * 60 * 1000), NOW, TZ)).toBe(0);
+    expect(daysLeft(new Date(NOW.getTime() - day), NOW, TZ)).toBe(0);
+  });
+
+  it("agrees with the sent line: a link made Monday 20:00 still has a day left on Sunday 21:00", () => {
+    // Monday 5 October 2026 20:00 Copenhagen → expires Monday 12 October 20:00.
+    const created = new Date("2026-10-05T18:00:00.000Z");
+    const expires = new Date(created.getTime() + 7 * 24 * 60 * 60 * 1000);
+    const sunday = new Date("2026-10-11T19:00:00.000Z");
+    expect(calendarDaysBetween(created, sunday, TZ)).toBe(6);
+    expect(daysLeft(expires, sunday, TZ)).toBe(1);
   });
 });
 
