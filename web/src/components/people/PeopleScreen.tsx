@@ -3,6 +3,7 @@
 import type { ApiErrorCode, Role } from "@frejsi/shared";
 import { useTranslations } from "next-intl";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Fragment, useCallback, useRef, useState, type KeyboardEvent } from "react";
 
 import { Avatar } from "@/components/ui/Avatar";
@@ -32,10 +33,14 @@ export interface PeopleScreenProps {
   /** The space's IANA zone; every clock on the page is formatted in it. */
   timezone: string;
   currentUserId: string;
-  /** The current user's role in the space. Owner-only controls are drawn for owners; the API checks again. */
+  /** The current user's role in the space when the page loaded; the list keeps it current. */
   role: Role;
   initial: PeopleView;
 }
+
+/** What follows a write: the list reloads, or the user has left the space and goes home. */
+export type AfterAction = "reload" | "home";
+export type RunAction = (action: () => Promise<void>, after?: AfterAction) => Promise<void>;
 
 const COLUMNS = ["person", "role", "view", "devices", "lastSeen"] as const;
 
@@ -60,9 +65,12 @@ export function PeopleScreen({
   const t = useTranslations("people");
   const roles = useTranslations("roles");
   const errors = useTranslations("errors.api");
-  const canManage = role === "owner";
+  const router = useRouter();
 
   const [view, setView] = useState<PeopleView>(initial);
+  // Owner-only controls follow the list, so an owner who steps down sees them go at once.
+  const currentRole = view.members.find((m) => m.userId === currentUserId)?.role ?? role;
+  const canManage = currentRole === "owner";
   const [expanded, setExpanded] = useState<Expanded>(null);
   // Shown under the pending row: the old id until the list reloads, the new id after it.
   const [resent, setResent] = useState<{ ids: string[]; result: CreatedInviteView } | null>(null);
@@ -71,18 +79,27 @@ export function PeopleScreen({
   const [focused, setFocused] = useState(0);
   const tableRef = useRef<HTMLDivElement>(null);
 
-  /** Runs a write, then reloads the list so every row reflects the API's truth. */
-  const onAction = useCallback(
-    async (action: () => Promise<void>) => {
+  /**
+   * Runs a write, then reloads the list so every row reflects the API's truth. A user who has
+   * just removed themselves is no longer a member, so the reload would be 404: they go to the
+   * front page instead, which lands on another space or on the no-space page.
+   */
+  const onAction = useCallback<RunAction>(
+    async (action, after = "reload") => {
       setError(null);
       try {
         await action();
+        if (after === "home") {
+          router.push(localeHref(locale, "/"));
+          router.refresh();
+          return;
+        }
         setView(await peopleApi.load(spaceId));
       } catch (failure) {
         setError(failure instanceof PeopleApiError ? failure.code : "internal");
       }
     },
-    [spaceId],
+    [locale, router, spaceId],
   );
 
   const toggle = (userId: string) => {
@@ -226,6 +243,7 @@ export function PeopleScreen({
               <MemberDetail
                 member={member}
                 canManage={canManage}
+                isSelf={member.userId === currentUserId}
                 spaceId={spaceId}
                 timezone={timezone}
                 locale={locale}

@@ -27,6 +27,15 @@ vi.mock("./api-client", async (importOriginal) => ({
   ...(await importOriginal<Record<string, unknown>>()),
   peopleApi: api,
 }));
+const navigation = vi.hoisted(() => ({ push: vi.fn(), refresh: vi.fn() }));
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({
+    push: navigation.push,
+    replace: vi.fn(),
+    prefetch: vi.fn(),
+    refresh: navigation.refresh,
+  }),
+}));
 
 // 15 October 2026, 16:52 in Copenhagen.
 const NOW = new Date("2026-10-15T14:52:00.000Z");
@@ -140,6 +149,8 @@ const nth = (list: HTMLElement[], index: number): HTMLElement => {
 beforeEach(() => {
   vi.useFakeTimers({ now: NOW, toFake: ["Date"] });
   for (const fn of Object.values(api)) fn.mockReset();
+  navigation.push.mockReset();
+  navigation.refresh.mockReset();
   api.load.mockResolvedValue(view);
 });
 afterEach(() => {
@@ -377,6 +388,38 @@ describe("PeopleScreen · a member's devices and role (design gap: phone detail)
     await waitFor(() => {
       expect(api.load).toHaveBeenCalledWith("s1");
     });
+  });
+
+  it("takes the owner-only controls away as soon as an owner has stepped down", async () => {
+    api.changeRole.mockResolvedValue(undefined);
+    api.load.mockResolvedValue({
+      ...view,
+      members: view.members.map((m) => (m.userId === "u-jonas" ? { ...m, role: "carer" } : m)),
+    });
+    mount();
+    expect(screen.getByTestId("invite-panel")).toBeInTheDocument();
+    fireEvent.click(rowOf("Jonas"));
+    fireEvent.click(within(detail()).getByRole("radio", { name: /Hjælper/ }));
+    expect(api.changeRole).toHaveBeenCalledWith("s1", "u-jonas", "carer");
+    await waitFor(() => {
+      expect(screen.queryByTestId("invite-panel")).toBeNull();
+    });
+    expect(within(detail()).queryByRole("group", { name: "Rolle" })).toBeNull();
+    expect(screen.getByText(/Kun ejere kan invitere/)).toBeInTheDocument();
+  });
+
+  it("sends an owner who removes themselves to the front page instead of reloading a space they left", async () => {
+    api.removeMember.mockResolvedValue(undefined);
+    mount();
+    fireEvent.click(rowOf("Jonas"));
+    fireEvent.click(within(detail()).getByRole("button", { name: "Fjern Jonas fra rummet" }));
+    fireEvent.click(within(detail()).getByRole("button", { name: "Ja, fjern" }));
+    expect(api.removeMember).toHaveBeenCalledWith("s1", "u-jonas");
+    await waitFor(() => {
+      expect(navigation.push).toHaveBeenCalledWith("/da");
+    });
+    expect(navigation.refresh).toHaveBeenCalled();
+    expect(api.load).not.toHaveBeenCalled();
   });
 
   it("gives a carer and a viewer the devices to read only: no role cards, no remove, no add-device, no invite", () => {

@@ -11,16 +11,19 @@ import type { CreatedInviteView, DeviceView, MemberView } from "./contract";
 import { describeLastSeen } from "./format";
 import { InviteResult } from "./InviteResult";
 import styles from "./people.module.css";
+import type { RunAction } from "./PeopleScreen";
 import { RoleCards } from "./RoleCards";
 
 export interface MemberDetailProps {
   member: MemberView;
   /** The current user is an owner: role cards, remove and add-a-device are drawn. */
   canManage: boolean;
+  /** This row is the current user: removing them means leaving the space. */
+  isSelf: boolean;
   spaceId: string;
   timezone: string;
   locale: AppLocale;
-  onAction: (action: () => Promise<void>) => Promise<void>;
+  onAction: RunAction;
 }
 
 /** "Fjern" that asks once before it acts, inline, with the way back (no browser dialog). */
@@ -135,6 +138,7 @@ function DeviceItem({
 export function MemberDetail({
   member,
   canManage,
+  isSelf,
   spaceId,
   timezone,
   locale,
@@ -205,7 +209,10 @@ export function MemberDetail({
             label={t("removeMember", { name: member.name })}
             question={t("confirmRemoveMember", { name: member.name })}
             onConfirm={() => {
-              void onAction(() => peopleApi.removeMember(spaceId, member.userId));
+              void onAction(
+                () => peopleApi.removeMember(spaceId, member.userId),
+                isSelf ? "home" : "reload",
+              );
             }}
           />
         </section>
