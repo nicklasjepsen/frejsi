@@ -1,0 +1,35 @@
+{
+  "peak": "Peak",
+  "peakAt": "Peak {value} at {time}",
+  "after": "after {duration}",
+  "duration": {
+    "minutes": "{minutes} min",
+    "hoursMinutes": "{hours} h {minutes} min",
+    "hours": "{hours} h",
+    "short": "{hours} h {minutes}"
+  },
+  "inRange": "In range {low}–{high}",
+  "of": "of {duration}",
+  "ofUntilNow": "of {duration} so far",
+  "bolus": "Bolus",
+  "lead": {
+    "minutes": "{minutes} min",
+    "before": "before the meal",
+    "after": "after the meal",
+    "afterShort": "{minutes} min after",
+    "none": "not recorded"
+  },
+  "bolusBeforeMeal": "Bolus before meal",
+  "missing": "–",
+  "grams": "{grams} g",
+  "table": {
+    "date": "Date",
+    "carbs": "Carbs",
+    "bolusBefore": "Bolus before",
+    "peak": "Peak",
+    "inRange3h": "In range of 3 h"
+  },
+  "today": "Today",
+  "yesterday": "Yesterday",
+  "dateTime": "{date} {time}"
+}

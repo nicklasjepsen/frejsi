@@ -1,0 +1,35 @@
+{
+  "peak": "Top",
+  "peakAt": "Top {value} kl. {time}",
+  "after": "efter {duration}",
+  "duration": {
+    "minutes": "{minutes} min",
+    "hoursMinutes": "{hours} t {minutes} min",
+    "hours": "{hours} t",
+    "short": "{hours} t {minutes}"
+  },
+  "inRange": "I mål {low}–{high}",
+  "of": "af {duration}",
+  "ofUntilNow": "af {duration} indtil nu",
+  "bolus": "Bolus",
+  "lead": {
+    "minutes": "{minutes} min",
+    "before": "før måltidet",
+    "after": "efter måltidet",
+    "afterShort": "{minutes} min efter",
+    "none": "ikke registreret"
+  },
+  "bolusBeforeMeal": "Bolus før måltid",
+  "missing": "–",
+  "grams": "{grams} g",
+  "table": {
+    "date": "Dato",
+    "carbs": "Kulhydrat",
+    "bolusBefore": "Bolus før",
+    "peak": "Top",
+    "inRange3h": "I mål af 3 t"
+  },
+  "today": "I dag",
+  "yesterday": "I går",
+  "dateTime": "{date} {time}"
+}

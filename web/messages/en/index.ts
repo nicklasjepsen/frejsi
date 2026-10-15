@@ -3,6 +3,7 @@
 // and one key below (docs/agent-workflow.md §3).
 import accent from "./accent.json";
 import app from "./app.json";
+import chart from "./chart.json";
 import eat from "./eat.json";
 import errors from "./errors.json";
 import foodKit from "./foodKit.json";
@@ -20,6 +21,7 @@ import settings from "./settings.json";
 import shell from "./shell.json";
 import soon from "./soon.json";
 import source from "./source.json";
+import stats from "./stats.json";
 import today from "./today.json";
 import viewer from "./viewer.json";
 import welcome from "./welcome.json";
@@ -27,6 +29,7 @@ import welcome from "./welcome.json";
 const messages = {
   accent,
   app,
+  chart,
   eat,
   errors,
   foodKit,
@@ -44,6 +47,7 @@ const messages = {
   shell,
   soon,
   source,
+  stats,
   today,
   viewer,
   welcome,
