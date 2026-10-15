@@ -83,7 +83,8 @@ function sessionExpiry(at: Date): Date {
 
 /**
  * Starts registration from an invitation link. The invite is checked here so a dead link fails
- * before the passkey prompt. The user id is fixed now (the existing user's, or a fresh one) and
+ * before the passkey prompt; for an add-a-device link that includes the person still being a
+ * member of the space. The user id is fixed now (the existing user's, or a fresh one) and
  * travels in the challenge row, so the passkey's user handle is the `User.id`.
  */
 export async function startRegistration(
@@ -95,7 +96,14 @@ export async function startRegistration(
   const existing = invite.forUserId
     ? await db.user.findUnique({ where: { id: invite.forUserId }, include: { passkeys: true } })
     : null;
-  if (invite.forUserId && !existing) throw new HttpError(404, "not-found");
+  if (invite.forUserId) {
+    const membership = existing
+      ? await db.membership.findUnique({
+          where: { userId_spaceId: { userId: existing.id, spaceId: invite.spaceId } },
+        })
+      : null;
+    if (!membership) throw new HttpError(404, "not-found");
+  }
   const userId = existing?.id ?? randomUUID();
 
   const options = await generateRegistrationOptions({
