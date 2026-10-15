@@ -74,7 +74,7 @@ describe("FoodForm (the edit panel's fields)", () => {
   it("saves first-class portions: carbs computed from per 100 g when grams are given, typed when not", async () => {
     const onSaved = vi.fn();
     mount({ food: food("f-rye"), onSaved });
-    expect(screen.getByLabelText("Navn")).toHaveValue("Rugbrød, Schulstad Det Gode");
+    expect(screen.getByLabelText("Navn")).toHaveValue("Rugbrød, Eksempelbageriet");
     expect(screen.getByLabelText("Kulhydrat pr. 100 g")).toHaveValue("40");
     // 45 g at 40 g per 100 g is 18 g; the computed amount is shown, not asked for.
     expect(screen.getByText("18 g kulhydrat")).toBeInTheDocument();
@@ -92,7 +92,7 @@ describe("FoodForm (the edit panel's fields)", () => {
         method: "PATCH",
         path: "foods/f-rye",
         body: {
-          name: "Rugbrød, Schulstad Det Gode",
+          name: "Rugbrød, Eksempelbageriet",
           carbsPer100g: 40,
           portions: [
             { label: "1 skive", grams: 45, carbs: 18 },
