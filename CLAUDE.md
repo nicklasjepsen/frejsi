@@ -9,7 +9,7 @@ An open-source (AGPL-3.0) web app for one person with diabetes and the people ar
 ## Where things stand
 
 - Application code and Azure resources exist. `main` includes the v0.1.0 foundation (passkeys, roles, settings, Dexcom Share and live glucose), v0.2.0 food/library/photos and meal logging, and v0.3.0 meal curves, editing/comparison and day/week history. AI and the community/portability features remain planned.
-- v0.3.0 is awaiting release; no GitHub release has been published yet. A merge runs fast CI and deploys nothing. A version tag runs `release.yml`: full suites, infrastructure when changed, deployment and smoke checks, then a GitHub release and milestone closure. A failed run can leave Azure resources and a tag without a published release. See `docs/agent-workflow.md` §4–6.
+- A merge runs fast CI and deploys nothing. A version tag runs `release.yml`: full suites, infrastructure when changed, deployment and smoke checks, then a GitHub release and milestone closure. Check published GitHub releases for shipped versions; a failed run can leave Azure resources and a tag without a published release. See `docs/agent-workflow.md` §4–6.
 - `README.md` describes current features; `CONTRIBUTING.md` covers contributing; `docs/operations.md` is the runbook; `infra/README.md` covers Azure/fork setup and `poller/README.md` the timer, adapter wiring and local CLI.
 - `docs/superpowers/specs/2026-10-14-frejsi-design.md` is the original design spec. **Read it before doing anything**, but distinguish its historical status and planned features from the implementation. `docs/ui-brief.md` is the original UI brief; `docs/design/` holds the hand-in and tokens; `docs/superpowers/plans/` holds versioned plans and the roadmap.
 

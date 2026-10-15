@@ -4,7 +4,7 @@
 
 Frejsi is a web app — on your phone for the moment you're eating, on your desktop for the evening you want to understand the week — that answers two questions fast: _how many carbs is this?_ and _what did that meal do to my glucose?_ A space brings one person's food library, meals and glucose together, with access for the people they invite.
 
-> **Status: v0.3.0 implementation on `main`; release pending.** The v0.1.0 foundation (passkeys, roles and live glucose), v0.2.0 food lookup and meal logging, and v0.3.0 meal curves and history are implemented. Azure resources exist, but no GitHub release has been published yet. Merging does not deploy: a version tag runs the release pipeline, and a GitHub release is published only after deployment and smoke checks succeed.
+> **Status: v0.3.0 implementation on `main`.** The v0.1.0 foundation (passkeys, roles and live glucose), v0.2.0 food lookup and meal logging, and v0.3.0 meal curves and history are implemented. Azure resources exist. Merging does not deploy: a version tag runs the release pipeline, and a [GitHub release](https://github.com/nicklasjepsen/frejsi/releases) is published only after deployment and smoke checks succeed. An existing tag alone does not mean deployment succeeded.
 
 ## What it does
 
