@@ -104,6 +104,13 @@ pushes, auto-merge enabled, branches deleted on merge, rebase the only merge met
 
 ## 5. Gates on every PR
 
+> **Until v1.0.0 the Claude gate agents (items 2 and 3) are off** (owner, 2026-10-15): building fast
+> matters more than per-PR rule review while nobody uses the app. CI, including the dosing-vocabulary
+> test, and Codex's GitHub review still gate every PR. Before v1.0.0 is tagged, `spec-guardian`,
+> `reviewer` and `copy-reviewer` run once over the whole codebase (the audit issue in milestone
+> v1.0.0), and every finding is fixed or explicitly accepted. `build-lanes` runs them only with
+> `{ gates: true }`; `/gate-pr` still works on any single PR on request.
+
 1. **CI** (`ci.yml`): the fast suite.
 2. **`spec-guardian`**: the hard rules. A red here is never overridden.
 3. **`reviewer`** and **`copy-reviewer`**: findings go back to the implementer for one fix round, then

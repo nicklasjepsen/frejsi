@@ -28,7 +28,7 @@ const callAgent = async (prompt, opts = {}) => {
 }
 
 // args: {
-//   base: 'main', milestone?: 'v0.2.0',
+//   base: 'main', milestone?: 'v0.2.0', gates?: true (Claude gate agents; off by default until the pre-1.0 audit),
 //   lanes: [{ name, issues: [n, ...], branch, worktree, owns: [...], shared: [...], migration: '0003' | null, notes }]
 // }
 if (!args || !Array.isArray(args.lanes) || !args.lanes.length) throw new Error('args.lanes is required')
@@ -103,6 +103,10 @@ const results = await pipeline(
   // Gate: three independent perspectives on the same PR. parallel() is right: the fix round needs all three.
   async (built, lane) => {
     if (!built || built.blocked) return { lane, built, gates: null }
+    // Claude gates are off while v0.x is built (owner, 2026-10-15); pass { gates: true } to turn them on.
+    // CI (with the dosing-vocabulary test) and Codex's GitHub review still gate every PR. The full gate
+    // pass runs once over the whole codebase before v1.0.0 (issue in milestone v1.0.0).
+    if (!(args && args.gates === true)) return { lane, built, gates: { guardian: null, review: null, copy: null } }
     const [guardian, review, copy] = await parallel([
       () => callAgent(gatePrompt('spec-guardian', built.pr), { label: `guardian:${lane.name}`, phase: 'Gate', agentType: 'spec-guardian', schema: GATE_SCHEMA }),
       () => callAgent(gatePrompt('reviewer', built.pr), { label: `review:${lane.name}`, phase: 'Gate', agentType: 'reviewer', schema: GATE_SCHEMA }),
