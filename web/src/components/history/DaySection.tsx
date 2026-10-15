@@ -46,10 +46,15 @@ export function DaySection({
         .map((r) => [r.ts, r]),
     ).values(),
   ].sort((a, b) => a.ts.localeCompare(b.ts));
-  const range =
+  const liveStats =
     isToday && liveReadings.length > 0
-      ? dayStats(readings, day.meals, day.target, { from: day.from, to: day.to }, now).inRange
-      : day.inRange;
+      ? dayStats(readings, day.meals, day.target, { from: day.from, to: day.to }, now)
+      : null;
+  const range = liveStats?.inRange ?? day.inRange;
+  const meals = day.meals.map((meal) => ({
+    ...meal,
+    stats: liveStats?.meals.find((item) => item.mealId === meal.id)?.stats ?? meal.stats,
+  }));
   const low = formatBound(day.target.low, unit, locale);
   const high = formatBound(day.target.high, unit, locale);
   const mealHref = (id: string) => localeHref(locale, `/meal/${encodeURIComponent(id)}`);
@@ -112,7 +117,7 @@ export function DaySection({
           <p className={styles.muted}>{t(isToday ? "noMealsToday" : "noMeals")}</p>
         ) : (
           <ul className={styles.timeline} aria-label={t("meals")}>
-            {day.meals.map((meal, index) => (
+            {meals.map((meal, index) => (
               <li key={meal.id}>
                 <Link
                   href={mealHref(meal.id)}
