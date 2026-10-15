@@ -155,6 +155,35 @@ describe("markInviteUsed", () => {
       code: "invite-used",
     });
   });
+
+  it("names the real cause when the claim fails: revoked, expired or gone, not always invite-used", async () => {
+    const fake = seeded();
+    const { emit } = recordingEmit();
+    const deps = { db: fake.db, emit, now: () => T0 };
+    const make = () =>
+      createInvite({ spaceId: "s1", role: "viewer", name: "Example Viewer", createdBy: "owner" }, deps);
+
+    // Revoked between the landing page's check and the claim at the end of the ceremony.
+    const revoked = await make();
+    await revokeInvite(revoked.token, deps);
+    await expect(markInviteUsed(revoked.token, deps)).rejects.toMatchObject({
+      status: 410,
+      code: "invite-revoked",
+    });
+
+    const expired = await make();
+    await expect(
+      markInviteUsed(expired.token, { ...deps, now: () => days(8) }),
+    ).rejects.toMatchObject({ status: 410, code: "invite-expired" });
+    expect(fake.rows("invite").find((i) => i.token === expired.token)).toMatchObject({
+      usedAt: null,
+    });
+
+    await expect(markInviteUsed("no-such-token", deps)).rejects.toMatchObject({
+      status: 404,
+      code: "not-found",
+    });
+  });
 });
 
 describe("revokeInvite", () => {

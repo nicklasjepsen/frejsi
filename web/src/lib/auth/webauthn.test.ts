@@ -260,6 +260,42 @@ describe("registration", () => {
     ]);
   });
 
+  it("an add-a-device link for someone no longer in the space fails before the passkey prompt", async () => {
+    const w = world();
+    const carer = await registerCarer(w);
+    const token = await carerInvite(w, carer.userId);
+    // The owner removes the carer after creating the link.
+    w.fake.tables.membership = w.fake
+      .rows("membership")
+      .filter((m) => m.userId !== carer.userId);
+    await expect(startRegistration(token, w.deps)).rejects.toMatchObject({
+      status: 404,
+      code: "not-found",
+    });
+    expect(w.fake.rows("authChallenge")).toEqual([]);
+  });
+
+  it("names the cause when the link is revoked while the person is at the passkey prompt", async () => {
+    const w = world();
+    const token = await carerInvite(w);
+    const { challengeId, options } = await startRegistration(token, w.deps);
+    const response = w.authenticator.register(options);
+    // The owner presses "send again" (revoke) between the ceremony's start and its claim.
+    w.fake.beforeWrite = (table) => {
+      if (table !== "invite") return;
+      const invite = w.fake.rows("invite").find((i) => i.token === token);
+      if (invite && !invite.revokedAt) invite.revokedAt = T0;
+    };
+    await expect(finishRegistration({ challengeId, response }, w.deps)).rejects.toMatchObject({
+      status: 410,
+      code: "invite-revoked",
+    });
+    expect(w.fake.rows("user").map((u) => u.id)).toEqual(["o1"]);
+    expect(w.fake.rows("passkey")).toEqual([]);
+    expect(w.fake.rows("invite")[0]).toMatchObject({ usedAt: null });
+    expect(w.events).toEqual([]);
+  });
+
   it("excludes the user's existing passkeys from an add-a-device registration", async () => {
     const w = world();
     const first = await registerCarer(w);

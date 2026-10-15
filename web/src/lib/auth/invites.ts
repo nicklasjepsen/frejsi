@@ -85,18 +85,23 @@ export async function loadInvite(token: string, deps: TxDeps = {}) {
 
 /**
  * Marks the token used, once: the conditional update is the claim, so two registrations racing
- * on one link cannot both succeed. Called inside the registration transaction.
+ * on one link cannot both succeed. Called inside the registration transaction. A failed claim
+ * names its cause: the link may have been revoked or have expired since the ceremony started.
  */
 export async function markInviteUsed(token: string, deps: TxDeps = {}): Promise<void> {
   const { db, now } = resolveTx(deps);
+  const at = now();
   const { count } = await db.invite.updateMany({
-    where: { token, usedAt: null, revokedAt: null },
-    data: { usedAt: now() },
+    where: { token, usedAt: null, revokedAt: null, expiresAt: { gt: at } },
+    data: { usedAt: at },
   });
-  if (count !== 1) throw new HttpError(410, "invite-used");
+  if (count === 1) return;
+  await loadInvite(token, deps);
+  // Only a row that is still valid passes loadInvite; the claim then lost a race with another.
+  throw new HttpError(410, "invite-used");
 }
 
-/** Revokes an unused invite and emits `invite.revoked`; "Send igen" calls this before a new one. */
+/** Revokes an unused invite and emits `invite.revoked`; People's "send again" calls this first. */
 export async function revokeInvite(token: string, deps: TxDeps = {}): Promise<void> {
   const { db, emit, now } = resolveTx(deps);
   const invite = await db.invite.findUnique({ where: { token } });
