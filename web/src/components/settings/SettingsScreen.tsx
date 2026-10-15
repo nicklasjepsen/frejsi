@@ -125,7 +125,22 @@ export function SettingsScreen({ locale, data, now, api = settingsApi() }: Setti
     return t("source.cardConnected", { when, region });
   }
 
-  const simplePeople = people.filter((p) => p.role !== "viewer");
+  /**
+   * The person rows: a simpleMode switch for everyone but viewers (it means nothing in the viewer
+   * shell and the route refuses it), and for an owner a language control for each other member,
+   * viewers included. A row that would carry neither is left out.
+   */
+  const personRows = people
+    .map((person) => {
+      const isMe = person.userId === me.userId;
+      return {
+        person,
+        isMe,
+        showSwitch: person.role !== "viewer",
+        showLanguage: isOwner && !isMe,
+      };
+    })
+    .filter((row) => row.showSwitch || row.showLanguage);
 
   return (
     <div className={styles.page} data-testid="settings" aria-busy={busy}>
@@ -285,15 +300,14 @@ export function SettingsScreen({ locale, data, now, api = settingsApi() }: Setti
             <h2 className={styles.sectionTitle}>{t("sections.simpleMode")}</h2>
             <p className={styles.lead}>{isOwner ? t("simpleMode.leadDesktop") : t("simpleMode.lead")}</p>
             <Card className={styles.list}>
-              {simplePeople.map((person) => {
-                const isMe = person.userId === me.userId;
+              {personRows.map(({ person, isMe, showSwitch, showLanguage }) => {
                 const name = isMe ? t("simpleMode.you", { name: person.name }) : person.name;
                 return (
                   <div key={person.userId} className={styles.person} data-testid="person-row">
                     <Avatar name={person.name} size={44} tone="member" />
                     <span className={styles.personText}>
                       <span className={styles.personName}>{name}</span>
-                      {isOwner && !isMe && (
+                      {showLanguage && (
                         <SegmentedControl
                           size="small"
                           label={t("simpleMode.languageFor", { name: person.name })}
@@ -307,12 +321,14 @@ export function SettingsScreen({ locale, data, now, api = settingsApi() }: Setti
                         />
                       )}
                     </span>
-                    <Switch
-                      label={t("simpleMode.toggle", { name: person.name })}
-                      checked={person.simpleMode}
-                      onChange={(simpleMode) => void changePerson(person, { simpleMode })}
-                      disabled={busy}
-                    />
+                    {showSwitch && (
+                      <Switch
+                        label={t("simpleMode.toggle", { name: person.name })}
+                        checked={person.simpleMode}
+                        onChange={(simpleMode) => void changePerson(person, { simpleMode })}
+                        disabled={busy}
+                      />
+                    )}
                   </div>
                 );
               })}
