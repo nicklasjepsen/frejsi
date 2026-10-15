@@ -31,10 +31,10 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-const mount = (locale: AppLocale = "da") =>
+const mount = (locale: AppLocale = "da", initialFilter = "all") =>
   render(
     <I18nProvider locale={locale} messages={getMessages(locale)}>
-      <LibraryScreen spaceId="s1" locale={locale} />
+      <LibraryScreen spaceId="s1" locale={locale} initialFilter={initialFilter} />
     </I18nProvider>,
   );
 const phone = () => within(screen.getByTestId("library-phone"));
@@ -316,5 +316,42 @@ describe("Bibliotek on desktop (Bibliotek-Desktop)", () => {
       expect(desktop().getAllByRole("row")).toHaveLength(5);
     });
     expect(api.callsTo("DELETE", /.*/).map((call) => call.path)).toEqual(["foods/f-porridge"]);
+  });
+});
+
+describe("initial library filter (#122)", () => {
+  it("selects unverified on phone and desktop and filters the first request", async () => {
+    mount("da", "unverified");
+    await waitFor(() => {
+      expect(phone().getAllByTestId("food-row")).toHaveLength(3);
+    });
+    for (const layout of [phone(), desktop()]) {
+      expect(layout.getByRole("button", { name: "Ikke tjekket · 3" })).toHaveAttribute(
+        "aria-pressed",
+        "true",
+      );
+      expect(layout.getByRole("button", { name: "Alle" })).toHaveAttribute("aria-pressed", "false");
+      expect(layout.queryByText("Min madpakke")).toBeNull();
+    }
+    expect(lists().map((call) => call.query)).toEqual([{ filter: "unverified" }]);
+
+    fireEvent.click(desktop().getByRole("button", { name: "Alle" }));
+    await phoneRows();
+    expect(phone().getByRole("button", { name: "Alle" })).toHaveAttribute("aria-pressed", "true");
+  });
+
+  it("selects an origin filter and returns only that origin from the first request", async () => {
+    mount("da", "off");
+    await waitFor(() => {
+      expect(phone().getAllByTestId("food-row")).toHaveLength(1);
+    });
+    for (const layout of [phone(), desktop()]) {
+      expect(layout.getByRole("button", { name: "Fra Open Food Facts" })).toHaveAttribute(
+        "aria-pressed",
+        "true",
+      );
+    }
+    expect(lists().map((call) => call.query)).toEqual([{ filter: "off" }]);
+    expect(phone().getByText("Rugbrød, Eksempelbageriet")).toBeInTheDocument();
   });
 });

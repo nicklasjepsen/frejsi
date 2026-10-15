@@ -27,8 +27,8 @@ export function deriveCounts(foods: readonly FoodView[]): Record<string, number>
  * counts per filter, and local updates after a write so a tick or a save shows without reload.
  * A verified row stays in the "Ikke tjekket" list until the next load, so the check is seen.
  */
-export function useLibrary(spaceId: string) {
-  const [filter, setFilter] = useState<LibraryFilter>("all");
+export function useLibrary(spaceId: string, initialFilter: LibraryFilter = "all") {
+  const [filter, setFilter] = useState<LibraryFilter>(initialFilter);
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState<LoadStatus>("loading");
   const [foods, setFoods] = useState<FoodView[]>([]);

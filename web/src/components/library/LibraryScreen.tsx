@@ -16,7 +16,7 @@ import {
 } from "@/components/ui";
 import { localeHref, type AppLocale } from "@/lib/i18n/routing";
 
-import { libraryApi } from "./api-client";
+import { libraryApi, type LibraryFilter } from "./api-client";
 import { BatchBar } from "./BatchBar";
 import { EditPanel } from "./EditPanel";
 import { useFoodText } from "./format";
@@ -28,6 +28,7 @@ import { VerifyCircle } from "./VerifyCircle";
 export interface LibraryScreenProps {
   spaceId: string;
   locale: AppLocale;
+  initialFilter?: LibraryFilter;
 }
 
 /**
@@ -35,8 +36,8 @@ export interface LibraryScreenProps {
  * and CSS shows one, as the shell does. Everything is read through `GET foods` and written only
  * through the foods routes (task 4), whose services emit.
  */
-export function LibraryScreen({ spaceId, locale }: LibraryScreenProps) {
-  const library = useLibrary(spaceId);
+export function LibraryScreen({ spaceId, locale, initialFilter = "all" }: LibraryScreenProps) {
+  const library = useLibrary(spaceId, initialFilter);
   const [verifying, setVerifying] = useState<ReadonlySet<string>>(new Set());
   const [writeFailed, setWriteFailed] = useState(false);
 
