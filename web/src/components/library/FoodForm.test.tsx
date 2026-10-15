@@ -182,6 +182,32 @@ describe("FoodForm (the edit panel's fields)", () => {
     expect(api.calls).toEqual([]);
   });
 
+  it("reports a number it cannot read instead of sending it as empty", () => {
+    mount({ food: food("f-rye") });
+    fireEvent.change(screen.getByLabelText("Kulhydrat pr. 100 g"), { target: { value: "40..5" } });
+    fireEvent.click(screen.getByRole("button", { name: "Gem" }));
+    expect(screen.getByRole("alert")).toHaveTextContent("Skriv tallet som fx 40 eller 40,5.");
+    fireEvent.change(screen.getByLabelText("Kulhydrat pr. 100 g"), { target: { value: "140" } });
+    fireEvent.click(screen.getByRole("button", { name: "Gem" }));
+    expect(screen.getByRole("alert")).toHaveTextContent("Skriv tallet som fx 40 eller 40,5.");
+    expect(api.calls).toEqual([]);
+  });
+
+  it("keeps a fractional portion weight as it is", async () => {
+    const onSaved = vi.fn();
+    mount({
+      food: { ...food("f-rye"), portions: [{ label: "½ skive", grams: 22.5, carbs: 9 }] },
+      onSaved,
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Gem" }));
+    await waitFor(() => {
+      expect(onSaved).toHaveBeenCalled();
+    });
+    expect(writes()[0]?.body).toMatchObject({
+      portions: [{ label: "½ skive", grams: 22.5, carbs: 9 }],
+    });
+  });
+
   it("offers only Gem on a verified food", () => {
     mount({ food: food("f-lunch") });
     expect(screen.getByText("Tjekket")).toBeInTheDocument();

@@ -91,6 +91,9 @@ async function callJson<T>(path: string, init: Init, schema: z.ZodType<T>): Prom
   return parsed.data;
 }
 
+/** `VerifyFoodsRequest.foodIds` holds 1–50 ids. */
+const VERIFY_BATCH = 50;
+
 const foods = (spaceId: string) => `/api/spaces/${encodeURIComponent(spaceId)}/foods`;
 const one = (spaceId: string, foodId: string) => `${foods(spaceId)}/${encodeURIComponent(foodId)}`;
 
@@ -127,9 +130,17 @@ export const libraryApi = {
     ),
   update: (spaceId: string, foodId: string, fields: UpdateFoodRequest) =>
     callJson(one(spaceId, foodId), { method: "PATCH", body: fields }, FoodView),
-  /** The tick: `POST foods/verify`. The answer's body is not needed; success means verified. */
+  /**
+   * The tick: `POST foods/verify`, in requests of at most 50 ids (the contract's limit). The
+   * answer's body is not needed; success means verified.
+   */
   verify: async (spaceId: string, foodIds: string[]): Promise<void> => {
-    await send(`${foods(spaceId)}/verify`, { method: "POST", body: { foodIds } });
+    for (let start = 0; start < foodIds.length; start += VERIFY_BATCH) {
+      await send(`${foods(spaceId)}/verify`, {
+        method: "POST",
+        body: { foodIds: foodIds.slice(start, start + VERIFY_BATCH) },
+      });
+    }
   },
   remove: async (spaceId: string, foodId: string): Promise<void> => {
     await send(one(spaceId, foodId), { method: "DELETE" });
