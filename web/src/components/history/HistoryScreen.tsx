@@ -49,7 +49,12 @@ export function HistoryScreen({
     ...(socketFactory ? { socketFactory } : {}),
   });
   const { ready, lateCursor } = useFeedReady(feed.loaded);
-  const { days, load, refused } = useDays(spaceId, "history/day", DayHistoryView, fetchImpl);
+  const { days, load, refreshAll, refused } = useDays(
+    spaceId,
+    "history/day",
+    DayHistoryView,
+    fetchImpl,
+  );
   const zone = Object.values(days).find((entry) => entry.status === "ready");
   const today = useToday(initialToday, zone?.status === "ready" ? zone.day.timezone : undefined);
   const previousToday = useRef(today);
@@ -75,8 +80,8 @@ export function HistoryScreen({
     void load(initialDate);
   }, [initialDate, load, ready]);
   useEffect(() => {
-    if (lateCursor && sections.current.has(today)) void load(today, true);
-  }, [lateCursor, load, today]);
+    if (lateCursor) void refreshAll();
+  }, [lateCursor, refreshAll]);
   useEffect(() => {
     if (previousToday.current === today) return;
     const previous = previousToday.current;
@@ -138,7 +143,11 @@ export function HistoryScreen({
       if (sections.current.has(today)) void load(today, true);
     };
     const recheckAccess = () => {
-      for (const date of sections.current.keys()) void load(date, true);
+      void refreshAll();
+    };
+    const refreshMembership = () => {
+      recheckAccess();
+      router.refresh();
     };
     const offs = [
       subscribe("meal.created", refresh),
@@ -148,13 +157,13 @@ export function HistoryScreen({
         recheckAccess();
         router.refresh();
       }),
-      subscribe("member.updated", recheckAccess),
-      subscribe("member.removed", recheckAccess),
+      subscribe("member.updated", refreshMembership),
+      subscribe("member.removed", refreshMembership),
     ];
     return () => {
       for (const off of offs) off();
     };
-  }, [subscribe, load, today, router]);
+  }, [subscribe, load, today, router, refreshAll]);
   const dates = Object.keys(days).sort().reverse();
   const oldest = dates.at(-1) ?? initialDate;
   const last = days[oldest];

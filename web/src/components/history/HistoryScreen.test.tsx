@@ -481,3 +481,99 @@ it("refreshes cached targets and the server-provided presentation unit on space 
   expect(screen.getByText("Mål 4–8")).toBeVisible();
   expect(refresh).toHaveBeenCalled();
 });
+it("refreshes a selected past day when its fallback snapshot predates the live cursor", async () => {
+  vi.useRealTimers();
+  vi.useFakeTimers({ now: NOW, toFake: ["Date", "setTimeout", "clearTimeout"] });
+  const network = request;
+  let finishCursor: ((response: Response) => void) | undefined;
+  request = (...args) =>
+    urlOf(args[0]).includes("/events") && !finishCursor
+      ? new Promise<Response>((resolve) => {
+          finishCursor = resolve;
+        })
+      : network(...args);
+  await mount(false, "2026-10-13");
+  await flush(() => {
+    vi.advanceTimersByTime(1000);
+  });
+  expect(screen.getByRole("link", { name: /Rugbrød/ })).toBeVisible();
+  reply = (date) => ({
+    ...history(date),
+    meals: history(date).meals.map((meal) => ({ ...meal, title: "Updated meal" })),
+  });
+  await flush(() => {
+    finishCursor?.(Response.json({ lastSeq: 10, events: [], more: false }));
+  });
+  expect(screen.getByRole("link", { name: /Updated meal/ })).toBeVisible();
+  expect(calls.filter((p) => p.endsWith("date=2026-10-13"))).toHaveLength(2);
+});
+it("refreshes the server role gate when membership changes", async () => {
+  await mount();
+  await flush(() => {
+    sockets.sockets[0]?.receive({
+      spaceId: "s1",
+      seq: 11,
+      type: "member.updated",
+      ts: NOW.toISOString(),
+      payload: { userId: "u1", role: "viewer" },
+    });
+  });
+  expect(refresh).toHaveBeenCalled();
+  expect(calls.filter((p) => p.includes("history/day"))).toHaveLength(2);
+});
+it("refreshes the viewer's yesterday snapshot after a late cursor", async () => {
+  vi.useRealTimers();
+  vi.useFakeTimers({ now: NOW, toFake: ["Date", "setTimeout", "clearTimeout"] });
+  reply = (date): DayView => ({
+    date,
+    timezone: "Europe/Copenhagen",
+    totalCarbs: 50,
+    mealCount: 1,
+    meals: [{ ...meal, title: date }],
+  });
+  const network = request;
+  let finishCursor: ((response: Response) => void) | undefined;
+  request = (...args) =>
+    urlOf(args[0]).includes("/events") && !finishCursor
+      ? new Promise<Response>((resolve) => {
+          finishCursor = resolve;
+        })
+      : network(...args);
+  await mount(true);
+  await flush(() => {
+    vi.advanceTimersByTime(1000);
+  });
+  reply = (date): DayView => ({
+    date,
+    timezone: "Europe/Copenhagen",
+    totalCarbs: 0,
+    mealCount: 0,
+    meals: [],
+  });
+  await flush(() => {
+    finishCursor?.(Response.json({ lastSeq: 10, events: [], more: false }));
+  });
+  expect(screen.queryByTestId("meal-card")).toBeNull();
+  expect(calls.filter((p) => p.endsWith("date=2026-10-13"))).toHaveLength(2);
+});
+it("refreshes the viewer's server role gate when membership changes", async () => {
+  reply = (date): DayView => ({
+    date,
+    timezone: "Europe/Copenhagen",
+    totalCarbs: 50,
+    mealCount: 1,
+    meals: [meal],
+  });
+  await mount(true);
+  await flush(() => {
+    sockets.sockets[0]?.receive({
+      spaceId: "s1",
+      seq: 11,
+      type: "member.updated",
+      ts: NOW.toISOString(),
+      payload: { userId: "u1", role: "carer" },
+    });
+  });
+  expect(refresh).toHaveBeenCalled();
+  expect(calls.filter((p) => p.endsWith("date=2026-10-13"))).toHaveLength(2);
+});

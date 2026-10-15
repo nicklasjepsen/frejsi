@@ -1,6 +1,7 @@
 "use client";
 import { DayView } from "@frejsi/shared/schemas/meal";
 import { useTranslations } from "next-intl";
+import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { DayList, DayTotal, formatAskList } from "@/components/day";
 import { PeopleView } from "@/components/people/contract";
@@ -24,9 +25,10 @@ export function ViewerDays({
   socketFactory,
 }: HistoryProps) {
   const t = useTranslations("history");
+  const router = useRouter();
   const dayCopy = useTranslations("today");
   const errors = useTranslations("errors.api");
-  const { days, load, refused } = useDays(spaceId, "day", DayView, fetchImpl);
+  const { days, load, refreshAll, refused } = useDays(spaceId, "day", DayView, fetchImpl);
   const zone = Object.values(days).find((entry) => entry.status === "ready");
   const today = useToday(initialToday, zone?.status === "ready" ? zone.day.timezone : undefined);
   const previousToday = useRef(today);
@@ -47,8 +49,8 @@ export function ViewerDays({
     void load(shiftDate(today, -1));
   }, [load, today, ready]);
   useEffect(() => {
-    if (lateCursor) void load(today, true);
-  }, [lateCursor, load, today]);
+    if (lateCursor) void refreshAll();
+  }, [lateCursor, refreshAll]);
   useEffect(() => {
     const controller = new AbortController();
     void (async () => {
@@ -74,15 +76,21 @@ export function ViewerDays({
     const refresh = () => {
       void load(today, true);
     };
+    const membershipChanged = () => {
+      void refreshAll();
+      router.refresh();
+    };
     const offs = [
       subscribe("meal.created", refresh),
       subscribe("meal.updated", refresh),
       subscribe("meal.deleted", refresh),
+      subscribe("member.updated", membershipChanged),
+      subscribe("member.removed", membershipChanged),
     ];
     return () => {
       for (const off of offs) off();
     };
-  }, [subscribe, load, today]);
+  }, [subscribe, load, today, refreshAll, router]);
   const dates = Object.keys(days).sort().reverse();
   const oldest = dates.at(-1) ?? today;
   let emptyRun = 0;
