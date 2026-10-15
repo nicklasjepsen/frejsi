@@ -89,8 +89,12 @@ export async function loadPeople(spaceId: string, deps: PeopleDeps = {}): Promis
     where: { spaceId, usedAt: null, revokedAt: null, expiresAt: { gt: at } },
   });
 
+  // An add-a-device link for someone no longer in the space could never be used; it is not shown.
+  const memberIds = new Set(memberships.map((m) => m.userId));
+  const usable = invites.filter((i) => i.forUserId === null || memberIds.has(i.forUserId));
+
   return PeopleView.parse({
     members: [...memberships].sort(byCreatedAt).map(toMember),
-    invites: [...invites].sort(byCreatedAt).map(toPendingInvite),
+    invites: [...usable].sort(byCreatedAt).map(toPendingInvite),
   });
 }

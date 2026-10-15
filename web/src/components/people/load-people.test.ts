@@ -189,6 +189,25 @@ describe("loadPeople (plan task 7)", () => {
     expect(JSON.stringify(view)).not.toContain("device-token");
   });
 
+  it("leaves out an add-a-device link for someone who is no longer a member", async () => {
+    const fake = seed();
+    fake.rows("invite").push({
+      token: "orphan-device-token",
+      spaceId: "s1",
+      role: "carer",
+      name: "Someone Else",
+      forUserId: "u-elsewhere",
+      createdBy: "u-owner",
+      createdAt: T0,
+      expiresAt: days(7),
+      usedAt: null,
+      revokedAt: null,
+    });
+    const view = await loadPeople("s1", { db: fake.db, now: () => T0 });
+    expect(view.invites.map((i) => i.id)).not.toContain(hashToken("orphan-device-token"));
+    expect(view.invites).toHaveLength(2);
+  });
+
   it("carries no glucose and no credential: only the keys the contract names (hard rule)", async () => {
     const fake = seed();
     const view = await loadPeople("s1", { db: fake.db, now: () => T0 });
