@@ -1,3 +1,5 @@
+// Imported by the browser feed: schemas only, never the shared barrel, which carries Prisma and
+// App Insights that no client bundle can resolve (client-imports.test.ts).
 import {
   EventEnvelope,
   GlucoseSourceType,
@@ -5,7 +7,7 @@ import {
   Reading,
   type Role,
   SourceStatus,
-} from "@frejsi/shared";
+} from "@frejsi/shared/schemas/index";
 import { z } from "zod";
 
 /** The longest readings window a client may ask for (`readings?hours=1..24`, plan §5). */

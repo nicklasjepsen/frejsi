@@ -392,6 +392,65 @@ describe("LiveFeed (plan §5)", () => {
     expect(calls).toHaveLength(1);
   });
 
+  it("retries a failed settings reload on the timer, without touching a live socket", async () => {
+    const { server, fetch, calls } = fakeServer({ readings: [], lastSeq: 1 });
+    const { feed } = start(fetch);
+    await flush();
+    sockets[0]?.open();
+    await flush();
+
+    server.readingsStatus = 500;
+    sockets[0]?.receive({
+      spaceId: "s1",
+      seq: 2,
+      ts: T0.toISOString(),
+      type: "space.updated",
+      payload: { fields: ["glucoseUnit"] },
+    });
+    await flush();
+    expect(feed.getState().connection).toBe("live");
+    expect(feed.getState().space?.glucoseUnit).toBe("mmol");
+
+    server.readingsStatus = 200;
+    server.window = {
+      ...server.window,
+      lastSeq: 2,
+      space: { ...server.window.space, glucoseUnit: "mgdl" },
+    };
+    await vi.advanceTimersByTimeAsync(POLL_MS);
+    expect(feed.getState().space?.glucoseUnit).toBe("mgdl");
+    expect(feed.getState().connection).toBe("live");
+    expect(sockets).toHaveLength(1);
+    expect(sockets[0]?.closed).toBe(false);
+    const before = calls.length;
+    await vi.advanceTimersByTimeAsync(POLL_MS * 2);
+    expect(calls).toHaveLength(before);
+  });
+
+  it("retries the first window when its body is broken, instead of loading forever", async () => {
+    const { server, fetch, calls } = fakeServer({
+      readings: [reading(minutesAgo(1), 6.0)],
+      lastSeq: 3,
+    });
+    const { fetch: brokenFetch } = fakeFetch({
+      "/readings": () =>
+        new Response("{not json", { status: 200, headers: { "content-type": "application/json" } }),
+    });
+    let broken = true;
+    const switching: typeof globalThis.fetch = (input, init) =>
+      broken ? brokenFetch(input, init) : fetch(input, init);
+    const { feed } = start(switching);
+    await flush();
+    expect(feed.getState().loaded).toBe(false);
+    expect(feed.getState().connection).toBe("polling");
+    broken = false;
+    await vi.advanceTimersByTimeAsync(POLL_MS);
+    expect(feed.getState().loaded).toBe(true);
+    expect(feed.getState().readings).toHaveLength(1);
+    expect(server.readingsStatus).toBe(200);
+    expect(calls.filter((c) => c.includes("/readings"))).toHaveLength(1);
+  });
+
   it("retries the window on the poll timer after a server fault", async () => {
     const { server, fetch, calls } = fakeServer({
       readings: [reading(minutesAgo(1), 6.0)],
