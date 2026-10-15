@@ -91,18 +91,12 @@ describe("AppShell · normal mode (Main, Nu-Desktop)", () => {
     expect(footerName.parentElement).toHaveTextContent("JonasEjer");
   });
 
-  it("opens Log et måltid and the library from Måltid and Mad, and only Historik on the placeholder", () => {
+  it("opens Log et måltid and the library from Måltid and Mad, and History with phone day and desktop week defaults", () => {
     mount();
     const hrefs = within(tabs())
       .getAllByRole("link")
       .map((a) => a.getAttribute("href"));
-    expect(hrefs).toEqual([
-      "/da/now",
-      "/da/log",
-      "/da/library",
-      "/da/soon/history",
-      "/da/settings",
-    ]);
+    expect(hrefs).toEqual(["/da/now", "/da/log", "/da/library", "/da/history", "/da/settings"]);
     const sideHrefs = within(sidebar())
       .getAllByRole("link")
       .map((a) => a.getAttribute("href"));
@@ -110,7 +104,7 @@ describe("AppShell · normal mode (Main, Nu-Desktop)", () => {
       "/da/now",
       "/da/log",
       "/da/library",
-      "/da/soon/history",
+      "/da/history/week",
       "/da/people",
       "/da/settings",
     ]);
@@ -130,6 +124,17 @@ describe("AppShell · normal mode (Main, Nu-Desktop)", () => {
     expect(within(tabs()).getByRole("link", { name: "Now" })).not.toHaveAttribute("aria-current");
   });
 
+  it.each(["/en/history", "/en/history/week"])("keeps History active on %s", (path) => {
+    navigation.pathname = path;
+    mount({}, "en");
+    for (const nav of [tabs(), sidebar()]) {
+      expect(within(nav).getByRole("link", { name: /History/ })).toHaveAttribute(
+        "aria-current",
+        "page",
+      );
+    }
+  });
+
   it("opens Log et måltid with M and the library with B from any screen", () => {
     navigation.pathname = "/da/people";
     mount();
@@ -142,7 +147,7 @@ describe("AppShell · normal mode (Main, Nu-Desktop)", () => {
   it("navigates with the keyboard shortcuts N M B H P , unless typing in a field", () => {
     mount();
     fireEvent.keyDown(document, { key: "h" });
-    expect(navigation.push).toHaveBeenLastCalledWith("/da/soon/history");
+    expect(navigation.push).toHaveBeenLastCalledWith("/da/history/week");
     fireEvent.keyDown(document, { key: "," });
     expect(navigation.push).toHaveBeenLastCalledWith("/da/settings");
     fireEvent.keyDown(document, { key: "p", ctrlKey: true });
@@ -270,7 +275,7 @@ describe("AppShell · viewer (Historik-Viewer)", () => {
       within(tabs())
         .getAllByRole("link")
         .map((a) => a.getAttribute("href")),
-    ).toEqual(["/da/today", "/da/soon/earlier-days", "/da/settings"]);
+    ).toEqual(["/da/today", "/da/history", "/da/settings"]);
   });
 
   it("is the viewer even when simpleMode is on: no glucose shell for a viewer", () => {
@@ -281,6 +286,7 @@ describe("AppShell · viewer (Historik-Viewer)", () => {
   it("never mounts GlucoseValue: the shell has no glucose component and renders no value", () => {
     const { container } = mount(viewer);
     expect(container.querySelector("[data-glucose]")).toBeNull();
+    expect(container.querySelector("svg[role=img], [aria-label^=Top]")).toBeNull();
     expect(container.textContent).not.toMatch(/mmol|mg\/dL/);
     const dir = import.meta.dirname;
     for (const file of readdirSync(dir).filter((f) => /\.tsx?$/.test(f) && !f.includes(".test."))) {

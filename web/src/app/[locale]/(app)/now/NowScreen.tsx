@@ -1,12 +1,15 @@
 "use client";
 
+import { mealStats } from "@frejsi/shared/stats";
 import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
-import { MealCard, MealsTable, useDay } from "@/components/day";
+import { localDateOf } from "@/components/day/format";
+import { MealCard, useDay } from "@/components/day";
 import { PhotoTile } from "@/components/food/PhotoTile";
 import {
+  ChartLegend,
   dayStart,
   formatBound,
   formatDayTitle,
@@ -14,6 +17,7 @@ import {
   GlucoseValue,
   SourcePill,
   useNow,
+  useAgeText,
 } from "@/components/glucose";
 import { HeaderSlot } from "@/components/shell/HeaderSlot";
 import { SourceStatusBanner } from "@/components/shell/SourceStatusBanner";
@@ -22,10 +26,11 @@ import { Card } from "@/components/ui/Card";
 import { Notice } from "@/components/ui/Notice";
 import { QuickLinkCard } from "@/components/ui/QuickLinkCard";
 import { localeHref, type AppLocale } from "@/lib/i18n/routing";
-import { formatClock } from "@/lib/i18n/time";
 import { useLiveFeed } from "@/lib/live/useLiveFeed";
 
 import styles from "./now.module.css";
+import { NowMealsTable } from "./NowMealsTable";
+import { useNowHistory } from "./useNowHistory";
 import { NowSearch } from "./NowSearch";
 import { useNowFoods } from "./useNowFoods";
 
@@ -35,9 +40,8 @@ const WINDOW_HOURS = 24;
 /** The "Min mad" tiles on Nu-Simpel-Desktop: two rows of four. */
 const MY_FOOD_TILES = 8;
 
-/** Until v0.3.0's meal detail, a meal opens on the log screen for correction (decision 29). */
 const mealHref = (locale: AppLocale, id: string) =>
-  localeHref(locale, `/log?${new URLSearchParams({ meal: id }).toString()}`);
+  localeHref(locale, `/meal/${encodeURIComponent(id)}`);
 
 export interface NowScreenProps {
   spaceId: string;
@@ -48,22 +52,48 @@ export interface NowScreenProps {
 }
 
 /**
- * Nu (Main, Nu-Desktop, Nu-Simpel, Nu-Simpel-Desktop): glucose comes from `useLiveFeed` only;
- * the meal regions read `GET day` and `GET foods` through `useDay` and `useNowFoods`, again on
- * every `meal.*` (and `food.*`) event the same feed delivers. Phone and desktop are both in the DOM
- * and CSS shows one, as the shell does. Nothing here writes: logging is the log screen or the
- * picker. "Spørg en voksen" (v0.4.0), the "Top" column and "Ugens opsummering" (v0.3.0) are left
- * out, not drawn disabled (decision 30).
+ * Nu on phone, desktop and simpleMode. The feed owns live readings; day and history metadata
+ * refresh through that same feed's meal events. Viewers use their separate today route.
  */
 export function NowScreen({ spaceId, locale, simpleMode, timeZone }: NowScreenProps) {
   const t = useTranslations("now");
   const g = useTranslations("glucose");
+  const chart = useTranslations("chart");
+  const ageText = useAgeText();
   const errors = useTranslations("errors.api");
   const meals = useTranslations("eat.now");
   const router = useRouter();
   const feed = useLiveFeed(spaceId, { hours: WINDOW_HOURS });
   const now = useNow();
+  const zone = feed.space?.timezone ?? timeZone;
+  // Never before the feed's window: on the night daylight saving ends, yesterday's 06:00 can lie
+  // up to 25 hours back, and that first hour would be drawn empty.
+  const dayFrom = new Date(
+    Math.max(
+      dayStart(now, zone, DAY_START_HOUR).getTime(),
+      now.getTime() - WINDOW_HOURS * 60 * 60 * 1000,
+    ),
+  );
   const day = useDay(spaceId, feed.subscribe, feed.loaded);
+  const history = useNowHistory(
+    spaceId,
+    feed.subscribe,
+    feed.loaded && !simpleMode,
+    localDateOf(dayFrom, zone),
+  );
+  // A snapshot can contain an early peak outside the feed window (e.g. after a DST change).
+  // Merge peaks instead of replacing it with a statistic from a potentially partial window.
+  const historyMeals =
+    history.status === "ready"
+      ? history.day.meals.map((meal) => {
+          const peak = mealStats(feed.readings, meal, history.day.target, now).peak;
+          const saved = meal.stats.peak;
+          const newerPeak =
+            peak &&
+            (!saved || peak.mmol > saved.mmol || (peak.mmol === saved.mmol && peak.ts < saved.ts));
+          return newerPeak ? { ...meal, stats: { ...meal.stats, peak } } : meal;
+        })
+      : [];
   const foods = useNowFoods(spaceId, simpleMode, feed.subscribe, feed.loaded);
   const lastMeal = day.status === "ready" ? (day.day.meals[0] ?? null) : null;
   const mealZone = day.status === "ready" ? day.day.timezone : timeZone;
@@ -71,7 +101,6 @@ export function NowScreen({ spaceId, locale, simpleMode, timeZone }: NowScreenPr
   // From the feed, not the window: a reading older than 24 hours still shows, with its age.
   const latest = feed.latest;
   const unit = feed.space?.glucoseUnit ?? "mmol";
-  const zone = feed.space?.timezone ?? timeZone;
   const targetLow = feed.space?.targetLow ?? 4;
   const targetHigh = feed.space?.targetHigh ?? 10;
   const bounds = {
@@ -100,9 +129,12 @@ export function NowScreen({ spaceId, locale, simpleMode, timeZone }: NowScreenPr
         <p className={styles.simpleLabel}>{t("simpleTitle")}</p>
         <GlucoseValue reading={latest} unit={unit} now={now} size="simple" showUnit={false} />
         {lastMeal && (
-          <div className={styles.simpleMeal}>
+          <Link
+            href={mealHref(locale, lastMeal.id)}
+            className={`${styles.simpleMeal} ${styles.mealLink}`}
+          >
             <MealCard meal={lastMeal} timeZone={mealZone} variant="simple" />
-          </div>
+          </Link>
         )}
         <div className={styles.simpleActions}>
           <Button size="simple" href={localeHref(locale, "/eat")}>
@@ -138,14 +170,12 @@ export function NowScreen({ spaceId, locale, simpleMode, timeZone }: NowScreenPr
   }
 
   const sparklineFrom = new Date(now.getTime() - SPARKLINE_HOURS * 60 * 60 * 1000);
-  // Never before the feed's window: on the night daylight saving ends, yesterday's 06:00 can lie
-  // up to 25 hours back, and that first hour would be drawn empty.
-  const dayFrom = new Date(
-    Math.max(
-      dayStart(now, zone, DAY_START_HOUR).getTime(),
-      now.getTime() - WINDOW_HOURS * 60 * 60 * 1000,
-    ),
-  );
+  const latestDayReading = feed.readings.reduce<typeof feed.latest>((latest, reading) => {
+    const ts = new Date(reading.ts).getTime();
+    return ts >= dayFrom.getTime() && ts <= now.getTime() && (!latest || reading.ts > latest.ts)
+      ? reading
+      : latest;
+  }, null);
 
   return (
     <>
@@ -218,7 +248,11 @@ export function NowScreen({ spaceId, locale, simpleMode, timeZone }: NowScreenPr
             <Card className={styles.dayCard}>
               <div className={styles.chartHead}>
                 <span className={styles.chartTitle}>{g("today")}</span>
-                <span>{g("targetWithUnit", { ...bounds, unit: g(`unit.${unit}`) })}</span>
+                <ChartLegend
+                  variant="day"
+                  target={{ low: targetLow, high: targetHigh }}
+                  unit={unit}
+                />
               </div>
               <GlucoseChart
                 readings={feed.readings}
@@ -229,21 +263,38 @@ export function NowScreen({ spaceId, locale, simpleMode, timeZone }: NowScreenPr
                 unit={unit}
                 timeZone={zone}
                 variant="day"
-                label={g("chartToday", {
-                  from: formatClock(dayFrom, zone),
-                  to: formatClock(now, zone),
-                })}
+                meals={(history.status === "ready" ? history.markers : []).map(
+                  ({ id: mealId, ts, bolusTs }) => ({
+                    mealId,
+                    ts,
+                    ...(bolusTs ? { bolusTs } : {}),
+                  }),
+                )}
+                onMealTap={(id) => {
+                  router.push(mealHref(locale, id));
+                }}
               />
+              {latestDayReading && (
+                <p className={styles.chartCaption} data-testid="chart-caption">
+                  {chart("lastReading", { age: ageText(latestDayReading.ts, now) })}
+                </p>
+              )}
             </Card>
           </div>
           <div className={styles.desktopRow}>
             <div className={styles.mealsColumn}>
-              {day.status === "failed" && <Notice tone="sunken">{meals("mealsFailed")}</Notice>}
+              {(day.status === "failed" || history.status === "failed") && (
+                <Notice tone="sunken">{meals("mealsFailed")}</Notice>
+              )}
               {day.status === "ready" && (
-                <MealsTable
-                  meals={day.day.meals}
-                  totalCarbs={day.day.totalCarbs}
-                  timeZone={mealZone}
+                <NowMealsTable
+                  meals={history.status === "ready" ? historyMeals : day.day.meals}
+                  historyMeals={historyMeals}
+                  unit={unit}
+                  totalCarbs={
+                    history.status === "ready" ? history.day.totalCarbs : day.day.totalCarbs
+                  }
+                  timeZone={history.status === "ready" ? history.day.timezone : mealZone}
                   hrefFor={(meal) => mealHref(locale, meal.id)}
                   onOpen={(href) => {
                     router.push(href);

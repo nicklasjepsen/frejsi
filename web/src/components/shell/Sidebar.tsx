@@ -81,7 +81,7 @@ export function Sidebar({ locale, variant, path, user, space, spaces }: SidebarP
             key={item.href}
             href={localeHref(locale, item.href)}
             className={styles.sidebarItem}
-            aria-current={isActive(path, item.href) ? "page" : undefined}
+            aria-current={isActive(path, item.activeHref ?? item.href) ? "page" : undefined}
             aria-keyshortcuts={item.shortcut && !simple ? item.shortcut : undefined}
           >
             <Icon name={item.icon} size={simple ? 30 : 22} />

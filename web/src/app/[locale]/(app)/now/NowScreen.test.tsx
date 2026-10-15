@@ -46,6 +46,8 @@ vi.mock("next/navigation", () => ({
 
 import { fakeApi, food, meal, type FakeApi } from "@/components/simple/test-support";
 
+import { DayHistoryView, type DayHistoryMeal } from "@frejsi/shared/schemas/history";
+
 import { NowScreen, type NowScreenProps } from "./NowScreen";
 
 const T0 = new Date("2026-10-14T13:13:00.000Z"); // Wednesday 15:13 in Copenhagen
@@ -97,6 +99,19 @@ function mount(props: Partial<NowScreenProps> = {}, locale: AppLocale = "da") {
 }
 
 let api: FakeApi;
+let historyMeals: DayHistoryMeal[] | null;
+let previousMeals: DayHistoryMeal[];
+const emptyStats = {
+  inRange: {
+    minutes: 0,
+    coveredMinutes: 0,
+    windowMinutes: 180,
+    complete: true,
+    belowMinutes: 0,
+    aboveMinutes: 0,
+  },
+  readingCount: 0,
+};
 beforeEach(() => {
   vi.useFakeTimers({ now: T0, toFake: ["Date"] });
   live.state = loaded;
@@ -105,13 +120,50 @@ beforeEach(() => {
   navigation.push.mockClear();
   api = fakeApi();
   api.date = "2026-10-14";
-  vi.stubGlobal("fetch", api.fetch);
+  historyMeals = null;
+  previousMeals = [];
+  vi.stubGlobal("fetch", async (input: RequestInfo | URL, init?: RequestInit) => {
+    const url = new URL(
+      typeof input === "string" ? input : input instanceof URL ? input.href : input.url,
+      "https://frejsi.example",
+    );
+    if (url.pathname.endsWith("/history/day")) {
+      api.calls.push({
+        method: init?.method ?? "GET",
+        path: "history/day",
+        query: Object.fromEntries(url.searchParams),
+        body: undefined,
+      });
+      const meals = url.searchParams.has("date")
+        ? previousMeals
+        : (historyMeals ?? api.meals.map((meal) => ({ ...meal, stats: emptyStats })));
+      return new Response(
+        JSON.stringify(
+          DayHistoryView.parse({
+            date: url.searchParams.get("date") ?? api.date,
+            timezone: "Europe/Copenhagen",
+            from: "2026-10-13T22:00:00.000Z",
+            to: "2026-10-14T22:00:00.000Z",
+            target: { low: 4, high: 10 },
+            readings: [],
+            inRange: emptyStats.inRange,
+            totalCarbs: meals.reduce((sum, meal) => sum + meal.totalCarbs, 0),
+            mealCount: meals.length,
+            meals: [...meals].sort((a, b) => b.ts.localeCompare(a.ts)),
+            hasOlder: false,
+            now: T0.toISOString(),
+          }),
+        ),
+      );
+    }
+    return api.fetch(input, init);
+  });
 });
 afterEach(() => {
   cleanup();
   document.body.innerHTML = "";
-  vi.useRealTimers();
   vi.unstubAllGlobals();
+  vi.useRealTimers();
 });
 
 // Wednesday 14 October in Copenhagen: 07:15, 09:50 and 12:10 local.
@@ -187,13 +239,13 @@ describe("Nu · phone (Main)", () => {
     expect(phone.getByTestId("glucose-age")).toHaveTextContent("for mere end et døgn siden");
   });
 
-  it("shows the last meal from GET day as a card that opens it on the log screen", async () => {
+  it("shows the last meal from GET day as a card that opens meal detail", async () => {
     api.meals = [breakfast, apple, lunch];
     mount();
     const region = within(screen.getByTestId("last-meal"));
     expect(region.getByText("Sidste måltid")).toBeInTheDocument();
     const card = await region.findByRole("link");
-    expect(card).toHaveAttribute("href", "/da/log?meal=m3");
+    expect(card).toHaveAttribute("href", "/da/meal/m3");
     expect(card).toHaveTextContent("Rugbrød med ost og et æble");
     expect(card).toHaveTextContent("12:10 · 50 g kulhydrat · Jonas");
     expect(within(card).getByTestId("meal-card")).toHaveAttribute("data-variant", "card");
@@ -223,12 +275,12 @@ describe("Nu · phone (Main)", () => {
     );
   });
 
-  it("writes nothing: Nu only reads day and foods", async () => {
+  it("writes nothing: Nu only reads day, history and foods", async () => {
     api.meals = [lunch];
     mount();
     await within(screen.getByTestId("last-meal")).findByRole("link");
     expect(api.calls.every((c) => c.method === "GET")).toBe(true);
-    expect(new Set(api.calls.map((c) => c.path))).toEqual(new Set(["day", "foods"]));
+    expect(new Set(api.calls.map((c) => c.path))).toEqual(new Set(["day", "foods", "history/day"]));
   });
 
   it("draws nothing of glucose before the window has loaded, and the error by code when refused", () => {
@@ -261,7 +313,9 @@ describe("Nu · desktop (Nu-Desktop)", () => {
     const desktop = within(screen.getByTestId("now-desktop"));
     expect(desktop.getByText("I dag")).toBeInTheDocument();
     expect(desktop.getByText("Mål 4–10 mmol/L")).toBeInTheDocument();
-    const chart = desktop.getByRole("img", { name: "Glukose i dag fra 06:00 til 15:13" });
+    const chart = desktop.getByRole("img", {
+      name: "Glukose i dag fra 06:00 til 15:13 med 0 måltider",
+    });
     expect(chart).toHaveAttribute("data-variant", "day");
     expect(chart.textContent).toContain("06:00");
     expect(chart.textContent).toContain("15:13");
@@ -283,7 +337,7 @@ describe("Nu · desktop (Nu-Desktop)", () => {
     mount();
     const desktop = within(screen.getByTestId("now-desktop"));
     expect(
-      desktop.getByRole("img", { name: "Glukose i dag fra 06:30 til 05:30" }),
+      desktop.getByRole("img", { name: "Glukose i dag fra 06:30 til 05:30 med 0 måltider" }),
     ).toBeInTheDocument();
   });
 
@@ -317,14 +371,15 @@ describe("Nu · desktop (Nu-Desktop)", () => {
       "Måltid",
       "Kulhydrat",
       "Logget af",
+      "Top",
     ]);
     const rows = table.getAllByRole("row").slice(1);
     expect(rows.map((row) => row.textContent)).toEqual([
-      "07:15Havregrød med æble38 gMette",
-      "09:50Æble14 gAlma",
-      "12:10Rugbrød med ost og et æble50 gJonas",
+      "07:15Havregrød med æble38 gMette–",
+      "09:50Æble14 gAlma–",
+      "12:10Rugbrød med ost og et æble50 gJonas6,2 efter 3 t",
     ]);
-    expect(table.getByRole("link", { name: "Æble" })).toHaveAttribute("href", "/da/log?meal=m2");
+    expect(table.getByRole("link", { name: "Æble" })).toHaveAttribute("href", "/da/meal/m2");
     expect(table.getByText("Pil op/ned vælger et måltid · Enter åbner det")).toBeInTheDocument();
   });
 
@@ -344,7 +399,7 @@ describe("Nu · desktop (Nu-Desktop)", () => {
     expect(rows[2]).toHaveFocus();
     fireEvent.keyDown(rows[2] ?? document.body, { key: "ArrowUp" });
     fireEvent.keyDown(rows[1] ?? document.body, { key: "Enter" });
-    expect(navigation.push).toHaveBeenCalledWith("/da/log?meal=m2");
+    expect(navigation.push).toHaveBeenCalledWith("/da/meal/m2");
   });
 
   it("links '3 Fødevarer der ikke er tjekket · Gennemgå og godkend' to the unverified library, and hides it at zero", async () => {
@@ -418,6 +473,8 @@ describe("Nu · simpleMode (Nu-Simpel, Nu-Simpel-Desktop)", () => {
     mount({ simpleMode: true });
     const card = await within(screen.getByTestId("now-simple")).findByTestId("meal-card");
     expect(card).toHaveAttribute("data-variant", "simple");
+    expect(card.closest("a")).toHaveAttribute("href", "/da/meal/m3");
+    expect(api.calls.some((call) => call.path === "history/day")).toBe(false);
     expect(card).toHaveTextContent("Du spiste kl. 12:10");
     expect(card).toHaveTextContent("Rugbrød med ost og et æble");
     expect(within(card).getByRole("img")).toHaveAttribute(
@@ -451,5 +508,142 @@ describe("Nu · simpleMode (Nu-Simpel, Nu-Simpel-Desktop)", () => {
     expect(screen.queryByText(/Ingen forbindelse/)).toBeNull();
     expect(slot).toBeEmptyDOMElement();
     expect(screen.queryByText("Sidste måltid")).toBeNull();
+  });
+});
+
+describe("Nu · meal history on the day curve", () => {
+  const withPeak = () => ({
+    ...lunch,
+    bolusTs: "2026-10-14T09:58:00.000Z",
+    stats: {
+      ...emptyStats,
+      readingCount: 1,
+      peak: { mmol: 9.6, ts: "2026-10-14T11:15:00.000Z", minutesAfterMeal: 65 },
+    },
+  });
+
+  it("draws linked meal lines, the time triangle, day legend and caption, with a timestamped peak", async () => {
+    api.meals = [lunch, apple];
+    historyMeals = [withPeak(), { ...apple, stats: emptyStats }];
+    mount();
+    const desktop = within(screen.getByTestId("now-desktop"));
+    const chart = await desktop.findByRole("img", {
+      name: "Glukose i dag fra 06:00 til 15:13 med 2 måltider. Bolus 11:58",
+    });
+    expect(within(chart).getAllByTestId("meal-line")).toHaveLength(2);
+    expect(within(chart).getByTestId("bolus")).toBeInTheDocument();
+    expect(desktop.getByText("Bolus givet")).toBeInTheDocument();
+    expect(desktop.getByText("Mål 4–10 mmol/L")).toBeInTheDocument();
+    expect(desktop.getByTestId("chart-caption")).toHaveTextContent(
+      "sidste måling for 3 min. siden",
+    );
+    const peak = desktop.getByRole("img", { name: "Top 9,6 kl. 13:15" });
+    expect(peak.closest("td")).toHaveTextContent("9,6 efter 1 t 05 min");
+    fireEvent.click(desktop.getByRole("button", { name: "Måltid kl. 12:10" }));
+    expect(navigation.push).toHaveBeenLastCalledWith("/da/meal/m3");
+    expect(api.calls.find((c) => c.path === "history/day")?.query).toEqual({ readings: "0" });
+  });
+
+  it.each(["meal.created", "meal.updated", "meal.deleted"])(
+    "refetches history on %s, updating markers and peaks",
+    async (type) => {
+      api.meals = [lunch];
+      mount();
+      const desktop = within(screen.getByTestId("now-desktop"));
+      await desktop.findByRole("button", { name: "Måltid kl. 12:10" });
+      historyMeals = [{ ...apple, stats: emptyStats }];
+      api.meals = [apple];
+      act(() => {
+        live.emit(type);
+      });
+      await waitFor(() => {
+        expect(desktop.queryByRole("button", { name: "Måltid kl. 12:10" })).toBeNull();
+      });
+      expect(desktop.getByRole("button", { name: "Måltid kl. 09:50" })).toBeInTheDocument();
+      expect(api.calls.filter((c) => c.path === "history/day")).toHaveLength(2);
+    },
+  );
+
+  it("keeps yesterday's meal markers before 06:00, while the table contains only today's meals", async () => {
+    vi.setSystemTime(new Date("2026-10-15T02:00:00.000Z")); // 04:00 Copenhagen
+    api.date = "2026-10-15";
+    api.meals = [];
+    historyMeals = [];
+    previousMeals = [{ ...lunch, stats: emptyStats }];
+    mount();
+    const desktop = within(screen.getByTestId("now-desktop"));
+    expect(await desktop.findByRole("button", { name: "Måltid kl. 12:10" })).toBeInTheDocument();
+    expect(desktop.queryByRole("link", { name: lunch.title })).toBeNull();
+    expect(
+      api.calls.filter((call) => call.path === "history/day").map((call) => call.query),
+    ).toEqual([{ readings: "0" }, { readings: "0", date: "2026-10-14" }]);
+  });
+
+  it("keeps the day curve's age visible when a nested clock is ahead of its parent's clock", () => {
+    // Model the milliseconds between the parent render and a child mounting/ticking.
+    let clock = T0.getTime();
+    const RealDate = Date;
+    vi.stubGlobal(
+      "Date",
+      class extends RealDate {
+        constructor(value?: string | number | Date) {
+          super(value ?? clock++);
+        }
+        static override now() {
+          return clock++;
+        }
+      },
+    );
+    mount();
+    expect(
+      within(screen.getByTestId("now-desktop")).getByTestId("chart-caption"),
+    ).toHaveTextContent("sidste måling for 3 min. siden");
+  });
+
+  it("updates an in-progress meal's peak from new feed readings without another history request", async () => {
+    const snack = meal("snack", minutesAgo(30), "Æble", 14);
+    api.meals = [snack];
+    historyMeals = [{ ...snack, stats: emptyStats }];
+    const { rerender } = mount();
+    const desktop = within(screen.getByTestId("now-desktop"));
+    await desktop.findByRole("button", { name: "Måltid kl. 14:43" });
+    live.state = {
+      ...loaded,
+      readings: [...loaded.readings, reading(0, 9.6)],
+      latest: reading(0, 9.6),
+    };
+    rerender(
+      <I18nProvider locale="da" messages={getMessages("da")}>
+        <NowScreen {...base} />
+      </I18nProvider>,
+    );
+    const peak = await desktop.findByRole("img", { name: "Top 9,6 kl. 15:13" });
+    expect(peak.closest("td")).toHaveTextContent("9,6 efter 30 min");
+    expect(api.calls.filter((call) => call.path === "history/day")).toHaveLength(1);
+  });
+
+  it("keeps the feed's curve live and formats peaks and bounds for English mg/dL spaces", async () => {
+    api.meals = [lunch];
+    historyMeals = [withPeak()];
+    live.state = {
+      ...loaded,
+      space: { ...space, glucoseUnit: "mgdl", targetLow: 5, targetHigh: 9 },
+    };
+    const { rerender } = mount({}, "en");
+    const desktop = within(screen.getByTestId("now-desktop"));
+    expect(await desktop.findByRole("img", { name: "Peak 173 at 13:15" })).toBeInTheDocument();
+    expect(desktop.getByText("Target 90–162 mg/dL")).toBeInTheDocument();
+    const before = desktop.getByTestId("end-dot").getAttribute("cy");
+    live.state = {
+      ...live.state,
+      readings: [...loaded.readings, reading(0, 8)],
+      latest: reading(0, 8),
+    };
+    rerender(
+      <I18nProvider locale="en" messages={getMessages("en")}>
+        <NowScreen {...base} locale="en" />
+      </I18nProvider>,
+    );
+    expect(desktop.getByTestId("end-dot").getAttribute("cy")).not.toBe(before);
   });
 });
