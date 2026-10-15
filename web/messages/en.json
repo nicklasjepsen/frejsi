@@ -99,5 +99,50 @@
       "validation": "Something in what you entered couldn't be used. Look it over and try again.",
       "internal": "Something went wrong on our side. Try again in a moment."
     }
+  },
+  "passkey": {
+    "working": "One moment …",
+    "cancelled": "That didn't go through this time. Try again when you're ready.",
+    "unsupported": "This browser can't use passkeys. Try a newer browser, or open the link on your phone.",
+    "failed": "That didn't work this time. Try again – and if it keeps happening, ask for a new link."
+  },
+  "invite": {
+    "pageTitle": "Invitation",
+    "greeting": "Hi {name},",
+    "greetingSpace": "you're invited to {space}.",
+    "greetingDevice": "you're adding a device to {space}.",
+    "invitedAs": {
+      "owner": "{inviter} has invited you as an <role>owner</role>.",
+      "carer": "{inviter} has invited you as a <role>carer</role>.",
+      "viewer": "{inviter} has invited you as a <role>viewer</role>."
+    },
+    "roleExplained": {
+      "owner": "You can do everything – people, devices and settings included.",
+      "carer": "You can log meals, verify food and see the curve.",
+      "viewer": "You can see today's meals and carbohydrates. Blood sugar is not shown."
+    },
+    "deviceExplained": "{inviter} sent you the link so this device can sign in as you too. You keep your role in the space.",
+    "phone": {
+      "noPassword": "No password. You sign in with your face or your finger.",
+      "newPhone": "A new phone later? Ask {inviter} or another owner for a new link.",
+      "button": "Create access with this phone"
+    },
+    "desktop": {
+      "title": "Create your access",
+      "noPassword": "No password and no email. You sign in with Windows Hello, Touch ID or your phone.",
+      "alsoPhone": "Want to use your phone as well? Ask {inviter} for an “add device” link afterwards.",
+      "button": "Create access with this computer"
+    },
+    "expires": "The link is valid {days, plural, one {# more day} other {# more days}} and can be used only once.",
+    "footer": "Frejsi is open source, never calculates insulin and does not replace your sensor app or pump app.",
+    "unavailable": {
+      "title": "This link no longer works",
+      "invite-expired": "The link has expired. An invitation link is valid for 7 days.",
+      "invite-used": "The link has already been used. An invitation link can be used only once.",
+      "invite-revoked": "The link was withdrawn by the person who sent it.",
+      "whoCanHelp": "The person who sent you the link – or another owner of the space – can send you a new one. It only takes a moment.",
+      "alreadyIn": "Already have access?",
+      "login": "Sign in"
+    }
   }
 }

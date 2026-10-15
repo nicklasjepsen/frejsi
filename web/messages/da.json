@@ -99,5 +99,50 @@
       "validation": "Noget i det, du skrev, kunne ikke bruges. Kig det igennem og prøv igen.",
       "internal": "Noget gik galt hos os. Prøv igen om et øjeblik."
     }
+  },
+  "passkey": {
+    "working": "Et øjeblik …",
+    "cancelled": "Det blev ikke til noget denne gang. Prøv igen, når du er klar.",
+    "unsupported": "Den her browser kan ikke bruge adgangsnøgler. Prøv en nyere browser, eller åbn linket på din telefon.",
+    "failed": "Det lykkedes ikke denne gang. Prøv igen – og hvis det bliver ved, så bed om et nyt link."
+  },
+  "invite": {
+    "pageTitle": "Invitation",
+    "greeting": "Hej {name},",
+    "greetingSpace": "du er inviteret til {space}.",
+    "greetingDevice": "du er ved at tilføje en enhed til {space}.",
+    "invitedAs": {
+      "owner": "{inviter} har inviteret dig som <role>ejer</role>.",
+      "carer": "{inviter} har inviteret dig som <role>hjælper</role>.",
+      "viewer": "{inviter} har inviteret dig til at <role>se med</role>."
+    },
+    "roleExplained": {
+      "owner": "Du kan alt – også personer, enheder og indstillinger.",
+      "carer": "Du kan logge måltider, godkende mad og se kurven.",
+      "viewer": "Du kan se dagens måltider og kulhydrater. Blodsukker vises ikke."
+    },
+    "deviceExplained": "{inviter} har sendt dig linket, så den her enhed også kan logge ind som dig. Du beholder din rolle i rummet.",
+    "phone": {
+      "noPassword": "Ingen adgangskode. Du logger ind med dit ansigt eller din finger.",
+      "newPhone": "Ny telefon senere? Så beder du {inviter} eller en anden ejer om et nyt link.",
+      "button": "Opret adgang med denne telefon"
+    },
+    "desktop": {
+      "title": "Opret din adgang",
+      "noPassword": "Ingen adgangskode og ingen e-mail. Du logger ind med Windows Hello, Touch ID eller din telefon.",
+      "alsoPhone": "Vil du også bruge telefonen? Bed {inviter} om et »tilføj enhed«-link bagefter.",
+      "button": "Opret adgang med denne computer"
+    },
+    "expires": "Linket gælder i {days, plural, one {# dag} other {# dage}} endnu og kan kun bruges én gang.",
+    "footer": "Frejsi er åben kildekode, regner aldrig insulin og erstatter ikke din sensor-app eller pumpe-app.",
+    "unavailable": {
+      "title": "Det her link virker ikke længere",
+      "invite-expired": "Linket er udløbet. Et invitationslink gælder i 7 dage.",
+      "invite-used": "Linket er allerede brugt. Et invitationslink kan kun bruges én gang.",
+      "invite-revoked": "Linket er trukket tilbage af den, der sendte det.",
+      "whoCanHelp": "Den, der sendte dig linket – eller en anden ejer af rummet – kan sende dig et nyt. Det tager kun et øjeblik.",
+      "alreadyIn": "Har du allerede adgang?",
+      "login": "Log ind"
+    }
   }
 }
