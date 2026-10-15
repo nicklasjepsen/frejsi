@@ -195,3 +195,31 @@ test('a failed Key Vault listing stops the deploy; it never counts as "secret ab
   assert.equal(r.calls.filter((c) => /keyvault secret set/.test(c)).length, 0);
   assert.ok(!r.calls.some((c) => /firewall-rule create/.test(c)), 'the deploy went on after the failure');
 });
+
+test('registers the connect handler after the web upload, for the connect event only (issue #95)', () => {
+  const r = runDeploy({ env: { FAKE_EXISTING_SECRETS: 'database-url web-pubsub-connection-string bootstrap-token' } });
+  assert.equal(r.status, 0, r.output);
+  const upload = r.calls.findIndex((c) => c.startsWith('docker run'));
+  const hub = r.calls.findIndex((c) => /rest --method put .*webPubSub\/wps-frejsi-abc\/hubs\/frejsi\?/.test(c));
+  assert.ok(upload >= 0, r.calls.join('\n'));
+  assert.ok(hub > upload, 'the handler is set only once the build that answers it is uploaded');
+  const body = JSON.parse(readFileSync(path.join(r.logDir, 'wps-hub.json'), 'utf8'));
+  assert.deepEqual(body, {
+    properties: {
+      anonymousConnectPolicy: 'deny',
+      eventHandlers: [
+        { urlTemplate: 'https://happy-sea-0abc.1.azurestaticapps.net/api/pubsub', systemEvents: ['connect'], auth: { type: 'None' } },
+      ],
+    },
+  });
+});
+
+test('retries the connect handler while the new build comes up, and fails the release if it never validates', () => {
+  const secrets = 'database-url web-pubsub-connection-string bootstrap-token';
+  const late = runDeploy({ env: { FAKE_EXISTING_SECRETS: secrets, FAKE_HUB_VALIDATION_FAILURES: '2', DEPLOY_RETRY_SLEEP: '0' } });
+  assert.equal(late.status, 0, late.output);
+  assert.ok(existsSync(path.join(late.logDir, 'wps-hub.json')));
+  const never = runDeploy({ env: { FAKE_EXISTING_SECRETS: secrets, FAKE_HUB_VALIDATION_FAILURES: '99', DEPLOY_RETRY_SLEEP: '0' } });
+  assert.notEqual(never.status, 0);
+  assert.match(never.stderr, /connect handler .* never validated/);
+});

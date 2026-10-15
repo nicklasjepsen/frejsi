@@ -224,7 +224,7 @@ node --test 'infra/test/*.test.mjs'
 
 A client token from `negotiate` carries the user id and nothing else: no groups, no roles. The hub
 `frejsi` has one event handler, for the system `connect` event only, at
-`https://<static web app default hostname>/api/pubsub` (`modules/webpubsub.bicep`). Every time a
+`https://<static web app default hostname>/api/pubsub`, registered by `deploy.sh` step 7. Every time a
 socket connects, Web PubSub calls it; the app reads the member's current role in the space named by
 the socket URL's `spaceId` and answers with `space-<id>`, plus `space-<id>-glucose` for owners and
 carers only. A viewer, a carer downgraded a second ago or a removed member is never joined to the
@@ -248,9 +248,14 @@ the database down) is a non-2xx answer, and Web PubSub then refuses the socket; 
 
 Things to know:
 
-- **Release order.** `infra` deploys before the web app, so for the minutes between the two the hub
-  calls a route the old web app does not have yet. Sockets are refused in that window and every
-  screen polls; nothing leaks.
+- **Why `deploy.sh` and not Bicep.** Azure validates a handler with an `OPTIONS` request when it is
+  set, and the route exists only once step 6 has uploaded the build; on the first release there is
+  no web app at all. `deploy.sh` retries the registration while the build comes up and fails the
+  release if it never validates.
+- **Releases that change infra.** `modules/webpubsub.bicep` declares the hub without a handler, so
+  the `infra` job clears it until `deploy.sh` sets it again a few minutes later. Sockets opened in
+  that window join no group: nothing leaks, but those screens get no push until they reconnect
+  (or the page is reloaded).
 - **Key rotation.** If you regenerate the primary key in the portal, delete the Key Vault secret
   `web-pubsub-connection-string` and run a release, so `deploy.sh` stores the new one. Until then the
   app cannot verify the hub and every socket is refused (screens poll).

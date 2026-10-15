@@ -11,6 +11,7 @@
 #      the app runs from the package
 #   5. writes the Static Web App's settings (plan section 7) from Key Vault and Bicep outputs
 #   6. uploads the standalone Next.js build to the Static Web App
+#   7. registers the hub's `connect` event handler at the web app's /api/pubsub (issue #95)
 #
 # Required environment: AZURE_SUBSCRIPTION_ID, AZURE_RESOURCE_GROUP, APP_VERSION (the tag).
 # Optional: CUSTOM_DOMAIN (sets APP_ORIGIN; otherwise the default hostname), GITHUB_OUTPUT,
@@ -314,3 +315,29 @@ if [ -n "${GITHUB_OUTPUT:-}" ]; then
   echo "app_origin=$APP_ORIGIN" >> "$GITHUB_OUTPUT"
 fi
 log "Deployed $APP_VERSION; the app is at $APP_ORIGIN"
+
+# --- 7. Web PubSub connect handler (issue #95) -----------------------------------------------------
+# Client tokens carry no groups: on every connect the hub asks the web app's /api/pubsub, which
+# grants the groups of the member's current role. Set here and not in Bicep because Azure validates
+# a handler with an OPTIONS request when it is set, and only the build uploaded in step 6 answers it.
+# The PUT carries the whole hub, so it repeats the policy modules/webpubsub.bicep sets. Retried
+# while the new build comes up; a handler that never validates fails the release, because without
+# it every socket would open and join no group.
+WPS_HUB_ID="/subscriptions/$AZURE_SUBSCRIPTION_ID/resourceGroups/$RG/providers/Microsoft.SignalRService/webPubSub/$WEB_PUBSUB/hubs/$WEB_PUBSUB_HUB"
+WPS_HUB_FILE="$WORK/wps-hub.json"
+jq -n --arg url "https://$SWA_DEFAULT_HOST/api/pubsub" \
+  '{ properties: { anonymousConnectPolicy: "deny",
+                   eventHandlers: [ { urlTemplate: $url, systemEvents: ["connect"], auth: { type: "None" } } ] } }' \
+  > "$WPS_HUB_FILE"
+log "Registering the connect handler of hub $WEB_PUBSUB_HUB at https://$SWA_DEFAULT_HOST/api/pubsub"
+attempt=0
+until az rest --method put --url "https://management.azure.com${WPS_HUB_ID}?api-version=2024-03-01" \
+        --body "@$WPS_HUB_FILE" --output none; do
+  attempt=$((attempt + 1))
+  if [ "$attempt" -ge 10 ]; then
+    echo "::error::the Web PubSub connect handler at /api/pubsub never validated" >&2
+    exit 1
+  fi
+  sleep "$RETRY_SLEEP"
+done
+log "Connect handler registered"
