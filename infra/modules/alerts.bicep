@@ -10,6 +10,7 @@ param location string
 param tags object
 param baseName string
 param appInsightsId string
+@secure()
 param alertEmail string
 
 resource actionGroup 'Microsoft.Insights/actionGroups@2023-01-01' = {
