@@ -44,7 +44,7 @@ describe('GlucoseChart variant="meal"', () => {
   it("draws the phone curve with its label, band, bounds, line, end dot, meal line, triangle and axis", () => {
     const { container } = mount(<GlucoseChart {...props} size="phone" bolusTs={at(MEAL, -12)} />);
     const svg = screen.getByRole("img", {
-      name: "Glukose fra en time før til fire timer efter måltidet",
+      name: "Glukose fra en time før til fire timer efter måltidet. Bolus 11:58",
     });
     expect(svg).toHaveAttribute("viewBox", "0 0 326 118");
     expect(screen.getByTestId("target-band")).toHaveAttribute("y", "60");
@@ -52,7 +52,7 @@ describe('GlucoseChart variant="meal"', () => {
     expect(screen.getByTestId("curve")).toHaveAttribute("points", expect.stringMatching(/^0,80 /));
     expect(screen.getByTestId("end-dot")).toHaveAttribute("r", "5");
     expect(screen.getByTestId("meal-line")).toHaveAttribute("x1", "59.2");
-    expect(screen.getByTestId("bolus")).toHaveAttribute("aria-label", "Bolus 11:58");
+    expect(screen.getByTestId("bolus")).toHaveAttribute("aria-hidden", "true");
     const ticks = [...container.querySelectorAll("[data-testid=tick]")].map((t) => t.textContent);
     expect(ticks).toEqual(["−1 t", "12:10", "+1 t", "+2 t", "+3 t", "+4 t"]);
     expect(container.querySelector("[data-tick=meal]")).toHaveAttribute("font-weight", "700");
@@ -62,6 +62,19 @@ describe('GlucoseChart variant="meal"', () => {
   it("has no triangle without a bolus tap", () => {
     mount(<GlucoseChart {...props} size="phone" />);
     expect(screen.queryByTestId("bolus")).toBeNull();
+  });
+
+  it("draws a previous occurrence with a single reading as a faint dot", () => {
+    const ts = at(MEAL, -24 * 60);
+    const { container } = mount(
+      <GlucoseChart
+        {...props}
+        size="phone"
+        previous={[{ mealTs: ts, readings: [{ ts: at(ts, 30), mmol: 7, trend: "flat" }] }]}
+      />,
+    );
+    expect(container.querySelector("polyline[data-testid=previous]")).toBeNull();
+    expect(container.querySelectorAll("circle[data-testid=previous-point]")).toHaveLength(1);
   });
 
   it("draws the previous curves faintly behind the main line and names them on desktop", () => {
@@ -157,10 +170,12 @@ describe('GlucoseChart variant="day" with meals', () => {
   it("draws meal lines and bolus triangles, and names the day with its meals", () => {
     mount(<GlucoseChart {...base} />);
     expect(
-      screen.getByRole("img", { name: "Glukose i dag fra 06:00 til 15:13 med 1 måltid" }),
+      screen.getByRole("img", {
+        name: "Glukose i dag fra 06:00 til 15:13 med 1 måltid. Bolus 11:58",
+      }),
     ).toBeInTheDocument();
     expect(screen.getAllByTestId("meal-line")).toHaveLength(1);
-    expect(screen.getByTestId("bolus")).toHaveAttribute("aria-label", "Bolus 11:58");
+    expect(screen.getByTestId("bolus")).toHaveAttribute("aria-hidden", "true");
     expect(screen.queryByRole("button")).toBeNull();
   });
 
@@ -168,7 +183,7 @@ describe('GlucoseChart variant="day" with meals', () => {
     const onMealTap = vi.fn();
     mount(<GlucoseChart {...base} size="phone" labelKind="history" onMealTap={onMealTap} />);
     expect(
-      screen.getByRole("img", { name: "Glukose i dag med måltider markeret" }),
+      screen.getByRole("img", { name: "Glukose i dag med måltider markeret. Bolus 11:58" }),
     ).toHaveAttribute("viewBox", "0 0 326 118");
     const target = screen.getByRole("button", { name: "Måltid kl. 12:10" });
     expect(target.style.width).toBe("44px");
