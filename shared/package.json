@@ -14,7 +14,8 @@
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
     "test": "vitest run",
-    "prisma:check": "prisma validate && prisma migrate diff --from-empty --to-schema-datamodel prisma/schema.prisma --script | diff - prisma/migrations/0001_foundation/migration.sql"
+    "prisma:check": "prisma validate && prisma migrate diff --from-empty --to-schema-datamodel prisma/schema.prisma --script | diff - prisma/migrations/0001_foundation/migration.sql",
+    "test:integration": "vitest run --config test/integration/vitest.config.ts"
   },
   "dependencies": {
     "@azure/identity": "4.14.0",
