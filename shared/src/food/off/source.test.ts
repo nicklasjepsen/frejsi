@@ -130,6 +130,27 @@ describe("OFF fixture adapter", () => {
     vi.advanceTimersByTime(60_000);
     expect((await b.search("bread", "en", signal())).status).toBe("ok");
   });
+  it("retains country matches when the optional world fallback fails or has no budget", async () => {
+    const country = await fixture("search-results");
+    for (const reason of ["network", "budget"] as const) {
+      const limits = new OffRateLimits();
+      if (reason === "budget") for (let i = 0; i < 9; i++) limits.search.take();
+      const fetcher: typeof fetch = (url) => {
+        if (
+          new URL(url instanceof Request ? url.url : url.toString()).hostname ===
+          "world.openfoodfacts.org"
+        )
+          return Promise.reject(new Error("offline"));
+        return Promise.resolve(Response.json(country));
+      };
+      const result = await source(fetcher, limits).search("bread", "en", signal());
+      expect(result.status).toBe("ok");
+      expect(result.candidates.map((candidate) => candidate.sourceRef)).toEqual([
+        "off:2000000000008",
+        "off:2000000000015",
+      ]);
+    }
+  });
   it("bounds product reads independently of searches", async () => {
     const f = fake(["product-not-found"]);
     const off = source(f.fetcher);

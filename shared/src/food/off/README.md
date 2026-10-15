@@ -17,6 +17,7 @@ argument. Without a country the source queries the world host once.
   `search_simple=1`, `action=process`, `json=1`, `page_size=10`, and `fields`.
   Fewer than five country rows triggers the world host. Country results precede
   world results, normalized codes deduplicate them, and only ten are returned.
+  If the optional world request fails, existing country matches are retained.
 - Fields: code, localized/default product name, brands, nutriments,
   serving_size, serving_quantity, serving_quantity_unit. The displayed name is
   `{localized name or default name}, {brands}` (brand suffix omitted if absent).
