@@ -4,6 +4,8 @@ export interface ShellSpace {
   id: string;
   name: string;
   role: Role;
+  /** The IANA zone the owner gave at bootstrap; every clock in the shell is formatted in it. */
+  timezone: string;
   /** The subject's name when the space has one, else the space name (header, Nu-Desktop card). */
   subjectName: string;
   /** The first owner by createdAt, for "Simpel visning · slået til af {owner}". */
@@ -23,6 +25,7 @@ export interface ShellMembershipRow {
   space: {
     id: string;
     name: string;
+    timezone: string;
     subjectUser: { name: string } | null;
     memberships: { user: { name: string } }[];
   };
@@ -58,6 +61,7 @@ export async function loadShellData(
         select: {
           id: true,
           name: true,
+          timezone: true,
           subjectUser: { select: { name: true } },
           memberships: {
             where: { role: "owner" },
@@ -76,6 +80,7 @@ export async function loadShellData(
       id: current.space.id,
       name: current.space.name,
       role: Role.parse(current.role),
+      timezone: current.space.timezone,
       subjectName: current.space.subjectUser?.name ?? current.space.name,
       ownerName: current.space.memberships[0]?.user.name ?? null,
     },

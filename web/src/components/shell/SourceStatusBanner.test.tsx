@@ -27,8 +27,18 @@ describe("SourceStatusBanner (plan §9, decision 20)", () => {
     const { container } = wrap(
       "da",
       <>
-        <SourceStatusBanner status="connected" since={null} sourceType="dexcom-share" />
-        <SourceStatusBanner status="not-configured" since={null} sourceType={null} />
+        <SourceStatusBanner
+          status="connected"
+          since={null}
+          sourceType="dexcom-share"
+          timeZone="Europe/Copenhagen"
+        />
+        <SourceStatusBanner
+          status="not-configured"
+          since={null}
+          sourceType={null}
+          timeZone="Europe/Copenhagen"
+        />
       </>,
     );
     expect(container).toBeEmptyDOMElement();
@@ -46,6 +56,34 @@ describe("SourceStatusBanner (plan §9, decision 20)", () => {
     );
     const banner = screen.getByRole("status");
     expect(banner).toHaveTextContent("Ingen forbindelse til Dexcom Share siden 14:05");
+  });
+
+  it("formats the time in the space's zone, not the runtime's or the provider's", () => {
+    wrap(
+      "da",
+      <SourceStatusBanner
+        status="disconnected"
+        since="2026-10-14T12:05:00.000Z"
+        sourceType="dexcom-share"
+        timeZone="America/New_York"
+      />,
+    );
+    expect(screen.getByRole("status")).toHaveTextContent("siden 08:05");
+  });
+
+  it("says only that there is no connection when the time of the disconnection is unknown", () => {
+    wrap(
+      "da",
+      <SourceStatusBanner
+        status="disconnected"
+        since={null}
+        sourceType="dexcom-share"
+        timeZone="Europe/Copenhagen"
+      />,
+    );
+    const banner = screen.getByRole("status");
+    expect(banner).toHaveTextContent("Ingen forbindelse til Dexcom Share");
+    expect(banner.textContent).not.toMatch(/siden|–/);
   });
 
   it("speaks English for an English user", () => {
