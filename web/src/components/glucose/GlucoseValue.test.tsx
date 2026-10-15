@@ -144,11 +144,24 @@ describe("GlucoseValue (plan §9, hard rule: never a value without its age)", ()
     expect(screen.getByTestId("glucose-age")).toHaveTextContent("for 15 min. siden");
   });
 
-  it("counts hours and 'lige nu'", () => {
+  it("counts hours, whole hours without '0 min.', and 'lige nu'", () => {
     const { rerender } = wrap(
       <GlucoseValue reading={reading(minutesAgo(65))} unit="mmol" now={T0} size="phone" />,
     );
-    expect(screen.getByTestId("glucose-age")).toHaveTextContent("for 1 t 5 min. siden");
+    expect(screen.getByTestId("glucose-age")).toHaveTextContent("for 1 time 5 min. siden");
+    rerender(
+      <I18nProvider locale="da" messages={getMessages("da")}>
+        <GlucoseValue reading={reading(minutesAgo(120))} unit="mmol" now={T0} size="phone" />
+      </I18nProvider>,
+    );
+    // Whole hours carry no "0 min.".
+    expect(screen.getByTestId("glucose-age")).toHaveTextContent("for 2 timer siden");
+    rerender(
+      <I18nProvider locale="en" messages={getMessages("en")}>
+        <GlucoseValue reading={reading(minutesAgo(120))} unit="mmol" now={T0} size="phone" />
+      </I18nProvider>,
+    );
+    expect(screen.getByTestId("glucose-age")).toHaveTextContent("2 h ago");
     rerender(
       <I18nProvider locale="da" messages={getMessages("da")}>
         <GlucoseValue reading={reading(minutesAgo(0.2))} unit="mmol" now={T0} size="phone" />

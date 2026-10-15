@@ -110,6 +110,7 @@
       "justNow": "just now",
       "minutes": "{minutes} min ago",
       "hours": "{hours} h {minutes} min ago",
+      "wholeHours": "{hours} h ago",
       "overADay": "more than a day ago"
     },
     "trend": {
@@ -138,7 +139,7 @@
   },
   "now": {
     "title": "Right now",
-    "simpleTitle": "Your number right now",
+    "simpleTitle": "Your number",
     "eatingNow": "I'm eating now",
     "lastMeal": "Last meal",
     "lastMealSoon": "Meals are coming in a later version.",
