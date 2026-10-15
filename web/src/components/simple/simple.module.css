@@ -1,0 +1,105 @@
+/* The picker (Log-Simpel): 2-up photo tiles, the first spanning both columns, a dashed "Noget
+   andet?" tile and the sticky simple TotalBar. Tokens only, so dark mode and the accent follow. */
+
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-height: 100%;
+  padding-top: 20px;
+}
+
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.hero {
+  grid-column: span 2;
+}
+
+.cell {
+  min-width: 0;
+}
+
+.other {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 150px;
+  padding: 10px;
+  border: 3px dashed var(--hairline-strong);
+  border-radius: var(--radius-card-simple);
+  background: var(--surface);
+  color: var(--accent-strong);
+  font: 700 17px/1.2 var(--font-body-stack);
+  text-align: center;
+  cursor: pointer;
+}
+
+.other:focus-visible {
+  outline: 2px solid var(--accent-base);
+  outline-offset: 2px;
+}
+
+.search input {
+  font-size: 18px;
+  min-height: 50px;
+}
+
+.page[data-simple="true"] .search input {
+  font-size: 20px;
+  min-height: 60px;
+}
+
+.noMatch {
+  font-size: 16px;
+  color: var(--text-muted);
+}
+
+.portions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.howMuch {
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.page[data-simple="true"] .portions button {
+  min-height: var(--touch-min-simple);
+  font-size: 18px;
+}
+
+/* Sticky at the bottom of the screen, as drawn; the shell shows no tab bar on this page. */
+.bar {
+  position: sticky;
+  bottom: 0;
+  margin: auto calc(-1 * var(--phone-gutter)) 0;
+}
+
+@media (min-width: 1280px) {
+  .page {
+    padding-top: 0;
+    max-width: 720px;
+  }
+
+  .grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .bar {
+    margin: auto 0 0;
+  }
+}
