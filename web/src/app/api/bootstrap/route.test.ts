@@ -1,25 +1,28 @@
 // @vitest-environment node
+import type { EventSink } from "@frejsi/shared";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { FakeAuthDb, recordingEmit, type RecordedEvent } from "@/lib/auth/test-support";
+import { FakeAuthDb, recordingSink, type RecordedEvent } from "@/lib/auth/test-support";
 
 import { POST } from "./route";
 
 const shared = vi.hoisted(() => {
-  const holder: { db: Record<string, unknown>; emit: (...args: unknown[]) => Promise<unknown> } = {
+  const holder: { db: Record<string, unknown>; sink: EventSink } = {
     db: {},
-    emit: () => Promise.resolve({}),
+    sink: { publish: () => Promise.resolve() },
   };
+  // core.ts caches the sink it builds once, so this one forwards to whatever the test set.
+  const sink: EventSink = { publish: (group, envelope) => holder.sink.publish(group, envelope) };
   return {
     holder,
     prisma: new Proxy({}, { get: (_target, key: string) => holder.db[key] }),
-    emit: (...args: unknown[]) => holder.emit(...args),
+    sink,
   };
 });
 vi.mock("@frejsi/shared", async (importOriginal) => ({
   ...(await importOriginal<Record<string, unknown>>()),
   prisma: shared.prisma,
-  emit: shared.emit,
+  createEventSinkFromEnv: () => shared.sink,
 }));
 
 const ORIGIN = "https://frejsi.example";
@@ -40,10 +43,10 @@ beforeEach(() => {
   process.env.APP_ORIGIN = ORIGIN;
   process.env.BOOTSTRAP_TOKEN = TOKEN;
   fake = new FakeAuthDb(() => T0);
-  const recorder = recordingEmit();
+  const recorder = recordingSink();
   events = recorder.events;
   shared.holder.db = fake.db as unknown as Record<string, unknown>;
-  shared.holder.emit = recorder.emit as unknown as (...args: unknown[]) => Promise<unknown>;
+  shared.holder.sink = recorder.sink;
   logLines = [];
   vi.spyOn(process.stdout, "write").mockImplementation((chunk: unknown) => {
     logLines.push(String(chunk));

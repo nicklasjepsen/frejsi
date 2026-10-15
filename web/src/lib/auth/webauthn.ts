@@ -129,13 +129,14 @@ export async function startRegistration(
 /**
  * Verifies the attestation and, in one transaction, claims the invite, creates the user (unless
  * the invite names one), the membership with the invite's role, the passkey and the session.
- * `member.joined` or `device.added` is emitted after the commit.
+ * `member.joined` or `device.added` is written in the same transaction and published after
+ * the commit.
  */
 export async function finishRegistration(
   input: RegistrationInput,
   deps: AuthDeps = {},
 ): Promise<RegistrationResult> {
-  const { db, emit, now } = resolve(deps);
+  const { db, sink, now, log } = resolve(deps);
   const challenge = await consumeChallenge(input.challengeId, "register", deps);
   if (!challenge.inviteToken || !challenge.userId) throw new HttpError(400, "validation");
   const invite = await loadInvite(challenge.inviteToken, deps);
@@ -164,38 +165,43 @@ export async function finishRegistration(
   const userId = challenge.userId;
   let role = invite.role as Role;
 
-  const passkeyId = await transact(db, emit, async (tx, emitLater) => {
-    const txDeps = { db: tx, emit: emitLater, now };
-    await markInviteUsed(invite.token, txDeps);
-    if (invite.forUserId) {
-      // An add-a-device link changes no membership; the result carries the role the user has.
-      const membership = await tx.membership.findUnique({
-        where: { userId_spaceId: { userId, spaceId: invite.spaceId } },
+  const passkeyId = await transact(
+    db,
+    sink,
+    async (tx, emit) => {
+      const txDeps = { db: tx, emit, now };
+      await markInviteUsed(invite.token, txDeps);
+      if (invite.forUserId) {
+        // An add-a-device link changes no membership; the result carries the role the user has.
+        const membership = await tx.membership.findUnique({
+          where: { userId_spaceId: { userId, spaceId: invite.spaceId } },
+        });
+        if (!membership) throw new HttpError(404, "not-found");
+        role = membership.role as Role;
+      } else {
+        await tx.user.create({ data: { id: userId, name: invite.name } });
+        await addMember({ spaceId: invite.spaceId, userId, role }, txDeps);
+      }
+      const passkey = await tx.passkey.create({
+        data: {
+          userId,
+          credentialId: credential.id,
+          publicKey: credential.publicKey,
+          counter: credential.counter,
+          transports: credential.transports?.join(",") ?? null,
+          deviceName: input.deviceName ?? null,
+        },
       });
-      if (!membership) throw new HttpError(404, "not-found");
-      role = membership.role as Role;
-    } else {
-      await tx.user.create({ data: { id: userId, name: invite.name } });
-      await addMember({ spaceId: invite.spaceId, userId, role }, txDeps);
-    }
-    const passkey = await tx.passkey.create({
-      data: {
-        userId,
-        credentialId: credential.id,
-        publicKey: credential.publicKey,
-        counter: credential.counter,
-        transports: credential.transports?.join(",") ?? null,
-        deviceName: input.deviceName ?? null,
-      },
-    });
-    if (invite.forUserId) {
-      await emitDevice(tx, emitLater, "device.added", userId, passkey.id);
-    }
-    await tx.session.create({
-      data: { id: sessionId, userId, passkeyId: passkey.id, expiresAt, lastSeenAt: at },
-    });
-    return passkey.id;
-  });
+      if (invite.forUserId) {
+        await emitDevice(tx, emit, "device.added", userId, passkey.id);
+      }
+      await tx.session.create({
+        data: { id: sessionId, userId, passkeyId: passkey.id, expiresAt, lastSeenAt: at },
+      });
+      return passkey.id;
+    },
+    { now, log },
+  );
 
   return { sessionId, expiresAt, userId, passkeyId, spaceId: invite.spaceId, role };
 }
@@ -221,7 +227,7 @@ export async function startLogin(
  * tells People to refetch the member, devices included.
  */
 export async function finishLogin(input: LoginInput, deps: AuthDeps = {}): Promise<LoginResult> {
-  const { db, emit, now } = resolve(deps);
+  const { db, sink, now, log } = resolve(deps);
   const challenge = await consumeChallenge(input.challengeId, "login", deps);
   const passkey = await db.passkey.findUnique({ where: { credentialId: input.response.id } });
   if (!passkey) throw new HttpError(403, "forbidden");
@@ -249,30 +255,35 @@ export async function finishLogin(input: LoginInput, deps: AuthDeps = {}): Promi
   const at = now();
   const sessionId = newSessionId();
   const expiresAt = sessionExpiry(at);
-  await transact(db, emit, async (tx, emitLater) => {
-    // Conditional on the counter the assertion was verified against: a login that raced this
-    // one on the same passkey has moved it, and neither a stale write nor a second session for
-    // a cloned authenticator may follow.
-    const { count } = await tx.passkey.updateMany({
-      where: { id: passkey.id, counter: passkey.counter },
-      data: { counter: verification.authenticationInfo.newCounter, lastUsedAt: at },
-    });
-    if (count !== 1) throw new HttpError(403, "forbidden");
-    await tx.user.update({ where: { id: passkey.userId }, data: { lastSeen: at } });
-    const memberships = await tx.membership.findMany({ where: { userId: passkey.userId } });
-    for (const membership of memberships) {
-      await emitLater(membership.spaceId, "member.updated", { userId: passkey.userId });
-    }
-    await tx.session.create({
-      data: {
-        id: sessionId,
-        userId: passkey.userId,
-        passkeyId: passkey.id,
-        expiresAt,
-        lastSeenAt: at,
-      },
-    });
-  });
+  await transact(
+    db,
+    sink,
+    async (tx, emit) => {
+      // Conditional on the counter the assertion was verified against: a login that raced this
+      // one on the same passkey has moved it, and neither a stale write nor a second session for
+      // a cloned authenticator may follow.
+      const { count } = await tx.passkey.updateMany({
+        where: { id: passkey.id, counter: passkey.counter },
+        data: { counter: verification.authenticationInfo.newCounter, lastUsedAt: at },
+      });
+      if (count !== 1) throw new HttpError(403, "forbidden");
+      await tx.user.update({ where: { id: passkey.userId }, data: { lastSeen: at } });
+      const memberships = await tx.membership.findMany({ where: { userId: passkey.userId } });
+      for (const membership of memberships) {
+        await emit(membership.spaceId, "member.updated", { userId: passkey.userId });
+      }
+      await tx.session.create({
+        data: {
+          id: sessionId,
+          userId: passkey.userId,
+          passkeyId: passkey.id,
+          expiresAt,
+          lastSeenAt: at,
+        },
+      });
+    },
+    { now, log },
+  );
   return { sessionId, expiresAt, userId: passkey.userId };
 }
 
@@ -282,14 +293,19 @@ export async function finishLogin(input: LoginInput, deps: AuthDeps = {}): Promi
  * (the People route) has already checked the owner's role.
  */
 export async function removePasskey(passkeyId: string, deps: AuthDeps = {}): Promise<void> {
-  const { db, emit } = resolve(deps);
+  const { db, sink, now, log } = resolve(deps);
   const passkey = await db.passkey.findUnique({ where: { id: passkeyId } });
   if (!passkey) throw new HttpError(404, "not-found");
-  await transact(db, emit, async (tx, emitLater) => {
-    await tx.session.deleteMany({ where: { passkeyId } });
-    await tx.passkey.delete({ where: { id: passkeyId } });
-    await emitDevice(tx, emitLater, "device.removed", passkey.userId, passkeyId);
-  });
+  await transact(
+    db,
+    sink,
+    async (tx, emit) => {
+      await tx.session.deleteMany({ where: { passkeyId } });
+      await tx.passkey.delete({ where: { id: passkeyId } });
+      await emitDevice(tx, emit, "device.removed", passkey.userId, passkeyId);
+    },
+    { now, log },
+  );
 }
 
 /** Ends the current session. Unknown ids are already gone, so they succeed too. */

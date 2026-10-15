@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import { bootstrapSpace, BootstrapRequest, tokenMatches } from "./bootstrap";
 import { hashToken } from "./invites";
-import { FakeAuthDb, FakeDbError, recordingEmit } from "./test-support";
+import { FakeAuthDb, FakeDbError, recordingSink } from "./test-support";
 
 const T0 = new Date("2026-10-15T08:00:00.000Z");
 const TOKEN = "example-bootstrap-token-0123456789";
@@ -15,8 +15,8 @@ const body = {
 
 function world() {
   const fake = new FakeAuthDb(() => T0);
-  const { emit, events } = recordingEmit();
-  return { fake, events, deps: { db: fake.db, emit, now: () => T0, expectedToken: TOKEN } };
+  const { sink, events } = recordingSink();
+  return { fake, events, deps: { db: fake.db, sink, now: () => T0, expectedToken: TOKEN } };
 }
 
 beforeEach(() => {

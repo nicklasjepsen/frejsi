@@ -1,6 +1,6 @@
 import { HttpError } from "@frejsi/shared";
 
-import { resolveTx, type TxDeps } from "./core";
+import { resolveTx, type DbDeps } from "./core";
 
 export type ChallengeKind = "register" | "login";
 
@@ -27,7 +27,7 @@ export interface ConsumedChallenge {
  */
 export async function createChallenge(
   input: NewChallenge,
-  deps: TxDeps = {},
+  deps: DbDeps = {},
 ): Promise<{ id: string }> {
   const { db, now } = resolveTx(deps);
   const at = now();
@@ -53,7 +53,7 @@ export async function createChallenge(
 export async function consumeChallenge(
   id: string,
   kind: ChallengeKind,
-  deps: TxDeps = {},
+  deps: DbDeps = {},
 ): Promise<ConsumedChallenge> {
   const { db, now } = resolveTx(deps);
   const row = await db.authChallenge.findUnique({ where: { id } });

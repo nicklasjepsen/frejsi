@@ -1,21 +1,25 @@
 import {
-  emit as defaultEmit,
+  createEmit,
+  createEventSinkFromEnv,
   log as defaultLog,
   prisma,
+  type EventEnvelope,
   type EventPayload,
+  type EventSink,
   type EventType,
   type Logger,
   type PrismaClient,
 } from "@frejsi/shared";
 
 /**
- * The Prisma delegates the auth modules read and write. Inside `transact` the same shape is the
- * transaction client, so a function that takes `AuthTx` runs the same way on its own or as one
- * step of a larger transaction.
+ * The Prisma delegates the auth modules read and write, `event` included: `transact` writes each
+ * event row through the same transaction as the write it belongs to. Inside `transact` the same
+ * shape is the transaction client, so a function that takes `TxDeps` runs the same way on its own
+ * or as one step of a larger transaction.
  */
 export type AuthTx = Pick<
   PrismaClient,
-  "user" | "space" | "membership" | "invite" | "passkey" | "session" | "authChallenge"
+  "user" | "space" | "membership" | "invite" | "passkey" | "session" | "authChallenge" | "event"
 >;
 
 /** The one isolation level the auth modules ask for; the default (read committed) otherwise. */
@@ -28,8 +32,8 @@ export interface AuthDb extends AuthTx {
 }
 
 /**
- * `emit()` without its return value. Inside a transaction the event is queued until the commit,
- * so the function doing the write never sees an envelope; outside it is `emit` itself.
+ * `emit()` bound to the running transaction: the event row is inserted next to the write, and
+ * the envelope reaches Web PubSub after the commit. Outside `transact` there is no such thing.
  */
 export type Emitter = <T extends EventType>(
   spaceId: string,
@@ -37,32 +41,51 @@ export type Emitter = <T extends EventType>(
   payload: EventPayload<T>,
 ) => Promise<unknown>;
 
-/** Dependencies of a function that does its own, single writes. Tests pass fakes. */
-export interface TxDeps {
+/** Dependencies of a function that only reads, or writes without an event (challenges). */
+export interface DbDeps {
   db?: AuthTx;
-  emit?: Emitter;
   now?: () => Date;
 }
 
-/** Dependencies of a function that opens a transaction. */
-export interface AuthDeps extends TxDeps {
+/** What a function receives when it runs as one step of a transaction another function opened. */
+export interface TxDeps {
+  db: AuthTx;
+  emit: Emitter;
+  now?: () => Date;
+}
+
+/** Dependencies of a function that opens its own transaction. Tests pass fakes. */
+export interface AuthDeps {
   db?: AuthDb;
+  /** Where envelopes go after the commit; Web PubSub from the environment by default. */
+  sink?: EventSink;
+  now?: () => Date;
+  log?: Logger;
 }
 
-export function resolveTx(deps: TxDeps): { db: AuthTx; emit: Emitter; now: () => Date } {
+let defaultSink: EventSink | undefined;
+
+export function resolveTx(deps: DbDeps): { db: AuthTx; now: () => Date } {
+  return { db: deps.db ?? prisma, now: deps.now ?? (() => new Date()) };
+}
+
+export function resolve(deps: AuthDeps): {
+  db: AuthDb;
+  sink: EventSink;
+  now: () => Date;
+  log: Logger;
+} {
   return {
     db: deps.db ?? prisma,
-    emit: deps.emit ?? defaultEmit,
+    sink: deps.sink ?? (defaultSink ??= createEventSinkFromEnv()),
     now: deps.now ?? (() => new Date()),
+    log: deps.log ?? defaultLog,
   };
 }
 
-export function resolve(deps: AuthDeps): { db: AuthDb; emit: Emitter; now: () => Date } {
-  return {
-    db: deps.db ?? prisma,
-    emit: deps.emit ?? defaultEmit,
-    now: deps.now ?? (() => new Date()),
-  };
+/** A transaction client has no `$transaction` of its own; that is how the two are told apart. */
+export function isTxDeps(deps: AuthDeps | TxDeps): deps is TxDeps {
+  return deps.db !== undefined && !("$transaction" in deps.db);
 }
 
 /**
@@ -75,25 +98,24 @@ export const TRANSACTION_ATTEMPTS = 3;
 
 export interface TransactOptions {
   serializable?: boolean;
-  /** Receives the line for an event that could not be emitted after the commit. */
+  now?: () => Date;
+  /** Receives the line for an envelope that could not be published after the commit. */
   log?: Logger;
 }
 
 /** Prisma's code for a transaction that failed due to a write conflict or a deadlock. */
 function isTransactionConflict(error: unknown): boolean {
   return (
-    typeof error === "object" &&
-    error !== null &&
-    (error as { code?: unknown }).code === "P2034"
+    typeof error === "object" && error !== null && (error as { code?: unknown }).code === "P2034"
   );
 }
 
 /**
- * Runs `fn` in one Prisma transaction and delivers every event it emitted after the commit, in
- * order. A write that rolls back therefore never has an event, and an event never precedes its
- * row (plan §5: every write is followed by its event). An event that fails after the commit is
- * logged, not thrown: the write stands and the caller's response (a session cookie, say) must
- * not be withheld for it; clients catch up through `/events?since` or a reload.
+ * Runs `fn` in one Prisma transaction with an `emit` bound to it: every event row is written in
+ * the same transaction as the write it describes, so a write that rolls back never has an event,
+ * a committed write always has its row, and `/events?since` can hand it out. The envelopes are
+ * queued and published to Web PubSub after the commit, in order; a failed publish is logged, as
+ * `emit()` itself does, because the row is committed and clients catch up through the table.
  *
  * `serializable` is for a read-check-write that must not interleave with another request's
  * (the last-owner guard, the one-shot bootstrap): Azure SQL's default read-committed snapshot
@@ -102,35 +124,60 @@ function isTransactionConflict(error: unknown): boolean {
  */
 export async function transact<T>(
   db: AuthDb,
-  emit: Emitter,
+  sink: EventSink,
   fn: (tx: AuthTx, emit: Emitter) => Promise<T>,
   options: TransactOptions = {},
 ): Promise<T> {
   const log = options.log ?? defaultLog;
+  const now = options.now ?? (() => new Date());
   const isolation = options.serializable ? { isolationLevel: "Serializable" as const } : undefined;
 
   for (let attempt = 1; ; attempt += 1) {
-    const queued: { spaceId: string; publish: () => Promise<unknown> }[] = [];
-    const deferred: Emitter = (spaceId, type, payload) => {
-      queued.push({ spaceId, publish: () => emit(spaceId, type, payload) });
-      return Promise.resolve();
+    const queued: { group: string; envelope: EventEnvelope }[] = [];
+    const deferredSink: EventSink = {
+      publish: (group, envelope) => {
+        queued.push({ group, envelope });
+        return Promise.resolve();
+      },
     };
     let result: T;
     try {
-      result = await db.$transaction((tx) => fn(tx, deferred), isolation);
+      result = await db.$transaction((tx) => {
+        const emit = createEmit({
+          db: { $transaction: (run) => run(tx) },
+          sink: deferredSink,
+          now,
+        });
+        return fn(tx, emit);
+      }, isolation);
     } catch (error) {
       if (attempt < TRANSACTION_ATTEMPTS && isTransactionConflict(error)) continue;
       throw error;
     }
-    for (const { spaceId, publish } of queued) {
+    for (const { group, envelope } of queued) {
       try {
-        await publish();
-      } catch (error) {
-        log.error("event.emit-failed", { spaceId, code: "emit-failed" }, error);
+        await sink.publish(group, envelope);
+      } catch {
+        log.warn("event.publish-failed", { spaceId: envelope.spaceId, code: "publish-failed" });
       }
     }
     return result;
   }
+}
+
+/**
+ * Runs `fn` as a transaction of its own, or as a step of the one the caller is already in when
+ * `deps` came from inside `transact`. The functions that both routes and the registration or
+ * bootstrap transaction call (invites, memberships) go through this.
+ */
+export function run<T>(
+  deps: AuthDeps | TxDeps,
+  fn: (tx: AuthTx, emit: Emitter, now: () => Date) => Promise<T>,
+  options: { serializable?: boolean } = {},
+): Promise<T> {
+  if (isTxDeps(deps)) return fn(deps.db, deps.emit, deps.now ?? (() => new Date()));
+  const { db, sink, now, log } = resolve(deps);
+  return transact(db, sink, (tx, emit) => fn(tx, emit, now), { ...options, now, log });
 }
 
 /**
