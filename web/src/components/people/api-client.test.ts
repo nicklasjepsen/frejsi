@@ -69,7 +69,8 @@ describe("peopleApi", () => {
     await peopleApi.revokeInvite("s1", "h1");
     await peopleApi.changeRole("s1", "u2", "viewer");
     await peopleApi.removeMember("s1", "u2");
-    await peopleApi.removeDevice("s1", "pk1");
+    fetchMock.mockResolvedValueOnce(reply(200, { signedOut: true }));
+    await expect(peopleApi.removeDevice("s1", "pk1")).resolves.toEqual({ signedOut: true });
     expect(fetchMock.mock.calls.map(([url, init]) => [url, init?.method])).toEqual([
       ["/api/spaces/s1/invites/h1", "DELETE"],
       ["/api/spaces/s1/members/u2", "PATCH"],
