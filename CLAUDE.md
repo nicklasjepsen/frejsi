@@ -31,6 +31,8 @@ reviews, what the owner decides. The pieces live in the repo:
 - `.github/workflows/ci.yml` — the fast suite, the only required check. `release.yml` — the only path to production, on a `vX.Y.Z` tag. `housekeeping.yml` — daily background triage and cleanup, outside PR CI.
 - `.github/copilot-instructions.md` — the one set of review rules, shared by Codex, Copilot and the gate agents.
 
+The Claude gate agents are off until the pre-1.0 audit; CI and Codex's review still gate every PR (`docs/agent-workflow.md` §5).
+
 A milestone is a release: its title is the version, every issue carries it, and the tag with the same
 name deploys production and creates the GitHub release. A lane owns only the paths its task names and
 merges itself when the gates are green; nothing deploys on merge; anything labelled `needs-owner` waits
