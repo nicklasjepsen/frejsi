@@ -51,14 +51,14 @@ const deps = (fetchFn: typeof fetch, webauthn: WebAuthnBrowser): PasskeyClientDe
 });
 
 describe("registerWithInvite (task 5's routes, in the order the browser runs them)", () => {
-  it("asks for options with the token, hands them to the authenticator, verifies, and returns the role", async () => {
+  it("asks for options with the token, hands them to the authenticator, verifies, and returns the space and the role", async () => {
     const { fetchFn, mock, calls } = fakeFetch([
       { status: 200, body: { challengeId: "ch1", options: creation } },
       { status: 200, body: { userId: "u1", spaceId: "s1", role: "carer" } },
     ]);
     const web = browser();
     const result = await registerWithInvite("tok", deps(fetchFn, web));
-    expect(result).toEqual({ role: "carer" });
+    expect(result).toEqual({ role: "carer", spaceId: "s1" });
     expect(calls).toEqual([
       { url: "/api/auth/register/options", body: { inviteToken: "tok" } },
       { url: "/api/auth/register/verify", body: { challengeId: "ch1", response: attestation } },

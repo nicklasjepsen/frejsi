@@ -57,7 +57,7 @@ const realBrowser: WebAuthnBrowser = {
 };
 
 const Started = z.object({ challengeId: z.string().min(1), options: z.record(z.string(), z.unknown()) });
-const Registered = z.object({ role: Role });
+const Registered = z.object({ role: Role, spaceId: z.string().min(1) });
 const SignedIn = z.object({ userId: z.string().min(1) });
 
 function resolveDeps(deps: PasskeyClientDeps): { fetch: typeof fetch; webauthn: WebAuthnBrowser } {
@@ -109,13 +109,13 @@ async function prompt<T>(run: () => Promise<T>): Promise<T> {
 
 /**
  * Registers a passkey from an invitation link and signs this device in (the server sets the
- * session cookie on the verify response). Resolves with the role the person now has in the
- * space, so the screen can land on Now or the viewer shell.
+ * session cookie on the verify response). Resolves with the space the invitation was for and
+ * the role the person now has there, so the screen can point this device at that space.
  */
 export async function registerWithInvite(
   inviteToken: string,
   deps: PasskeyClientDeps = {},
-): Promise<{ role: Role }> {
+): Promise<{ role: Role; spaceId: string }> {
   const { fetch: fetchFn, webauthn } = resolveDeps(deps);
   if (!webauthn.supported()) throw new CeremonyError("unsupported");
   const started = await post(fetchFn, "/api/auth/register/options", { inviteToken }, Started);
@@ -130,7 +130,7 @@ export async function registerWithInvite(
     { challengeId: started.challengeId, response },
     Registered,
   );
-  return { role: verified.role };
+  return { role: verified.role, spaceId: verified.spaceId };
 }
 
 /** Signs a returning device in with a discoverable credential: no username, no list. */

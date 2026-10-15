@@ -4,16 +4,15 @@ import type { InviteView } from "@frejsi/shared";
 import { useTranslations } from "next-intl";
 import { useState, type ReactNode } from "react";
 
-import { homePath } from "@/components/shell/nav";
+import { switchSpace } from "@/components/shell/actions";
 import { Avatar } from "@/components/ui/Avatar";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
-import { localeHref, type AppLocale } from "@/lib/i18n/routing";
+import type { AppLocale } from "@/lib/i18n/routing";
 
 import { PasskeyIcon } from "./PasskeyIcon";
 import { PublicPage } from "./PublicPage";
 import styles from "./invite.module.css";
-import { navigate } from "./navigate";
 import { CeremonyError, registerWithInvite } from "./passkey-client";
 import pub from "./public.module.css";
 
@@ -48,6 +47,11 @@ function Line({ children }: { children: ReactNode }) {
  * the role in the design's words, who invited, the reassurance lines and one button that runs
  * task 5's registration. The phone block and the desktop panel are both rendered; CSS shows one.
  * The token never appears in the DOM; it is in the URL already and goes only to the ceremony.
+ *
+ * Once signed in, the device is pointed at the invitation's space through the shell's own
+ * `switchSpace`, which remembers it and goes to the front page; the index then lands on the
+ * role's home in that space (Nu, or the viewer's day). An add-device link to someone who is in
+ * several spaces would otherwise land in whichever space the shell picked on its own.
  */
 export function InviteLanding({
   locale,
@@ -77,8 +81,11 @@ export function InviteLanding({
     setBusy(true);
     setFailure(null);
     try {
-      const { role } = await registerWithInvite(token);
-      navigate(localeHref(locale, homePath(role)));
+      const { spaceId } = await registerWithInvite(token);
+      const form = new FormData();
+      form.set("locale", locale);
+      form.set("spaceId", spaceId);
+      await switchSpace(form);
     } catch (error) {
       setFailure(messageFor(error));
       setBusy(false);
