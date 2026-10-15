@@ -133,6 +133,40 @@ describe("food writes", () => {
     expect(rig.rows).toEqual([]);
     expect(rig.events).toEqual([]);
   });
+  it("saves a legitimate non-barcode remote pick without assuming its display name reproduces its search", async () => {
+    const offered = {
+      name: "Cloud fruit",
+      carbsPer100g: 17,
+      portions: [],
+      origin: "remote-test",
+      sourceRef: "remote-test:fruit",
+    };
+    rig.remoteCandidates = [offered];
+    rig.deps.sources = [
+      {
+        id: "remote-test",
+        kind: "remote",
+        search: (q) => Promise.resolve({ status: "ok", candidates: q === "pear" ? [offered] : [] }),
+        byBarcode: () => Promise.resolve({ status: "ok", candidates: [] }),
+      },
+    ];
+    const food = await addCandidate("s1", actor, offered, rig.deps);
+    expect(food).toMatchObject({
+      name: "Cloud fruit",
+      carbsPer100g: 17,
+      verified: false,
+      origin: "remote-test",
+    });
+    expect(rig.rows).toHaveLength(1);
+    expect(rig.rows[0]).toMatchObject({
+      spaceId: "s1",
+      sourceRef: offered.sourceRef,
+      verified: false,
+    });
+    expect(rig.events.map((event) => event.type)).toEqual(["food.created"]);
+    expect((await addCandidate("s1", actor, offered, rig.deps)).id).toBe(food.id);
+    expect(rig.events).toHaveLength(1);
+  });
   it("bounds candidate validation even when a source ignores cancellation", async () => {
     vi.useFakeTimers();
     rig.sourcePending = true;
