@@ -364,9 +364,20 @@ function WeekTile(props: WeekTileChartProps) {
         height={Math.max(0, g.band.bottom - g.band.top)}
         data-testid="target-band"
       />
-      {g.segments.map((points, index) => (
-        <polyline key={index} className={styles.weekLine} points={points} />
-      ))}
+      {g.segments.map((points, index) =>
+        points.includes(" ") ? (
+          <polyline key={index} className={styles.weekLine} points={points} />
+        ) : (
+          <circle
+            key={index}
+            className={styles.endDot}
+            cx={Number(points.split(",")[0])}
+            cy={Number(points.split(",")[1])}
+            r="1.8"
+            data-testid="lone-point"
+          />
+        ),
+      )}
       {g.mealDots.map((dot, index) => (
         <circle
           key={index}

@@ -67,6 +67,11 @@ describe("mealChartGeometry (tokens.json#chart, Maaltid-Telefon, Maaltid-Desktop
     expect(g.bolus).toEqual({ x: 47.4, path: "M47.4 92 L52.4 102 H42.4 Z", clock: "11:58" });
   });
 
+  it("leaves out a bolus tap outside the −1 h/+4 h window", () => {
+    expect(mealChartGeometry({ ...input, bolusTs: at(MEAL, -120) }).bolus).toBeNull();
+    expect(mealChartGeometry({ ...input, bolusTs: at(MEAL, 250) }).bolus).toBeNull();
+  });
+
   it("draws the curve with the end dot on the latest reading", () => {
     const g = mealChartGeometry({ ...input, readings: series(MEAL, -60, 80, 6) });
     expect(g.segments).toHaveLength(1);
@@ -147,6 +152,18 @@ describe("weekTileGeometry (tokens.json#chart.weekTile, Historik-Desktop)", () =
     expect(g.band.top).toBeLessThan(g.band.bottom);
   });
 
+  it("breaks the line where a 30-minute bucket is missing", () => {
+    const missing = curve.filter((_, i) => i !== 21);
+    const g = weekTileGeometry({
+      curve: missing,
+      mealTimes: [],
+      from,
+      to,
+      target: { low: 4, high: 10 },
+    });
+    expect(g.segments).toHaveLength(2);
+  });
+
   it("thins a longer series to 48 points", () => {
     const dense = Array.from({ length: 288 }, (_, i) => ({
       ts: new Date(from.getTime() + i * 5 * 60_000).toISOString(),
@@ -202,5 +219,21 @@ describe("chartGeometry day variant: meal lines and bolus triangles", () => {
       size: "phone",
     });
     expect([g.width, g.height, g.plotWidth]).toEqual([326, 118, 296]);
+  });
+
+  it("labels the phone day every six hours so a whole day's labels do not overlap", () => {
+    const g = chartGeometry({
+      readings: [],
+      from: new Date("2026-10-13T22:00:00.000Z"),
+      to: new Date("2026-10-14T22:00:00.000Z"),
+      targetLow: 4,
+      targetHigh: 10,
+      unit: "mmol",
+      timeZone: "Europe/Copenhagen",
+      locale: "da",
+      variant: "day",
+      size: "phone",
+    });
+    expect(g.ticks.map((t) => t.label)).toEqual(["00:00", "06:00", "12:00", "18:00", "00:00"]);
   });
 });

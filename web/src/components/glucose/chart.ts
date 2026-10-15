@@ -271,6 +271,13 @@ function mealX(mealTs: string, plotWidth: number) {
     round(((new Date(ts).getTime() - start) / (WINDOW_MINUTES * 60_000)) * plotWidth);
 }
 
+/** Whether `ts` falls in the −1 h/+4 h window around `mealTs`. */
+function inMealWindowAt(mealTs: string, ts: string): boolean {
+  const mealMs = new Date(mealTs).getTime();
+  const t = new Date(ts).getTime();
+  return t >= mealMs - CHART_BEFORE_MINUTES * 60_000 && t <= mealMs + CHART_AFTER_MINUTES * 60_000;
+}
+
 function inMealWindow(mealTs: string, readings: readonly Reading[], until?: number) {
   const mealMs = new Date(mealTs).getTime();
   const from = mealMs - CHART_BEFORE_MINUTES * 60_000;
@@ -289,7 +296,11 @@ export function mealChartGeometry(input: MealChartInput): MealChartGeometry {
   const y = fixedY(size.plotTop, size.baseline);
   const readings = inMealWindow(input.mealTs, input.readings, input.now.getTime());
   const last = readings.at(-1);
-  const bolusX = input.bolusTs === undefined ? null : x(input.bolusTs);
+  // A tap outside the −1 h/+4 h window is not drawn: the chart has no place for it.
+  const bolusX =
+    input.bolusTs !== undefined && inMealWindowAt(input.mealTs, input.bolusTs)
+      ? x(input.bolusTs)
+      : null;
   return {
     width: size.width,
     height: size.height,
@@ -370,8 +381,9 @@ export function weekTileGeometry(input: WeekTileInput): WeekTileGeometry {
     .toSorted((a, b) => a.ts.localeCompare(b.ts));
   const step = Math.ceil(inDay.length / WEEK_TILE.maxPoints);
   const points = step > 1 ? inDay.filter((_, i) => i % step === 0) : inDay;
-  // Buckets are 30 minutes apart; a missing hour is a gap in the line.
-  const gapMinutes = Math.max(GAP_MINUTES, (span / 60_000 / WEEK_TILE.maxPoints) * 2);
+  // Buckets are 30 minutes apart (plan §5): a missing bucket is a gap in the line.
+  const bucketMinutes = span / 60_000 / WEEK_TILE.maxPoints;
+  const gapMinutes = Math.max(GAP_MINUTES, bucketMinutes * 1.5);
   return {
     width: WEEK_TILE.width,
     height: WEEK_TILE.height,
@@ -387,12 +399,14 @@ export function weekTileGeometry(input: WeekTileInput): WeekTileGeometry {
 }
 
 /**
- * Hour ticks (every hour on the sparkline, every two on the day curve) with "now" at the right
+ * Hour ticks (every hour on the sparkline, every two on the day curve, every six on the phone day
+ * curve so a whole day fits 296 px: 00 · 06 · 12 · 18, plan decision 7) with "now" at the right
  * edge in bold, as the artboards draw "13:00 · 14:00 · 15:13". A tick within 30 minutes of the
  * end is dropped so the two labels do not collide.
  */
 function ticksFor(input: ChartInput, plotWidth: number): ChartGeometry["ticks"] {
-  const stepMs = (input.variant === "day" ? 2 : 1) * 60 * 60 * 1000;
+  const hours = input.variant === "day" ? (input.size === "phone" ? 6 : 2) : 1;
+  const stepMs = hours * 60 * 60 * 1000;
   const fromMs = input.from.getTime();
   const toMs = input.to.getTime();
   const span = Math.max(1, toMs - fromMs);
