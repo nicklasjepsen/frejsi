@@ -5,3 +5,4 @@ export * from "./events";
 export * from "./glucose";
 export * from "./health";
 export * from "./settings";
+export * from "./history";
