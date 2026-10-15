@@ -111,6 +111,49 @@ describe("DELETE /api/spaces/:id/passkeys/:passkeyId", () => {
     expect(world.events.map((e) => e.type)).toEqual(["device.removed"]);
   });
 
+  it("refuses with 409 last-owner to remove the last device any owner of the space can sign in with", async () => {
+    // The owner has a phone and a laptop; the second owner has no device. The phone may go, the
+    // laptop then may not: no owner could sign in again to make an add-a-device link (spec §2b).
+    world.as("owner");
+    expect((await del(PASSKEYS.ownerPhone)).status).toBe(200);
+    const res = await del(PASSKEYS.ownerLaptop);
+    expect(res.status).toBe(409);
+    expect(await res.json()).toMatchObject({ error: { code: "last-owner" } });
+    expect(world.fake.rows("passkey").map((p) => p.id)).toContain(PASSKEYS.ownerLaptop);
+    expect(world.events.map((e) => e.type)).toEqual(["device.removed"]);
+  });
+
+  it("lets an owner remove their last device while another owner of the space still has one", async () => {
+    world.fake.rows("passkey").push({
+      ...world.fake.rows("passkey").find((p) => p.id === PASSKEYS.ownerPhone),
+      id: "pk-owner-2-phone",
+      userId: USERS.secondOwner.id,
+      credentialId: "cred-pk-owner-2-phone",
+    });
+    world.as("owner");
+    expect((await del(PASSKEYS.ownerPhone)).status).toBe(200);
+    expect((await del(PASSKEYS.ownerLaptop)).status).toBe(200);
+  });
+
+  it("guards every space the device's owner owns, not only the one in the URL", async () => {
+    // The carer of s1 is the only owner of s2: their tablet is s2's last way in.
+    world.fake.rows("membership").push({
+      userId: USERS.carer.id,
+      spaceId: "s2",
+      role: "owner",
+      createdAt: new Date(),
+    });
+    world.fake.rows("membership").splice(
+      world.fake.rows("membership").findIndex((m) => m.userId === USERS.outsider.id),
+      1,
+    );
+    world.as("owner");
+    const res = await del(PASSKEYS.carerTablet);
+    expect(res.status).toBe(409);
+    expect(await res.json()).toMatchObject({ error: { code: "last-owner" } });
+    expect(world.events).toEqual([]);
+  });
+
   it("gives a carer and a viewer 403, even for their own device, and writes nothing", async () => {
     world.as("carer");
     expect((await del(PASSKEYS.carerTablet)).status).toBe(403);

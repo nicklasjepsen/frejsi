@@ -163,10 +163,14 @@ export function MemberDetail({
                 timezone={timezone}
                 locale={locale}
                 onRemove={() => {
-                  void onAction(async () => {
-                    const { signedOut } = await peopleApi.removeDevice(spaceId, device.id);
-                    return signedOut ? "signedOut" : "reload";
-                  });
+                  void onAction(
+                    async () => {
+                      const { signedOut } = await peopleApi.removeDevice(spaceId, device.id);
+                      return signedOut ? "signedOut" : "reload";
+                    },
+                    "reload",
+                    { "last-owner": t("lastOwnerDevice") },
+                  );
                 }}
               />
             ))}
