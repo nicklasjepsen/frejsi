@@ -28,6 +28,12 @@
     "barcode-invalid": "Check the barcode and try again.",
     "lookup-unavailable": "Food search is unavailable right now. Try again or enter your own numbers.",
     "import-unrecognised": "That does not look like an export file Frejsi knows. Choose the CSV file from Clarity and try again.",
-    "import-empty": "There were no readings or carbs in the file."
+    "import-empty": "There were no readings or carbs in the file.",
+    "ai-disabled": "AI help is off for this space.",
+    "ai-not-configured": "This AI provider is not set up here.",
+    "ai-cap-reached": "Today’s AI calls are used up – try again tomorrow.",
+    "ai-unavailable": "AI help is unavailable right now. Try again later.",
+    "ai-rejected": "The AI response could not be used. Try again.",
+    "push-not-configured": "Notifications are not set up here."
   }
 }

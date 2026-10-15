@@ -1,6 +1,6 @@
 // Enums are String columns validated by the Zod enums in
 // src/schemas/; JSON is NVarChar(Max) parsed with Zod (the SQL Server connector has no Json).
-// Foundation: 0001_foundation. Food and meal snapshots: 0002_food.
+// Foundation: 0001_foundation. Food: 0002_food. AI: 0003_ai.
 
 generator client {
   provider      = "prisma-client-js"
@@ -22,15 +22,17 @@ model User {
   createdAt  DateTime  @default(now())
   lastSeen   DateTime?
 
-  memberships    Membership[]
-  passkeys       Passkey[]
-  sessions       Session[]
-  invitesCreated Invite[]     @relation("InviteCreatedBy")
-  invitesFor     Invite[]     @relation("InviteForUser")
-  subjectOf      Space[]      @relation("SpaceSubject")
-  foodsCreated   Food[]       @relation("FoodCreatedBy")
-  foodsVerified  Food[]       @relation("FoodVerifiedBy")
-  meals          Meal[]
+  memberships       Membership[]
+  passkeys          Passkey[]
+  sessions          Session[]
+  invitesCreated    Invite[]           @relation("InviteCreatedBy")
+  invitesFor        Invite[]           @relation("InviteForUser")
+  subjectOf         Space[]            @relation("SpaceSubject")
+  foodsCreated      Food[]             @relation("FoodCreatedBy")
+  foodsVerified     Food[]             @relation("FoodVerifiedBy")
+  meals             Meal[]
+  aiCalls           AiCall[]
+  pushSubscriptions PushSubscription[]
 }
 
 model Space {
@@ -50,13 +52,16 @@ model Space {
   aiProvider     String?
   createdAt      DateTime  @default(now())
 
-  subjectUser User?        @relation("SpaceSubject", fields: [subjectUserId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  memberships Membership[]
-  invites     Invite[]
-  readings    Reading[]
-  events      Event[]
-  foods       Food[]
-  meals       Meal[]
+  subjectUser       User?              @relation("SpaceSubject", fields: [subjectUserId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  memberships       Membership[]
+  invites           Invite[]
+  readings          Reading[]
+  events            Event[]
+  foods             Food[]
+  meals             Meal[]
+  aiCalls           AiCall[]
+  insights          Insight[]
+  pushSubscriptions PushSubscription[]
 }
 
 model Membership {
@@ -116,8 +121,9 @@ model Session {
   expiresAt  DateTime
   lastSeenAt DateTime @default(now())
 
-  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  passkey Passkey? @relation(fields: [passkeyId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  user              User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  passkey           Passkey?           @relation(fields: [passkeyId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  pushSubscriptions PushSubscription[]
 
   @@index([userId])
   @@index([passkeyId])
@@ -158,23 +164,26 @@ model Event {
 }
 
 model Food {
-  id           String    @id @default(cuid())
-  spaceId      String?
-  name         String    @db.NVarChar(200)
-  nameSearch   String    @db.NVarChar(200)
-  carbsPer100g Decimal?  @db.Decimal(5, 1)
-  portions     String    @db.NVarChar(Max)
-  barcode      String?   @db.NVarChar(14)
-  photoKey     String?   @db.NVarChar(200)
-  origin       String    @db.NVarChar(20)
-  sourceRef    String    @db.NVarChar(64)
-  verified     Boolean   @default(false)
-  verifiedBy   String?
-  verifiedAt   DateTime?
-  favourite    Boolean   @default(false)
-  createdBy    String?
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
+  id             String                       @id @default(cuid())
+  spaceId        String?
+  name           String                       @db.NVarChar(200)
+  nameSearch     String                       @db.NVarChar(200)
+  embedding      Unsupported("vector(1024)")?
+  embeddingModel String?                      @db.NVarChar(80)
+  sourceName     String?                      @db.NVarChar(200)
+  carbsPer100g   Decimal?                     @db.Decimal(5, 1)
+  portions       String                       @db.NVarChar(Max)
+  barcode        String?                      @db.NVarChar(14)
+  photoKey       String?                      @db.NVarChar(200)
+  origin         String                       @db.NVarChar(20)
+  sourceRef      String                       @db.NVarChar(64)
+  verified       Boolean                      @default(false)
+  verifiedBy     String?
+  verifiedAt     DateTime?
+  favourite      Boolean                      @default(false)
+  createdBy      String?
+  createdAt      DateTime                     @default(now())
+  updatedAt      DateTime                     @updatedAt
 
   space    Space?     @relation(fields: [spaceId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   creator  User?      @relation("FoodCreatedBy", fields: [createdBy], references: [id], onDelete: NoAction, onUpdate: NoAction)
@@ -218,4 +227,63 @@ model MealItem {
 
   meal Meal  @relation(fields: [mealId], references: [id], onDelete: Cascade, onUpdate: NoAction)
   food Food? @relation(fields: [foodId], references: [id], onDelete: SetNull, onUpdate: NoAction)
+}
+
+model AiCall {
+  id       String   @id @default(cuid())
+  spaceId  String?
+  userId   String?
+  kind     String   @db.NVarChar(20)
+  use      String   @db.NVarChar(20)
+  provider String   @db.NVarChar(20)
+  model    String   @db.NVarChar(80)
+  ok       Boolean
+  ms       Int
+  ts       DateTime @default(now())
+
+  space Space? @relation(fields: [spaceId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  user  User?  @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([spaceId, ts])
+}
+
+model Insight {
+  id              String   @id @default(cuid())
+  spaceId         String
+  kind            String   @db.NVarChar(10)
+  subjectKey      String   @db.NVarChar(40)
+  statsHash       String   @db.NVarChar(64)
+  text            String   @db.NVarChar(1000)
+  questions       String?  @db.NVarChar(Max)
+  questionsEdited Boolean  @default(false)
+  rejectedCount   Int      @default(0)
+  provider        String   @db.NVarChar(20)
+  model           String   @db.NVarChar(80)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  space Space @relation(fields: [spaceId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([spaceId, kind, subjectKey])
+}
+
+model PushSubscription {
+  id         String    @id @default(cuid())
+  userId     String
+  spaceId    String
+  sessionId  String
+  endpoint   String    @db.NVarChar(1000)
+  p256dh     String    @db.NVarChar(200)
+  auth       String    @db.NVarChar(100)
+  createdAt  DateTime  @default(now())
+  lastUsedAt DateTime?
+  failures   Int       @default(0)
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  space   Space   @relation(fields: [spaceId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  session Session @relation(fields: [sessionId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([userId, endpoint])
+  @@index([sessionId])
+  @@index([spaceId])
 }

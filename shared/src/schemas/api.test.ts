@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 import { ApiError, ApiErrorCode, HttpError, toApiError } from "./api";
@@ -25,6 +26,12 @@ describe("ApiError", () => {
       "lookup-unavailable",
       "import-unrecognised",
       "import-empty",
+      "ai-disabled",
+      "ai-not-configured",
+      "ai-cap-reached",
+      "ai-unavailable",
+      "ai-rejected",
+      "push-not-configured",
     ]);
   });
 
@@ -50,4 +57,27 @@ describe("HttpError", () => {
     expect(body.error.code).toBe("internal");
     expect(JSON.stringify(body)).not.toContain("hunter2");
   });
+});
+
+it("translates every API code in both locales and preserves the AI HTTP statuses", () => {
+  for (const locale of ["da", "en"]) {
+    const messages = JSON.parse(
+      readFileSync(new URL(`../../../web/messages/${locale}/errors.json`, import.meta.url), "utf8"),
+    ) as { api: Record<string, string> };
+    for (const key of ApiErrorCode.options) expect(messages.api[key]?.length).toBeGreaterThan(0);
+  }
+  for (const [key, status] of [
+    ["ai-disabled", 409],
+    ["ai-not-configured", 503],
+    ["ai-cap-reached", 429],
+    ["ai-unavailable", 503],
+    ["ai-rejected", 502],
+    ["push-not-configured", 503],
+  ] as const) {
+    expect(toApiError(new HttpError(status, key))).toEqual({
+      status,
+      body: { error: { code: key, message: key } },
+    });
+  }
+  expect(toApiError(new HttpError(400, "ai-not-configured")).status).toBe(400);
 });

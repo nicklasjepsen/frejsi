@@ -24,6 +24,11 @@ export const samplePayloads: { [T in EventType]: EventPayload<T> } = {
   "meal.updated": { mealId: "m1" },
   "meal.deleted": { mealId: "m1" },
   "readings.imported": { count: 288, from: ts, to: ts },
+  "insight.created": { insightId: "i1", kind: "meal", subjectKey: "m1" },
+  "insight.updated": { insightId: "i1" },
+  "estimate.asked": { foodId: "f1", byUserId: "u1" },
+  "push.subscribed": { userId: "u1", spaceId: "s1" },
+  "push.unsubscribed": { userId: "u1", spaceId: "s1" },
 };
 
 describe("EventEnvelope", () => {
@@ -47,6 +52,11 @@ describe("EventEnvelope", () => {
       "meal.updated",
       "meal.deleted",
       "readings.imported",
+      "insight.created",
+      "insight.updated",
+      "estimate.asked",
+      "push.subscribed",
+      "push.unsubscribed",
     ]);
     expect(Object.keys(EventPayloads).sort()).toEqual([...EventType.options].sort());
   });
@@ -93,4 +103,49 @@ describe("EventEnvelope", () => {
       }).success,
     ).toBe(false);
   });
+});
+
+// These notifications travel to every member, including viewers. No generated text or endpoint.
+it("keeps AI event payloads viewer-safe and narrows each envelope", () => {
+  for (const type of [
+    "insight.created",
+    "insight.updated",
+    "estimate.asked",
+    "push.subscribed",
+    "push.unsubscribed",
+  ] as const) {
+    const parsed = EventEnvelope.parse({
+      spaceId: "s1",
+      seq: 1,
+      ts,
+      type,
+      payload: samplePayloads[type],
+    });
+    if (parsed.type === "insight.created") expect(parsed.payload.subjectKey).toBe("m1");
+    if (parsed.type === "insight.updated") expect(parsed.payload.insightId).toBe("i1");
+    if (parsed.type === "estimate.asked") expect(parsed.payload.byUserId).toBe("u1");
+    if (parsed.type === "push.subscribed" || parsed.type === "push.unsubscribed")
+      expect(parsed.payload.userId).toBe("u1");
+    for (const key of [
+      "mmol",
+      "mgdl",
+      "trend",
+      "reading",
+      "readings",
+      "glucose",
+      "targetLow",
+      "targetHigh",
+      "inRange",
+      "peak",
+      "stats",
+      "numbers",
+      "bolusTs",
+      "text",
+      "endpoint",
+    ]) {
+      expect(
+        EventPayloads[type].safeParse({ ...samplePayloads[type], [key]: "private" }).success,
+      ).toBe(false);
+    }
+  }
 });
