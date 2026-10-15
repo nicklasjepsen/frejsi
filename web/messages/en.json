@@ -373,5 +373,23 @@
     "lastMeal": "Last meal",
     "lastMealSoon": "Soon you can see the last meal here.",
     "glucoseCard": "Glucose"
+  },
+  "foodKit": {
+    "checked": "Checked",
+    "unchecked": "Not checked",
+    "select": "Select",
+    "selectRow": "Select {name}",
+    "back": "Back",
+    "close": "Close",
+    "photo": "photo",
+    "takePhoto": "Take a photo",
+    "attachPhoto": "Attach a photo",
+    "photoError": "Could not read the photo – try another photo",
+    "weigh": "Weigh it",
+    "grams": "Grams",
+    "carbs": "{amount} g carbohydrate",
+    "per100g": "{amount} g per 100 g",
+    "portion": "{label} · {amount} g",
+    "search": "Search"
   }
 }

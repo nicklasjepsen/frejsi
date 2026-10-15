@@ -373,5 +373,23 @@
     "lastMeal": "Sidste måltid",
     "lastMealSoon": "Her kan du snart se det sidste måltid.",
     "glucoseCard": "Glukose"
+  },
+  "foodKit": {
+    "checked": "Tjekket",
+    "unchecked": "Ikke tjekket",
+    "select": "Vælg",
+    "selectRow": "Vælg {name}",
+    "back": "Tilbage",
+    "close": "Luk",
+    "photo": "foto",
+    "takePhoto": "Tag et billede",
+    "attachPhoto": "Vedhæft billede",
+    "photoError": "Billedet kunne ikke læses – prøv et andet billede",
+    "weigh": "Vej det",
+    "grams": "Gram",
+    "carbs": "{amount} g kulhydrat",
+    "per100g": "{amount} g pr. 100 g",
+    "portion": "{label} · {amount} g",
+    "search": "Søg"
   }
 }
