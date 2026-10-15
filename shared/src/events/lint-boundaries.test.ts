@@ -126,12 +126,12 @@ describe("lint boundaries", () => {
     expect(await messages("shared/src/glucose/dexcom-share/client.ts", host)).toEqual([]);
   });
 
-  it("keep Danish out of web/src code; da.json is where it lives", async () => {
+  it("keep Danish out of web/src code; web/messages/da/ is where it lives", async () => {
     const danish =
       'export const title = "Blodsukker vises ikke her";\nexport const t = `Måltid`;\n';
     const found = await messages("web/src/components/shell/Viewer.tsx", danish);
     expect(found).toHaveLength(1);
-    expect(found[0]).toContain("web/messages/da.json");
+    expect(found[0]).toContain("web/messages/da/<namespace>.json");
     expect(await messages("web/src/components/shell/Viewer.test.tsx", danish)).toEqual([]);
     expect(
       await messages("web/src/components/shell/Viewer.tsx", 'export const title = "Glucose";\n'),

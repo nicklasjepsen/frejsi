@@ -30,7 +30,9 @@ product behaviour.
    external source or AI is `verified: false`. Every glucose value travels with its timestamp. A
    `viewer` role is gated in the API, not the component. These are checked by the `spec-guardian`
    after you; do not make it fail.
-5. UI strings go in `web/messages/da.json` and `web/messages/en.json`, both, in the same commit.
+5. UI strings go in `web/messages/da/<namespace>.json` and `web/messages/en/<namespace>.json`, both,
+   in the same commit. A new namespace also gets its line in `web/messages/da/index.ts` and
+   `web/messages/en/index.ts`.
    Danish copy reads like a kind nurse, plain and unhurried.
 6. Run the full checks before every commit: `pnpm -r typecheck && pnpm -r lint && pnpm -r test`.
    A red check is yours to fix, never to skip or mark `.skip`.

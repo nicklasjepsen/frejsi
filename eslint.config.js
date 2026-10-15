@@ -221,7 +221,7 @@ export const boundaries = [
   },
   {
     name: "frejsi/boundaries/english-in-web",
-    // UI strings live in web/messages/da.json and en.json; code under web/src is English.
+    // UI strings live in web/messages/<locale>/<namespace>.json; code under web/src is English.
     files: ["web/src/**/*.ts", "web/src/**/*.tsx"],
     ignores: ["web/src/**/*.test.ts", "web/src/**/*.test.tsx"],
     rules: {
@@ -239,17 +239,17 @@ export const boundaries = [
         {
           selector: `Literal[value=/${DANISH_LETTERS}/]`,
           message:
-            "Danish belongs in web/messages/da.json; code and copy keys are English (CLAUDE.md).",
+            "Danish belongs in web/messages/da/<namespace>.json; code and copy keys are English (CLAUDE.md).",
         },
         {
           selector: `TemplateElement[value.raw=/${DANISH_LETTERS}/]`,
           message:
-            "Danish belongs in web/messages/da.json; code and copy keys are English (CLAUDE.md).",
+            "Danish belongs in web/messages/da/<namespace>.json; code and copy keys are English (CLAUDE.md).",
         },
         {
           selector: `JSXText[value=/${DANISH_LETTERS}/]`,
           message:
-            "Danish belongs in web/messages/da.json; code and copy keys are English (CLAUDE.md).",
+            "Danish belongs in web/messages/da/<namespace>.json; code and copy keys are English (CLAUDE.md).",
         },
       ],
     },
