@@ -85,7 +85,7 @@ jobs:
           name: preview-${{ env.ENVIRONMENT_NAME }}-${{ github.event.pull_request.head.sha }}
           path: web/.next
 
-      - uses: azure/login@v2
+      - uses: azure/login@v3
         with:
           client-id: ${{ vars.AZURE_CLIENT_ID }}
           tenant-id: ${{ vars.AZURE_TENANT_ID }}
@@ -189,7 +189,7 @@ jobs:
       id-token: write
     environment: preview
     steps:
-      - uses: azure/login@v2
+      - uses: azure/login@v3
         with:
           client-id: ${{ vars.AZURE_CLIENT_ID }}
           tenant-id: ${{ vars.AZURE_TENANT_ID }}
