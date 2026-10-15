@@ -275,7 +275,7 @@ fi
     --arg appInsights "$APPI_CONNECTION" \
     --arg appOrigin "$APP_ORIGIN" \
     --arg version "$APP_VERSION" \
-    '{ properties: {
+    '{ properties: ({
          DATABASE_URL: ($databaseUrl | rtrimstr("\n")),
          BOOTSTRAP_TOKEN: ($bootstrapToken | rtrimstr("\n")),
          WEB_PUBSUB_CONNECTION_STRING: ($wpsConnection | rtrimstr("\n")),
@@ -285,7 +285,7 @@ fi
          APPLICATIONINSIGHTS_CONNECTION_STRING: $appInsights,
          APP_ORIGIN: $appOrigin,
          NEXT_PUBLIC_APP_VERSION: $version }
-       + (if $blobConnection == "" then {} else {BLOB_CONNECTION_STRING: ($blobConnection | rtrimstr("\n"))} end) }' > "$SWA_SETTINGS_FILE" )
+       + (if $blobConnection == "" then {} else {BLOB_CONNECTION_STRING: ($blobConnection | rtrimstr("\n"))} end)) }' > "$SWA_SETTINGS_FILE" )
 az rest --method put --url "https://management.azure.com${SWA_ID}/config/appsettings?api-version=2024-04-01" \
   --body "@$SWA_SETTINGS_FILE" --output none
 
