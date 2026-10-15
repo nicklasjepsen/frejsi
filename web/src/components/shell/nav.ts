@@ -30,26 +30,26 @@ export function shellVariant(role: Role, simpleMode: boolean): ShellVariant {
   return simpleMode ? "simple" : "normal";
 }
 
-/** Five phone tabs (Main) / six sidebar items (Nu-Desktop); unbuilt ones open the placeholder. */
+/** Five phone tabs (Main) / six sidebar items (Nu-Desktop); Historik still opens the placeholder. */
 const NORMAL: NavItem[] = [
   { label: "now", href: "/now", icon: "now", shortcut: "N" },
-  { label: "meal", sidebarLabel: "logMeal", href: "/soon/meals", icon: "plus", shortcut: "M" },
-  { label: "food", sidebarLabel: "library", href: "/soon/food", icon: "book", shortcut: "B" },
+  { label: "meal", sidebarLabel: "logMeal", href: "/log", icon: "plus", shortcut: "M" },
+  { label: "food", sidebarLabel: "library", href: "/library", icon: "book", shortcut: "B" },
   { label: "history", href: "/soon/history", icon: "clock", shortcut: "H" },
   { label: "people", href: "/people", icon: "people", shortcut: "P" },
   { label: "more", sidebarLabel: "settings", href: "/settings", icon: "settings", shortcut: "," },
 ];
 
-/** Three tabs (Nu-Simpel); no settings: the child cannot reach them. */
+/** Three tabs (Nu-Simpel); no settings: the child cannot reach them. Spørg waits for v0.4.0. */
 const SIMPLE: NavItem[] = [
   { label: "now", href: "/now", icon: "now" },
-  { label: "myFood", href: "/soon/my-food", icon: "book" },
+  { label: "myFood", href: "/eat", icon: "book" },
   { label: "ask", sidebarLabel: "askAdult", href: "/soon/ask", icon: "ask" },
 ];
 
-/** Three tabs (Historik-Viewer): never Nu, Måltid or Mad. */
+/** Three tabs (Historik-Viewer): never Nu, Måltid or Mad. Tidligere dage waits for v0.3.0. */
 const VIEWER: NavItem[] = [
-  { label: "today", href: "/soon/today", icon: "clock" },
+  { label: "today", href: "/today", icon: "clock" },
   { label: "earlierDays", href: "/soon/earlier-days", icon: "calendar" },
   { label: "more", sidebarLabel: "settings", href: "/settings", icon: "dots" },
 ];
@@ -71,7 +71,15 @@ export function sidebarItems(variant: ShellVariant): NavItem[] {
 
 /** Where a role lands: viewers on their day, everyone else on Nu. */
 export function homePath(role: Role): string {
-  return role === "viewer" ? "/soon/today" : "/now";
+  return role === "viewer" ? "/today" : "/now";
+}
+
+/**
+ * Screens drawn without the phone header and tab bar: every simpleMode sub-screen has a close
+ * button instead (design README "Navigation model"), and the picker is one of them.
+ */
+export function isChromeless(path: string): boolean {
+  return path === "/eat" || path.startsWith("/eat/");
 }
 
 /** Active when the path is the item's path or below it. */

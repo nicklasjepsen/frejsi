@@ -91,15 +91,15 @@ describe("AppShell · normal mode (Main, Nu-Desktop)", () => {
     expect(footerName.parentElement).toHaveTextContent("JonasEjer");
   });
 
-  it("sends the unbuilt tabs to the placeholder page and the built ones to their routes", () => {
+  it("opens Log et måltid and the library from Måltid and Mad, and only Historik on the placeholder", () => {
     mount();
     const hrefs = within(tabs())
       .getAllByRole("link")
       .map((a) => a.getAttribute("href"));
     expect(hrefs).toEqual([
       "/da/now",
-      "/da/soon/meals",
-      "/da/soon/food",
+      "/da/log",
+      "/da/library",
       "/da/soon/history",
       "/da/settings",
     ]);
@@ -108,8 +108,8 @@ describe("AppShell · normal mode (Main, Nu-Desktop)", () => {
       .map((a) => a.getAttribute("href"));
     expect(sideHrefs).toEqual([
       "/da/now",
-      "/da/soon/meals",
-      "/da/soon/food",
+      "/da/log",
+      "/da/library",
       "/da/soon/history",
       "/da/people",
       "/da/settings",
@@ -117,7 +117,7 @@ describe("AppShell · normal mode (Main, Nu-Desktop)", () => {
   });
 
   it("marks the current item from the pathname, locale stripped", () => {
-    navigation.pathname = "/en/soon/food";
+    navigation.pathname = "/en/library";
     mount({}, "en");
     expect(within(tabs()).getByRole("link", { name: "Food" })).toHaveAttribute(
       "aria-current",
@@ -128,6 +128,15 @@ describe("AppShell · normal mode (Main, Nu-Desktop)", () => {
       "page",
     );
     expect(within(tabs()).getByRole("link", { name: "Now" })).not.toHaveAttribute("aria-current");
+  });
+
+  it("opens Log et måltid with M and the library with B from any screen", () => {
+    navigation.pathname = "/da/people";
+    mount();
+    fireEvent.keyDown(document, { key: "m" });
+    expect(navigation.push).toHaveBeenLastCalledWith("/da/log");
+    fireEvent.keyDown(document, { key: "B" });
+    expect(navigation.push).toHaveBeenLastCalledWith("/da/library");
   });
 
   it("navigates with the keyboard shortcuts N M B H P , unless typing in a field", () => {
@@ -197,9 +206,14 @@ describe("AppShell · simpleMode (Nu-Simpel, Nu-Simpel-Desktop)", () => {
     space: { ...base.space, role: "carer" },
   };
 
-  it("renders the three phone tabs Nu, Min mad, Spørg", () => {
+  it("renders the three phone tabs Nu, Min mad, Spørg; Min mad opens the picker and Spørg the placeholder", () => {
     mount(simple);
     expect(labels(tabs())).toEqual(["Nu", "Min mad", "Spørg"]);
+    expect(
+      within(tabs())
+        .getAllByRole("link")
+        .map((a) => a.getAttribute("href")),
+    ).toEqual(["/da/now", "/da/eat", "/da/soon/ask"]);
     expect(screen.getByTestId("app-shell")).toHaveAttribute("data-variant", "simple");
   });
 
@@ -216,6 +230,17 @@ describe("AppShell · simpleMode (Nu-Simpel, Nu-Simpel-Desktop)", () => {
     ).toEqual(["Nu", "Min mad", "Spørg en voksen"]);
     expect(within(side).getByText("Simpel visning · slået til af Jonas")).toBeInTheDocument();
     expect(within(side).queryByRole("presentation")).toBeNull();
+  });
+
+  it("draws the picker without the phone header and tab bar, keeping the desktop sidebar", () => {
+    navigation.pathname = "/da/eat";
+    mount(simple);
+    expect(screen.queryByTestId("phone-tabs")).toBeNull();
+    expect(screen.queryByTestId("phone-header")).toBeNull();
+    expect(within(sidebar()).getByRole("link", { name: /Min mad/ })).toHaveAttribute(
+      "aria-current",
+      "page",
+    );
   });
 
   it("greets the person by name on the phone", () => {
@@ -245,7 +270,7 @@ describe("AppShell · viewer (Historik-Viewer)", () => {
       within(tabs())
         .getAllByRole("link")
         .map((a) => a.getAttribute("href")),
-    ).toEqual(["/da/soon/today", "/da/soon/earlier-days", "/da/settings"]);
+    ).toEqual(["/da/today", "/da/soon/earlier-days", "/da/settings"]);
   });
 
   it("is the viewer even when simpleMode is on: no glucose shell for a viewer", () => {

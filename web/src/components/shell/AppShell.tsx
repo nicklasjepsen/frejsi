@@ -9,7 +9,7 @@ import { stripLocale, type AppLocale } from "@/lib/i18n/routing";
 import { PhoneHeader } from "./PhoneHeader";
 import { PhoneTabs } from "./PhoneTabs";
 import { Sidebar } from "./Sidebar";
-import { shellVariant } from "./nav";
+import { isChromeless, shellVariant } from "./nav";
 import styles from "./shell.module.css";
 
 export interface AppShellProps {
@@ -29,6 +29,8 @@ export interface AppShellProps {
 export function AppShell({ locale, user, space, spaces, children }: AppShellProps) {
   const variant = shellVariant(space.role, user.simpleMode);
   const path = stripLocale(usePathname()).path;
+  // The picker has its own 48 px close and no tab bar on the phone; the desktop sidebar stays.
+  const chromeless = isChromeless(path);
   return (
     <div
       className={styles.shell}
@@ -45,10 +47,18 @@ export function AppShell({ locale, user, space, spaces, children }: AppShellProp
         spaces={spaces}
       />
       <div className={styles.main}>
-        <PhoneHeader locale={locale} variant={variant} user={user} space={space} spaces={spaces} />
+        {!chromeless && (
+          <PhoneHeader
+            locale={locale}
+            variant={variant}
+            user={user}
+            space={space}
+            spaces={spaces}
+          />
+        )}
         <main>{children}</main>
       </div>
-      <PhoneTabs locale={locale} variant={variant} path={path} />
+      {!chromeless && <PhoneTabs locale={locale} variant={variant} path={path} />}
     </div>
   );
 }

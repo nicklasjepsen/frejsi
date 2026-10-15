@@ -123,3 +123,80 @@
 .simple .photo {
   border-radius: 16px;
 }
+
+/* "Dagens måltider" (Nu-Desktop): a card with a hairline table, tabular numerals, a hint below. */
+.tableCard {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 20px 24px;
+  border-radius: var(--radius-card);
+  background: var(--surface);
+  box-shadow: var(--card-shadow);
+  border: var(--card-border);
+}
+
+.tableHead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.tableTitle {
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 15px;
+}
+
+.table th {
+  padding: 0 8px 8px 0;
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--text-muted);
+  text-align: left;
+}
+
+.table td {
+  padding: 10px 8px 10px 0;
+  border-top: 1px solid var(--hairline);
+}
+
+.table tbody tr {
+  cursor: default;
+}
+
+.table tbody tr:focus-visible {
+  outline: 2px solid var(--accent-base);
+  outline-offset: -2px;
+}
+
+.table tbody tr[aria-selected="true"] {
+  background: var(--surface-selected);
+}
+
+.cellTime,
+.cellNumber {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.cellLink {
+  color: var(--text);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.cellLink:hover {
+  text-decoration: underline;
+}
+
+.hint {
+  font-size: 13px;
+  color: var(--text-muted);
+}

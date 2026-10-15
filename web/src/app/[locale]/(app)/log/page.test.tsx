@@ -70,7 +70,7 @@ describe("/[locale]/log", () => {
   it("sends a viewer to their own day", async () => {
     mocks.session = { ...jonas, memberships: [{ spaceId: "s1", role: "viewer" }] };
     mocks.shell = space("viewer");
-    await expect(open()).rejects.toThrow("NEXT_REDIRECT:/da/soon/today");
+    await expect(open()).rejects.toThrow("NEXT_REDIRECT:/da/today");
   });
 
   it("renders nothing without a session or a space (the layout has already redirected)", async () => {
