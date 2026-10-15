@@ -19,7 +19,7 @@ import {
 import da from "../../../../../messages/da";
 import en from "../../../../../messages/en";
 
-import { TodayScreen } from "./TodayScreen";
+import { RECHECK_MS, TodayScreen } from "./TodayScreen";
 
 const T0 = new Date("2026-10-14T11:13:00.000Z"); // Wednesday 13:13 in Copenhagen
 const ZONE = "Europe/Copenhagen";
@@ -243,6 +243,50 @@ describe("I dag (Historik-Viewer)", () => {
       fireEvent.focus(window);
     });
     await flush();
+    expect(dayCalls()).toBe(before + 1);
+  });
+
+  it("fetches the day again on space.updated, since the timezone may have changed", async () => {
+    await mount();
+    const before = dayCalls();
+    act(() =>
+      sockets[0]?.receive({
+        spaceId: "s1",
+        seq: 21,
+        ts: T0.toISOString(),
+        type: "space.updated",
+        payload: { fields: ["timezone"] },
+      }),
+    );
+    await flush();
+    expect(dayCalls()).toBe(before + 1);
+  });
+
+  it("retries a failed read every 30 seconds until it succeeds", async () => {
+    server.dayStatus = 500;
+    await mount();
+    expect(screen.getByRole("alert")).toBeVisible();
+    const before = dayCalls();
+    server.dayStatus = 200;
+    await act(() => vi.advanceTimersByTimeAsync(RECHECK_MS));
+    expect(dayCalls()).toBe(before + 1);
+    expect(screen.getByTestId("day-total")).toHaveTextContent("102");
+    await act(() => vi.advanceTimersByTimeAsync(RECHECK_MS * 3));
+    expect(dayCalls()).toBe(before + 1);
+  });
+
+  it("fetches the new day when the space's midnight passes", async () => {
+    await mount();
+    const before = dayCalls();
+    // 23:59:50 in Copenhagen; the next check falls after midnight.
+    vi.setSystemTime(new Date("2026-10-14T21:59:50.000Z"));
+    server.day = { ...emptyDay, date: "2026-10-15" };
+    await act(() => vi.advanceTimersByTimeAsync(RECHECK_MS));
+    expect(dayCalls()).toBe(before + 1);
+    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent(
+      "I dag, torsdag 15. oktober",
+    );
+    await act(() => vi.advanceTimersByTimeAsync(RECHECK_MS * 2));
     expect(dayCalls()).toBe(before + 1);
   });
 
