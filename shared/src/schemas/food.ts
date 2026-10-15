@@ -1,0 +1,117 @@
+import { z } from "zod";
+
+import { normaliseBarcode } from "../food/barcode";
+
+export const Portion = z.strictObject({
+  label: z.string().min(1).max(40),
+  grams: z.number().min(1).max(5000).optional(),
+  carbs: z.number().int().min(0).max(1000),
+});
+export type Portion = z.infer<typeof Portion>;
+
+export const family = "family";
+export const manual = "manual";
+export const ai = "ai";
+export const FoodOrigin = z.string().regex(/^[a-z][a-z0-9-]{0,19}$/);
+export type FoodOrigin = z.infer<typeof FoodOrigin>;
+
+const barcode = z.string().transform((value, ctx) => {
+  const normalised = normaliseBarcode(value);
+  if (normalised === null) {
+    ctx.addIssue({ code: "custom", message: "Invalid barcode checksum" });
+    return z.NEVER;
+  }
+  return normalised;
+});
+const fields = {
+  name: z.string().trim().min(1).max(200),
+  carbsPer100g: z.number().min(0).max(100).multipleOf(0.1).nullish(),
+  portions: z.array(Portion).default([]),
+  barcode: barcode.optional(),
+};
+const hasCarbs = (value: { carbsPer100g?: number | null | undefined; portions: Portion[] }) =>
+  value.carbsPer100g != null || value.portions.length > 0;
+const nutritionError = {
+  message: "A food needs carbsPer100g or at least one portion",
+  path: ["portions"],
+};
+export const FoodPhoto = z.strictObject({ thumbUrl: z.url(), originalUrl: z.url() });
+
+export const FoodCandidate = z.strictObject({
+  ...fields,
+  origin: FoodOrigin,
+  sourceRef: z.string().min(1).max(64),
+});
+export type FoodCandidate = z.infer<typeof FoodCandidate>;
+
+const viewFields = {
+  ...fields,
+  id: z.string().min(1),
+  origin: FoodOrigin,
+  verified: z.boolean().default(false),
+  verifiedBy: z.string().min(1).optional(),
+  favourite: z.boolean().default(false),
+  updatedAt: z.iso.datetime(),
+};
+export const FoodView = z.strictObject({ ...viewFields, photo: FoodPhoto.optional() });
+export type FoodView = z.infer<typeof FoodView>;
+
+export const Food = z
+  .strictObject({
+    ...viewFields,
+    spaceId: z.string().min(1).nullable(),
+    nameSearch: z.string().min(1).max(200),
+    sourceRef: z.string().min(1).max(64),
+    photoKey: z.string().min(1).max(200).optional(),
+    verifiedAt: z.iso.datetime().optional(),
+    createdBy: z.string().min(1).optional(),
+    createdAt: z.iso.datetime(),
+  })
+  .refine((value) => value.spaceId !== null || !value.verified, "Shared cache cannot be verified");
+export type Food = z.infer<typeof Food>;
+
+export const FoodSourceStatus = z.enum(["ok", "timeout", "error", "rate-limited", "skipped"]);
+export type FoodSourceStatus = z.infer<typeof FoodSourceStatus>;
+export const LookupQuery = z.union([
+  z.strictObject({ q: z.string().trim().min(1).max(80), remote: z.boolean().default(true) }),
+  z.strictObject({ barcode }),
+]);
+export type LookupQuery = z.infer<typeof LookupQuery>;
+
+export const LookupResult = z
+  .strictObject({
+    source: FoodOrigin,
+    verified: z.boolean().default(false),
+    food: z.union([FoodView, FoodCandidate]),
+  })
+  .refine(
+    (value) =>
+      value.source === "library"
+        ? "verified" in value.food && value.verified === value.food.verified
+        : !value.verified && (!("verified" in value.food) || !value.food.verified),
+    "Only library foods may be verified",
+  );
+export type LookupResult = z.infer<typeof LookupResult>;
+export const LookupResponse = z.strictObject({
+  results: z.array(LookupResult),
+  sources: z.record(FoodOrigin, FoodSourceStatus),
+  manual: z.strictObject({ name: z.string().max(80).optional(), barcode: barcode.optional() }),
+});
+export type LookupResponse = z.infer<typeof LookupResponse>;
+
+export const CreateFoodRequest = z
+  .strictObject({ ...fields, favourite: z.boolean().optional() })
+  .refine(hasCarbs, nutritionError);
+export type CreateFoodRequest = z.infer<typeof CreateFoodRequest>;
+export const AddCandidateRequest = z.strictObject({
+  candidate: FoodCandidate.refine(hasCarbs, nutritionError),
+});
+export type AddCandidateRequest = z.infer<typeof AddCandidateRequest>;
+export const UpdateFoodRequest = z
+  .strictObject({ ...fields, portions: z.array(Portion), favourite: z.boolean() })
+  .partial();
+export type UpdateFoodRequest = z.infer<typeof UpdateFoodRequest>;
+export const VerifyFoodsRequest = z.strictObject({
+  foodIds: z.array(z.string().min(1)).min(1).max(50),
+});
+export type VerifyFoodsRequest = z.infer<typeof VerifyFoodsRequest>;
