@@ -46,7 +46,7 @@ jobs:
       milestone_number: ${{ steps.ms.outputs.number }}
       infra_changed: ${{ steps.infra.outputs.changed }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           ref: ${{ env.TAG }}
           fetch-depth: 0
@@ -94,7 +94,7 @@ jobs:
       # The Prisma integration tests and the Playwright run (its globalSetup migrates and seeds).
       DATABASE_URL: sqlserver://localhost:1433;database=frejsi_test;user=sa;password=${{ secrets.CI_SQL_SA_PASSWORD }};encrypt=true;trustServerCertificate=true
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           ref: ${{ env.TAG }}
       - uses: pnpm/action-setup@v4
@@ -141,7 +141,7 @@ jobs:
       ALERT_EMAIL: ${{ vars.ALERT_EMAIL }}
       CUSTOM_DOMAIN: ${{ vars.CUSTOM_DOMAIN }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           ref: ${{ env.TAG }}
       - name: Repository variables are set
@@ -181,7 +181,7 @@ jobs:
     outputs:
       app_origin: ${{ steps.deploy.outputs.app_origin }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           ref: ${{ env.TAG }}
       - uses: pnpm/action-setup@v4
@@ -235,7 +235,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           ref: ${{ env.TAG }}
           fetch-depth: 0
