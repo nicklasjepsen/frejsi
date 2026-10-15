@@ -46,6 +46,7 @@ const loaded: LiveState = {
   connection: "live",
   lastSeq: 40,
   readings: [reading(60, 5.8), reading(8, 6.0), reading(3, 6.2, "forty-five-up")],
+  latest: reading(3, 6.2, "forty-five-up"),
   sourceStatus: "connected",
   sourceSince: minutesAgo(600),
   space,
@@ -131,6 +132,7 @@ describe("Nu · phone (Main)", () => {
     live.state = {
       ...loaded,
       readings: [],
+      latest: null,
       sourceStatus: "not-configured",
       space: { ...space, sourceType: null },
     };
@@ -140,20 +142,30 @@ describe("Nu · phone (Main)", () => {
     expect(screen.getAllByTestId("target-band").length).toBeGreaterThan(0);
   });
 
+  it("shows the last reading with its age when it is older than the 24-hour window", () => {
+    const old = { ts: minutesAgo(26 * 60), mmol: 7.7, trend: "flat" } satisfies Reading;
+    live.state = { ...loaded, readings: [], latest: old, sourceStatus: "disconnected" };
+    mount();
+    expect(screen.queryByText("Ingen målinger endnu")).toBeNull();
+    const phone = within(screen.getByTestId("now-phone"));
+    expect(phone.getByTestId("glucose-number")).toHaveTextContent("7,7");
+    expect(phone.getByTestId("glucose-age")).toHaveTextContent("for mere end et døgn siden");
+  });
+
   it("keeps the last meal as a placeholder until v0.2.0", () => {
     mount();
     expect(screen.getByText("Sidste måltid")).toBeInTheDocument();
-    expect(screen.getByText("Måltider kommer i en senere version.")).toBeInTheDocument();
+    expect(screen.getByText("Her kan du snart se det sidste måltid.")).toBeInTheDocument();
   });
 
   it("draws nothing of glucose before the window has loaded, and the error by code when refused", () => {
-    live.state = { ...loaded, loaded: false, readings: [] };
+    live.state = { ...loaded, loaded: false, readings: [], latest: null };
     const { unmount } = mount();
     expect(screen.getByTestId("now-loading")).toBeInTheDocument();
     expect(screen.queryByTestId("glucose-age")).toBeNull();
     expect(screen.queryByText("Ingen målinger endnu")).toBeNull();
     unmount();
-    live.state = { ...loaded, loaded: false, readings: [], error: "forbidden" };
+    live.state = { ...loaded, loaded: false, readings: [], latest: null, error: "forbidden" };
     mount();
     expect(screen.getByRole("alert")).toHaveTextContent(/ikke adgang/);
   });
@@ -193,6 +205,7 @@ describe("Nu · desktop (Nu-Desktop)", () => {
         { ts: ago(24 * 60), mmol: 6.0, trend: "flat" },
         { ts: ago(3), mmol: 6.2, trend: "flat" },
       ],
+      latest: { ts: ago(3), mmol: 6.2, trend: "flat" },
     };
     mount();
     const desktop = within(screen.getByTestId("now-desktop"));

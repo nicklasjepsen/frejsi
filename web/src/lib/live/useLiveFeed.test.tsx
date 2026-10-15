@@ -31,6 +31,7 @@ describe("useLiveFeed", () => {
             sourceType: "dexcom-share",
           },
           readings: [{ ts: "2026-10-15T13:10:00.000Z", mmol: 6.2, trend: "forty-five-up" }],
+          latest: { ts: "2026-10-15T13:10:00.000Z", mmol: 6.2, trend: "forty-five-up" },
         }),
       "/negotiate": () => jsonResponse({ url: "wss://example/hub" }),
       "/events": () => jsonResponse({ lastSeq: 3, events: [], more: false }),

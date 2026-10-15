@@ -9,6 +9,7 @@ const SERVER_SNAPSHOT: LiveState = {
   connection: "connecting",
   lastSeq: 0,
   readings: [],
+  latest: null,
   sourceStatus: "not-configured",
   sourceSince: null,
   space: null,

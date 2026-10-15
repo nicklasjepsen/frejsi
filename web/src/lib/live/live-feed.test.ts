@@ -25,11 +25,13 @@ const envelope = (seq: number, payload: Reading): EventEnvelope => ({
 });
 
 /** A server with a readings window, an events log and a negotiate that can be turned off. */
-function fakeServer(initial: { readings: Reading[]; lastSeq: number }) {
+function fakeServer(initial: { readings: Reading[]; lastSeq: number; latest?: Reading | null }) {
   const server = {
     live: true,
     /** When true, negotiate never answers (a stalled credential call on the server). */
     negotiateHangs: false,
+    /** A refusal status for negotiate (403, 404); 200 answers normally. */
+    negotiateStatus: 200,
     /** The socket URL the next negotiate hands out; a test can issue a new token per call. */
     socketUrl: (): string => SOCKET_URL,
     events: [] as EventEnvelope[],
@@ -45,6 +47,7 @@ function fakeServer(initial: { readings: Reading[]; lastSeq: number }) {
         sourceType: "dexcom-share",
       },
       readings: initial.readings,
+      latest: initial.latest === undefined ? (initial.readings.at(-1) ?? null) : initial.latest,
     } satisfies ReadingsWindow as ReadingsWindow,
     readingsStatus: 200,
     /** When true, the readings request never answers (a stalled connection). */
@@ -79,11 +82,13 @@ function fakeServer(initial: { readings: Reading[]; lastSeq: number }) {
               : jsonResponse({ error: { code: "forbidden", message: "" } }, server.readingsStatus),
           ),
     "/negotiate": () =>
-      server.negotiateHangs
-        ? new Promise<Response>(() => undefined)
-        : server.live
-          ? jsonResponse({ url: server.socketUrl() })
-          : jsonResponse({ error: { code: "internal", message: "" } }, 503),
+      server.negotiateStatus !== 200
+        ? jsonResponse({ error: { code: "not-found", message: "" } }, server.negotiateStatus)
+        : server.negotiateHangs
+          ? new Promise<Response>(() => undefined)
+          : server.live
+            ? jsonResponse({ url: server.socketUrl() })
+            : jsonResponse({ error: { code: "internal", message: "" } }, 503),
     "/events": (url) => {
       if (server.eventsHang) return new Promise<Response>(() => undefined);
       if (server.eventsStatus !== 200) {
@@ -547,6 +552,90 @@ describe("LiveFeed (plan §5)", () => {
     expect(calls).toEqual(["/api/spaces/s1/readings?hours=24"]);
     await vi.advanceTimersByTimeAsync(POLL_MS * 2);
     expect(calls).toHaveLength(1);
+  });
+
+  it("keeps the newest reading with its age when it is older than the window, and moves it on with a push", async () => {
+    const old = reading(new Date(T0.getTime() - 26 * 60 * 60_000).toISOString(), 7.7);
+    const { server, fetch } = fakeServer({ readings: [], lastSeq: 3, latest: old });
+    const { feed } = start(fetch);
+    await flush();
+    expect(feed.getState().readings).toEqual([]);
+    expect(feed.getState().latest).toEqual(old);
+
+    sockets[0]?.open();
+    await flush();
+    const fresh = reading(minutesAgo(1), 6.1);
+    sockets[0]?.receive(server.append(fresh));
+    expect(feed.getState().latest).toEqual(fresh);
+
+    // A late, older reading does not replace the newest one.
+    sockets[0]?.receive(server.append(reading(minutesAgo(9), 5.9)));
+    expect(feed.getState().latest).toEqual(fresh);
+  });
+
+  it("stops and reports not-found when a catch-up is refused (the member was removed)", async () => {
+    const { server, fetch, calls } = fakeServer({
+      readings: [reading(minutesAgo(2), 6.0)],
+      lastSeq: 1,
+    });
+    const { feed } = start(fetch);
+    await flush();
+    sockets[0]?.open();
+    await flush();
+
+    server.eventsStatus = 404;
+    server.negotiateStatus = 404;
+    sockets[0]?.drop();
+    await flush();
+    expect(feed.getState().error).toBe("not-found");
+    expect(feed.getState().readings).toEqual([]);
+    expect(feed.getState().latest).toBeNull();
+    const before = calls.length;
+    await vi.advanceTimersByTimeAsync(POLL_MS * 3);
+    expect(calls).toHaveLength(before);
+  });
+
+  it("stops and reports not-found when negotiate refuses a reconnect", async () => {
+    const { server, fetch, calls } = fakeServer({ readings: [], lastSeq: 1 });
+    const { feed } = start(fetch);
+    await flush();
+    sockets[0]?.open();
+    await flush();
+
+    server.negotiateStatus = 404;
+    sockets[0]?.drop();
+    await vi.advanceTimersByTimeAsync(POLL_MS);
+    expect(feed.getState().error).toBe("not-found");
+    const before = calls.length;
+    await vi.advanceTimersByTimeAsync(POLL_MS * 3);
+    expect(calls).toHaveLength(before);
+  });
+
+  it("reloads the window on member.updated, and stops with forbidden when the member is now a viewer", async () => {
+    const { server, fetch, calls } = fakeServer({
+      readings: [reading(minutesAgo(2), 6.0)],
+      lastSeq: 1,
+    });
+    const { feed } = start(fetch);
+    await flush();
+    sockets[0]?.open();
+    await flush();
+
+    server.readingsStatus = 403;
+    const before = calls.length;
+    sockets[0]?.receive({
+      spaceId: "s1",
+      seq: 2,
+      ts: T0.toISOString(),
+      type: "member.updated",
+      payload: { userId: "u-1", role: "viewer" },
+    });
+    await flush();
+    expect(calls.slice(before)).toEqual(["/api/spaces/s1/readings?hours=24"]);
+    expect(feed.getState().error).toBe("forbidden");
+    expect(feed.getState().readings).toEqual([]);
+    expect(feed.getState().latest).toBeNull();
+    expect(sockets[0]?.closed).toBe(true);
   });
 
   it("retries a failed settings reload on the timer, without touching a live socket", async () => {

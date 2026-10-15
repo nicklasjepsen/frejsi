@@ -48,6 +48,11 @@ export const ReadingsWindow = z.object({
   sourceSince: z.iso.datetime().nullable(),
   space: LiveSpace,
   readings: z.array(Reading),
+  /**
+   * The newest reading whatever its age, or null when the space has none: a source that has been
+   * down for more than the window still shows its last value with that age, never "no readings".
+   */
+  latest: Reading.nullable(),
 });
 export type ReadingsWindow = z.infer<typeof ReadingsWindow>;
 
