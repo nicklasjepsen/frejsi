@@ -101,6 +101,8 @@ it("keeps a phone Day link and accessible previous/next links and shortcuts", as
   const previous = await screen.findByRole("link", { name: "Forrige uge" });
   expect(previous).toHaveAttribute("href", "/da/history/week?start=2025-09-29&view=uge");
   expect(screen.getByRole("link", { name: "Dag" })).toHaveAttribute("href", "/da/history");
+  // The shortcuts wait for the week's data; the link above renders before it arrives.
+  await screen.findByText("i gennemsnit, 17 af 23 registreret");
   fireEvent.keyDown(document.body, { key: "ArrowLeft" });
   expect(mocks.push).toHaveBeenLastCalledWith(previous.getAttribute("href"));
   fireEvent.keyDown(screen.getByRole("radio", { name: "Uge" }), { key: "ArrowRight" });
