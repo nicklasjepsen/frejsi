@@ -6,7 +6,7 @@ import type { ApiErrorCode, SpaceSettings } from "@frejsi/shared";
 import { mgdlToMmol, mmolToMgdl } from "@frejsi/shared/glucose/units";
 import { GlucoseSourceType, GlucoseUnit } from "@frejsi/shared/schemas/glucose";
 import { Locale } from "@frejsi/shared/schemas/settings";
-import { useTranslations } from "next-intl";
+import { useFormatter, useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 
@@ -111,12 +111,14 @@ export function SettingsScreen({ locale, data, now, api = settingsApi() }: Setti
 
   function describePhone(): string {
     if (!source || !sourceName) return t("source.notConfigured");
-    if (source.status === "disconnected") return t("source.rowDisconnected", { source: sourceName });
+    if (source.status === "disconnected")
+      return t("source.rowDisconnected", { source: sourceName });
     if (source.status === "connected" && source.lastReadingAt) {
       const time = formatClock(new Date(source.lastReadingAt), data.timezone);
       return t("source.rowConnected", { source: sourceName, time });
     }
-    if (source.status === "connected") return t("source.rowConnectedNoReading", { source: sourceName });
+    if (source.status === "connected")
+      return t("source.rowConnectedNoReading", { source: sourceName });
     return t("source.notConfigured");
   }
 
@@ -307,7 +309,9 @@ export function SettingsScreen({ locale, data, now, api = settingsApi() }: Setti
 
           <section id="simple-mode" className={styles.section}>
             <h2 className={styles.sectionTitle}>{t("sections.simpleMode")}</h2>
-            <p className={styles.lead}>{isOwner ? t("simpleMode.leadDesktop") : t("simpleMode.lead")}</p>
+            <p className={styles.lead}>
+              {isOwner ? t("simpleMode.leadDesktop") : t("simpleMode.lead")}
+            </p>
             <Card className={styles.list}>
               {personRows.map(({ person, isMe, showSwitch, showLanguage }) => {
                 const name = isMe ? t("simpleMode.you", { name: person.name }) : person.name;
@@ -366,7 +370,8 @@ export function SettingsScreen({ locale, data, now, api = settingsApi() }: Setti
 
 /**
  * The target range as drawn on Indstillinger-Desktop: two small inputs in the space's unit and a
- * save. Values are stored in mmol (plan §3); an mg/dL space converts both ways here.
+ * save. Values are stored in mmol with one decimal (plan §3); an mg/dL space converts both ways
+ * here, and shows the mmol it will store, so a rounded bound never shifts without notice.
  */
 function TargetRange({
   space,
@@ -378,7 +383,9 @@ function TargetRange({
   onSave: (targetLow: number, targetHigh: number) => void;
 }) {
   const t = useTranslations("settings");
+  const format = useFormatter();
   const unit = space.glucoseUnit;
+  const [crossed, setCrossed] = useState(false);
   const shown = (mmol: number) => (unit === "mgdl" ? String(mmolToMgdl(mmol)) : mmol.toFixed(1));
   const [low, setLow] = useState(shown(space.targetLow));
   const [high, setHigh] = useState(shown(space.targetHigh));
@@ -403,11 +410,26 @@ function TargetRange({
     const targetLow = toMmol(low);
     const targetHigh = toMmol(high);
     if (targetLow === null || targetHigh === null) return;
+    // Checked after conversion: 100 and 101 mg/dL are both 5.6 mmol, which is not a range.
+    if (targetLow >= targetHigh) {
+      setCrossed(true);
+      return;
+    }
+    setCrossed(false);
     onSave(targetLow, targetHigh);
   };
 
+  const oneDecimal = (mmol: number) =>
+    format.number(mmol, { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+  const storedLow = toMmol(low);
+  const storedHigh = toMmol(high);
+
   return (
-    <form className={cx(styles.range, styles.desktopOnly)} onSubmit={submit} aria-label={t("targetRange.label")}>
+    <form
+      className={cx(styles.range, styles.desktopOnly)}
+      onSubmit={submit}
+      aria-label={t("targetRange.label")}
+    >
       <span className={styles.rowTitle}>{t("targetRange.label")}</span>
       <div className={styles.rangeFields}>
         <label className={styles.field}>
@@ -423,6 +445,7 @@ function TargetRange({
             value={low}
             onChange={(e) => {
               setLow(e.target.value);
+              setCrossed(false);
             }}
             disabled={disabled}
           />
@@ -443,6 +466,7 @@ function TargetRange({
             value={high}
             onChange={(e) => {
               setHigh(e.target.value);
+              setCrossed(false);
             }}
             disabled={disabled}
           />
@@ -452,6 +476,16 @@ function TargetRange({
         </Button>
       </div>
       <span className={styles.rowSub}>{t("targetRange.note", { unit: t(`unit.${unit}`) })}</span>
+      {unit === "mgdl" && storedLow !== null && storedHigh !== null && (
+        <span className={styles.rowSub} data-testid="target-range-stored">
+          {t("targetRange.storedAs", { low: oneDecimal(storedLow), high: oneDecimal(storedHigh) })}
+        </span>
+      )}
+      {crossed && (
+        <Notice tone="sunken" role="alert">
+          {t("targetRange.crossed")}
+        </Notice>
+      )}
     </form>
   );
 }
