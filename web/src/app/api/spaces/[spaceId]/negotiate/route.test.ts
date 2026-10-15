@@ -81,6 +81,20 @@ describe("GET /api/spaces/:id/negotiate (plan §5, decision 3)", () => {
     expect(res.status).toBe(503);
   });
 
+  it("falls back to the environment's issuer once a test's issuer is gone, whatever ran first", async () => {
+    vi.stubEnv("WEB_PUBSUB_CONNECTION_STRING", "");
+    vi.stubEnv("WEB_PUBSUB_ENDPOINT", "");
+    try {
+      expect((await negotiate("sess-owner-1")).status).toBe(200);
+      configureLive({ db: fake.db, now: () => T0 });
+      // No Web PubSub in this environment: the Noop sink issues no token, so the client polls.
+      expect((await negotiate("sess-owner-1")).status).toBe(503);
+      expect(issuer.requests).toHaveLength(1);
+    } finally {
+      vi.unstubAllEnvs();
+    }
+  });
+
   it("logs the space and the user but never the socket URL", async () => {
     await negotiate("sess-owner-1");
     await negotiate("sess-other-1");
