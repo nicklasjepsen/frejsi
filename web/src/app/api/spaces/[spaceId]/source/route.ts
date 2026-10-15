@@ -1,4 +1,4 @@
-import { HttpError, prisma } from "@frejsi/shared";
+import { HttpError, log, prisma } from "@frejsi/shared";
 
 import { json, logOutcome, parseBody, settingsRoute } from "@/components/settings/api-route";
 import { ConnectSourceBody } from "@/components/settings/contracts";
@@ -35,7 +35,12 @@ export const POST = settingsRoute<Params>(ROUTE, async (request, { spaceId }) =>
   const body = await parseBody(request, ConnectSourceBody);
   const outcome = await connectSource({ spaceId, ...body });
   if (outcome.result === "bad-credentials") throw new HttpError(400, "source-bad-credentials");
-  if (outcome.result === "unreachable") throw new HttpError(503, "source-unreachable");
+  if (outcome.result === "unreachable") {
+    // The cause (timeout, network, http-<status>, bad-body, ...) goes on its own line; the answer
+    // to the owner stays the one designed "source-unreachable".
+    log.warn("source.connect-unreachable", { route: ROUTE, code: outcome.cause, spaceId });
+    throw new HttpError(503, "source-unreachable");
+  }
   const settings = await saveConnectedSource(spaceId, {
     type: body.type,
     region: body.region,
