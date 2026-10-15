@@ -19,6 +19,10 @@ export interface NavItem {
   sidebarLabel?: NavKey;
   /** Path without the locale prefix. */
   href: string;
+  /** Sidebar destination when its default differs from the phone tab. */
+  sidebarHref?: string;
+  /** Shared navigation section for active state across day and week. */
+  activeHref?: string;
   icon: NavIcon;
   /** Desktop shortcut, shown as a hint and bound on keydown (normal mode only). */
   shortcut?: string;
@@ -30,12 +34,19 @@ export function shellVariant(role: Role, simpleMode: boolean): ShellVariant {
   return simpleMode ? "simple" : "normal";
 }
 
-/** Five phone tabs (Main) / six sidebar items (Nu-Desktop); Historik still opens the placeholder. */
+/** Five phone tabs (Main) / six sidebar items (Nu-Desktop); History opens the day on phone and the week on desktop. */
 const NORMAL: NavItem[] = [
   { label: "now", href: "/now", icon: "now", shortcut: "N" },
   { label: "meal", sidebarLabel: "logMeal", href: "/log", icon: "plus", shortcut: "M" },
   { label: "food", sidebarLabel: "library", href: "/library", icon: "book", shortcut: "B" },
-  { label: "history", href: "/soon/history", icon: "clock", shortcut: "H" },
+  {
+    label: "history",
+    href: "/history",
+    sidebarHref: "/history/week",
+    activeHref: "/history",
+    icon: "clock",
+    shortcut: "H",
+  },
   { label: "people", href: "/people", icon: "people", shortcut: "P" },
   { label: "more", sidebarLabel: "settings", href: "/settings", icon: "settings", shortcut: "," },
 ];
@@ -47,10 +58,10 @@ const SIMPLE: NavItem[] = [
   { label: "ask", sidebarLabel: "askAdult", href: "/soon/ask", icon: "ask" },
 ];
 
-/** Three tabs (Historik-Viewer): never Nu, Måltid or Mad. Tidligere dage waits for v0.3.0. */
+/** Three tabs (Historik-Viewer): never Nu, Måltid or Mad. Tidligere dage opens meal-only history. */
 const VIEWER: NavItem[] = [
   { label: "today", href: "/today", icon: "clock" },
-  { label: "earlierDays", href: "/soon/earlier-days", icon: "calendar" },
+  { label: "earlierDays", href: "/history", icon: "calendar" },
   { label: "more", sidebarLabel: "settings", href: "/settings", icon: "dots" },
 ];
 
@@ -66,7 +77,7 @@ export function phoneItems(variant: ShellVariant): NavItem[] {
 export function sidebarItems(variant: ShellVariant): NavItem[] {
   if (variant === "simple") return SIMPLE;
   if (variant === "viewer") return VIEWER;
-  return NORMAL;
+  return NORMAL.map((item) => (item.sidebarHref ? { ...item, href: item.sidebarHref } : item));
 }
 
 /** Where a role lands: viewers on their day, everyone else on Nu. */
