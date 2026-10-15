@@ -5,7 +5,11 @@ import { ConnectSourceBody } from "@/components/settings/contracts";
 import { connectSource } from "@/components/settings/source-connect-client";
 import { requireRole } from "@/lib/auth/session";
 
-import { saveConnectedSource, toSourceView } from "../settings/space-settings";
+import {
+  latestSourceStatusSince,
+  saveConnectedSource,
+  toSourceView,
+} from "../settings/space-settings";
 
 const ROUTE = "spaces.source";
 interface Params {
@@ -17,7 +21,7 @@ export const GET = settingsRoute<Params>(ROUTE, async (_request, { spaceId }) =>
   await requireRole(spaceId, "owner", "carer");
   const row = await prisma.space.findUnique({ where: { id: spaceId } });
   if (!row) throw new HttpError(404, "not-found");
-  return json(toSourceView(row));
+  return json(toSourceView(row, await latestSourceStatusSince(prisma, spaceId)));
 });
 
 /**

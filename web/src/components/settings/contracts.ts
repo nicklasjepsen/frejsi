@@ -48,12 +48,14 @@ export type ConnectSourceBody = z.infer<typeof ConnectSourceBody>;
 /**
  * `GET /api/spaces/:id/source`: the configured source as the screens show it (the desktop card
  * names the region), never the `secretRef`. All null but the status before one is configured.
+ * `since` is the time of the latest `source.status` event, for the banner's "siden {time}".
  */
 export const SourceView = z.object({
   type: GlucoseSourceType.nullable(),
   region: DexcomShareRegion.nullable(),
   status: SourceStatus,
   lastReadingAt: z.iso.datetime().nullable(),
+  since: z.iso.datetime().nullable(),
 });
 export type SourceView = z.infer<typeof SourceView>;
 
