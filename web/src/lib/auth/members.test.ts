@@ -62,6 +62,19 @@ describe("changeMemberRole", () => {
     expect(fake.rows("membership").find((m) => m.userId === "o1")).toMatchObject({ role: "carer" });
   });
 
+  it("runs the owner count and the write in one serializable transaction, so two owners cannot both step down", async () => {
+    const { fake, emit } = seeded();
+    await addMember({ spaceId: "s1", userId: "o2", role: "owner" }, { db: fake.db, emit });
+    await changeMemberRole({ spaceId: "s1", userId: "o1", role: "carer" }, { db: fake.db, emit });
+    await expect(
+      removeMember({ spaceId: "s1", userId: "o2" }, { db: fake.db, emit }),
+    ).rejects.toMatchObject({ code: "last-owner" });
+    expect(fake.transactions).toEqual([
+      { isolationLevel: "Serializable" },
+      { isolationLevel: "Serializable" },
+    ]);
+  });
+
   it("answers not-found for someone who is not a member", async () => {
     const { fake, emit } = seeded();
     await expect(

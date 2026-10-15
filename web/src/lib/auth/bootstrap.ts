@@ -76,23 +76,31 @@ export async function bootstrapSpace(
   if (!parsed.success) throw new HttpError(400, "validation");
   const body = parsed.data;
 
-  return transact(db, emit, async (tx, emitLater) => {
-    const txDeps = { db: tx, emit: emitLater, now };
-    const space = await tx.space.create({
-      data: { name: body.spaceName, timezone: body.timezone },
-    });
-    const owner = await tx.user.create({ data: { name: body.ownerName } });
-    await addMember({ spaceId: space.id, userId: owner.id, role: "owner" }, txDeps);
-    const invite = await createInvite(
-      {
-        spaceId: space.id,
-        role: "owner",
-        name: body.ownerName,
-        forUserId: owner.id,
-        createdBy: owner.id,
-      },
-      txDeps,
-    );
-    return { spaceId: space.id, inviteUrl: invite.url, expiresAt: invite.expiresAt };
-  });
+  return transact(
+    db,
+    emit,
+    async (tx, emitLater) => {
+      // Rechecked under serializable isolation: two bootstraps racing past the check above
+      // cannot both create a space.
+      if ((await tx.space.count()) > 0) throw new HttpError(404, "not-found");
+      const txDeps = { db: tx, emit: emitLater, now };
+      const space = await tx.space.create({
+        data: { name: body.spaceName, timezone: body.timezone },
+      });
+      const owner = await tx.user.create({ data: { name: body.ownerName } });
+      await addMember({ spaceId: space.id, userId: owner.id, role: "owner" }, txDeps);
+      const invite = await createInvite(
+        {
+          spaceId: space.id,
+          role: "owner",
+          name: body.ownerName,
+          forUserId: owner.id,
+          createdBy: owner.id,
+        },
+        txDeps,
+      );
+      return { spaceId: space.id, inviteUrl: invite.url, expiresAt: invite.expiresAt };
+    },
+    { serializable: true },
+  );
 }

@@ -106,6 +106,21 @@ describe("bootstrapSpace", () => {
     expect(w.fake.rows("space")).toHaveLength(1);
   });
 
+  it("rechecks for a space inside a serializable transaction, so two bootstraps racing cannot both create one", async () => {
+    const w = world();
+    // A second bootstrap commits between this one's first check and its transaction.
+    w.fake.onTransaction = () => {
+      w.fake.rows("space").push({ id: "other", name: "Other", timezone: "Europe/Copenhagen" });
+    };
+    await expect(bootstrapSpace({ token: TOKEN, body }, w.deps)).rejects.toMatchObject({
+      status: 404,
+      code: "not-found",
+    });
+    expect(w.fake.rows("space").map((s) => s.id)).toEqual(["other"]);
+    expect(w.fake.rows("user")).toEqual([]);
+    expect(w.fake.transactions).toEqual([{ isolationLevel: "Serializable" }]);
+  });
+
   it("answers 401 on a wrong or missing token and when no token is configured", async () => {
     const w = world();
     await expect(bootstrapSpace({ token: "wrong", body }, w.deps)).rejects.toMatchObject({

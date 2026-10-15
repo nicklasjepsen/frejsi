@@ -22,18 +22,26 @@ export async function addMember(input: NewMember, deps: TxDeps = {}): Promise<vo
   await emit(input.spaceId, "member.joined", { userId: input.userId, role: input.role });
 }
 
-/** Changes a member's role and emits `member.updated`. The last owner cannot step down. */
+/**
+ * Changes a member's role and emits `member.updated`. The last owner cannot step down; the count
+ * and the write share a serializable transaction so two owners cannot both step down at once.
+ */
 export async function changeMemberRole(input: NewMember, deps: AuthDeps = {}): Promise<void> {
   const { db, emit } = resolve(deps);
-  await transact(db, emit, async (tx, emitLater) => {
-    const current = await membership(tx, input);
-    if (current.role === "owner" && input.role !== "owner") await assertNotLastOwner(tx, input);
-    await tx.membership.update({
-      where: { userId_spaceId: { userId: input.userId, spaceId: input.spaceId } },
-      data: { role: input.role },
-    });
-    await emitLater(input.spaceId, "member.updated", { userId: input.userId, role: input.role });
-  });
+  await transact(
+    db,
+    emit,
+    async (tx, emitLater) => {
+      const current = await membership(tx, input);
+      if (current.role === "owner" && input.role !== "owner") await assertNotLastOwner(tx, input);
+      await tx.membership.update({
+        where: { userId_spaceId: { userId: input.userId, spaceId: input.spaceId } },
+        data: { role: input.role },
+      });
+      await emitLater(input.spaceId, "member.updated", { userId: input.userId, role: input.role });
+    },
+    { serializable: true },
+  );
 }
 
 /**
@@ -42,14 +50,19 @@ export async function changeMemberRole(input: NewMember, deps: AuthDeps = {}): P
  */
 export async function removeMember(input: MemberRef, deps: AuthDeps = {}): Promise<void> {
   const { db, emit } = resolve(deps);
-  await transact(db, emit, async (tx, emitLater) => {
-    const current = await membership(tx, input);
-    if (current.role === "owner") await assertNotLastOwner(tx, input);
-    await tx.membership.delete({
-      where: { userId_spaceId: { userId: input.userId, spaceId: input.spaceId } },
-    });
-    await emitLater(input.spaceId, "member.removed", { userId: input.userId });
-  });
+  await transact(
+    db,
+    emit,
+    async (tx, emitLater) => {
+      const current = await membership(tx, input);
+      if (current.role === "owner") await assertNotLastOwner(tx, input);
+      await tx.membership.delete({
+        where: { userId_spaceId: { userId: input.userId, spaceId: input.spaceId } },
+      });
+      await emitLater(input.spaceId, "member.removed", { userId: input.userId });
+    },
+    { serializable: true },
+  );
 }
 
 async function membership(tx: AuthTx, ref: MemberRef) {

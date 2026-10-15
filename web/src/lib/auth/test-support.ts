@@ -19,7 +19,7 @@ import type {
   RegistrationResponseJSON,
 } from "@simplewebauthn/server";
 
-import type { AuthDb, AuthTx } from "./core";
+import type { AuthDb, AuthTx, TransactionOptions } from "./core";
 
 type Row = Record<string, unknown>;
 type Where = Record<string, unknown>;
@@ -198,6 +198,12 @@ export class FakeAuthDb {
   tables: Tables = emptyTables();
   /** Set to make the next write to this table throw, to prove a transaction rolls back. */
   failNextWrite: TableName | null = null;
+  /** Runs right before every write; a test uses it to mutate state as a racing request would. */
+  beforeWrite: ((table: TableName) => void) | null = null;
+  /** Runs when a transaction starts, before its callback. */
+  onTransaction: (() => void) | null = null;
+  /** The options every `$transaction` was called with, in order. */
+  readonly transactions: (TransactionOptions | undefined)[] = [];
 
   constructor(private readonly now: () => Date = () => new Date()) {}
 
@@ -207,7 +213,12 @@ export class FakeAuthDb {
     for (const table of Object.keys(this.tables) as TableName[]) {
       delegates[table] = this.delegate(table);
     }
-    delegates.$transaction = async <T>(fn: (tx: AuthTx) => Promise<T>): Promise<T> => {
+    delegates.$transaction = async <T>(
+      fn: (tx: AuthTx) => Promise<T>,
+      options?: TransactionOptions,
+    ): Promise<T> => {
+      this.transactions.push(options);
+      this.onTransaction?.();
       const snapshot = structuredClone(this.tables);
       try {
         return await fn(this.db);
@@ -255,6 +266,7 @@ export class FakeAuthDb {
   }
 
   private failIfAsked(table: TableName): void {
+    this.beforeWrite?.(table);
     if (this.failNextWrite === table) {
       this.failNextWrite = null;
       throw new FakeDbError("P9999", `fake db: injected failure on ${table}`);

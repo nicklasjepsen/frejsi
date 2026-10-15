@@ -239,10 +239,14 @@ export async function finishLogin(input: LoginInput, deps: AuthDeps = {}): Promi
   const sessionId = newSessionId();
   const expiresAt = sessionExpiry(at);
   await transact(db, emit, async (tx) => {
-    await tx.passkey.update({
-      where: { id: passkey.id },
+    // Conditional on the counter the assertion was verified against: a login that raced this
+    // one on the same passkey has moved it, and neither a stale write nor a second session for
+    // a cloned authenticator may follow.
+    const { count } = await tx.passkey.updateMany({
+      where: { id: passkey.id, counter: passkey.counter },
       data: { counter: verification.authenticationInfo.newCounter, lastUsedAt: at },
     });
+    if (count !== 1) throw new HttpError(403, "forbidden");
     await tx.user.update({ where: { id: passkey.userId }, data: { lastSeen: at } });
     await tx.session.create({
       data: {
