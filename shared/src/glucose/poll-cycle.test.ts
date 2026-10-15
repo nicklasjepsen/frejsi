@@ -73,16 +73,26 @@ function fakeDb(initial: Partial<SpaceState>[]) {
           sourceStatus: space.sourceStatus,
         });
       },
+      // The conditional write: every `where` field after `id` must match the row as it is now.
       updateMany: (args) => {
         const space = must(args.where.id);
-        const current = space.lastReadingAt;
-        const newer = args.where.OR.some((c) =>
-          "lastReadingAt" in c && c.lastReadingAt === null
-            ? current === null
-            : current !== null && "lt" in c.lastReadingAt && current < c.lastReadingAt.lt,
-        );
-        if (!newer) return Promise.resolve({ count: 0 });
-        space.lastReadingAt = args.data.lastReadingAt;
+        const { sourceStatus, sourceFailures, OR } = args.where;
+        if (sourceStatus !== undefined && space.sourceStatus !== sourceStatus) {
+          return Promise.resolve({ count: 0 });
+        }
+        if (sourceFailures !== undefined && space.sourceFailures !== sourceFailures) {
+          return Promise.resolve({ count: 0 });
+        }
+        if (OR) {
+          const current = space.lastReadingAt;
+          const newer = OR.some((c) =>
+            "lastReadingAt" in c && c.lastReadingAt === null
+              ? current === null
+              : current !== null && "lt" in c.lastReadingAt && current < c.lastReadingAt.lt,
+          );
+          if (!newer) return Promise.resolve({ count: 0 });
+        }
+        Object.assign(space, args.data);
         return Promise.resolve({ count: 1 });
       },
     },
@@ -154,8 +164,13 @@ function harness(initial: Partial<SpaceState>[], sources: SourceFactory) {
   const sink = new MemoryEventSink();
   const realEmit = createEmit({ db: db.emitDb, sink, now: () => now });
   const emitFailure = { error: null as Error | null };
-  const emit: typeof realEmit = (spaceId, type, payload) =>
-    emitFailure.error ? Promise.reject(emitFailure.error) : realEmit(spaceId, type, payload);
+  /** Lets a test hold one emit until another cycle has gone past it. */
+  const emitGate = { wait: null as ((type: string, payload: unknown) => Promise<void>) | null };
+  const emit: typeof realEmit = async (spaceId, type, payload) => {
+    if (emitFailure.error) throw emitFailure.error;
+    await emitGate.wait?.(type, payload);
+    return realEmit(spaceId, type, payload);
+  };
   const lines: string[] = [];
   const log = createLogger(
     (line) => lines.push(line),
@@ -167,7 +182,16 @@ function harness(initial: Partial<SpaceState>[], sources: SourceFactory) {
       { db: db.poll, emit, sources, now: () => now, log, onReadingStored: (id) => stored.push(id) },
       spaceId === undefined ? {} : { spaceId },
     );
-  return { ...db, sink, lines, stored, run, emitFailure };
+  return { ...db, sink, lines, stored, run, emitFailure, emitGate };
+}
+
+/** A promise with its resolver in hand, for holding one cycle until another is done. */
+function gate() {
+  let open!: () => void;
+  const opened = new Promise<void>((resolve) => {
+    open = resolve;
+  });
+  return { opened, open };
 }
 
 const statusOf = (sink: MemoryEventSink, spaceId: string): SourceStatus[] =>
@@ -606,5 +630,51 @@ describe("runPollCycle failure counting under overlap", () => {
     await Promise.all([h.run(), h.run()]);
     expect(h.spaces.get("s1")).toMatchObject({ sourceFailures: 3, sourceStatus: "disconnected" });
     expect(statusOf(h.sink, "s1")).toEqual(["disconnected"]);
+  });
+
+  it("tells the clients 'connected' when a success lands after an overlapping cycle went disconnected", async () => {
+    // Both cycles start from the snapshot (connected, 2 failures). A fails and writes
+    // `disconnected`; B's fetch succeeds only after A is done. B's snapshot still says
+    // `connected`, so a decision from the snapshot would skip the recovery event for good.
+    const aDone = gate();
+    let calls = 0;
+    const h = harness([{ id: "s1", sourceFailures: 2, lastReadingAt: now }], () => {
+      calls += 1;
+      if (calls === 1) return recordingSource([], new Error("down"));
+      return {
+        fetchSince: () => aDone.opened.then(() => []),
+        probe: () => Promise.resolve("ok" as const),
+      };
+    });
+    const a = h.run();
+    const b = h.run();
+    await a;
+    expect(h.spaces.get("s1")).toMatchObject({ sourceStatus: "disconnected" });
+    aDone.open();
+    await b;
+    expect(h.spaces.get("s1")).toMatchObject({ sourceFailures: 0, sourceStatus: "connected" });
+    expect(statusOf(h.sink, "s1")).toEqual(["disconnected", "connected"]);
+  });
+
+  it("does not let a late 'disconnected' write undo a success that landed in between", async () => {
+    // A has counted the third failure and is emitting `disconnected` when B's success writes
+    // `connected`. A's column write must not overwrite it, and the clients, who heard
+    // `disconnected`, must hear `connected` after it.
+    const bDone = gate();
+    let calls = 0;
+    const h = harness([{ id: "s1", sourceFailures: 2, lastReadingAt: now }], () => {
+      calls += 1;
+      return calls === 1 ? recordingSource([], new Error("down")) : recordingSource([]);
+    });
+    h.emitGate.wait = (_type, payload) =>
+      (payload as { status?: string }).status === "disconnected" ? bDone.opened : Promise.resolve();
+    const a = h.run();
+    const b = h.run();
+    await b;
+    expect(h.spaces.get("s1")).toMatchObject({ sourceFailures: 0, sourceStatus: "connected" });
+    bDone.open();
+    await a;
+    expect(h.spaces.get("s1")).toMatchObject({ sourceFailures: 0, sourceStatus: "connected" });
+    expect(statusOf(h.sink, "s1")).toEqual(["disconnected", "connected"]);
   });
 });

@@ -45,11 +45,20 @@ export interface PollDb {
       data: { sourceStatus?: string; sourceFailures?: number | { increment: number } };
       select: { sourceFailures: true; sourceStatus: true };
     }): Promise<{ sourceFailures: number; sourceStatus: string }>;
-    /** `lastReadingAt` moves forward only, decided by the database, so overlapping cycles cannot regress it. */
+    /**
+     * The conditional write: every `where` field after `id` is the value the row must still have.
+     * `lastReadingAt` moves forward only, and a status flips only from the status it was decided
+     * against, so overlapping cycles cannot regress either.
+     */
     updateMany(args: {
-      where: { id: string; OR: [{ lastReadingAt: null }, { lastReadingAt: { lt: Date } }] };
-      data: { lastReadingAt: Date };
-    }): Promise<unknown>;
+      where: {
+        id: string;
+        sourceStatus?: string;
+        sourceFailures?: number;
+        OR?: [{ lastReadingAt: null }, { lastReadingAt: { lt: Date } }];
+      };
+      data: { sourceStatus?: string; sourceFailures?: number; lastReadingAt?: Date };
+    }): Promise<{ count: number }>;
   };
   reading: {
     findMany(args: {
@@ -291,28 +300,55 @@ function parseConfig(raw: string | null): GlucoseSourceConfig {
   }
 }
 
+/** How often a status write is retried when an overlapping cycle keeps moving the row under it. */
+const STATUS_ATTEMPTS = 3;
+
+/** The row's status as it is now, or `undefined` when the space is gone. */
+async function currentStatus(spaceId: string, deps: Resolved): Promise<string | undefined> {
+  const rows = await deps.db.space.findMany({
+    where: { glucoseSource: { not: null }, id: spaceId },
+    select: {
+      id: true,
+      glucoseSource: true,
+      sourceStatus: true,
+      sourceFailures: true,
+      lastReadingAt: true,
+    },
+  });
+  return rows[0]?.sourceStatus;
+}
+
+function emitStatus(spaceId: string, status: SourceStatus, deps: Resolved): Promise<unknown> {
+  return deps.emit(spaceId, "source.status", { status, since: deps.now().toISOString() });
+}
+
 /**
  * The status event goes first, then the column: a change the clients never heard of would not be
- * sent again, while a repeated event is harmless to them.
+ * sent again, while a repeated event is harmless to them. The column flips only from the status
+ * the event was decided against; when an overlapping cycle moved it in between (it wrote
+ * `disconnected` while this fetch was in flight), the decision is taken again from the row as it
+ * is now, so the clients always hear the recovery.
  */
 async function markConnected(
   space: PollSpaceRow,
   latest: Date | null,
   deps: Resolved,
 ): Promise<SourceStatus> {
-  if (space.sourceStatus !== "connected") {
-    await deps.emit(space.id, "source.status", {
-      status: "connected",
-      since: deps.now().toISOString(),
+  let current: string | undefined = space.sourceStatus;
+  for (let attempt = 0; current !== undefined && attempt < STATUS_ATTEMPTS; attempt += 1) {
+    if (current !== "connected") await emitStatus(space.id, "connected", deps);
+    const { count } = await deps.db.space.updateMany({
+      where: { id: space.id, sourceStatus: current },
+      data: { sourceStatus: "connected", sourceFailures: 0 },
     });
+    if (count === 1) {
+      await advanceLastReadingAt(space.id, latest, deps);
+      return "connected";
+    }
+    current = await currentStatus(space.id, deps);
   }
-  await deps.db.space.update({
-    where: { id: space.id },
-    data: { sourceStatus: "connected", sourceFailures: 0 },
-    select: { sourceFailures: true, sourceStatus: true },
-  });
-  await advanceLastReadingAt(space.id, latest, deps);
-  return "connected";
+  if (current === undefined) return "connected";
+  throw new Error("status-contended");
 }
 
 /** The status is not the source's fault here; only the rows already stored move `lastReadingAt`. */
@@ -345,6 +381,9 @@ async function advanceLastReadingAt(
 /**
  * Counts the failure in the database (an atomic increment, so two overlapping cycles count two)
  * and, when the fresh count reaches the limit, tells the clients first and flips the column after.
+ * The flip is conditional on the row still being what the count came from: a success that landed
+ * in between (status `connected`, counter reset) is fresher than this failure and stays; the
+ * clients, who were just told `disconnected`, are then told the status the row really has.
  */
 async function markFailed(
   space: PollSpaceRow,
@@ -361,16 +400,16 @@ async function markFailed(
     const disconnect =
       row.sourceFailures >= FAILURES_BEFORE_DISCONNECTED && row.sourceStatus !== "disconnected";
     if (!disconnect) return row.sourceStatus as SourceStatus;
-    await deps.emit(space.id, "source.status", {
-      status: "disconnected",
-      since: deps.now().toISOString(),
-    });
-    await deps.db.space.update({
-      where: { id: space.id },
+    await emitStatus(space.id, "disconnected", deps);
+    const { count } = await deps.db.space.updateMany({
+      where: { id: space.id, sourceStatus: row.sourceStatus, sourceFailures: row.sourceFailures },
       data: { sourceStatus: "disconnected" },
-      select: { sourceFailures: true, sourceStatus: true },
     });
-    return "disconnected";
+    if (count === 1) return "disconnected";
+    const fresh = await currentStatus(space.id, deps);
+    if (fresh === undefined) return "disconnected";
+    if (fresh !== "disconnected") await emitStatus(space.id, fresh as SourceStatus, deps);
+    return fresh as SourceStatus;
   } catch (error) {
     deps.log.error("poll.status-update-failed", { spaceId: space.id, code: codeOf(error) }, error);
     return space.sourceStatus as SourceStatus;
