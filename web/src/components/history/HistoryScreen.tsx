@@ -3,6 +3,7 @@ import { DayHistoryView } from "@frejsi/shared/schemas/history";
 import type { GlucoseUnit } from "@frejsi/shared/schemas/glucose";
 import { useTranslations } from "next-intl";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ArrowNav } from "@/components/ui/ArrowNav";
 import { ChipGroup } from "@/components/ui/ChipGroup";
@@ -38,6 +39,7 @@ export function HistoryScreen({
   socketFactory,
 }: HistoryProps & { unit: GlucoseUnit }) {
   const t = useTranslations("history");
+  const router = useRouter();
   const errors = useTranslations("errors.api");
   // The day read supplies history. This option suppresses the hook's separate readings route;
   // pushed reading events still arrive for owners/carers through their authorised socket group.
@@ -142,13 +144,17 @@ export function HistoryScreen({
       subscribe("meal.created", refresh),
       subscribe("meal.updated", refresh),
       subscribe("meal.deleted", refresh),
+      subscribe("space.updated", () => {
+        recheckAccess();
+        router.refresh();
+      }),
       subscribe("member.updated", recheckAccess),
       subscribe("member.removed", recheckAccess),
     ];
     return () => {
       for (const off of offs) off();
     };
-  }, [subscribe, load, today]);
+  }, [subscribe, load, today, router]);
   const dates = Object.keys(days).sort().reverse();
   const oldest = dates.at(-1) ?? initialDate;
   const last = days[oldest];
