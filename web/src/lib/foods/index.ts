@@ -24,6 +24,8 @@ import {
   type ResolvedFoods,
 } from "./core";
 
+import { confirmRemoteCandidate } from "./candidate";
+
 export { configureFoods, type FoodDeps } from "./core";
 function parse<T>(schema: z.ZodType<T>, value: unknown): T {
   const result = schema.safeParse(value);
@@ -214,25 +216,43 @@ export async function addCandidate(
   input: FoodDeps = {},
 ): Promise<FoodView> {
   authorize(spaceId, session);
-  const { candidate } = parse(AddCandidateRequest, { candidate: value });
+  let { candidate } = parse(AddCandidateRequest, { candidate: value });
   const deps = resolveFoods(input);
-  const source = deps.sources.find((source) => source.id === candidate.origin);
   if (!candidate.sourceRef.startsWith(`${candidate.origin}:`))
     throw new HttpError(400, "validation");
-  // Disabling a plugin stops upstream calls; it does not make its cached foods unusable.
-  if (
-    !source &&
-    !(await deps.db.food.findFirst({
-      where: { spaceId: null, sourceRef: candidate.sourceRef, origin: candidate.origin },
-    }))
-  )
-    throw new HttpError(400, "validation");
-  if (source?.kind === "remote")
-    await new PrismaFoodRepository(deps.db).upsertCache({
-      ...candidate,
-      spaceId: null,
-      verified: false,
-    });
+  const prior = await deps.db.food.findFirst({
+    where: { spaceId, sourceRef: candidate.sourceRef },
+  });
+  if (prior) return viewOf(prior, deps);
+  const source = deps.sources.find((source) => source.id === candidate.origin);
+  const cached = await deps.db.food.findFirst({
+    where: { spaceId: null, sourceRef: candidate.sourceRef, origin: candidate.origin },
+  });
+  if (cached) {
+    // A cache row is already canonical, including when its plugin has since been disabled.
+    // Never let a stale or crafted client copy replace the shared data.
+    const food = foodOf(cached);
+    candidate = parse(AddCandidateRequest, {
+      candidate: {
+        name: food.name,
+        carbsPer100g: food.carbsPer100g,
+        portions: food.portions,
+        barcode: food.barcode,
+        origin: food.origin,
+        sourceRef: food.sourceRef,
+      },
+    }).candidate;
+  } else {
+    if (!source) throw new HttpError(400, "validation");
+    if (source.kind === "remote") {
+      candidate = await confirmRemoteCandidate(source, candidate, session.locale);
+      await new PrismaFoodRepository(deps.db).upsertCache({
+        ...candidate,
+        spaceId: null,
+        verified: false,
+      });
+    }
+  }
   const row = await foodTransaction(deps, async (tx, emit) => {
     const prior = await tx.food.findFirst({ where: { spaceId, sourceRef: candidate.sourceRef } });
     if (prior) return prior;

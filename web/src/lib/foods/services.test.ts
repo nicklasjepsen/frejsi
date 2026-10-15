@@ -1,7 +1,7 @@
 // @vitest-environment node
 import { createLogger, type SessionContext } from "@frejsi/shared";
 import { type MemoryPhotoStore } from "@frejsi/shared/photos/memory";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   createFood,
   listFoods,
@@ -20,6 +20,7 @@ beforeEach(() => {
 });
 afterEach(() => {
   rig.reset();
+  vi.useRealTimers();
 });
 const fields = {
   name: "Cloud pear",
@@ -77,6 +78,73 @@ describe("food writes", () => {
         expect(cache[0]).toMatchObject({ verified: false, sourceRef: candidate.sourceRef });
     },
   );
+  it("uses authoritative adapter data instead of trusting a new remote candidate's client fields", async () => {
+    const food = await addCandidate(
+      "s1",
+      actor,
+      { ...candidate, name: "Forged pear", carbsPer100g: 99 },
+      rig.deps,
+    );
+    expect(food).toMatchObject({
+      name: candidate.name,
+      carbsPer100g: candidate.carbsPer100g,
+      verified: false,
+    });
+    expect(rig.rows.find((row) => row.spaceId === null)).toMatchObject({
+      name: candidate.name,
+      carbsPer100g: candidate.carbsPer100g,
+    });
+    expect(rig.events).toHaveLength(1);
+  });
+  it("copies an existing canonical cache entry without letting stale or crafted fields overwrite it", async () => {
+    rig.seed({
+      spaceId: null,
+      origin: candidate.origin,
+      sourceRef: candidate.sourceRef,
+      name: "Canonical pear",
+      nameSearch: "canonical pear",
+      carbsPer100g: 17,
+    });
+    rig.sourceStatus = "error";
+    const food = await addCandidate(
+      "s1",
+      actor,
+      { ...candidate, name: "Forged pear", carbsPer100g: 99 },
+      rig.deps,
+    );
+    expect(food).toMatchObject({ name: "Canonical pear", carbsPer100g: 17, verified: false });
+    expect(rig.rows.find((row) => row.spaceId === null)).toMatchObject({
+      name: "Canonical pear",
+      carbsPer100g: 17,
+    });
+    expect(rig.events).toHaveLength(1);
+  });
+  it("does not cache a remote candidate whose identity the adapter cannot confirm", async () => {
+    rig.remoteCandidates = [];
+    await expect(addCandidate("s1", actor, candidate, rig.deps)).rejects.toMatchObject({
+      status: 400,
+      code: "validation",
+    });
+    rig.sourceStatus = "error";
+    await expect(addCandidate("s1", actor, candidate, rig.deps)).rejects.toMatchObject({
+      status: 503,
+      code: "lookup-unavailable",
+    });
+    expect(rig.rows).toEqual([]);
+    expect(rig.events).toEqual([]);
+  });
+  it("bounds candidate validation even when a source ignores cancellation", async () => {
+    vi.useFakeTimers();
+    rig.sourcePending = true;
+    const result = expect(addCandidate("s1", actor, candidate, rig.deps)).rejects.toMatchObject({
+      status: 503,
+      code: "lookup-unavailable",
+    });
+    await vi.advanceTimersByTimeAsync(2500);
+    await result;
+    expect(rig.rows).toEqual([]);
+    expect(rig.events).toEqual([]);
+  });
   it("can pick an existing cached candidate after its remote source is disabled", async () => {
     const first = await addCandidate("s1", actor, candidate, rig.deps);
     rig.deps.sources = [];
