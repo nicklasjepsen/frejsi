@@ -36,7 +36,7 @@ function parseWhole(value: string): number | undefined {
 
 /** A portion's carbs: computed from the per-100 g value when its grams are given, else typed. */
 function portionCarbs(per100g: number | undefined, row: Row): number | undefined {
-  const grams = parseWhole(row.grams);
+  const grams = parseDecimal(row.grams);
   if (per100g !== undefined && grams !== undefined && grams > 0)
     return carbsFor({ carbsPer100g: per100g }, grams);
   return parseWhole(row.carbs);
@@ -80,7 +80,9 @@ export function FoodForm({ spaceId, food, onSaved }: FoodFormProps) {
   const [photo, setPhoto] = useState<Uint8Array | null>(null);
   const [preview, setPreview] = useState<string>();
   const [saving, setSaving] = useState(false);
-  const [problem, setProblem] = useState<"needsName" | "needsCarbs" | "saveFailed" | null>(null);
+  const [problem, setProblem] = useState<
+    "needsName" | "needsCarbs" | "invalidNumber" | "saveFailed" | null
+  >(null);
   // After a create succeeded, a retry (say, the photo upload failed) updates that row instead of
   // creating a second one.
   const [saved, setSaved] = useState<FoodView | undefined>(food);
@@ -99,16 +101,30 @@ export function FoodForm({ spaceId, food, onSaved }: FoodFormProps) {
 
   const per100 = parseDecimal(per100g);
 
-  function fields(): { portions: Portion[]; carbsPer100g: number | undefined } | null {
+  /**
+   * The typed values, or the reason they cannot be saved. A field that is filled in but cannot be
+   * read (or is out of range) is reported, never sent as empty: that would delete a value.
+   */
+  function fields():
+    { portions: Portion[]; carbsPer100g: number | undefined } | "needsCarbs" | "invalidNumber" {
+    const filled = (value: string) => value.trim() !== "";
+    const inRange = (value: number | undefined, min: number, max: number) =>
+      value !== undefined && value >= min && value <= max;
+    if (filled(per100g) && !inRange(per100, 0, 100)) return "invalidNumber";
     const portions: Portion[] = [];
     for (const row of rows) {
       const label = row.label.trim();
-      if (!label && !row.grams.trim() && !row.carbs.trim()) continue;
+      if (!label && !filled(row.grams) && !filled(row.carbs)) continue;
+      const grams = parseDecimal(row.grams);
+      if (filled(row.grams) && !inRange(grams, 1, 5000)) return "invalidNumber";
+      const computed = per100 !== undefined && grams !== undefined;
+      if (!computed && filled(row.carbs) && !inRange(parseWhole(row.carbs), 0, 1000))
+        return "invalidNumber";
       const carbs = portionCarbs(per100, row);
-      if (!label || carbs === undefined) return null;
-      const grams = parseWhole(row.grams);
-      portions.push({ label, carbs, ...(grams !== undefined && grams > 0 ? { grams } : {}) });
+      if (!label || carbs === undefined) return "needsCarbs";
+      portions.push({ label, carbs, ...(grams === undefined ? {} : { grams }) });
     }
+    if (per100 === undefined && portions.length === 0) return "needsCarbs";
     return { portions, carbsPer100g: per100 };
   }
 
@@ -121,8 +137,8 @@ export function FoodForm({ spaceId, food, onSaved }: FoodFormProps) {
       return;
     }
     const values = fields();
-    if (!values || (values.carbsPer100g === undefined && values.portions.length === 0)) {
-      setProblem("needsCarbs");
+    if (typeof values === "string") {
+      setProblem(values);
       return;
     }
     setSaving(true);
@@ -221,7 +237,7 @@ export function FoodForm({ spaceId, food, onSaved }: FoodFormProps) {
         <legend>{t("portions")}</legend>
         {rows.map((row, index) => {
           const computed =
-            per100 !== undefined && (parseWhole(row.grams) ?? 0) > 0
+            per100 !== undefined && (parseDecimal(row.grams) ?? 0) > 0
               ? portionCarbs(per100, row)
               : undefined;
           const update = (patch: Partial<Row>) => {

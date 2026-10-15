@@ -74,6 +74,15 @@ describe("libraryApi", () => {
     expect(sent(1).init.headers).toMatchObject({ "content-type": "image/jpeg" });
   });
 
+  it("splits a batch over 50 into requests the contract accepts", async () => {
+    fetchMock.mockImplementation(() => Promise.resolve(reply(200, {})));
+    const ids = Array.from({ length: 51 }, (_, index) => `f${String(index)}`);
+    await libraryApi.verify("s1", ids);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(sent(0).json()).toEqual({ foodIds: ids.slice(0, 50) });
+    expect(sent(1).json()).toEqual({ foodIds: ["f50"] });
+  });
+
   it("turns an error response into its ApiError code, and a gateway page into internal", async () => {
     fetchMock.mockResolvedValueOnce(
       reply(400, { error: { code: "simple-mode", message: "simple-mode" } }),

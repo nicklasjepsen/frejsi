@@ -81,6 +81,7 @@
     "saveFailed": "Could not save – try again",
     "needsCarbs": "Enter carbohydrate per 100 g or at least one portion with carbohydrate.",
     "needsName": "Enter a name.",
+    "invalidNumber": "Enter the number like 40 or 40.5.",
     "source": "{source} · barcode {barcode}…",
     "photoPreview": "The chosen photo",
     "loadFailed": "The food could not be loaded right now."

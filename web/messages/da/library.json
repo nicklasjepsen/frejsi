@@ -81,6 +81,7 @@
     "saveFailed": "Kunne ikke gemme – prøv igen",
     "needsCarbs": "Skriv kulhydrat pr. 100 g eller mindst én portion med kulhydrat.",
     "needsName": "Skriv et navn.",
+    "invalidNumber": "Skriv tallet som fx 40 eller 40,5.",
     "source": "{source} · stregkode {barcode}…",
     "photoPreview": "Det valgte billede",
     "loadFailed": "Fødevaren kunne ikke hentes lige nu."
