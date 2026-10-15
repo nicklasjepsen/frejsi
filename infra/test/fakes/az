@@ -54,6 +54,10 @@ case "$cmd" in
     body="$(arg --body)"
     case "$(arg --url)" in
       *staticSites/*/config/appsettings*) cp "${body#@}" "$FAKE_LOG_DIR/swa-appsettings.json" ;;
+      *webPubSub/*/hubs/*)
+        n=$(cat "$FAKE_LOG_DIR/hub-attempts" 2>/dev/null || echo 0); n=$((n + 1)); echo "$n" > "$FAKE_LOG_DIR/hub-attempts"
+        if [ "$n" -le "${FAKE_HUB_VALIDATION_FAILURES:-0}" ]; then echo "fake az: upstream validation failed" >&2; exit 1; fi
+        cp "${body#@}" "$FAKE_LOG_DIR/wps-hub.json" ;;
       *) echo "fake az: unexpected PUT $(arg --url)" >&2; exit 3 ;;
     esac ;;
   "resource show "*)

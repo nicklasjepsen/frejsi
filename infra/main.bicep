@@ -78,7 +78,6 @@ module webPubSub 'modules/webpubsub.bicep' = {
     baseName: baseName
     suffix: suffix
     hubName: webPubSubHub
-    eventHandlerHost: staticWebApp.outputs.defaultHostname
   }
 }
 
