@@ -1,0 +1,40 @@
+{
+  "pageTitle": "Invitation",
+  "greeting": "Hi {name},",
+  "greetingSpace": "you're invited to {space}.",
+  "greetingDevice": "you're adding a device to {space}.",
+  "invitedAs": {
+    "owner": "{inviter} has invited you as an <role>owner</role>.",
+    "carer": "{inviter} has invited you as a <role>carer</role>.",
+    "viewer": "{inviter} has invited you as a <role>viewer</role>."
+  },
+  "roleExplained": {
+    "owner": "You can do everything – people, devices and settings included.",
+    "carer": "You can log meals, verify food and see the curve.",
+    "viewer": "You can see today's meals and carbohydrates. Blood sugar is not shown."
+  },
+  "deviceExplained": "{inviter} sent you the link so this device can sign in as you too. You keep your role in the space.",
+  "phone": {
+    "noPassword": "No password. You sign in with your face or your finger.",
+    "newPhone": "A new phone later? Ask {inviter} or another owner for a new link.",
+    "button": "Create access with this phone"
+  },
+  "desktop": {
+    "noPassword": "No password and no email. You sign in with Windows Hello, Touch ID or your phone.",
+    "alsoPhone": "Want to use your phone as well? Ask {inviter} for an “add device” link afterwards.",
+    "button": "Create access with this computer"
+  },
+  "failed": "That didn't work this time. Try again – and if it keeps happening, ask for a new link.",
+  "alreadyRegistered": "This device can already sign in as you. Sign in instead, or open the link on the phone or computer you want to add.",
+  "expires": "The link is valid for {days, plural, one {# more day} other {# more days}} and can be used only once.",
+  "unavailable": {
+    "title": "This link no longer works",
+    "invite-expired": "The link has expired. An invitation link is valid for {days, plural, one {# day} other {# days}}.",
+    "invite-used": "The link has already been used. An invitation link can be used only once.",
+    "invite-revoked": "The link was withdrawn by the person who sent it.",
+    "whoCanHelp": "The person who sent you the link – or another owner of the space – can send you a new one. It only takes a moment.",
+    "alreadyIn": "Already have access?"
+  },
+  "createTitle": "Create your access",
+  "login": "Sign in"
+}

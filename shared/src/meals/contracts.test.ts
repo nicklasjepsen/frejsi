@@ -264,10 +264,13 @@ describe("food and meal contracts", () => {
   ])("translates API code %s in both locales", (code) => {
     expect(ApiErrorCode.safeParse(code).success).toBe(true);
     for (const locale of ["da", "en"]) {
-      const messages = JSON.parse(
-        readFileSync(new URL(`../../../web/messages/${locale}.json`, import.meta.url), "utf8"),
-      ) as { errors: { api: Record<string, string> } };
-      expect(messages.errors.api[code]).toEqual(expect.any(String));
+      const errors = JSON.parse(
+        readFileSync(
+          new URL(`../../../web/messages/${locale}/errors.json`, import.meta.url),
+          "utf8",
+        ),
+      ) as { api: Record<string, string> };
+      expect(errors.api[code]).toEqual(expect.any(String));
     }
   });
 });

@@ -1,0 +1,14 @@
+{
+  "title": "Kommer i en senere version",
+  "body": "Den her del af Frejsi er ikke klar endnu. Alt det andet virker, som det skal.",
+  "backToNow": "Tilbage til Nu",
+  "feature": {
+    "meals": "Måltider",
+    "food": "Mad og bibliotek",
+    "history": "Historik",
+    "my-food": "Min mad",
+    "ask": "Spørg en voksen",
+    "today": "Dagens måltider",
+    "earlier-days": "Tidligere dage"
+  }
+}

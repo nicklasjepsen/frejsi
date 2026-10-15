@@ -1,0 +1,19 @@
+{
+  "main": "Hovedmenu",
+  "now": "Nu",
+  "meal": "Måltid",
+  "food": "Mad",
+  "history": "Historik",
+  "more": "Mere",
+  "logMeal": "Log et måltid",
+  "library": "Bibliotek",
+  "people": "Personer",
+  "settings": "Indstillinger",
+  "myFood": "Min mad",
+  "ask": "Spørg",
+  "askAdult": "Spørg en voksen",
+  "today": "I dag",
+  "earlierDays": "Tidligere dage",
+  "keyboardShortcuts": "Tastaturgenveje",
+  "shortcutHint": "Genvej: {key}"
+}

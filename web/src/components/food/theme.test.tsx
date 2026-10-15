@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { renderToStaticMarkup } from "react-dom/server";
 import { NextIntlClientProvider } from "next-intl";
 import { describe, expect, it } from "vitest";
-import messages from "../../../messages/da.json";
+import messages from "../../../messages/da";
 import { Badge } from "../ui/Badge";
 import { Chip } from "../ui/Chip";
 import { PhotoTile } from "./PhotoTile";

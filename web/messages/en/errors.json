@@ -1,0 +1,31 @@
+{
+  "page": {
+    "title": "Something went wrong",
+    "body": "It's nothing you did. Try again – and if it keeps happening, give it a little while and try later.",
+    "retry": "Try again",
+    "home": "To the front page"
+  },
+  "notFound": {
+    "title": "That page doesn't exist",
+    "body": "The link may be wrong, or the page has moved. Go to the front page and you're on safe ground.",
+    "home": "To the front page"
+  },
+  "api": {
+    "forbidden": "You don't have access to this. Ask an owner of the space if you think you should.",
+    "not-found": "What you're looking for doesn't exist – or you don't have access to it.",
+    "invite-expired": "The invitation has expired. Ask for a new one – it only takes a moment.",
+    "invite-used": "The invitation has already been used. If that wasn't you, ask for a new one.",
+    "invite-revoked": "The invitation has been withdrawn. Ask the person who sent it.",
+    "last-owner": "A space always needs at least one owner, so the last owner can't be removed.",
+    "source-bad-credentials": "The username or password doesn't match. Try again.",
+    "source-unreachable": "We couldn't reach the source right now. Try again in a little while.",
+    "validation": "Something in what you entered couldn't be used. Look it over and try again.",
+    "internal": "Something went wrong on our side. Try again in a moment.",
+    "simple-mode": "This action is not available in simple view. Ask a carer for help.",
+    "photo-too-large": "The photo is too large. Choose a smaller photo.",
+    "photo-type": "Choose a JPEG, PNG or WebP photo.",
+    "photo-unavailable": "Photos are unavailable right now. Try again later.",
+    "barcode-invalid": "Check the barcode and try again.",
+    "lookup-unavailable": "Food search is unavailable right now. Try again or enter your own numbers."
+  }
+}

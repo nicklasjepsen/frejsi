@@ -1,0 +1,7 @@
+{
+  "dexcom-share": {
+    "name": "Dexcom Share"
+  },
+  "disconnected": "Ingen forbindelse til {source} siden {time}",
+  "disconnectedNoTime": "Ingen forbindelse til {source}"
+}

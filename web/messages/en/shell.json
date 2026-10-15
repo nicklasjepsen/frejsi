@@ -1,0 +1,11 @@
+{
+  "switchSpace": "Switch space",
+  "yourSpaces": "Your spaces",
+  "currentSpace": "You are in {space}",
+  "viewerPill": "You're watching along",
+  "simpleFooter": "Simple view · turned on by {owner}",
+  "simpleFooterNoOwner": "Simple view",
+  "greeting": "Hi {name}",
+  "noSpaceTitle": "You're not in a space right now",
+  "noSpaceBody": "Ask an owner for a new invitation and you'll be back in."
+}

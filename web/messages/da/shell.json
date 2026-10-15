@@ -1,0 +1,11 @@
+{
+  "switchSpace": "Skift rum",
+  "yourSpaces": "Dine rum",
+  "currentSpace": "Du er i {space}",
+  "viewerPill": "Du ser med",
+  "simpleFooter": "Simpel visning · slået til af {owner}",
+  "simpleFooterNoOwner": "Simpel visning",
+  "greeting": "Hej {name}",
+  "noSpaceTitle": "Du er ikke med i et rum lige nu",
+  "noSpaceBody": "Bed en ejer om en ny invitation, så er du med igen."
+}
