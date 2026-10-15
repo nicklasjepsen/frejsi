@@ -8,12 +8,15 @@ import {
   type ApiError,
   type ConnectSourceResult,
   type DexcomShareRegion,
+  type GlucoseSource,
+  type GlucoseSourceType,
   type Logger,
   type ProbeResult,
   type Secrets,
 } from "@frejsi/shared";
 
 export interface ProbeRequest {
+  type: GlucoseSourceType;
   region: DexcomShareRegion;
   username: string;
   password: string;
@@ -21,12 +24,22 @@ export interface ProbeRequest {
 
 export interface SourceConnectDeps {
   secrets: Secrets;
-  /** Checks the credential against the source; defaults to the Dexcom Share adapter. */
+  /** Checks the credential against the source; defaults to the adapter the request's `type` names. */
   probe?: (request: ProbeRequest) => Promise<ProbeResult>;
   log?: Logger;
 }
 
-const defaultProbe = (request: ProbeRequest) => new DexcomShareSource(request).probe();
+/** One adapter per `GlucoseSourceType`; a type added without an adapter fails to compile here. */
+const ADAPTERS: Record<GlucoseSourceType, (request: ProbeRequest) => GlucoseSource> = {
+  "dexcom-share": (request) => new DexcomShareSource(request),
+};
+
+/** The adapter the request's source type names. */
+export function probeSourceFor(request: ProbeRequest): GlucoseSource {
+  return ADAPTERS[request.type](request);
+}
+
+const defaultProbe = (request: ProbeRequest) => probeSourceFor(request).probe();
 
 const validation = (): HttpResponseInit => {
   const body: ApiError = {
@@ -57,11 +70,11 @@ export function createSourceConnectHandler(deps: SourceConnectDeps) {
       log.warn("source-connect.rejected", { code: "validation" });
       return validation();
     }
-    const { spaceId, region, username, password } = parsed.data;
+    const { spaceId, type, region, username, password } = parsed.data;
 
     let outcome: ProbeResult;
     try {
-      outcome = await probe({ region, username, password });
+      outcome = await probe({ type, region, username, password });
     } catch {
       outcome = "unreachable";
     }

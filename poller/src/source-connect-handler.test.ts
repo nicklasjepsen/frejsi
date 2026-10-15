@@ -1,8 +1,14 @@
-import { createLogger, glucoseSecretName, parseCredential, type ProbeResult } from "@frejsi/shared";
+import {
+  createLogger,
+  DexcomShareSource,
+  glucoseSecretName,
+  parseCredential,
+  type ProbeResult,
+} from "@frejsi/shared";
 import { MemorySecrets } from "@frejsi/shared/secrets/memory";
 import { describe, expect, it } from "vitest";
 
-import { createSourceConnectHandler } from "./source-connect-handler";
+import { createSourceConnectHandler, probeSourceFor } from "./source-connect-handler";
 
 const body = {
   spaceId: "s1",
@@ -31,6 +37,18 @@ function harness(probeResult: ProbeResult | Error) {
   return { secrets, lines, probes, call };
 }
 
+describe("probeSourceFor", () => {
+  it("builds the adapter the request's type names", () => {
+    const source = probeSourceFor({
+      type: "dexcom-share",
+      region: "eu",
+      username: body.username,
+      password: body.password,
+    });
+    expect(source).toBeInstanceOf(DexcomShareSource);
+  });
+});
+
 describe("source-connect", () => {
   it("probes the credential and stores it in Key Vault as glucose-<spaceId> when it works", async () => {
     const h = harness("ok");
@@ -39,7 +57,10 @@ describe("source-connect", () => {
       status: 200,
       jsonBody: { result: "ok", secretRef: glucoseSecretName("s1") },
     });
-    expect(h.probes).toEqual([{ region: "eu", username: body.username, password: body.password }]);
+    // The source type travels with the credential: the probe dispatches on it, not on a default.
+    expect(h.probes).toEqual([
+      { type: "dexcom-share", region: "eu", username: body.username, password: body.password },
+    ]);
     expect(parseCredential((await h.secrets.get("glucose-s1")) ?? "")).toEqual({
       username: body.username,
       password: body.password,
