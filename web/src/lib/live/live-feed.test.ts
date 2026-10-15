@@ -453,6 +453,48 @@ describe("LiveFeed (plan §5)", () => {
     expect(calls).toHaveLength(before);
   });
 
+  it("keeps retrying a failed settings reload when the socket opens after the failure", async () => {
+    const { server, fetch, calls } = fakeServer({ readings: [], lastSeq: 1 });
+    const { feed } = start(fetch);
+    await flush();
+    sockets[0]?.open();
+    await flush();
+    sockets[0]?.drop();
+    await flush();
+    expect(feed.getState().connection).toBe("polling");
+
+    // The tick's catch-up brings a space.updated whose reload fails; the same tick's negotiate
+    // succeeds and the new socket opens after that failure.
+    server.events.push({
+      spaceId: "s1",
+      seq: 2,
+      ts: T0.toISOString(),
+      type: "space.updated",
+      payload: { fields: ["glucoseUnit"] },
+    });
+    server.readingsStatus = 500;
+    await vi.advanceTimersByTimeAsync(POLL_MS);
+    expect(sockets).toHaveLength(2);
+    sockets[1]?.open();
+    await flush();
+    expect(feed.getState().connection).toBe("live");
+    expect(feed.getState().space?.glucoseUnit).toBe("mmol");
+
+    server.readingsStatus = 200;
+    server.window = {
+      ...server.window,
+      lastSeq: 2,
+      space: { ...server.window.space, glucoseUnit: "mgdl" },
+    };
+    await vi.advanceTimersByTimeAsync(POLL_MS);
+    expect(feed.getState().space?.glucoseUnit).toBe("mgdl");
+    expect(feed.getState().connection).toBe("live");
+    expect(sockets[1]?.closed).toBe(false);
+    const before = calls.length;
+    await vi.advanceTimersByTimeAsync(POLL_MS * 2);
+    expect(calls).toHaveLength(before);
+  });
+
   it("retries the first window when its body is broken, instead of loading forever", async () => {
     const { server, fetch, calls } = fakeServer({
       readings: [reading(minutesAgo(1), 6.0)],
