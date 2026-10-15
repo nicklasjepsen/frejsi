@@ -244,8 +244,16 @@ Facts an agent needs that the docs of the tools do not say:
   spawns a general-purpose agent pointed at the agent file.
 - **The housekeeping run log is public.** Agents in it refer to issues by number and title only.
 - **Environments** `production-infra` (owner as required reviewer) and `production` accept
-  deployments only from `v*` tags. Secrets present: `CLAUDE_CODE_OAUTH_TOKEN`, `CI_SQL_SA_PASSWORD`.
-  Still to add with the infra lane: `ANTHROPIC_API_KEY_EVALS`, the `AZURE_*` repository variables.
+  deployments only from `v*` tags. Secrets present: `CLAUDE_CODE_OAUTH_TOKEN`, `CI_SQL_SA_PASSWORD`,
+  `ALERT_EMAIL` (a secret, not a variable: variables print unmasked in these public logs). Variables
+  present: `AZURE_CLIENT_ID`, `AZURE_TENANT_ID`, `AZURE_SUBSCRIPTION_ID`, `SQL_SERVER_ID` (issue #23).
+  Still to add: `ANTHROPIC_API_KEY_EVALS` (v0.4.0), `CUSTOM_DOMAIN` after the first release.
+  Previews are off: `PREVIEWS_ENABLED` is unset and there is no `preview` federated credential
+  (owner, 2026-10-15), so the `preview` label does nothing yet.
+- **The repository uses GitHub's immutable OIDC subject**
+  (`repo:nicklasjepsen@2478876/frejsi@1419802630:environment:<name>`). A new environment that needs
+  Azure gets a federated credential with that form; the plain `repo:nicklasjepsen/frejsi:...` form
+  alone does not match.
 
 ## 12. Codex lanes
 

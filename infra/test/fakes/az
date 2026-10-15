@@ -48,7 +48,7 @@ case "$cmd" in
       *) echo "fake az: unknown secret $(arg -n)" >&2; exit 3 ;;
     esac ;;
   "keyvault secret set") cp "$(arg --file)" "$FAKE_LOG_DIR/secret-$(arg -n)" ;;
-  "sql server show") echo sql-frejsi-abc.database.windows.net ;;
+  "sql server show") echo "$(arg -n).database.windows.net" ;;
   "sql server firewall-rule") : ;;
   "rest --method post") echo 'Endpoint=https://wps-frejsi-abc.webpubsub.azure.com;AccessKey=FAKEWPSKEY;Version=1.0;' ;;
   "rest --method put")

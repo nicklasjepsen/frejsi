@@ -3,9 +3,11 @@
 # applied; never from a session (docs/agent-workflow.md section 9).
 #
 # What it does, in order:
-#   1. finds the resources in the resource group (one of each type; nothing else lives there)
-#   2. creates the secrets that exist only once: the SQL application login and its password, and
-#      the Web PubSub connection string, written to Key Vault if absent (never rotated here)
+#   1. finds the resources in the resource group (one of each type; nothing else lives there), and
+#      the SQL server there or the existing one SQL_SERVER_ID names
+#   2. creates the secrets that exist only once: the application's contained database user and its
+#      password, and the Web PubSub connection string, written to Key Vault if absent (never rotated
+#      here)
 #   3. opens a temporary SQL firewall rule for this runner, runs `prisma migrate deploy`, closes it
 #   4. deploys poller/dist as a zip (SCM_DO_BUILD_DURING_DEPLOYMENT=false, APP_VERSION) and checks
 #      the app runs from the package
@@ -15,7 +17,8 @@
 #
 # Required environment: AZURE_SUBSCRIPTION_ID, AZURE_RESOURCE_GROUP, APP_VERSION (the tag).
 # Optional: CUSTOM_DOMAIN (sets APP_ORIGIN; otherwise the default hostname), GITHUB_OUTPUT,
-# PHOTOS_STORAGE_ACCOUNT (dedicated photo account; creates blob-connection-string once).
+# PHOTOS_STORAGE_ACCOUNT (dedicated photo account; creates blob-connection-string once),
+# SQL_SERVER_ID (resource ID of an existing SQL server holding the database; infra/README.md).
 # Tools: az (logged in), sqlcmd (go-sqlcmd), pnpm (workspace installed), docker, curl, zip, openssl, jq.
 #
 # Nothing secret is ever printed. Secrets travel through files with mode 600 or environment
@@ -36,9 +39,13 @@ PHOTOS_STORAGE_ACCOUNT="${PHOTOS_STORAGE_ACCOUNT:-}"
 if [ -n "$PHOTOS_STORAGE_ACCOUNT" ] && ! [[ "$PHOTOS_STORAGE_ACCOUNT" =~ ^[a-z0-9]{3,24}$ ]]; then
   echo "::error::PHOTOS_STORAGE_ACCOUNT must be a storage account name" >&2; exit 1
 fi
+SQL_SERVER_ID="${SQL_SERVER_ID:-}"
+if [ -n "$SQL_SERVER_ID" ] && ! [[ "${SQL_SERVER_ID,,}" =~ ^/subscriptions/[^/]+/resourcegroups/[^/]+/providers/microsoft\.sql/servers/[^/]+$ ]]; then
+  echo "::error::SQL_SERVER_ID must be a SQL server resource ID (/subscriptions/.../resourceGroups/.../providers/Microsoft.Sql/servers/...)" >&2; exit 1
+fi
 WEB_PUBSUB_HUB="${WEB_PUBSUB_HUB:-frejsi}"
 SQL_DATABASE="${SQL_DATABASE:-frejsi}"
-SQL_APP_LOGIN="${SQL_APP_LOGIN:-frejsi_app}"
+SQL_APP_USER="${SQL_APP_USER:-frejsi_app}"
 POLLER_DIST="${POLLER_DIST:-poller/dist}"
 WEB_DIR="${WEB_DIR:-web}"
 RETRY_SLEEP="${DEPLOY_RETRY_SLEEP:-15}"
@@ -54,12 +61,14 @@ WORK="$(mktemp -d)"
 chmod 700 "$WORK"
 FIREWALL_RULE=""
 SQL_SERVER=""
+SQL_RG=""
+SQL_SUBSCRIPTION=""
 
 cleanup() {
   local status=$?
   if [ -n "$FIREWALL_RULE" ] && [ -n "$SQL_SERVER" ]; then
     echo "Closing the SQL firewall rule $FIREWALL_RULE"
-    az sql server firewall-rule delete -g "$RG" --server "$SQL_SERVER" -n "$FIREWALL_RULE" >/dev/null 2>&1 || \
+    az sql server firewall-rule delete --subscription "$SQL_SUBSCRIPTION" -g "$SQL_RG" --server "$SQL_SERVER" -n "$FIREWALL_RULE" >/dev/null 2>&1 || \
       echo "::warning::could not delete firewall rule $FIREWALL_RULE; remove it by hand"
   fi
   rm -rf "$WORK"
@@ -83,12 +92,21 @@ one_resource() {
 
 log "Finding resources in $RG"
 KEY_VAULT="$(one_resource Microsoft.KeyVault/vaults)"
-SQL_SERVER="$(one_resource Microsoft.Sql/servers)"
+if [ -n "$SQL_SERVER_ID" ]; then
+  # An existing server outside the group (Bicep creates none). Its owner made the database and the
+  # deploy principal's db_owner user in it; nothing here touches the server's admin or other databases.
+  IFS=/ read -r _ _ SQL_SUBSCRIPTION _ SQL_RG _ _ _ SQL_SERVER <<< "$SQL_SERVER_ID"
+else
+  SQL_SUBSCRIPTION="$AZURE_SUBSCRIPTION_ID"
+  SQL_RG="$RG"
+  SQL_SERVER="$(one_resource Microsoft.Sql/servers)"
+fi
 WEB_PUBSUB="$(one_resource Microsoft.SignalRService/webPubSub)"
 FUNCTION_APP="$(one_resource Microsoft.Web/sites)"
 STATIC_WEB_APP="$(one_resource Microsoft.Web/staticSites)"
 APP_INSIGHTS="$(one_resource Microsoft.Insights/components)"
-SQL_FQDN="$(az sql server show -g "$RG" -n "$SQL_SERVER" --query fullyQualifiedDomainName -o tsv)"
+SQL_FQDN="$(az sql server show --subscription "$SQL_SUBSCRIPTION" -g "$SQL_RG" -n "$SQL_SERVER" --query fullyQualifiedDomainName -o tsv)"
+if [ -z "$SQL_FQDN" ]; then echo "::error::SQL server $SQL_SERVER has no hostname" >&2; exit 1; fi
 log "Key Vault $KEY_VAULT, SQL $SQL_SERVER, Web PubSub $WEB_PUBSUB, Function App $FUNCTION_APP, Static Web App $STATIC_WEB_APP"
 
 # --- Secret helpers: values go through files, never command lines or stdout ----------------------
@@ -125,28 +143,25 @@ new_password() {
 if secret_exists database-url; then
   log "database-url exists in Key Vault; keeping it"
 else
-  log "Creating the SQL login $SQL_APP_LOGIN as the Entra admin and storing database-url"
+  # A contained user (a password in the database, no server login): the deploy principal needs
+  # db_owner in this one database and nothing in master, so the same path works on a dedicated
+  # server, where it is the Entra admin, and on a shared one, where it is not.
+  log "Creating the database user $SQL_APP_USER in $SQL_DATABASE and storing database-url"
   PASSWORD="$(new_password)"
-  SQL_FILE="$WORK/create-login.sql"
+  SQL_FILE="$WORK/create-user.sql"
   ( umask 077; cat > "$SQL_FILE" <<EOSQL
-IF NOT EXISTS (SELECT 1 FROM sys.sql_logins WHERE name = N'$SQL_APP_LOGIN')
-  CREATE LOGIN [$SQL_APP_LOGIN] WITH PASSWORD = N'$PASSWORD';
+IF NOT EXISTS (SELECT 1 FROM sys.database_principals WHERE name = N'$SQL_APP_USER')
+  CREATE USER [$SQL_APP_USER] WITH PASSWORD = N'$PASSWORD';
 ELSE
-  ALTER LOGIN [$SQL_APP_LOGIN] WITH PASSWORD = N'$PASSWORD';
-EOSQL
-  )
-  SQL_USER_FILE="$WORK/create-user.sql"
-  ( umask 077; cat > "$SQL_USER_FILE" <<EOSQL
-IF NOT EXISTS (SELECT 1 FROM sys.database_principals WHERE name = N'$SQL_APP_LOGIN')
-  CREATE USER [$SQL_APP_LOGIN] FOR LOGIN [$SQL_APP_LOGIN];
-ALTER ROLE db_owner ADD MEMBER [$SQL_APP_LOGIN];
+  ALTER USER [$SQL_APP_USER] WITH PASSWORD = N'$PASSWORD';
+ALTER ROLE db_owner ADD MEMBER [$SQL_APP_USER];
 EOSQL
   )
   # The runner must reach the server for this too; the rule is opened once, below, before use.
-  NEED_FIREWALL_FOR_LOGIN=1
+  NEED_FIREWALL_FOR_USER=1
   DATABASE_URL_FILE="$WORK/database-url"
   ( umask 077; printf 'sqlserver://%s:1433;database=%s;user=%s;password=%s;encrypt=true' \
-      "$SQL_FQDN" "$SQL_DATABASE" "$SQL_APP_LOGIN" "$PASSWORD" > "$DATABASE_URL_FILE" )
+      "$SQL_FQDN" "$SQL_DATABASE" "$SQL_APP_USER" "$PASSWORD" > "$DATABASE_URL_FILE" )
   unset PASSWORD
 fi
 
@@ -185,7 +200,7 @@ if [ -n "$PHOTOS_STORAGE_ACCOUNT" ] && ! secret_exists blob-connection-string; t
   secret_write_from_file blob-connection-string "$WORK/blob"
 fi
 
-# --- 3. Firewall rule for this runner, then the login (first time) and the migration -------------
+# --- 3. Firewall rule for this runner, then the user (first time) and the migration --------------
 # Bounded: a hung lookup must fail fast, not sit until the job's timeout.
 RUNNER_IP="$(curl -fsS --max-time 10 --retry 3 --retry-delay 2 https://api.ipify.org)"
 if ! printf '%s' "$RUNNER_IP" | grep -Eq '^[0-9]{1,3}(\.[0-9]{1,3}){3}$'; then
@@ -193,14 +208,13 @@ if ! printf '%s' "$RUNNER_IP" | grep -Eq '^[0-9]{1,3}(\.[0-9]{1,3}){3}$'; then
 fi
 FIREWALL_RULE="github-runner-${GITHUB_RUN_ID:-local}-$(date +%s)"
 log "Opening SQL firewall rule $FIREWALL_RULE for this runner"
-az sql server firewall-rule create -g "$RG" --server "$SQL_SERVER" -n "$FIREWALL_RULE" \
+az sql server firewall-rule create --subscription "$SQL_SUBSCRIPTION" -g "$SQL_RG" --server "$SQL_SERVER" -n "$FIREWALL_RULE" \
   --start-ip-address "$RUNNER_IP" --end-ip-address "$RUNNER_IP" >/dev/null
 
-if [ "${NEED_FIREWALL_FOR_LOGIN:-0}" = 1 ]; then
-  sqlcmd -S "$SQL_FQDN" -d master --authentication-method ActiveDirectoryDefault -b -i "$SQL_FILE"
-  sqlcmd -S "$SQL_FQDN" -d "$SQL_DATABASE" --authentication-method ActiveDirectoryDefault -b -i "$SQL_USER_FILE"
+if [ "${NEED_FIREWALL_FOR_USER:-0}" = 1 ]; then
+  sqlcmd -S "$SQL_FQDN" -d "$SQL_DATABASE" --authentication-method ActiveDirectoryDefault -b -i "$SQL_FILE"
   secret_write_from_file database-url "$DATABASE_URL_FILE"
-  log "SQL login created and database-url stored"
+  log "Database user created and database-url stored"
 fi
 
 log "Running Prisma migrations"
@@ -211,7 +225,7 @@ pnpm --filter ./shared exec prisma migrate deploy
 unset DATABASE_URL
 
 log "Closing SQL firewall rule $FIREWALL_RULE"
-az sql server firewall-rule delete -g "$RG" --server "$SQL_SERVER" -n "$FIREWALL_RULE" >/dev/null
+az sql server firewall-rule delete --subscription "$SQL_SUBSCRIPTION" -g "$SQL_RG" --server "$SQL_SERVER" -n "$FIREWALL_RULE" >/dev/null
 FIREWALL_RULE=""
 
 # --- 4. Poller: settings, zip, run-from-package ----------------------------------------------------

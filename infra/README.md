@@ -37,6 +37,9 @@ lever: it is what the spec asks for, and it is also two thirds of the bill. On t
 domain still included; no SLA, no managed backend scaling) the total is about 35 DKK/month. That is
 the owner's call; `modules/staticwebapp.bicep` changes one word.
 
+With the repository variable `SQL_SERVER_ID` set, the database sits on an existing server outside the
+group instead (same tier, same price, no server of its own); see "An existing SQL server" below.
+
 Photo storage uses a **dedicated Standard LRS account**, about **1–3 DKK/month** at family scale
 (v0.2.0 plan, decision 21), bringing the estimate to about 98–100 DKK/month. The private `photos`
 container holds originals up to 1600 px and 320×320 JPEG thumbnails, re-encoded on the server
@@ -67,17 +70,19 @@ No secret is ever in this repository, in a parameter file, in a log or on a comm
 
 | Secret | Created by | Lives in | Read by |
 |---|---|---|---|
-| SQL application login password | `deploy.sh`, once, as the server's Entra admin (the deploy principal) | Key Vault `database-url` | Function App (Key Vault reference), web app (app setting written by `deploy.sh`) |
+| SQL application user password (a contained database user) | `deploy.sh`, once, as the deploy principal (the dedicated server's Entra admin, or `db_owner` in the database on an existing server) | Key Vault `database-url` | Function App (Key Vault reference), web app (app setting written by `deploy.sh`) |
 | Web PubSub connection string | `deploy.sh`, once, from the resource's keys | Key Vault `web-pubsub-connection-string` | web app (app setting) |
 | `bootstrap-token` | Bicep, `newGuid()` parameter default; rotates on every infra deploy | Key Vault | web app (app setting); the owner reads it once (step 9) |
 | `glucose-<spaceId>` (Dexcom credential) | the Function App's `source-connect` trigger from Settings | Key Vault | the poller, through its managed identity |
 | Function App storage key, App Insights connection string | Azure | app settings | the Function App (the Functions host on a Consumption plan needs a key-based `AzureWebJobsStorage`; the key never leaves Azure) |
 
 Why the deploy principal is the SQL server's Entra admin: Prisma cannot authenticate with Entra
-tokens, so the application needs a SQL login; Bicep must never hold a password; so the login is
-created by `deploy.sh` through `sqlcmd` with the pipeline's own identity, and the password it
-generates goes straight into Key Vault. Bicep creates the server Entra-only (which lets the SQL admin
-be omitted) and then turns SQL authentication on with the `azureADOnlyAuthentications/Default` child
+tokens, so the application needs a SQL user with a password; Bicep must never hold a password; so
+the user is created by `deploy.sh` through `sqlcmd` with the pipeline's own identity, and the password
+it generates goes straight into Key Vault. It is a contained user (`CREATE USER ... WITH PASSWORD`
+in the database, no login in `master`), so the deploy principal needs `db_owner` in that one
+database and nothing server-wide. Bicep creates the server Entra-only (which lets the SQL admin be
+omitted) and then turns SQL authentication on with the `azureADOnlyAuthentications/Default` child
 resource.
 
 The Function App's managed identity holds Key Vault Secrets Officer (it writes `glucose-<spaceId>`)
@@ -96,9 +101,10 @@ In this order. Everything after step 5 is one tap or one DNS record.
    subscription ID.
 3. **Federated credentials** on that app registration, issuer `https://token.actions.githubusercontent.com`,
    audience `api://AzureADTokenExchange`, one per environment: `production-infra`, `production`
-   and `preview` (the opt-in PR previews, and the cleanup job that runs when any PR closes once the
-   Azure variables exist). The subject is `<prefix>:environment:<name>`, where `<prefix>` is what
-   GitHub presents for this repository:
+   and, only if you want PR previews, `preview` (then also set the repository variable
+   `PREVIEWS_ENABLED` to `true`, which turns on the cleanup job that runs when any PR closes; without
+   it that job is skipped, since no preview can exist). The subject is `<prefix>:environment:<name>`,
+   where `<prefix>` is what GitHub presents for this repository:
 
    ```
    gh api repos/<owner>/<repo>/actions/oidc/customization/sub --jq .sub_claim_prefix
@@ -117,8 +123,10 @@ In this order. Everything after step 5 is one tap or one DNS record.
    for the Function App's identity and for the deploy principal itself). Key Vault data-plane access is
    granted by Bicep, not by hand.
 5. **Repository variables** (Settings → Secrets and variables → Actions → Variables):
-   `AZURE_CLIENT_ID`, `AZURE_TENANT_ID`, `AZURE_SUBSCRIPTION_ID`, `ALERT_EMAIL` (where the
-   35-minute alert goes). Leave `CUSTOM_DOMAIN` unset until step 7. The environments
+   `AZURE_CLIENT_ID`, `AZURE_TENANT_ID`, `AZURE_SUBSCRIPTION_ID`, and `SQL_SERVER_ID` only for an
+   existing SQL server (below). Leave `CUSTOM_DOMAIN` unset until step 7. **Repository secret**
+   `ALERT_EMAIL` (where the 35-minute alert goes): a secret and not a variable, because the run logs of
+   a public repository are public and variables are printed in them unmasked. The environments
    `production-infra` (owner as required reviewer) and `production` exist already; `preview` is
    created on first use of `preview.yml` if you want previews. The repository secret
    `CI_SQL_SA_PASSWORD` (the full suite's SQL Server container) already exists;
@@ -126,7 +134,7 @@ In this order. Everything after step 5 is one tap or one DNS record.
 6. **First release.** When the milestone is tagged, `release.yml` stops at the `infra` job for your
    approval: one tap. The deployment takes about ten minutes (the SQL server is the slow one). If the
    `bootstrap-token` secret fails with a 403 on the very first run, that is role propagation; the job
-   retries once after a minute. The `deploy` job then creates the SQL login, the Key Vault secrets,
+   retries once after a minute. The `deploy` job then creates the database user, the Key Vault secrets,
    runs the migrations and deploys the poller and the web app. The smoke step reads
    `https://<default hostname>/api/health`.
 7. **DNS for the custom domain.** From the Static Web App's overview copy the default hostname
@@ -148,6 +156,41 @@ In this order. Everything after step 5 is one tap or one DNS record.
 Then the subject's Dexcom Share credential is entered in Settings on the site (issue for task 12),
 never anywhere else.
 
+## An existing SQL server
+
+Use this when Azure will not create a SQL server in the resource group's region for your
+subscription (`az sql db list-editions` or the first release answers "Provisioning is restricted in
+this region"), or when you already pay for a server. Static Web Apps offers few regions, so moving
+the whole group is often not an option. Frejsi's production database works this way: Azure SQL is
+restricted in West Europe on its subscription.
+
+With `SQL_SERVER_ID` set, Bicep creates no SQL server and never touches the existing one; the
+database, its tier and the server's settings are yours. The deploy principal gets exactly two things
+on that server: `db_owner` in the Frejsi database (to create the application's contained user and run
+migrations), and a custom role that lets it open and close its own temporary firewall rule. It is
+not the server's Entra admin and has no rights over the other databases on it. Do this once, before
+the first release, as the server's Entra admin; the role names below are examples:
+
+1. The server must allow SQL authentication (`az sql server ad-only-auth get` answers `false`) and
+   "Allow Azure services" (a firewall rule `AllowAllWindowsAzureIps`, 0.0.0.0–0.0.0.0): the Function
+   App and the Static Web App have no fixed address.
+2. Create the database, Basic 5 DTU like the dedicated layout:
+   `az sql db create -g <server rg> -s <server> -n frejsi --edition Basic --capacity 5 --max-size 2GB --backup-storage-redundancy Local --zone-redundant false --tags project=frejsi`
+3. In that database, connected as the Entra admin (Azure Data Studio, the portal's query editor, or
+   `sqlcmd -G`), create the deploy principal's user under the app registration's display name:
+   `CREATE USER [frejsi-deploy] FROM EXTERNAL PROVIDER; ALTER ROLE db_owner ADD MEMBER [frejsi-deploy];`
+4. A custom role with `Microsoft.Sql/servers/read` and `Microsoft.Sql/servers/firewallRules/read`,
+   `/write` and `/delete` (assignable scope: the server's resource group), assigned to the deploy
+   principal on the server only:
+   `az role assignment create --assignee-object-id <service principal object id> --assignee-principal-type ServicePrincipal --role "<custom role name>" --scope <server resource id>`
+5. Set the repository variable `SQL_SERVER_ID` to the server's resource ID
+   (`/subscriptions/.../resourceGroups/.../providers/Microsoft.Sql/servers/<server>`). The server may be
+   in another resource group or subscription; `deploy.sh` reads both from the ID.
+
+The database must be named `frejsi` (or set `SQL_DATABASE` in the deploy job). Cross-region queries
+cost latency: with the web app in West Europe and the server in Sweden Central, every query adds about
+20–30 ms.
+
 ## Deploy your own in 15 minutes
 
 Frejsi is one person's data on one person's subscription. A fork gets its own copy like this:
@@ -165,8 +208,9 @@ Frejsi is one person's data on one person's subscription. A fork gets its own co
    suite starts).
 3. Create a milestone titled `v0.1.0` with no open issues and push the tag `v0.1.0`. Approve the
    infra job when it asks. The site is at the Static Web App's default hostname.
-4. Optional: your own domain, as in step 7. Optional: `ALERT_EMAIL` must be set; it is your
-   address, not ours.
+4. Optional: your own domain, as in step 7. Not optional: the repository secret `ALERT_EMAIL` must
+   be set; it is your address, not ours. If Azure refuses to create the SQL server in your region,
+   see "An existing SQL server".
 
 Nothing Danish is hard-coded: the UI ships in `da` and `en`, and the glucose and food sources are
 plugins. Docker Compose for non-Azure hosting is planned for a later version (spec section 9).
@@ -176,13 +220,14 @@ plugins. Docker Compose for non-Azure hosting is planned for a later version (sp
 1. Fails on the first missing variable (`AZURE_SUBSCRIPTION_ID`, `AZURE_RESOURCE_GROUP`,
    `APP_VERSION`) before touching Azure, and checks the tools it needs are present.
 2. Finds the Key Vault, SQL server, Web PubSub, Function App, Static Web App and Application
-   Insights by type in the resource group.
-3. If `database-url` is absent in Key Vault: generates a 40-character password, creates the SQL login
-   and database user as the Entra admin (`sqlcmd --authentication-method ActiveDirectoryDefault`,
-   SQL from a mode-600 file, never argv), and stores the Prisma URL. If
-   `web-pubsub-connection-string` is absent: reads the primary connection string and stores it.
-   Neither is ever rotated by a deploy; rotate by deleting the secret and releasing (and, for SQL,
-   `ALTER LOGIN` runs because the login exists).
+   Insights by type in the resource group; with `SQL_SERVER_ID` set, the SQL server is that one
+   (its subscription and resource group come from the ID, for the hostname and the firewall rule).
+3. If `database-url` is absent in Key Vault: generates a 40-character password, creates the
+   application's contained database user with `db_owner` in the database
+   (`sqlcmd --authentication-method ActiveDirectoryDefault`, SQL from a mode-600 file, never argv;
+   nothing in `master`), and stores the Prisma URL. If `web-pubsub-connection-string` is absent:
+   reads the primary connection string and stores it. Neither is ever rotated by a deploy; rotate by
+   deleting the secret and releasing (and, for SQL, `ALTER USER` runs because the user exists).
 4. Opens a SQL firewall rule for the runner's IP, runs `prisma migrate deploy`, and removes the rule
    on exit even if something failed (a `trap`).
 5. Poller: sets `SCM_DO_BUILD_DURING_DEPLOYMENT=false`, `ENABLE_ORYX_BUILD=false` and

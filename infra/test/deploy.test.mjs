@@ -59,14 +59,21 @@ test('fails on the first missing variable before touching Azure', () => {
   assert.equal(r.calls.filter((c) => c.startsWith('az ')).length, 0, r.calls.join('\n'));
 });
 
-test('first release: creates the SQL login and the Web PubSub secret once, migrates, deploys poller and web', () => {
+test('first release: creates the database user and the Web PubSub secret once, migrates, deploys poller and web', () => {
   const r = runDeploy({ env: { FAKE_EXISTING_SECRETS: 'bootstrap-token' } });
   assert.equal(r.status, 0, r.output);
   const calls = r.calls.join('\n');
 
-  // SQL login created through the Entra admin (the deploy principal), password never on a command line.
+  // A contained user in the database, created by the deploy principal, password never on a command
+  // line. Nothing runs in master: the deploy principal needs db_owner in this one database only.
   const sqlFiles = readFileSync(path.join(r.logDir, 'sqlcmd-1.sql'), 'utf8');
-  assert.match(sqlFiles, /CREATE LOGIN \[frejsi_app\] WITH PASSWORD/);
+  assert.match(sqlFiles, /CREATE USER \[frejsi_app\] WITH PASSWORD/);
+  assert.match(sqlFiles, /ALTER ROLE db_owner ADD MEMBER \[frejsi_app\]/);
+  assert.doesNotMatch(sqlFiles, /LOGIN/, 'no server login');
+  const sqlcmds = r.calls.filter((c) => c.startsWith('sqlcmd'));
+  assert.equal(sqlcmds.length, 1, sqlcmds.join('\n'));
+  assert.match(sqlcmds[0], /-d frejsi /);
+  assert.doesNotMatch(calls, /sqlcmd .*-d master/);
   const password = sqlFiles.match(/PASSWORD = N?'([^']+)'/)[1];
   assert.ok(password.length >= 32, 'generated password is long');
   assert.match(password, /[A-Z]/);
@@ -125,6 +132,26 @@ test('first release: creates the SQL login and the Web PubSub secret once, migra
   assert.match(r.githubOutput, /^app_origin=https:\/\/happy-sea-0abc\.1\.azurestaticapps\.net$/m);
 });
 
+test('an existing SQL server (SQL_SERVER_ID): its own subscription and group for the hostname and the firewall rule', () => {
+  const id = '/subscriptions/11111111-1111-1111-1111-111111111111/resourceGroups/shared-rg/providers/Microsoft.Sql/servers/shared-sql';
+  const r = runDeploy({ env: { FAKE_EXISTING_SECRETS: 'bootstrap-token', SQL_SERVER_ID: id } });
+  assert.equal(r.status, 0, r.output);
+  assert.ok(!r.calls.some((c) => /resource list .*Microsoft\.Sql\/servers/.test(c)), 'looked for a server in the resource group');
+  const target = /--subscription 11111111-1111-1111-1111-111111111111 -g shared-rg (-n|--server) shared-sql/;
+  assert.match(r.calls.find((c) => /sql server show/.test(c)), target);
+  assert.match(r.calls.find((c) => /sql server firewall-rule create/.test(c)), target);
+  assert.match(r.calls.find((c) => /sql server firewall-rule delete/.test(c)), target);
+  assert.match(r.calls.find((c) => c.startsWith('sqlcmd')), /-S shared-sql\.database\.windows\.net -d frejsi /);
+  assert.match(readFileSync(path.join(r.logDir, 'secret-database-url'), 'utf8'), /^sqlserver:\/\/shared-sql\.database\.windows\.net:1433;database=frejsi;user=frejsi_app;/);
+});
+
+test('a malformed SQL_SERVER_ID fails before touching Azure', () => {
+  const r = runDeploy({ env: { SQL_SERVER_ID: 'shared-sql' } });
+  assert.notEqual(r.status, 0);
+  assert.match(r.stderr, /SQL_SERVER_ID/);
+  assert.equal(r.calls.filter((c) => c.startsWith('az ')).length, 0, r.calls.join('\n'));
+});
+
 test('never echoes a secret', () => {
   const r = runDeploy({ env: { FAKE_EXISTING_SECRETS: 'bootstrap-token' } });
   assert.equal(r.status, 0, r.output);
@@ -135,7 +162,7 @@ test('never echoes a secret', () => {
   }
 });
 
-test('later releases: existing secrets are reused, no login is created', () => {
+test('later releases: existing secrets are reused, no user is created', () => {
   const r = runDeploy({ env: { FAKE_EXISTING_SECRETS: 'database-url web-pubsub-connection-string bootstrap-token' } });
   assert.equal(r.status, 0, r.output);
   assert.equal(r.calls.filter((c) => c.startsWith('sqlcmd')).length, 0);
@@ -188,10 +215,10 @@ test('an empty Key Vault secret is an error, not an empty app setting', () => {
 });
 
 test('a failed Key Vault listing stops the deploy; it never counts as "secret absent"', () => {
-  // Otherwise the SQL branch would generate a new password and ALTER LOGIN the live application login.
+  // Otherwise the SQL branch would generate a new password and ALTER USER the live application user.
   const r = runDeploy({ env: { FAKE_EXISTING_SECRETS: 'database-url web-pubsub-connection-string bootstrap-token', FAKE_FAIL_AT: 'secret-list' } });
   assert.notEqual(r.status, 0);
-  assert.equal(r.calls.filter((c) => c.startsWith('sqlcmd')).length, 0, 'a login was created or altered');
+  assert.equal(r.calls.filter((c) => c.startsWith('sqlcmd')).length, 0, 'a user was created or altered');
   assert.equal(r.calls.filter((c) => /keyvault secret set/.test(c)).length, 0);
   assert.ok(!r.calls.some((c) => /firewall-rule create/.test(c)), 'the deploy went on after the failure');
 });

@@ -42,7 +42,7 @@ for the owner.
 
 pnpm monorepo: `web/` Next.js (App Router, TypeScript) on Azure Static Web Apps (Standard) · `poller/` Azure Function (Node 22, timer every 5 min) · `shared/` types and domain logic · `infra/` Bicep + GitHub Actions. Azure SQL **Basic** via Prisma. Azure Web PubSub for live push with an `events` table as source of truth. Key Vault + managed identity for all secrets. Blob Storage for photos. App Insights.
 
-Azure: owner's Proxus subscription, **dedicated resource group `frejsi`** (West Europe), domain `frejsi.jepsen.ninja`. Nothing else goes in that resource group.
+Azure: owner's Proxus subscription, **dedicated resource group `frejsi`** (West Europe), domain `frejsi.jepsen.ninja`. Nothing else goes in that resource group. The one exception to "everything in `frejsi`": the production database lives on an existing SQL server outside it (repository variable `SQL_SERVER_ID`), because Azure SQL is restricted in West Europe on the subscription (`infra/README.md`, "An existing SQL server"; issue #23).
 
 ## Hard rules
 

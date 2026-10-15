@@ -10,7 +10,9 @@ name: preview
 # with a static placeholder and its settings are replaced (APP_ORIGIN and the version, nothing else)
 # before the PR's build is uploaded; the PR's code never starts with production settings. It needs
 # the `preview` environment with a federated credential for
-# repo:<owner>/<repo>:environment:preview (infra/README.md, owner step 3).
+# <oidc prefix>:environment:preview (infra/README.md, owner step 3), and the repository variable
+# PREVIEWS_ENABLED=true. Both jobs are off without it, so a preview can exist only while its cleanup
+# is on too; the owner turns previews on by adding the credential and the variable together.
 #
 # Two jobs on purpose. `build` runs the PR's code (install scripts, the Next.js build) with nothing
 # but read access and no environment; `deploy` holds the OIDC permission and the `preview`
@@ -37,7 +39,8 @@ env:
 jobs:
   build:
     if: >-
-      github.event.action != 'closed' && github.event.action != 'unlabeled'
+      vars.PREVIEWS_ENABLED == 'true'
+      && github.event.action != 'closed' && github.event.action != 'unlabeled'
       && contains(github.event.pull_request.labels.*.name, 'preview')
     runs-on: ubuntu-latest
     timeout-minutes: 15
@@ -177,9 +180,11 @@ jobs:
           BODY="Preview for ${{ github.event.pull_request.head.sha }}: ${{ steps.hostname.outputs.url }} (no database; remove the \`preview\` label to delete it)"
           gh pr comment "${{ github.event.pull_request.number }}" --body "$BODY"
 
+  # Every close, not only a labelled one: a label removed just before closing can have its own
+  # cleanup run cancelled by the close's run in the same concurrency group (PR #106).
   remove:
     if: >-
-      vars.AZURE_CLIENT_ID != ''
+      vars.PREVIEWS_ENABLED == 'true'
       && (github.event.action == 'closed'
         || (github.event.action == 'unlabeled' && github.event.label.name == 'preview'))
     runs-on: ubuntu-latest
