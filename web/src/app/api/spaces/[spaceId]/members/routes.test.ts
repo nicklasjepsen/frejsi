@@ -198,6 +198,43 @@ describe("DELETE /api/spaces/:id/members/:userId", () => {
     expect(await next.json()).toMatchObject({ error: { code: "not-found" } });
   });
 
+  it("withdraws the removed member's pending add-a-device links, emitting invite.revoked", async () => {
+    world.fake.rows("invite").push({
+      token: "carer-device-token",
+      spaceId: "s1",
+      role: "carer",
+      name: USERS.carer.name,
+      forUserId: USERS.carer.id,
+      createdBy: USERS.owner.id,
+      createdAt: new Date(),
+      expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+      usedAt: null,
+      revokedAt: null,
+    });
+    world.as("owner");
+    expect((await remove(USERS.carer.id)).status).toBe(204);
+    expect(world.fake.rows("invite").find((i) => i.token === "carer-device-token")).toMatchObject(
+      { revokedAt: expect.any(Date) as Date },
+    );
+    expect(world.events).toEqual([
+      { spaceId: "s1", type: "member.removed", payload: { userId: USERS.carer.id } },
+      {
+        spaceId: "s1",
+        type: "invite.revoked",
+        payload: {
+          tokenHash: hashToken("carer-device-token"),
+          role: "carer",
+          name: USERS.carer.name,
+          forUserId: USERS.carer.id,
+        },
+      },
+    ]);
+    // The ordinary pending invitation is someone else's and stays.
+    world.as("owner");
+    const view = (await (await list()).json()) as PeopleView;
+    expect(view.invites.map((i) => i.id)).toEqual([hashToken(PENDING_TOKEN)]);
+  });
+
   it("refuses to remove the last owner with last-owner, but lets one of two owners go", async () => {
     world.as("owner");
     expect((await remove(USERS.secondOwner.id)).status).toBe(204);

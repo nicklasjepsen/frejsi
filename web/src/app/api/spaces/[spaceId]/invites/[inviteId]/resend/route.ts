@@ -1,4 +1,4 @@
-import { log, Role } from "@frejsi/shared";
+import { HttpError, log, prisma, Role } from "@frejsi/shared";
 
 import { json } from "@/app/api/auth/http";
 import { CreatedInviteView } from "@/components/people/contract";
@@ -13,7 +13,8 @@ const ROUTE = "spaces/invites/resend";
 /**
  * "Send igen": the old token is revoked and a new one issued for the same person, role and (for
  * an add-a-device link) member, in one transaction, so `invite.revoked` and `invite.created`
- * either both happen or neither. The new link comes back once, to the owner (spec §2b).
+ * either both happen or neither. The new link comes back once, to the owner (spec §2b). An
+ * add-a-device link for someone no longer in the space is 404: its link could never be used.
  */
 export const POST = spaceRoute<{ spaceId: string; inviteId: string }>(
   ROUTE,
@@ -21,6 +22,12 @@ export const POST = spaceRoute<{ spaceId: string; inviteId: string }>(
     const { session } = await requireMutation(request, spaceId, "owner");
     const old = await findPendingInvite(spaceId, inviteId);
     const role = Role.parse(old.role);
+    if (old.forUserId) {
+      const member = await prisma.membership.findUnique({
+        where: { userId_spaceId: { userId: old.forUserId, spaceId } },
+      });
+      if (!member) throw new HttpError(404, "not-found");
+    }
 
     const created = await run({}, async (tx, emit, now) => {
       const txDeps = { db: tx, emit, now };
