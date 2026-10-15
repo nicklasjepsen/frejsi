@@ -8,14 +8,15 @@
   "exports": {
     ".": "./src/index.ts",
     "./*": "./src/*.ts",
-    "./photos": "./src/photos/index.ts"
+    "./photos": "./src/photos/index.ts",
+    "./food": "./src/food/registry.ts"
   },
   "scripts": {
     "postinstall": "prisma generate",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
     "test": "vitest run",
-    "prisma:check": "prisma validate && prisma migrate diff --from-empty --to-schema-datamodel prisma/schema.prisma --script | diff - prisma/migrations/0001_foundation/migration.sql",
+    "prisma:check": "prisma validate && prisma migrate diff --from-empty --to-schema-datamodel prisma/foundation.prisma --script | diff - prisma/migrations/0001_foundation/migration.sql && prisma migrate diff --from-schema-datamodel prisma/foundation.prisma --to-schema-datamodel prisma/schema.prisma --script | diff - prisma/migrations/0002_food/migration.sql",
     "test:integration": "vitest run --config test/integration/vitest.config.ts"
   },
   "dependencies": {
