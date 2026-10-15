@@ -144,5 +144,14 @@
       "alreadyIn": "Already have access?",
       "login": "Sign in"
     }
+  },
+  "welcome": {
+    "pageTitle": "Welcome",
+    "title": "Welcome back",
+    "body": "Sign in with your face, your finger or your phone – like last time.",
+    "login": "Sign in",
+    "failed": "We don't know that passkey. Is this a new phone or computer? Then ask an owner of the space for an “add device” link.",
+    "firstTimeTitle": "First time here?",
+    "firstTimeBody": "Then you need an invitation link from an owner of the space. Open the link on the phone or computer you want to use."
   }
 }
