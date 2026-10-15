@@ -1,6 +1,7 @@
 "use client";
 
 import type { DayMealView } from "@frejsi/shared/schemas/meal";
+import type { ReactNode } from "react";
 import { useTranslations } from "next-intl";
 
 import { FoodPhoto } from "@/components/food/FoodPhoto";
@@ -16,16 +17,19 @@ const PHOTO_SIZE: Record<MealCardVariant, number> = { card: 64, row: 48, simple:
  * One meal (design README `MealCard`): `card` is the phone card on Nu ("12:10 · 50 g kulhydrat ·
  * Jonas"), `row` the timeline row of the day with its 48 px time column, `simple` the simpleMode
  * card ("Du spiste kl. 12:10" above the title). The photo is the thumbnail, or the placeholder.
- * A meal carries no glucose and no bolus time, so neither can be drawn here.
+ * The optional row detail is supplied by history; the default remains the meal-only metadata.
  */
 export function MealCard({
   meal,
   timeZone,
   variant,
+  detail,
 }: {
   meal: DayMealView;
   timeZone: string;
   variant: MealCardVariant;
+  /** Timeline metadata, including a timestamped peak when the caller has permission. */
+  detail?: ReactNode;
 }) {
   const t = useTranslations("today");
   const time = formatClock(new Date(meal.ts), timeZone);
@@ -70,7 +74,7 @@ export function MealCard({
       {photo}
       <div className={styles.text}>
         {title}
-        <span className={styles.meta}>{t("mealCarbs", facts)}</span>
+        <span className={styles.meta}>{detail ?? t("mealCarbs", facts)}</span>
       </div>
     </article>
   );

@@ -8,6 +8,7 @@ import eat from "./eat.json";
 import errors from "./errors.json";
 import foodKit from "./foodKit.json";
 import glucose from "./glucose.json";
+import history from "./history.json";
 import historyWeek from "./historyWeek.json";
 import invite from "./invite.json";
 import library from "./library.json";
@@ -36,6 +37,7 @@ const messages = {
   errors,
   foodKit,
   glucose,
+  history,
   historyWeek,
   invite,
   library,
