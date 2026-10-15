@@ -423,6 +423,59 @@ describe("runPollCycle failures", () => {
     expect(output).toContain('"spaceId":"s1"');
     expect(output).toContain('"count":6');
   });
+
+  it("names the cause on the space-failed line, so a bad credential can be told from a timeout", async () => {
+    const dexcom = fakeDexcom({ badCredentials: true });
+    const timeout = Object.assign(new Error("deadline"), {
+      name: "DexcomShareError",
+      code: "Timeout",
+    });
+    const h = harness(
+      [
+        { id: "s1", lastReadingAt: now },
+        { id: "s2", lastReadingAt: now },
+      ],
+      (space, config) =>
+        space.id === "s1"
+          ? new DexcomShareSource({
+              region: config.region,
+              username: "publisher@example.invalid",
+              password: "<fixture-password>",
+              fetch: dexcom.fetch,
+              now: () => now,
+            })
+          : recordingSource([], timeout),
+    );
+    await h.run();
+    const failed = h.lines
+      .map((l) => JSON.parse(l) as { msg: string; spaceId?: string; code?: string })
+      .filter((l) => l.msg === "poll.space-failed")
+      // Spaces poll side by side, so the two lines can land in either order.
+      .sort((a, b) => (a.spaceId ?? "").localeCompare(b.spaceId ?? ""));
+    expect(failed).toEqual([
+      expect.objectContaining({
+        spaceId: "s1",
+        code: "fetch-failed:SSO_AuthenticatePasswordInvalid",
+      }),
+      expect.objectContaining({ spaceId: "s2", code: "fetch-failed:Timeout" }),
+    ]);
+  });
+
+  it("does not log in again with a refused credential while the space goes disconnected", async () => {
+    const dexcom = fakeDexcom({ badCredentials: true });
+    const source = new DexcomShareSource({
+      region: "eu",
+      username: "publisher@example.invalid",
+      password: "<fixture-password>",
+      fetch: dexcom.fetch,
+      now: () => now,
+    });
+    // One instance per space per process, as the poller's factory keeps it.
+    const h = harness([{ id: "s1", lastReadingAt: now }], () => source);
+    for (let cycle = 0; cycle < 4; cycle += 1) await h.run();
+    expect(h.spaces.get("s1")).toMatchObject({ sourceFailures: 4, sourceStatus: "disconnected" });
+    expect(dexcom.count("authenticate")).toBe(1);
+  });
 });
 
 describe("runPollCycle and a failing emit", () => {

@@ -264,7 +264,14 @@ async function pollSpace(space: PollSpaceRow, deps: Resolved): Promise<SpaceOutc
     return { spaceId, outcome: "ok", code: "ok", stored, status };
   } catch (error) {
     const code = error instanceof CycleError ? error.code : "fetch-failed";
-    deps.log.warn("poll.space-failed", { spaceId, count: stored, code: codeOf(error) });
+    // The stage and the cause's own code (`fetch-failed:Timeout`, `fetch-failed:SSO_...`): the
+    // adapter's lines carry no spaceId, so this is where a bad credential is told from a timeout.
+    const cause = error instanceof CycleError ? error.cause : error;
+    deps.log.warn("poll.space-failed", {
+      spaceId,
+      count: stored,
+      code: `${code}:${codeOf(cause)}`,
+    });
     // Only the source's own faults count towards "disconnected"; a database failure after a good
     // fetch says nothing about the source.
     const sourceFault =
