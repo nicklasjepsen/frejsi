@@ -63,7 +63,7 @@ describe("ConnectSourceForm ('Skift login', plan task 9)", () => {
     expect(screen.getByText("Dexcom Share")).toBeInTheDocument();
     expect(screen.getByLabelText("Kodeord")).toHaveAttribute("type", "password");
     fill();
-    fireEvent.click(screen.getByRole("radio", { name: "USA" }));
+    fireEvent.click(screen.getByRole("radio", { name: "US" }));
     fireEvent.click(screen.getByRole("button", { name: "Forbind" }));
     await waitFor(() => {
       expect(calls).toHaveLength(1);
