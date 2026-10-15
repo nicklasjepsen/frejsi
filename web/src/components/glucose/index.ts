@@ -1,6 +1,16 @@
 export { GlucoseValue, type GlucoseValueProps, type GlucoseValueSize } from "./GlucoseValue";
 export { TrendArrow, type TrendArrowProps } from "./TrendArrow";
-export { GlucoseChart, type GlucoseChartProps } from "./GlucoseChart";
+export {
+  GlucoseChart,
+  type DayChartProps,
+  type GlucoseChartProps,
+  type MealChartProps,
+  type SparklineChartProps,
+  type WeekTileChartProps,
+} from "./GlucoseChart";
+export { ChartLegend, type ChartLegendProps } from "./ChartLegend";
+export { ChartCaption, type ChartCaptionProps } from "./ChartCaption";
+export { useAgeText } from "./useAgeText";
 export { SourcePill, type SourcePillProps } from "./SourcePill";
 export { useNow } from "./useNow";
 export {
@@ -14,4 +24,20 @@ export {
   formatGlucose,
   isStale,
 } from "./format";
-export { chartGeometry, type ChartGeometry, type ChartInput, type ChartVariant } from "./chart";
+export {
+  CHART_AFTER_MINUTES,
+  CHART_BEFORE_MINUTES,
+  chartGeometry,
+  mealChartGeometry,
+  weekTileGeometry,
+  type ChartGeometry,
+  type ChartInput,
+  type ChartMeal,
+  type ChartVariant,
+  type MealChartGeometry,
+  type MealChartInput,
+  type MealChartSize,
+  type PreviousCurve,
+  type WeekTileGeometry,
+  type WeekTileInput,
+} from "./chart";
