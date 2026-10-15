@@ -68,6 +68,8 @@ const FoodList = z.union([
   z.object({ foods: z.array(FoodView) }).transform((value) => value.foods),
 ]);
 
+const MAX_QUERY = 80;
+
 /** Library, cache and `local` sources as the user types (`remote: false`), all sources on submit. */
 export async function lookupText(
   spaceId: string,
@@ -75,7 +77,11 @@ export async function lookupText(
   remote: boolean,
   signal?: AbortSignal,
 ): Promise<LookupResponse> {
-  const query = new URLSearchParams({ q, remote: String(remote) });
+  // The route answers 400 to a `q` longer than 80 characters (`LookupQuery`): search its start.
+  const query = new URLSearchParams({
+    q: q.trim().slice(0, MAX_QUERY).trim(),
+    remote: String(remote),
+  });
   return body(
     await send(`${base(spaceId)}/lookup?${query.toString()}`, signal ? { signal } : {}),
     LookupResponse,
