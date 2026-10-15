@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 
 import {
   CeremonyError,
+  classifyPromptError,
   registerWithInvite,
   signInWithPasskey,
   type PasskeyClientDeps,
@@ -87,7 +88,7 @@ describe("registerWithInvite (task 5's routes, in the order the browser runs the
     expect(web.register).not.toHaveBeenCalled();
   });
 
-  it("reports a cancelled or failed prompt as cancelled, and never calls verify", async () => {
+  it("reports a dismissed or timed-out prompt as cancelled, and never calls verify", async () => {
     const { fetchFn, calls } = fakeFetch([
       { status: 200, body: { challengeId: "ch1", options: creation } },
     ]);
@@ -98,6 +99,52 @@ describe("registerWithInvite (task 5's routes, in the order the browser runs the
       new CeremonyError("cancelled"),
     );
     expect(calls).toHaveLength(1);
+
+    // @simplewebauthn/browser wraps the DOMException and keeps its name; an aborted ceremony too.
+    const aborted = fakeFetch([{ status: 200, body: { challengeId: "ch1", options: creation } }]);
+    const wrapped = Object.assign(new Error("ceremony aborted"), {
+      name: "AbortError",
+      code: "ERROR_CEREMONY_ABORTED",
+    });
+    await expect(
+      registerWithInvite("tok", deps(aborted.fetchFn, browser({ register: vi.fn(() => Promise.reject(wrapped)) }))),
+    ).rejects.toEqual(new CeremonyError("cancelled"));
+  });
+
+  it("tells a device that already holds this user's passkey apart from a cancellation (add-device link opened on the wrong device)", async () => {
+    const { fetchFn, calls } = fakeFetch([
+      { status: 200, body: { challengeId: "ch1", options: creation } },
+    ]);
+    // The browser throws InvalidStateError when the credential is in excludeCredentials;
+    // @simplewebauthn/browser names it ERROR_AUTHENTICATOR_PREVIOUSLY_REGISTERED.
+    const previouslyRegistered = Object.assign(new Error("The authenticator was previously registered"), {
+      name: "InvalidStateError",
+      code: "ERROR_AUTHENTICATOR_PREVIOUSLY_REGISTERED",
+    });
+    const web = browser({ register: vi.fn(() => Promise.reject(previouslyRegistered)) });
+    await expect(registerWithInvite("tok", deps(fetchFn, web))).rejects.toEqual(
+      new CeremonyError("already-registered"),
+    );
+    expect(calls).toHaveLength(1);
+  });
+
+  it("reports any other authenticator failure as the authenticator's, not as cancelled", async () => {
+    for (const name of ["SecurityError", "NotSupportedError", "UnknownError", "ConstraintError"]) {
+      const { fetchFn, calls } = fakeFetch([
+        { status: 200, body: { challengeId: "ch1", options: creation } },
+      ]);
+      const web = browser({
+        register: vi.fn(() => Promise.reject(new DOMException(`${name} happened`, name))),
+      });
+      await expect(registerWithInvite("tok", deps(fetchFn, web)), name).rejects.toEqual(
+        new CeremonyError("authenticator"),
+      );
+      expect(calls, name).toHaveLength(1);
+    }
+    // Something that is not an Error at all is still not a cancellation.
+    expect(classifyPromptError("nope")).toBe("authenticator");
+    expect(classifyPromptError(null)).toBe("authenticator");
+    expect(classifyPromptError({ code: "ERROR_INVALID_RP_ID" })).toBe("authenticator");
   });
 
   it("maps an unparseable error body to internal and a rejected verification to its code", async () => {
@@ -131,6 +178,33 @@ describe("signInWithPasskey (discoverable credential, no username)", () => {
       { url: "/api/auth/login/verify", body: { challengeId: "ch2", response: assertion } },
     ]);
     expect(web.authenticate).toHaveBeenCalledWith({ optionsJSON: request });
+  });
+
+  it("tells a dismissed prompt from an authenticator failure", async () => {
+    const dismissed = fakeFetch([{ status: 200, body: { challengeId: "ch2", options: request } }]);
+    await expect(
+      signInWithPasskey(
+        deps(
+          dismissed.fetchFn,
+          browser({
+            authenticate: vi.fn(() => Promise.reject(new DOMException("denied", "NotAllowedError"))),
+          }),
+        ),
+      ),
+    ).rejects.toEqual(new CeremonyError("cancelled"));
+
+    const broken = fakeFetch([{ status: 200, body: { challengeId: "ch2", options: request } }]);
+    await expect(
+      signInWithPasskey(
+        deps(
+          broken.fetchFn,
+          browser({
+            authenticate: vi.fn(() => Promise.reject(new DOMException("rp id", "SecurityError"))),
+          }),
+        ),
+      ),
+    ).rejects.toEqual(new CeremonyError("authenticator"));
+    expect(broken.calls).toHaveLength(1);
   });
 
   it("reports an unknown passkey as the API's code", async () => {

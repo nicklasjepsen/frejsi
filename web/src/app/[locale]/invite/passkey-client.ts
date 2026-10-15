@@ -19,8 +19,19 @@ import type {
 } from "@simplewebauthn/browser";
 import { z } from "zod";
 
-/** What a screen can do with a failed ceremony: `api` carries the server's stable code. */
-export type CeremonyFailure = "unsupported" | "cancelled" | "api";
+/**
+ * What a screen can do with a failed ceremony. `cancelled` is the only one worth a plain "try
+ * again": the prompt was dismissed or timed out. `already-registered` means this device already
+ * holds a passkey for the user the link is for (an add-device link opened on the wrong device),
+ * so trying again changes nothing. `authenticator` is any other refusal by the browser or the
+ * authenticator. `api` carries the server's stable code.
+ */
+export type CeremonyFailure =
+  | "unsupported"
+  | "cancelled"
+  | "already-registered"
+  | "authenticator"
+  | "api";
 
 export class CeremonyError extends Error {
   readonly kind: CeremonyFailure;
@@ -98,12 +109,31 @@ async function post<T>(
   return parsed.data;
 }
 
-/** The prompt was dismissed, timed out or the authenticator refused: the person can try again. */
+/**
+ * Sorts what `navigator.credentials` threw. `@simplewebauthn/browser` wraps the DOMException in a
+ * `WebAuthnError` that keeps its `name` and adds a `code`; both are read, so a raw DOMException
+ * (as a test or another wrapper may throw) sorts the same way.
+ */
+export function classifyPromptError(error: unknown): CeremonyFailure {
+  const { name, code } =
+    typeof error === "object" && error !== null
+      ? (error as { name?: unknown; code?: unknown })
+      : { name: undefined, code: undefined };
+  if (name === "InvalidStateError" || code === "ERROR_AUTHENTICATOR_PREVIOUSLY_REGISTERED") {
+    return "already-registered";
+  }
+  if (name === "NotAllowedError" || name === "AbortError" || code === "ERROR_CEREMONY_ABORTED") {
+    return "cancelled";
+  }
+  return "authenticator";
+}
+
+/** Runs the authenticator prompt and names its failure for the screen. */
 async function prompt<T>(run: () => Promise<T>): Promise<T> {
   try {
     return await run();
-  } catch {
-    throw new CeremonyError("cancelled");
+  } catch (error) {
+    throw new CeremonyError(classifyPromptError(error));
   }
 }
 
