@@ -63,6 +63,10 @@ export function useDays<T extends { date: string }>(
     },
     [fetchImpl, route, schema, spaceId],
   );
+  const refreshAll = useCallback(
+    () => Promise.all(Object.keys(cache.current).map((date) => load(date, true))),
+    [load],
+  );
   useEffect(() => {
     const requests = pending.current;
     return () => {
@@ -70,5 +74,5 @@ export function useDays<T extends { date: string }>(
       requests.clear();
     };
   }, []);
-  return { days, load, refused };
+  return { days, load, refreshAll, refused };
 }
