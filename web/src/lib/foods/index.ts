@@ -105,7 +105,6 @@ export async function listFoods(
     where: {
       spaceId,
       ...(session.simpleMode ? { verified: true } : {}),
-      AND: words.map((word) => ({ nameSearch: { contains: word } })),
     },
     orderBy: [{ favourite: "desc" }, { verified: "desc" }, { name: "asc" }, { id: "asc" }],
   });
@@ -145,7 +144,10 @@ export async function listFoods(
   const counts = Object.fromEntries(
     [...keys].map((key) => [key, rows.filter((row) => selected(row, key)).length]),
   );
-  const filtered = rows.filter((row) => selected(row, filter));
+  // Counts describe the visible library, allowing the UI to distinguish no matches from no foods.
+  const filtered = rows.filter(
+    (row) => selected(row, filter) && words.every((word) => row.nameSearch.includes(word)),
+  );
   if (filter === "recent")
     filtered.sort((a, b) => recentIds.indexOf(a.id) - recentIds.indexOf(b.id));
   return { foods: await Promise.all(filtered.map((row) => viewOf(row, deps))), counts };
