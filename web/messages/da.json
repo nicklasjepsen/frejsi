@@ -338,7 +338,8 @@
     "age": {
       "justNow": "lige nu",
       "minutes": "for {minutes} min. siden",
-      "hours": "for {hours} t {minutes} min. siden",
+      "hours": "for {hours, plural, one {# time} other {# timer}} {minutes} min. siden",
+      "wholeHours": "for {hours, plural, one {# time} other {# timer}} siden",
       "overADay": "for mere end et døgn siden"
     },
     "trend": {
@@ -367,7 +368,7 @@
   },
   "now": {
     "title": "Lige nu",
-    "simpleTitle": "Dit tal lige nu",
+    "simpleTitle": "Dit tal",
     "eatingNow": "Jeg spiser nu",
     "lastMeal": "Sidste måltid",
     "lastMealSoon": "Måltider kommer i en senere version.",
