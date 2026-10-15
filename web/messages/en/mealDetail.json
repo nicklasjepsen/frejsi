@@ -9,7 +9,8 @@
   "compare": {
     "label": "Show earlier times",
     "onlyThis": "Only this time",
-    "withPrevious": "{count, plural, one {With the last time} other {With the last # times}}"
+    "withPrevious": "{count, plural, one {With the last time} other {With the last # times}}",
+    "title": "The last {count} times with {title}"
   },
   "noReadings": "No readings in this period",
   "itemLine": "{name} · {portion}",
@@ -29,5 +30,34 @@
   "simple": {
     "youAte": "You ate at {time}",
     "total": "{grams} g carbs"
+  },
+  "editSheet": {
+    "title": "Edit meal",
+    "back": "Back",
+    "save": "Save",
+    "note": "Note",
+    "carbs": "Carbs · {name}",
+    "failed": "The meal was not saved – try again",
+    "delete": "Delete meal",
+    "deleteQuestion": "Delete this meal? This cannot be undone.",
+    "cancel": "Cancel",
+    "confirmDelete": "Yes, delete",
+    "deleteFailed": "The meal was not deleted – try again",
+    "refreshFailed": "The meal is saved, but could not be loaded – try again",
+    "reload": "Reload meal",
+    "currentNutrition": "Portions use the library’s current values."
+  },
+  "history": "← History",
+  "nav": {
+    "previous": "Previous meal",
+    "next": "Next meal",
+    "label": "previous / next meal"
+  },
+  "dish": {
+    "save": "Save as own dish",
+    "portion": "1 portion",
+    "saved": "Saved in the library · Check it under Library",
+    "failed": "Could not save – try again",
+    "name": "Dish name"
   }
 }

@@ -113,7 +113,7 @@ afterEach(() => {
 });
 
 describe("Måltid · phone (Maaltid-Telefon)", () => {
-  it("draws the meta header: back 'Tilbage', 'I dag 12:00 · Jonas' and the 'Ret' link", async () => {
+  it("draws the meta header: back 'Tilbage', 'I dag 12:00 · Jonas' and the 'Ret' action", async () => {
     mount();
     await ready();
     const header = screen.getByRole("banner");
@@ -122,10 +122,8 @@ describe("Måltid · phone (Maaltid-Telefon)", () => {
       "/da/now",
     );
     expect(within(header).getByText("I dag 12:00 · Jonas")).toBeInTheDocument();
-    expect(within(header).getByRole("link", { name: "Ret" })).toHaveAttribute(
-      "href",
-      "/da/log?meal=m1",
-    );
+    fireEvent.click(within(header).getByRole("button", { name: "Ret" }));
+    expect(screen.getByRole("dialog", { name: "Ret måltid" })).toBeVisible();
   });
 
   it("says 'I går', else the weekday and date, in the space's timezone", async () => {
@@ -296,8 +294,9 @@ describe("Måltid · desktop (Maaltid-Desktop)", () => {
     await ready();
     expect(screen.getByRole("heading", { level: 1 })).toHaveAttribute("data-size", "desktop");
     expect(screen.getByText("Onsdag 14. oktober · 12:00 · logget af Jonas")).toBeInTheDocument();
-    const edit = screen.getByRole("link", { name: "Ret E" });
-    expect(edit).toHaveAttribute("href", "/da/log?meal=m1");
+    const edit = screen.getByRole("button", { name: "Ret E" });
+    fireEvent.click(edit);
+    expect(screen.getByRole("dialog", { name: "Ret måltid" })).toBeVisible();
     expect(edit.querySelector("kbd")).toHaveTextContent("E");
   });
 
@@ -338,13 +337,13 @@ describe("Måltid · desktop (Maaltid-Desktop)", () => {
     expect(screen.queryByText(/Observation/)).toBeNull();
   });
 
-  it("opens log?meal= with E, but not while typing or with a modifier", async () => {
+  it("opens the edit sheet with E, but not while typing or with a modifier", async () => {
     mount({ layout: "desktop" });
     await ready();
     fireEvent.keyDown(window, { key: "e", ctrlKey: true });
     expect(navigation.push).not.toHaveBeenCalled();
     fireEvent.keyDown(window, { key: "e" });
-    expect(navigation.push).toHaveBeenCalledWith("/da/log?meal=m1");
+    expect(screen.getByRole("dialog", { name: "Ret måltid" })).toBeVisible();
   });
 
   it("ignores E on the phone", async () => {

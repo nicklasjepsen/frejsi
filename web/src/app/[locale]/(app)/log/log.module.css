@@ -145,16 +145,6 @@
   overflow: hidden;
   border-radius: 12px;
 }
-.deleteButton {
-  align-self: flex-start;
-  min-height: 44px;
-  border: 0;
-  background: none;
-  color: var(--destructive);
-  font: inherit;
-  text-decoration: underline;
-  cursor: pointer;
-}
 
 /* Desktop from 1280 px (Log-Desktop): search and results left, the meal right. */
 .desktop {

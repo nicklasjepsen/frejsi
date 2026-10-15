@@ -9,7 +9,8 @@
   "compare": {
     "label": "Vis tidligere gange",
     "onlyThis": "Kun denne gang",
-    "withPrevious": "{count, plural, one {Sammen med sidste gang} other {Sammen med de sidste # gange}}"
+    "withPrevious": "{count, plural, one {Sammen med sidste gang} other {Sammen med de sidste # gange}}",
+    "title": "De sidste {count} gange med {title}"
   },
   "noReadings": "Ingen målinger i dette tidsrum",
   "itemLine": "{name} · {portion}",
@@ -29,5 +30,34 @@
   "simple": {
     "youAte": "Du spiste kl. {time}",
     "total": "{grams} g kulhydrat"
+  },
+  "editSheet": {
+    "title": "Ret måltid",
+    "back": "Tilbage",
+    "save": "Gem",
+    "note": "Note",
+    "carbs": "Kulhydrat · {name}",
+    "failed": "Måltidet blev ikke gemt – prøv igen",
+    "delete": "Slet måltid",
+    "deleteQuestion": "Slet måltidet? Det kan ikke fortrydes.",
+    "cancel": "Annullér",
+    "confirmDelete": "Ja, slet",
+    "deleteFailed": "Måltidet blev ikke slettet – prøv igen",
+    "refreshFailed": "Måltidet er gemt, men kunne ikke hentes – prøv igen",
+    "reload": "Hent måltidet igen",
+    "currentNutrition": "Portionerne bruger bibliotekets aktuelle tal."
+  },
+  "history": "← Historik",
+  "nav": {
+    "previous": "Forrige måltid",
+    "next": "Næste måltid",
+    "label": "forrige / næste måltid"
+  },
+  "dish": {
+    "save": "Gem som egen ret",
+    "portion": "1 portion",
+    "saved": "Gemt i biblioteket · Tjek den under Bibliotek",
+    "failed": "Kunne ikke gemme – prøv igen",
+    "name": "Rettens navn"
   }
 }

@@ -14,23 +14,18 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import {
   createManualFood,
   createMeal,
-  deleteMeal,
-  getMeal,
   listFoods,
   lookupBarcode,
   lookupText,
   pickCandidate,
-  updateMeal,
 } from "@/components/meal/api";
 import {
   addFood,
   chooseGrams,
   choosePortion,
   clearChoice,
-  draftFromMeal,
   emptyDraft,
   isComplete,
-  relinkFood,
   removeItem,
   toMealRequest,
   totalCarbs,
@@ -50,7 +45,6 @@ export interface LogControllerOptions {
   locale: AppLocale;
   initialQuery?: string | undefined;
   initialBarcode?: string | undefined;
-  mealId?: string | undefined;
   /** Called after a food lands in the meal (the phone opens the confirm screen). */
   onAdded?: () => void;
 }
@@ -86,7 +80,6 @@ export function useLogController({
   locale,
   initialQuery,
   initialBarcode,
-  mealId,
   onAdded,
 }: LogControllerOptions) {
   const router = useRouter();
@@ -108,10 +101,6 @@ export function useLogController({
   const [photo, setPhoto] = useState<Uint8Array | null>(null);
   const [saving, setSaving] = useState(false);
   const [saveFailed, setSaveFailed] = useState(false);
-  const [deleteFailed, setDeleteFailed] = useState(false);
-  const [loadFailed, setLoadFailed] = useState(false);
-  const [mealLoaded, setMealLoaded] = useState(!mealId);
-  const [savedBolusTs, setSavedBolusTs] = useState<string | null>(null);
   const [barcodeInvalid, setBarcodeInvalid] = useState(false);
   const abort = useRef<AbortController | null>(null);
   /** The query an Enter is searching every source for; a pending as-you-type lookup yields to it. */
@@ -253,42 +242,14 @@ export function useLogController({
     };
   }, [spaceId]);
 
-  // ?q= and ?barcode= from the Now header run the lookup on load; ?meal= reopens a saved meal.
+  // ?q= and ?barcode= from the Now header run the lookup on load.
   const started = useRef(false);
   useEffect(() => {
     if (started.current) return;
     started.current = true;
     if (initialBarcode) void submitBarcode(initialBarcode);
     else if (initialQuery?.trim()) void submit(initialQuery);
-    if (mealId) {
-      getMeal(spaceId, mealId)
-        .then((meal) => {
-          const reopened = draftFromMeal(meal);
-          setDraft(reopened);
-          setSavedBolusTs(reopened.bolusTs);
-          setMealLoaded(true);
-          // Find each stored item's food in the library again so its portions can be changed;
-          // until one is, the item keeps its stored snapshot (§2).
-          for (const item of reopened.items) {
-            lookupText(spaceId, item.name, false)
-              .then((answer) => {
-                // Only an unambiguous match: two foods with this name could carry other portions.
-                const matches = answer.results.filter(
-                  (result) => result.source === "library" && result.food.name === item.name,
-                );
-                const food = matches.length === 1 ? matches[0]?.food : undefined;
-                if (food && isLibraryFood(food)) {
-                  setDraft((current) => relinkFood(current, item.key, food));
-                }
-              })
-              .catch(() => undefined);
-          }
-        })
-        .catch(() => {
-          setLoadFailed(true);
-        });
-    }
-  }, [initialBarcode, initialQuery, mealId, spaceId, submit, submitBarcode]);
+  }, [initialBarcode, initialQuery, submit, submitBarcode]);
 
   const loadLibrary = useCallback(() => {
     if (library) return;
@@ -326,26 +287,14 @@ export function useLogController({
     setSaveFailed(false);
     try {
       const request = toMealRequest(draft, photo ? bytesToDataUrl(photo) : null);
-      if (mealId) await updateMeal(spaceId, mealId, request);
-      else await createMeal(spaceId, request);
+      await createMeal(spaceId, request);
       goNow();
     } catch {
       // The meal stays on screen, as it was, so nothing has to be typed again.
       setSaveFailed(true);
       setSaving(false);
     }
-  }, [draft, goNow, mealId, photo, saving, spaceId]);
-
-  const remove = useCallback(async () => {
-    if (!mealId) return;
-    setDeleteFailed(false);
-    try {
-      await deleteMeal(spaceId, mealId);
-      goNow();
-    } catch {
-      setDeleteFailed(true);
-    }
-  }, [goNow, mealId, spaceId]);
+  }, [draft, goNow, photo, saving, spaceId]);
 
   return {
     query,
@@ -395,24 +344,15 @@ export function useLogController({
     tapBolus: () => {
       setDraft((d) => ({ ...d, bolusTs: new Date().toISOString() }));
     },
-    /**
-     * Undo returns to the saved meal's tap (none for a new meal). A saved tap cannot be cleared:
-     * an omitted `bolusTs` in `PATCH meals` means unchanged, and the contract has no null.
-     */
     undoBolus: () => {
-      setDraft((d) => ({ ...d, bolusTs: savedBolusTs }));
+      setDraft((d) => ({ ...d, bolusTs: null }));
     },
-    canUndoBolus: draft.bolusTs !== savedBolusTs,
+    canUndoBolus: draft.bolusTs !== null,
     photo,
     setPhoto,
     save,
     saving,
     saveFailed,
-    remove,
-    deleteFailed,
-    loadFailed,
-    mealLoaded,
-    editing: Boolean(mealId),
     goNow,
   };
 }

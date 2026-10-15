@@ -83,6 +83,6 @@ describe("meal detail styles (phone, desktop, simple) use tokens only", () => {
     expect(block(css, ".simpleAmount {")).toContain("font-size: 18px");
     expect(block(css, ".simpleTotalValue {")).toContain("font-size: 30px");
     expect(block(css, '.compareChips [role="radio"] {')).toMatch(/34px[\s\S]*font-size: 13px/);
-    expect(block(css, ".actions > a {")).toMatch(/min-height: 36px[\s\S]*border-radius: 10px/);
+    expect(block(css, ".actions > button {")).toMatch(/min-height: 36px[\s\S]*border-radius: 10px/);
   });
 });

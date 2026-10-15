@@ -11,12 +11,7 @@ type SearchParams = Record<string, string | string[] | undefined>;
 const one = (value: string | string[] | undefined): string | undefined =>
   typeof value === "string" && value.trim() !== "" ? value : undefined;
 
-/**
- * Log et måltid. A viewer never logs and never sees glucose, so they land on their own day; a
- * simpleMode session gets the picker (`eat`), which shows verified foods only (§2), with or
- * without `?meal=`. `?q=` and `?barcode=` (from the Now header) run the lookup on load; `?meal=`
- * reopens a saved meal for correction (decision 29).
- */
+/** Log a new meal. Old edit links go to detail; role and simpleMode gates run first. */
 export default async function LogPage({
   params,
   searchParams,
@@ -29,6 +24,8 @@ export default async function LogPage({
   if (!session || !shell) return null;
   if (shell.space.role === "viewer") redirect(localeHref(locale, homePath("viewer")));
   if (session.simpleMode) redirect(localeHref(locale, "/eat"));
+  const mealId = one(query.meal);
+  if (mealId) redirect(localeHref(locale, `/meal/${encodeURIComponent(mealId)}`));
   return (
     <LogScreen
       spaceId={shell.space.id}
@@ -38,7 +35,6 @@ export default async function LogPage({
       simpleMode={session.simpleMode}
       initialQuery={one(query.q)}
       initialBarcode={one(query.barcode)}
-      mealId={one(query.meal)}
     />
   );
 }

@@ -382,3 +382,18 @@
     font-size: 16px;
   }
 }
+
+/* Edit mode keeps each food and its current portions together in the confirm card. */
+.editItems {
+  background: var(--surface);
+  border-radius: var(--radius-card);
+  box-shadow: var(--card-shadow);
+  overflow: hidden;
+}
+.editItems .itemName {
+  flex: 1;
+  min-width: 0;
+}
+.editItems .portionSheet {
+  padding: 0 16px 14px;
+}

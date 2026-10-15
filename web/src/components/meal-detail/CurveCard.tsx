@@ -3,7 +3,6 @@
 import type { GlucoseUnit, Reading } from "@frejsi/shared/schemas/glucose";
 import type { MealCurveView } from "@frejsi/shared/schemas/history";
 import { useTranslations } from "next-intl";
-import { useState } from "react";
 
 import { ChartCaption, ChartLegend, GlucoseChart } from "@/components/glucose";
 import { ChipGroup } from "@/components/ui";
@@ -25,6 +24,8 @@ export interface CurveCardProps {
   unit: GlucoseUnit;
   timeZone: string;
   size: "phone" | "desktop";
+  together?: boolean;
+  onTogetherChange?: (together: boolean) => void;
 }
 
 /**
@@ -33,9 +34,18 @@ export interface CurveCardProps {
  * the window is open. The phone has the legend; desktop has the two chips that switch the earlier
  * curves (Maaltid-Desktop), shown only when there are any.
  */
-export function CurveCard({ view, readings, now, unit, timeZone, size }: CurveCardProps) {
+export function CurveCard({
+  view,
+  readings,
+  now,
+  unit,
+  timeZone,
+  size,
+  together = true,
+  onTogetherChange,
+}: CurveCardProps) {
   const t = useTranslations("mealDetail");
-  const [mode, setMode] = useState<string>(TOGETHER);
+  const mode = together ? TOGETHER : ONLY;
   const previous = view.previous.slice(0, PREVIOUS_SHOWN[size]);
   const drawn = size === "desktop" && mode === ONLY ? [] : previous;
   const empty = hasNoReadings(view, readings, now);
@@ -53,7 +63,7 @@ export function CurveCard({ view, readings, now, unit, timeZone, size }: CurveCa
             <ChipGroup
               label={t("compare.label")}
               value={mode}
-              onChange={setMode}
+              onChange={(value) => onTogetherChange?.(value === TOGETHER)}
               options={[
                 { value: ONLY, label: t("compare.onlyThis") },
                 { value: TOGETHER, label: t("compare.withPrevious", { count: previous.length }) },

@@ -11,10 +11,10 @@ export type Choice = { portion: number } | { grams: number };
 export interface DraftItem {
   key: string;
   name: string;
-  /** The library food; for a reopened item, null until it is found in the library again. */
+  /** The library food; for a stored item, null until it is found in the library again. */
   food: FoodView | null;
   choice: Choice | null;
-  /** A reopened meal's stored item: name, portion and carbs as they were (§2 snapshot rule). */
+  /** A stored meal's stored item: name, portion and carbs as they were (§2 snapshot rule). */
   snapshot?: { portionLabel?: string; grams?: number; carbs: number };
 }
 
@@ -40,7 +40,7 @@ export function addFood(draft: MealDraft, food: FoodView): MealDraft {
   return { ...draft, items: [...draft.items, item], nextKey: draft.nextKey + 1 };
 }
 
-/** A new choice replaces a reopened item's stored snapshot. */
+/** A new choice replaces a stored item's stored snapshot. */
 const update = (draft: MealDraft, key: string, choice: Choice | null): MealDraft => ({
   ...draft,
   items: draft.items.map((item) => {
@@ -60,7 +60,7 @@ export const chooseGrams = (draft: MealDraft, key: string, grams: number) =>
 export const clearChoice = (draft: MealDraft, key: string) => update(draft, key, null);
 
 /**
- * A reopened item's food, found again in the library: its portions become choosable, and the
+ * A stored item's food, found again in the library: its portions become choosable, and the
  * stored portion is shown as chosen, while the snapshot stays what is saved until one is changed.
  */
 export function relinkFood(draft: MealDraft, key: string, food: FoodView): MealDraft {
@@ -147,7 +147,7 @@ export function toMealRequest(draft: MealDraft, photoDataUrl: string | null): Cr
   };
 }
 
-/** A saved meal back in the confirm screen (`?meal=<id>`), its items as stored snapshots. */
+/** A saved meal represented as stored snapshots for API clients. */
 export function draftFromMeal(meal: MealView): MealDraft {
   return {
     items: meal.items.map((item, index) => ({

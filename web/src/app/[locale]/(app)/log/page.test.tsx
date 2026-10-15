@@ -39,13 +39,12 @@ afterEach(() => {
 });
 
 describe("/[locale]/log", () => {
-  it("renders the log screen for an owner or carer with ?q=, ?barcode= and ?meal=", async () => {
+  it("renders the log screen for an owner or carer with ?q= and ?barcode=", async () => {
     mocks.session = jonas;
     mocks.shell = space("carer");
     const tree = (await open({
       q: "rye",
       barcode: "2000000000015",
-      meal: "m1",
     })) as ReactElement<LogScreenProps>;
     expect(tree.type).toBe(LogScreen);
     expect(tree.props).toEqual({
@@ -56,8 +55,14 @@ describe("/[locale]/log", () => {
       simpleMode: false,
       initialQuery: "rye",
       initialBarcode: "2000000000015",
-      mealId: "m1",
     });
+  });
+
+  it("redirects an old ?meal= link to meal detail, encoding the id", async () => {
+    mocks.session = jonas;
+    mocks.shell = space("carer");
+    await expect(open({ meal: "m1" })).rejects.toThrow("NEXT_REDIRECT:/da/meal/m1");
+    await expect(open({ meal: "m/2" })).rejects.toThrow("NEXT_REDIRECT:/da/meal/m%2F2");
   });
 
   it("sends a simpleMode session to the picker, with or without ?meal=", async () => {

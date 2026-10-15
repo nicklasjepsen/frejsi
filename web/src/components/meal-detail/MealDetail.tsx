@@ -4,7 +4,7 @@ import type { GlucoseUnit } from "@frejsi/shared/schemas/glucose";
 import type { MealCurveView } from "@frejsi/shared/schemas/history";
 import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import { useNow } from "@/components/glucose/useNow";
 import { Button, PageHeader } from "@/components/ui";
@@ -12,6 +12,10 @@ import { localeHref, type AppLocale } from "@/lib/i18n/routing";
 import { useLiveFeed } from "@/lib/live/useLiveFeed";
 
 import { fetchMealCurve } from "./api";
+import { EditMealSheet } from "./EditMealSheet";
+import { CompareSection } from "./CompareSection";
+import { MealNav } from "./MealNav";
+import { SaveAsDish } from "./SaveAsDish";
 import { CurveCard } from "./CurveCard";
 import { liveCurve } from "./live";
 import { DesktopMealHeader, PhoneMealHeader } from "./MealHeader";
@@ -31,10 +35,6 @@ export interface MealDetailProps {
   /** Forces a layout (tests); otherwise 1280 px and up is desktop, as in the shell. */
   layout?: "phone" | "desktop";
 }
-
-/** Where "Ret" and `E` go until the edit sheet lands (task 7): v0.2.0's reopen path. */
-export const editHref = (locale: AppLocale, mealId: string) =>
-  localeHref(locale, `/log?${new URLSearchParams({ meal: mealId }).toString()}`);
 
 const typing = (target: EventTarget | null) =>
   target instanceof HTMLElement &&
@@ -59,28 +59,48 @@ export function MealDetail({ spaceId, mealId, locale, timeZone, unit, layout }: 
     (signal: AbortSignal) => fetchMealCurve(spaceId, mealId, signal),
     [spaceId, mealId],
   );
-  const { state, retry } = useMealResource(load, mealId, feed, {
+  const [editing, setEditing] = useState(false);
+  const openMeal = useCallback(
+    (id: string) => {
+      router.push(localeHref(locale, `/meal/${encodeURIComponent(id)}`));
+    },
+    [router, locale],
+  );
+  const { state, retry, refresh } = useMealResource(load, mealId, feed, {
     onDeleted: toNow,
     // The unit and the timezone come from the server page: render it again.
     onSpaceUpdated: () => {
       router.refresh();
     },
   });
-  const edit = editHref(locale, mealId);
+  useEffect(() => {
+    setEditing(false);
+  }, [mealId]);
 
   useEffect(() => {
-    if (!desktop || state.status !== "ready") return;
+    if (!desktop || editing || state.status !== "ready") return;
     const onKey = (event: KeyboardEvent) => {
-      if (event.key.toLowerCase() !== "e" || event.repeat) return;
+      if (event.repeat) return;
       if (event.metaKey || event.ctrlKey || event.altKey || typing(event.target)) return;
-      event.preventDefault();
-      router.push(edit);
+      const id =
+        event.key === "ArrowLeft"
+          ? state.data.neighbours.previousMealId
+          : event.key === "ArrowRight"
+            ? state.data.neighbours.nextMealId
+            : undefined;
+      if (event.key.toLowerCase() === "e") {
+        event.preventDefault();
+        setEditing(true);
+      } else if (id) {
+        event.preventDefault();
+        openMeal(id);
+      }
     };
     window.addEventListener("keydown", onKey);
     return () => {
       window.removeEventListener("keydown", onKey);
     };
-  }, [desktop, state.status, router, edit]);
+  }, [desktop, state, editing, openMeal]);
 
   const size = desktop ? "desktop" : "phone";
   return (
@@ -93,10 +113,28 @@ export function MealDetail({ spaceId, mealId, locale, timeZone, unit, layout }: 
           locale={locale}
           timeZone={timeZone}
           unit={unit}
-          editHref={edit}
+          onEdit={() => {
+            setEditing(true);
+          }}
+          onOpen={openMeal}
+          spaceId={spaceId}
         />
       ) : (
         <NotReady state={state} size={size} locale={locale} retry={retry} />
+      )}
+      {editing && state.status === "ready" && (
+        <EditMealSheet
+          key={mealId}
+          spaceId={spaceId}
+          view={state.data}
+          timeZone={timeZone}
+          size={size}
+          onClose={() => {
+            setEditing(false);
+          }}
+          onSaved={refresh}
+          onDeleted={toNow}
+        />
       )}
     </div>
   );
@@ -109,7 +147,9 @@ function Ready({
   locale,
   timeZone,
   unit,
-  editHref,
+  onEdit,
+  onOpen,
+  spaceId,
 }: {
   view: MealCurveView;
   live: Parameters<typeof liveCurve>[1];
@@ -117,8 +157,11 @@ function Ready({
   locale: AppLocale;
   timeZone: string;
   unit: GlucoseUnit;
-  editHref: string;
+  onEdit: () => void;
+  onOpen: (id: string) => void;
+  spaceId: string;
 }) {
+  const [together, setTogether] = useState(true);
   const clock = useNow();
   const curve = liveCurve(view, live, clock);
   const tiles = (
@@ -139,6 +182,8 @@ function Ready({
       unit={unit}
       timeZone={timeZone}
       size={size}
+      together={together}
+      onTogetherChange={setTogether}
     />
   );
   if (size === "phone") {
@@ -147,7 +192,7 @@ function Ready({
         <PhoneMealHeader
           meal={view.meal}
           timeZone={timeZone}
-          editHref={editHref}
+          onEdit={onEdit}
           backHref={localeHref(locale, "/now")}
         />
         {card}
@@ -157,14 +202,36 @@ function Ready({
     );
   }
   return (
-    <div className={styles.columns}>
-      <section className={styles.side}>
-        <DesktopMealHeader meal={view.meal} timeZone={timeZone} editHref={editHref} />
-        <MealItems items={view.meal.items} total={view.meal.totalCarbs} size="desktop" />
-        {tiles}
-      </section>
-      <section className={styles.main}>{card}</section>
-    </div>
+    <>
+      <MealNav view={view} locale={locale} timeZone={timeZone} onOpen={onOpen} />
+      <div className={styles.columns}>
+        <section className={styles.side}>
+          <DesktopMealHeader
+            meal={view.meal}
+            timeZone={timeZone}
+            onEdit={onEdit}
+            saveDish={
+              <SaveAsDish key={view.meal.id} spaceId={spaceId} meal={view.meal} locale={locale} />
+            }
+          />
+          <MealItems items={view.meal.items} total={view.meal.totalCarbs} size="desktop" />
+          {tiles}
+        </section>
+        <section className={styles.main}>
+          {card}
+          {together && (
+            <CompareSection
+              view={view}
+              stats={curve.stats}
+              unit={unit}
+              timeZone={timeZone}
+              now={clock}
+              onOpen={onOpen}
+            />
+          )}
+        </section>
+      </div>
+    </>
   );
 }
 
