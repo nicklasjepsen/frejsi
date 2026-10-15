@@ -1,0 +1,87 @@
+{
+  "title": "Log a meal",
+  "desktopSubtitle": "{date} · {time}",
+  "entry": {
+    "scan": "Scan",
+    "pick": "Choose"
+  },
+  "search": {
+    "phoneLabel": "Type what is being eaten",
+    "desktopLabel": "Search food or type a barcode",
+    "desktopHint": "Type, or scan with a USB scanner",
+    "submit": "Search"
+  },
+  "favourites": "Favourites",
+  "wholeLibrary": "Whole library",
+  "recent": "Eaten recently",
+  "library": "The library",
+  "libraryEmpty": "The library is empty so far",
+  "chip": "{name} · {amount} g",
+  "results": {
+    "ownFirst": "own dishes first",
+    "desktopCount": "{count, plural, one {# result} other {# results}} · own dishes first · Enter adds",
+    "per100g": "{amount} g per 100 g",
+    "portion": "{label} · {amount} g"
+  },
+  "origin": {
+    "family": "Own dish",
+    "manual": "Own dish",
+    "off": "Open Food Facts",
+    "frida": "Frida",
+    "other": "Other source"
+  },
+  "sourceDown": "{source} is not answering right now",
+  "offline": "No connection right now",
+  "manual": {
+    "title": "I know the number myself",
+    "subtitle": "Create \"{q}\" with your own numbers",
+    "subtitleEmpty": "Create a dish with your own numbers",
+    "name": "Name",
+    "per100g": "Carbs per 100 g",
+    "portionLabel": "Portion, e.g. 1 piece",
+    "portionCarbs": "Carbs in the portion",
+    "barcode": "Barcode {code}",
+    "hint": "Enter carbs per 100 g, a portion or both.",
+    "create": "Create and add",
+    "failed": "It was not saved – try again"
+  },
+  "scanner": {
+    "title": "Scan a barcode",
+    "aim": "Hold the barcode inside the frame",
+    "typeBarcode": "Type the barcode",
+    "denied": "The camera cannot be used right now. Type the barcode instead.",
+    "typedLabel": "Barcode",
+    "invalid": "Check the barcode and try again."
+  },
+  "slot": {
+    "breakfast": "Breakfast",
+    "lunch": "Lunch",
+    "dinner": "Dinner",
+    "snack": "Snack"
+  },
+  "today": "Today {time}",
+  "onDay": "{date} {time}",
+  "cancel": "Cancel",
+  "time": "Time",
+  "portionQuestion": "How much {name}?",
+  "choosePortion": "Choose how much",
+  "remove": "Remove {name}",
+  "addMore": "Add more",
+  "showMeal": "See the meal",
+  "mealMeta": "{time} · logged by {name}",
+  "bolus": {
+    "button": "bolus given now",
+    "at": "Bolus {time}",
+    "undo": "Undo",
+    "note": "\"Bolus given now\" saves only the time so it can be seen on the curve. Frejsi never calculates insulin."
+  },
+  "total": "Total",
+  "totalAmount": "{amount} g",
+  "carbs": "carbs",
+  "save": "Save meal",
+  "saveShortcut": "Ctrl+↩",
+  "saveFailed": "The meal was not saved – try again",
+  "delete": "Delete meal",
+  "deleteFailed": "The meal was not deleted – try again",
+  "loadFailed": "The meal could not be loaded – try again"
+}

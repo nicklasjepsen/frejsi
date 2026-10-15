@@ -1,0 +1,87 @@
+{
+  "title": "Log et måltid",
+  "desktopSubtitle": "{date} · {time}",
+  "entry": {
+    "scan": "Scan",
+    "pick": "Vælg"
+  },
+  "search": {
+    "phoneLabel": "Skriv hvad der spises",
+    "desktopLabel": "Søg mad eller skriv en stregkode",
+    "desktopHint": "Skriv, eller scan med en USB-scanner",
+    "submit": "Søg"
+  },
+  "favourites": "Favoritter",
+  "wholeLibrary": "Hele biblioteket",
+  "recent": "Spist for nylig",
+  "library": "Biblioteket",
+  "libraryEmpty": "Biblioteket er tomt endnu",
+  "chip": "{name} · {amount} g",
+  "results": {
+    "ownFirst": "egne retter først",
+    "desktopCount": "{count, plural, one {# resultat} other {# resultater}} · egne retter først · Enter tilføjer",
+    "per100g": "{amount} g pr. 100 g",
+    "portion": "{label} · {amount} g"
+  },
+  "origin": {
+    "family": "Egen ret",
+    "manual": "Egen ret",
+    "off": "Open Food Facts",
+    "frida": "Frida",
+    "other": "Anden kilde"
+  },
+  "sourceDown": "{source} svarer ikke lige nu",
+  "offline": "Ingen forbindelse lige nu",
+  "manual": {
+    "title": "Jeg kender tallet selv",
+    "subtitle": "Opret \"{q}\" med dine egne tal",
+    "subtitleEmpty": "Opret en ret med dine egne tal",
+    "name": "Navn",
+    "per100g": "Kulhydrat pr. 100 g",
+    "portionLabel": "Portion, fx 1 stk",
+    "portionCarbs": "Kulhydrat i portionen",
+    "barcode": "Stregkode {code}",
+    "hint": "Skriv kulhydrat pr. 100 g, en portion eller begge.",
+    "create": "Opret og tilføj",
+    "failed": "Det blev ikke gemt – prøv igen"
+  },
+  "scanner": {
+    "title": "Scan en stregkode",
+    "aim": "Hold stregkoden inden for rammen",
+    "typeBarcode": "Skriv stregkoden",
+    "denied": "Kameraet kan ikke bruges lige nu. Skriv stregkoden i stedet.",
+    "typedLabel": "Stregkode",
+    "invalid": "Tjek stregkoden og prøv igen."
+  },
+  "slot": {
+    "breakfast": "Morgenmad",
+    "lunch": "Frokost",
+    "dinner": "Aftensmad",
+    "snack": "Mellemmåltid"
+  },
+  "today": "I dag {time}",
+  "onDay": "{date} {time}",
+  "cancel": "Annullér",
+  "time": "Tidspunkt",
+  "portionQuestion": "Hvor meget {name}?",
+  "choosePortion": "Vælg hvor meget",
+  "remove": "Fjern {name}",
+  "addMore": "Tilføj mere",
+  "showMeal": "Se måltidet",
+  "mealMeta": "{time} · logges af {name}",
+  "bolus": {
+    "button": "Bolus givet nu",
+    "at": "Bolus {time}",
+    "undo": "Fortryd",
+    "note": "\"Bolus givet nu\" gemmer kun tidspunktet, så det kan ses på kurven. Frejsi regner aldrig insulin."
+  },
+  "total": "I alt",
+  "totalAmount": "{amount} g",
+  "carbs": "kulhydrat",
+  "save": "Gem måltid",
+  "saveShortcut": "⌘↩",
+  "saveFailed": "Måltidet blev ikke gemt – prøv igen",
+  "delete": "Slet måltid",
+  "deleteFailed": "Måltidet blev ikke slettet – prøv igen",
+  "loadFailed": "Måltidet kunne ikke hentes – prøv igen"
+}

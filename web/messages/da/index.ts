@@ -9,6 +9,7 @@ import glucose from "./glucose.json";
 import invite from "./invite.json";
 import library from "./library.json";
 import locale from "./locale.json";
+import log from "./log.json";
 import nav from "./nav.json";
 import now from "./now.json";
 import passkey from "./passkey.json";
@@ -31,6 +32,7 @@ const messages = {
   invite,
   library,
   locale,
+  log,
   nav,
   now,
   passkey,
