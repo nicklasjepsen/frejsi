@@ -6,7 +6,7 @@
   "license": "AGPL-3.0-only",
   "main": "dist/{index,functions/*}.js",
   "scripts": {
-    "build": "esbuild src/index.ts --bundle --platform=node --target=node22 --format=cjs --outdir=dist --outbase=src --external:@prisma/client --external:.prisma/client --external:@azure/functions-core --external:applicationinsights --external:@opentelemetry/api-logs --log-level=warning",
+    "build": "node esbuild.config.mjs",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
     "test": "vitest run --passWithNoTests",

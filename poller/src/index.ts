@@ -1,9 +1,13 @@
 import { app } from "@azure/functions";
 import { log, startTelemetry } from "@frejsi/shared";
 
-// Azure Functions v4 programming model: `package.json#main` is `dist/{index,functions/*}.js`, so
-// each file under src/functions/ registers its own trigger (poll.ts, source-connect.ts) and this
-// entry only sets up what every function shares.
+// Azure Functions v4 programming model. The two function modules register themselves on import,
+// and everything is one esbuild bundle (dist/index.js), so they share a single copy of
+// @frejsi/shared: the telemetry started below is the one the timer tracks reading.stored through,
+// and there is one Prisma client. app.setup() may run after registration; only startup is final.
+import "./functions/poll";
+import "./functions/source-connect";
+
 app.setup({ enableHttpStream: false });
 
 // Telemetry is optional: a failure to start it is logged, never an unhandled rejection that takes
