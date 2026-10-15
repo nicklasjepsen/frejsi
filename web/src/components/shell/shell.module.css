@@ -1,0 +1,453 @@
+/* The shell: phone header + bottom tabs under 1280 px, a sidebar from 1280 px (tokens.json#nav). */
+
+.shell {
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  background: var(--ground);
+  color: var(--text);
+}
+
+.sidebar {
+  display: none;
+}
+
+.main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 0 var(--phone-gutter) 24px;
+}
+
+.phoneHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: var(--phone-safe-top) var(--phone-gutter) 0;
+  padding-top: max(var(--phone-safe-top), calc(env(safe-area-inset-top) + 20px));
+}
+
+.phoneHeaderName {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.subjectName {
+  font-family: var(--font-display-stack);
+  font-size: 22px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.shell[data-variant="simple"] .phoneHeaderName {
+  gap: 12px;
+}
+
+.shell[data-variant="simple"] .subjectName {
+  font-size: 28px;
+}
+
+.headerEnd {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  color: var(--text-muted);
+}
+
+.viewerPill {
+  font-size: 13px;
+  color: var(--text-muted);
+  padding: 4px 10px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--hairline);
+}
+
+/* Bottom tabs: 10/8/28 padding, 64 px items, 26 px icons, 12 px labels; the active tab in the
+   accent's strong shade at 700. */
+.tabs {
+  position: sticky;
+  bottom: 0;
+  display: flex;
+  justify-content: space-around;
+  align-items: flex-start;
+  padding: 10px 8px 28px;
+  padding-bottom: max(28px, env(safe-area-inset-bottom));
+  border-top: 1px solid var(--hairline);
+  background: var(--ground);
+}
+
+.tab {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  width: 64px;
+  min-height: 48px;
+  text-decoration: none;
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.tab:hover {
+  color: var(--text);
+}
+
+.tab[aria-current="page"] {
+  color: var(--accent-strong);
+  font-weight: 700;
+}
+
+.tab svg {
+  width: 26px;
+  height: 26px;
+}
+
+.shell[data-variant="simple"] .tabs {
+  padding-top: 12px;
+}
+
+.shell[data-variant="simple"] .tab {
+  width: 96px;
+  min-height: 56px;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.shell[data-variant="simple"] .tab svg {
+  width: 32px;
+  height: 32px;
+}
+
+.shell[data-variant="viewer"] .tab {
+  width: 96px;
+}
+
+/* Sidebar items, as drawn on Nu-Desktop. */
+.sidebarTop {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 0 8px;
+}
+
+.wordmark {
+  font-family: var(--font-display-stack);
+  font-size: 26px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.sidebarItems {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.sidebarItem {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: var(--radius-nav-item);
+  text-decoration: none;
+  color: var(--text);
+  font-size: 15px;
+}
+
+.sidebarItem:hover {
+  background: var(--surface-selected);
+  color: var(--text);
+}
+
+.sidebarItem[aria-current="page"] {
+  background: var(--surface);
+  color: var(--accent-strong);
+  font-weight: 700;
+}
+
+.sidebarItem svg {
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
+}
+
+.sidebarItemLabel {
+  flex: 1;
+}
+
+.sidebarHint {
+  font-size: 12px;
+  color: var(--text-muted);
+  font-weight: 400;
+}
+
+.sidebarSpacer {
+  flex: 1;
+}
+
+.sidebarFooter {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 0 8px;
+}
+
+.sidebarUser {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.sidebarUserName {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.sidebarUserRole,
+.simpleFooter {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.sidebarShortcuts {
+  font-size: 13px;
+}
+
+.simpleFooter {
+  font-size: 14px;
+  padding: 0 8px;
+}
+
+.simpleHead {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 8px;
+}
+
+.simpleName {
+  font-family: var(--font-display-stack);
+  font-size: 26px;
+  font-weight: 600;
+}
+
+.shell[data-variant="simple"] .sidebarItems {
+  gap: 8px;
+}
+
+.shell[data-variant="simple"] .sidebarItem {
+  gap: 14px;
+  padding: 16px;
+  border-radius: var(--radius-nav-item-simple);
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.shell[data-variant="simple"] .sidebarItem svg {
+  width: 30px;
+  height: 30px;
+}
+
+/* Space switcher: the cream card with avatar, space name and "Skift rum"; the list opens below. */
+.switcher {
+  position: relative;
+}
+
+.switcherSummary {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  list-style: none;
+  cursor: pointer;
+  color: var(--text);
+  background: var(--surface);
+  border-radius: var(--radius-button-medium);
+  padding: 8px 10px;
+  box-shadow: var(--card-shadow);
+  border: var(--card-border);
+}
+
+.switcherSummary::-webkit-details-marker {
+  display: none;
+}
+
+.switcherText {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+}
+
+.switcherSpace {
+  font-weight: 700;
+  font-size: 15px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.switcherHint {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.switcherList {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 6px 0 0;
+  padding: 6px;
+  background: var(--surface);
+  border-radius: var(--radius-button-medium);
+  box-shadow: var(--card-shadow);
+  border: var(--card-border);
+}
+
+.switcherOption {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: var(--touch-min);
+  padding: 6px 8px;
+  border: 0;
+  border-radius: var(--radius-button-small);
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.switcherOption:hover {
+  background: var(--surface-selected);
+}
+
+.switcherOption[aria-current="true"] {
+  font-weight: 700;
+}
+
+.switcherRole {
+  margin-left: auto;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.phoneSwitcher .switcherSummary {
+  background: transparent;
+  box-shadow: none;
+  border: 0;
+  padding: 0;
+}
+
+.phoneSwitcher .switcherList {
+  position: absolute;
+  left: 0;
+  z-index: 2;
+  min-width: 240px;
+}
+
+/* Source-disconnected banner (design gap 1): the muted dot and one line, on the sunken surface. */
+.banner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 12px 0 0;
+  padding: 10px 14px;
+  border-radius: var(--radius-card-small);
+  background: var(--surface-sunken);
+  color: var(--text-muted);
+  font-size: 14px;
+}
+
+.bannerDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--text-muted);
+  flex-shrink: 0;
+}
+
+/* The placeholder and the no-space page. */
+.calmPage {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 28px 0 0;
+  max-width: 560px;
+}
+
+.calmPage h1 {
+  font-size: 26px;
+}
+
+.calmLead {
+  font-size: 15px;
+  color: var(--text-muted);
+}
+
+.calmActions {
+  display: flex;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+/* Desktop from 1280 px: the sidebar appears, the phone header and tabs go. */
+@media (min-width: 1280px) {
+  .shell {
+    flex-direction: row;
+    align-items: stretch;
+  }
+
+  .sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    flex: 0 0 var(--sidebar-width);
+    width: var(--sidebar-width);
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    height: 100dvh;
+    padding: 24px 16px;
+    background: var(--surface-sunken);
+    border-right: 1px solid var(--hairline);
+  }
+
+  .shell[data-variant="simple"] .sidebar {
+    flex-basis: var(--sidebar-width-simple);
+    width: var(--sidebar-width-simple);
+    gap: 28px;
+    padding: 28px 20px;
+  }
+
+  .phoneHeader,
+  .tabs {
+    display: none;
+  }
+
+  .main {
+    padding: 28px 32px 40px;
+    max-width: 1120px;
+  }
+
+  .shell[data-variant="simple"] .main {
+    padding: 40px 48px 48px;
+    max-width: 1100px;
+  }
+
+  .calmPage {
+    padding-top: 0;
+  }
+
+  .calmPage h1 {
+    font-size: 30px;
+  }
+}
