@@ -18,17 +18,20 @@ let live: LiveGroupRevoker | undefined;
 
 /**
  * Takes the member's open sockets out of the groups they may no longer hear, after the change has
- * committed (issue #79). A failure is logged and does not undo the change; the fallback is the
- * client token's lifetime (60 minutes), after which `negotiate` issues one for the new role.
+ * committed (issue #79). A failed removal is tried once more; if it still fails it is logged with
+ * ids only and the change stands. The socket then keeps the group until it disconnects; on
+ * reconnect `negotiate` issues a token for the new role.
  */
 async function leaveGroups(spaceId: string, userId: string, groups: string[]): Promise<void> {
   const transport = (live ??= createEventSinkFromEnv());
-  const results = await Promise.allSettled(
-    groups.map((group) => transport.removeUserFromGroup(group, userId)),
-  );
+  const leave = (group: string) =>
+    transport
+      .removeUserFromGroup(group, userId)
+      .catch(() => transport.removeUserFromGroup(group, userId));
+  const results = await Promise.allSettled(groups.map(leave));
   const failed = results.filter((r) => r.status === "rejected").length;
   if (failed > 0) {
-    log.warn("people.live-revoke-failed", {
+    log.error("people.live-revoke-failed", {
       route: ROUTE,
       spaceId,
       userId,
