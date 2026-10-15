@@ -101,15 +101,21 @@ export class PrismaHistoryRepository implements HistoryRepository {
       })
     ).map(meal);
   }
-  async neighbours(spaceId: string, ts: string) {
+  async neighbours(spaceId: string, ts: string, mealId: string) {
     const [previous, next] = await Promise.all([
       this.db.meal.findFirst({
-        where: { spaceId, ts: { lt: new Date(ts) } },
+        where: {
+          spaceId,
+          OR: [{ ts: { lt: new Date(ts) } }, { ts: new Date(ts), id: { lt: mealId } }],
+        },
         orderBy: [{ ts: "desc" }, { id: "desc" }],
         select: { id: true },
       }),
       this.db.meal.findFirst({
-        where: { spaceId, ts: { gt: new Date(ts) } },
+        where: {
+          spaceId,
+          OR: [{ ts: { gt: new Date(ts) } }, { ts: new Date(ts), id: { gt: mealId } }],
+        },
         orderBy: [{ ts: "asc" }, { id: "asc" }],
         select: { id: true },
       }),
