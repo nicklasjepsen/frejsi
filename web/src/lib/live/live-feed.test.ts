@@ -50,6 +50,8 @@ function fakeServer(initial: { readings: Reading[]; lastSeq: number }) {
     /** When true, the readings request never answers (a stalled connection). */
     readingsHangs: false,
     eventsStatus: 200,
+    /** When true, events requests never answer (a stalled connection). */
+    eventsHang: false,
     /** Delivery delay in ms for the next pages/windows; the content is fixed when the request is made. */
     delayMs: 0,
     append(payload: Reading): EventEnvelope {
@@ -83,6 +85,7 @@ function fakeServer(initial: { readings: Reading[]; lastSeq: number }) {
           ? jsonResponse({ url: server.socketUrl() })
           : jsonResponse({ error: { code: "internal", message: "" } }, 503),
     "/events": (url) => {
+      if (server.eventsHang) return new Promise<Response>(() => undefined);
       if (server.eventsStatus !== 200) {
         return jsonResponse({ error: { code: "internal", message: "" } }, server.eventsStatus);
       }
@@ -278,6 +281,34 @@ describe("LiveFeed (plan §5)", () => {
     expect(feed.getState().sourceStatus).toBe("disconnected");
     expect(feed.getState().connection).toBe("live");
     expect(sockets).toHaveLength(1);
+
+    await vi.advanceTimersByTimeAsync(POLL_MS * 3);
+    expect(calls).toHaveLength(1);
+  });
+
+  it("abandons a catch-up that never answers, so a gap can still be filled once the network is back", async () => {
+    const { server, fetch, calls } = fakeServer({ readings: [], lastSeq: 1 });
+    const { feed } = start(fetch);
+    await flush();
+    server.eventsHang = true;
+    sockets[0]?.open();
+    await flush();
+    expect(feed.getState().connection).toBe("live");
+
+    // Seq 2 is missed and seq 3 arrives: the gap's catch-up waits behind the stalled one.
+    server.append(reading(minutesAgo(2), 6.0));
+    const three = server.append(reading(minutesAgo(1), 6.1));
+    sockets[0]?.receive(three);
+    await flush();
+    expect(feed.getState().lastSeq).toBe(1);
+
+    server.eventsHang = false;
+    calls.length = 0;
+    await vi.advanceTimersByTimeAsync(POLL_MS * 2);
+    expect(calls).toEqual(["/api/spaces/s1/events?since=1"]);
+    expect(feed.getState().lastSeq).toBe(3);
+    expect(feed.getState().readings.map((r) => r.mmol)).toEqual([6.0, 6.1]);
+    expect(feed.getState().connection).toBe("live");
 
     await vi.advanceTimersByTimeAsync(POLL_MS * 3);
     expect(calls).toHaveLength(1);

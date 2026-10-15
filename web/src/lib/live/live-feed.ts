@@ -112,7 +112,10 @@ export class LiveFeed {
   private windowRequest: AbortController | null = null;
   /** A catch-up that failed; the tick retries it, even while the socket is live. */
   private catchUpFailed = false;
-  private catchingUp = false;
+  /** The catch-up in flight, if any; one at a time. */
+  private catchUpRequest: AbortController | null = null;
+  /** True once a tick has seen the current catch-up still out. */
+  private catchUpOutlivedTick = false;
   private catchUpAgain = false;
 
   constructor(options: LiveFeedOptions) {
@@ -152,6 +155,7 @@ export class LiveFeed {
     this.abandonNegotiation();
     this.windowRequest?.abort();
     this.windowRequest = null;
+    this.abandonCatchUp();
     this.stopPolling();
     this.discardSocket();
     if (this.state.connection === "live") this.set({ connection: "polling" });
@@ -304,13 +308,21 @@ export class LiveFeed {
   private tick(): void {
     const gen = this.generation;
     if (this.cancelled(gen)) return;
+    if (this.catchUpRequest) {
+      if (this.catchUpOutlivedTick) {
+        this.abandonCatchUp();
+        this.catchUpFailed = true;
+      } else {
+        this.catchUpOutlivedTick = true;
+      }
+    }
     if (!this.state.loaded || this.windowStale) {
       void this.loadWindow(gen);
       return;
     }
     if (this.state.connection === "live") {
       if (this.catchUpFailed) void this.catchUp(gen);
-      else this.stopPolling();
+      else this.settleTimer();
       return;
     }
     if (this.state.connection !== "polling") this.set({ connection: "polling" });
@@ -335,7 +347,7 @@ export class LiveFeed {
 
   /** While live, the timer runs only to retry a failed window reload or catch-up. */
   private settleTimer(): void {
-    if (this.windowStale || this.catchUpFailed) this.ensureTimer();
+    if (this.windowStale || this.catchUpFailed || this.catchUpRequest) this.ensureTimer();
     else this.stopPolling();
   }
 
@@ -351,21 +363,28 @@ export class LiveFeed {
    */
   private async catchUp(gen: number): Promise<void> {
     if (!this.state.loaded || this.cancelled(gen)) return;
-    if (this.catchingUp) {
+    if (this.catchUpRequest) {
       this.catchUpAgain = true;
       return;
     }
-    this.catchingUp = true;
+    // A request that never answers would hold every later catch-up back: the timer runs while it
+    // is out, and a tick that finds it still out after a whole interval abandons it.
+    const controller = new AbortController();
+    this.catchUpRequest = controller;
+    this.catchUpOutlivedTick = false;
+    this.ensureTimer();
+    const superseded = () => this.cancelled(gen) || this.catchUpRequest !== controller;
     let ok = false;
     try {
       let more = true;
       while (more) {
         const response = await this.fetchImpl(
           this.url("events", { since: String(this.state.lastSeq) }),
+          { signal: controller.signal },
         );
-        if (this.cancelled(gen)) return;
+        if (superseded()) return;
         const parsed = response.ok ? EventsPage.safeParse(await response.json()) : null;
-        if (!parsed?.success || this.cancelled(gen)) return;
+        if (!parsed?.success || superseded()) return;
         for (const envelope of parsed.data.events) {
           if (envelope.seq > this.state.lastSeq) this.apply(envelope, gen);
         }
@@ -376,16 +395,25 @@ export class LiveFeed {
     } catch {
       // The next tick or the next message tries again.
     } finally {
-      this.catchingUp = false;
-      if (!this.cancelled(gen)) {
-        this.catchUpFailed = !ok;
-        if (this.state.connection === "live") this.settleTimer();
-      }
-      if (this.catchUpAgain) {
-        this.catchUpAgain = false;
-        void this.catchUp(gen);
+      if (this.catchUpRequest === controller) {
+        this.catchUpRequest = null;
+        if (!this.cancelled(gen)) {
+          this.catchUpFailed = !ok;
+          if (this.state.connection === "live") this.settleTimer();
+        }
+        if (this.catchUpAgain) {
+          this.catchUpAgain = false;
+          void this.catchUp(gen);
+        }
       }
     }
+  }
+
+  /** Gives up on a catch-up still in flight; its answer, if it ever comes, is ignored. */
+  private abandonCatchUp(): void {
+    this.catchUpRequest?.abort();
+    this.catchUpRequest = null;
+    this.catchUpAgain = false;
   }
 
   /** A pushed message: applied when it is the next sequence, fetched when there is a gap. */
