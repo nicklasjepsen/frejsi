@@ -42,8 +42,8 @@ describe("GlucoseValue (plan §9, hard rule: never a value without its age)", ()
     };
     // @ts-expect-error a number has no timestamp; there is no prop for it
     const bare: GlucoseValueProps = { reading: 6.2, unit: "mmol", now: T0, size: "phone" };
-    // @ts-expect-error a reading without ts is not a Reading
     const noTs: GlucoseValueProps = {
+      // @ts-expect-error a reading without ts is not a Reading
       reading: { mmol: 6.2, trend: "flat" },
       unit: "mmol",
       now: T0,

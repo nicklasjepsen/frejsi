@@ -204,9 +204,11 @@ export async function loadReadingsWindow(
 }
 
 /**
- * The events after `since` in sequence order. A viewer's page never carries a `reading`: the
- * filter is in the query, so the rows do not even leave the database. `lastSeq` is the last row
- * reached before filtering, so a viewer does not re-read a stretch of readings on every poll.
+ * The events after `since` in sequence order, bounded by the space's `lastSeq` as it was before
+ * the rows were read: the page can say "you have seen everything up to here" only for a stretch
+ * it actually covered, so an event committed while the query ran is on the next page, never
+ * skipped. A viewer's page never carries a `reading`: the filter is in the query, so the rows do
+ * not even leave the database, and the cursor still moves past them.
  */
 export async function loadEventsPage(
   spaceId: string,
@@ -214,10 +216,15 @@ export async function loadEventsPage(
   role: Role,
   db: LiveDb = prisma,
 ): Promise<EventsPage> {
+  const space = await db.space.findUnique({ where: { id: spaceId }, select: { lastSeq: true } });
+  if (!space) throw new HttpError(404, "not-found");
+  const upper = space.lastSeq;
+  if (upper <= since) return { lastSeq: since, events: [], more: false };
+
   const rows = await db.event.findMany({
     where: {
       spaceId,
-      seq: { gt: since },
+      seq: { gt: since, lte: upper },
       ...(role === "viewer" ? { type: { not: "reading" } } : {}),
     },
     orderBy: { seq: "asc" },
@@ -230,16 +237,6 @@ export async function loadEventsPage(
     if (envelope) events.push(envelope);
   }
   const more = rows.length === EVENTS_PAGE_SIZE;
-  let lastSeq = rows.at(-1)?.seq ?? since;
-  if (!more && role === "viewer") {
-    // The viewer's filtered page may end before the latest reading; move the cursor past it so
-    // the next poll does not return the same empty stretch, without touching the row.
-    const latest = await db.event.findFirst({
-      where: { spaceId, seq: { gt: lastSeq } },
-      orderBy: { seq: "desc" },
-      select: { seq: true },
-    });
-    if (latest) lastSeq = latest.seq;
-  }
+  const lastSeq = more ? (rows.at(-1)?.seq ?? since) : upper;
   return { lastSeq, events, more };
 }

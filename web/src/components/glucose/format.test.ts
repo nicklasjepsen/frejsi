@@ -65,6 +65,18 @@ describe("dayStart", () => {
     const early = new Date("2026-10-14T02:30:00.000Z"); // 04:30 in Copenhagen
     expect(dayStart(early, "Europe/Copenhagen", 6).toISOString()).toBe("2026-10-13T04:00:00.000Z");
   });
+
+  it("keeps 06:00 on the wall clock across a daylight-saving change", () => {
+    // 04:00 CEST on the morning the clocks went forward: 06:00 the day before was still CET.
+    const spring = new Date("2026-03-29T02:00:00.000Z");
+    expect(dayStart(spring, "Europe/Copenhagen", 6).toISOString()).toBe("2026-03-28T05:00:00.000Z");
+    // 04:00 CET on the morning the clocks went back: 06:00 the day before was CEST.
+    const autumn = new Date("2026-10-25T03:00:00.000Z");
+    expect(dayStart(autumn, "Europe/Copenhagen", 6).toISOString()).toBe("2026-10-24T04:00:00.000Z");
+    // Later the same day, 06:00 is on today's wall clock in the new offset.
+    const later = new Date("2026-03-29T10:00:00.000Z");
+    expect(dayStart(later, "Europe/Copenhagen", 6).toISOString()).toBe("2026-03-29T04:00:00.000Z");
+  });
 });
 
 describe("capitalize and formatDayTitle", () => {

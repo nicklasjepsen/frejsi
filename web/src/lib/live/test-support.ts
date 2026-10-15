@@ -29,6 +29,8 @@ export class FakeLiveDb {
   readings: { spaceId: string; ts: Date; mmol: number; trend: string }[] = [];
   events: { spaceId: string; seq: number; type: string; payload: string; ts: Date }[] = [];
   readonly updates: string[] = [];
+  /** Runs inside `event.findMany`, before the rows are read: a write that commits mid-query. */
+  duringEventQuery: (() => void) | null = null;
 
   constructor(private readonly now: () => Date) {}
 
@@ -127,20 +129,23 @@ export class FakeLiveDb {
     };
     const eventDelegate = {
       findMany: (args: {
-        where: { spaceId: string; seq: { gt: number }; type?: { not: string } };
+        where: { spaceId: string; seq: { gt: number; lte?: number }; type?: { not: string } };
         take: number;
-      }) =>
-        Promise.resolve(
+      }) => {
+        this.duringEventQuery?.();
+        return Promise.resolve(
           this.events
             .filter(
               (e) =>
                 e.spaceId === args.where.spaceId &&
                 e.seq > args.where.seq.gt &&
+                (args.where.seq.lte === undefined || e.seq <= args.where.seq.lte) &&
                 (args.where.type ? e.type !== args.where.type.not : true),
             )
             .sort((a, b) => a.seq - b.seq)
             .slice(0, args.take),
-        ),
+        );
+      },
       findFirst: (args: {
         where: { spaceId: string; type?: string; seq?: { gt: number } };
         orderBy: { seq: "desc" };
@@ -259,12 +264,28 @@ export function liveRequest(
 /** The `context` argument a `/api/spaces/[spaceId]/…` handler receives from Next. */
 export const spaceContext = (spaceId: string) => ({ params: Promise.resolve({ spaceId }) });
 
-/** Captures every line the no-PII logger writes until `restore()`. */
+/**
+ * Captures every line the no-PII logger writes until `vi.restoreAllMocks()`. `all()` is the lines
+ * without their `ts`: a wall-clock timestamp can spell any short number by accident.
+ */
 export function captureLog(): { lines: string[]; all(): string } {
   const lines: string[] = [];
   vi.spyOn(process.stdout, "write").mockImplementation((chunk: unknown) => {
     lines.push(String(chunk));
     return true;
   });
-  return { lines, all: () => lines.join("\n") };
+  const withoutTs = (line: string): string => {
+    const parsed = JSON.parse(line) as Record<string, unknown>;
+    delete parsed.ts;
+    return JSON.stringify(parsed);
+  };
+  return {
+    lines,
+    all: () =>
+      lines
+        .flatMap((chunk) => chunk.split("\n"))
+        .filter((line) => line.trim() !== "")
+        .map(withoutTs)
+        .join("\n"),
+  };
 }
