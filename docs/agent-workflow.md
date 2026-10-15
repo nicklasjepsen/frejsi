@@ -278,7 +278,8 @@ to ask; questions go in its PR body.
 
 Every lane updates affected docs in the same PR as the code. Describe what is implemented, using
 fictional examples; plans are not evidence that a feature exists. Every PR declares `## Docs` with
-paths its diff actually changes, or `None needed: <concrete reason>` when no docs need changing.
+paths its diff actually changes, or `None needed: <concrete reason>` when no counted docs changed
+and none need changing. If counted docs changed, list them instead of claiming none were needed.
 Dependabot PRs are exempt. `scripts/check-docs.mjs` reads the PR event and its git diff without
 dependencies or network calls; the `ci` job runs it before installing packages, and rechecks body edits.
 

@@ -22,8 +22,7 @@ describe("PR docs declaration", () => {
   it.each([
     "## Docs\n- `README.md`\n- [operations](docs/operations.md)",
     "## Docs\r\nREADME.md\r\n### Details\r\nRefreshed the status.\r\n## Tests\r\nPassed",
-    "## Docs\nNone needed: Changes only a unit-test fixture; public behavior is unchanged.",
-  ])("accepts changed docs or a reason: %s", (body) => {
+  ])("accepts documentation paths in the diff: %s", (body) => {
     expect(() => checkDocs(body, changed)).not.toThrow();
   });
 
@@ -36,20 +35,41 @@ describe("PR docs declaration", () => {
     "## Docs\n<!-- README.md -->",
     "```md\n## Docs\nREADME.md\n```",
     "## Docs\n```md\nREADME.md\n```",
-    "## Docs\nNone needed:",
-    "## Docs\nNone needed: <reason>",
-    "## Docs\nNone needed: TODO",
-    "## Docs\nNone needed: n/a",
-    "## Docs\nNone needed: ...",
-  ])("rejects unchanged files, non-docs and placeholders: %s", (body) => {
+  ])("rejects unchanged files, non-docs and quoted examples: %s", (body) => {
     expect(() =>
       checkDocs(body, [...changed, "docs/design/tokens.json", "docs/superpowers/plans/future.md"]),
     ).toThrow();
   });
 
+  it.each([
+    { files: [] },
+    { files: ["web/src/example.ts"] },
+    { files: ["docs/design/tokens.json", "docs/superpowers/plans/future.md"] },
+  ])("accepts a reason when no counted docs changed: $files", ({ files }) =>
+    expect(() =>
+      checkDocs(
+        "## Docs\nNone needed: Changes only test fixtures or historical design artifacts.",
+        files,
+      ),
+    ).not.toThrow(),
+  );
+
+  it.each(["", "<reason>", "TODO", "n/a", "..."])("rejects a placeholder reason: %s", (reason) => {
+    expect(() => checkDocs(`## Docs\nNone needed: ${reason}`, [])).toThrow(/real reason/);
+  });
+
   it("exempts the Dependabot author, not other bots", () => {
     expect(() => checkDocs(null, [], "dependabot[bot]")).not.toThrow();
     expect(() => checkDocs(null, [], "another[bot]")).toThrow();
+  });
+
+  it("rejects None needed when counted documentation changed", () => {
+    expect(() =>
+      checkDocs(
+        "## Docs\nNone needed: Internal-only refactor with no user-facing changes.",
+        changed,
+      ),
+    ).toThrow(/documentation changed/);
   });
 
   it.each([
@@ -128,5 +148,8 @@ it("reads the event and diffs the PR head against its merge base, not the checko
   git("commit", "-qm", "lane docs");
   head = git("rev-parse", "HEAD");
   expect(run("## Docs\n- `README.md`").status).toBe(0);
+  expect(
+    run("## Docs\nNone needed: Internal-only refactor with no user-facing changes.").status,
+  ).toBe(1);
   expect(run(null, "dependabot[bot]").status).toBe(0);
 });

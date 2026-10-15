@@ -19,7 +19,8 @@
 <!-- Update docs in this PR. List the paths actually changed, one per bullet (backticks or links).
      Counts: README.md, CONTRIBUTING.md, CLAUDE.md, AGENTS.md, docs/** except docs/design/** and
      docs/superpowers/plans/**, infra/README.md, poller/README.md, .env.example.
-     If no docs need changing, write: None needed: <a concrete reason, not a placeholder>. -->
+     If no counted docs changed and none need changing, write:
+     None needed: <a concrete reason, not a placeholder>. -->
 
 ## Tests
 
