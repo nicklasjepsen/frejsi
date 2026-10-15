@@ -74,9 +74,20 @@ function fakeDb(initial: Partial<SpaceState>[]) {
             .filter((ts) => readings.has(key(args.where.spaceId, ts)))
             .map((ts) => ({ ts })),
         ),
-      upsert: (args) => {
-        const k = key(args.where.spaceId_ts.spaceId, args.where.spaceId_ts.ts);
-        if (!readings.has(k)) readings.set(k, args.create);
+      create: (args) => {
+        const k = key(args.data.spaceId, args.data.ts);
+        if (readings.has(k)) {
+          return Promise.reject(
+            Object.assign(new Error("Unique constraint failed on the fields: (`spaceId`,`ts`)"), {
+              code: "P2002",
+            }),
+          );
+        }
+        readings.set(k, args.data);
+        return Promise.resolve(args.data);
+      },
+      delete: (args) => {
+        readings.delete(key(args.where.spaceId_ts.spaceId, args.where.spaceId_ts.ts));
         return Promise.resolve(undefined);
       },
     },
@@ -122,7 +133,10 @@ function recordingSource(
 function harness(initial: Partial<SpaceState>[], sources: SourceFactory) {
   const db = fakeDb(initial);
   const sink = new MemoryEventSink();
-  const emit = createEmit({ db: db.emitDb, sink, now: () => now });
+  const realEmit = createEmit({ db: db.emitDb, sink, now: () => now });
+  const emitFailure = { error: null as Error | null };
+  const emit: typeof realEmit = (spaceId, type, payload) =>
+    emitFailure.error ? Promise.reject(emitFailure.error) : realEmit(spaceId, type, payload);
   const lines: string[] = [];
   const log = createLogger(
     (line) => lines.push(line),
@@ -134,7 +148,7 @@ function harness(initial: Partial<SpaceState>[], sources: SourceFactory) {
       { db: db.poll, emit, sources, now: () => now, log, onReadingStored: (id) => stored.push(id) },
       spaceId === undefined ? {} : { spaceId },
     );
-  return { ...db, sink, lines, stored, run };
+  return { ...db, sink, lines, stored, run, emitFailure };
 }
 
 const statusOf = (sink: MemoryEventSink, spaceId: string): SourceStatus[] =>
@@ -389,5 +403,63 @@ describe("runPollCycle failures", () => {
     }
     expect(output).toContain('"spaceId":"s1"');
     expect(output).toContain('"count":6');
+  });
+});
+
+describe("runPollCycle and a failing emit", () => {
+  const reading: Reading = { ts: "2026-10-15T10:25:00.000Z", mmol: 6.2, trend: "flat" };
+
+  it("does not keep a reading whose event could not be written, and stores both next time", async () => {
+    const h = harness([{ id: "s1", lastReadingAt: new Date(now.getTime() - 10 * MINUTE) }], () =>
+      recordingSource([reading]),
+    );
+    h.emitFailure.error = new Error("database unavailable");
+    const [failed] = await h.run();
+    expect(failed).toMatchObject({ outcome: "failed", code: "store-failed", stored: 0 });
+    expect(h.readings.size).toBe(0);
+    expect(h.events).toHaveLength(0);
+
+    h.emitFailure.error = null;
+    const [ok] = await h.run();
+    expect(ok).toMatchObject({ outcome: "ok", stored: 1 });
+    expect(h.readings.size).toBe(1);
+    expect(h.sink.forGroup("space-s1-glucose")).toHaveLength(1);
+  });
+
+  it("emits exactly one event per row when two cycles overlap on the same space", async () => {
+    const h = harness([{ id: "s1", lastReadingAt: new Date(now.getTime() - 10 * MINUTE) }], () =>
+      recordingSource([reading]),
+    );
+    const [a, b] = await Promise.all([h.run(), h.run()]);
+    expect(h.readings.size).toBe(1);
+    expect(h.sink.forGroup("space-s1-glucose")).toHaveLength(1);
+    expect((a[0]?.stored ?? 0) + (b[0]?.stored ?? 0)).toBe(1);
+    expect(h.stored).toHaveLength(1);
+  });
+
+  it("does not record a status change whose event was not written, and retries it", async () => {
+    const h = harness([{ id: "s1", sourceFailures: 2, lastReadingAt: now }], () =>
+      recordingSource([], new Error("down")),
+    );
+    h.emitFailure.error = new Error("database unavailable");
+    await h.run();
+    expect(h.spaces.get("s1")?.sourceStatus).toBe("connected");
+    expect(statusOf(h.sink, "s1")).toEqual([]);
+
+    h.emitFailure.error = null;
+    await h.run();
+    expect(h.spaces.get("s1")?.sourceStatus).toBe("disconnected");
+    expect(statusOf(h.sink, "s1")).toEqual(["disconnected"]);
+  });
+
+  it("does not count a database failure after a good fetch against the source", async () => {
+    const h = harness(
+      [{ id: "s1", sourceStatus: "disconnected", sourceFailures: 3, lastReadingAt: now }],
+      () => recordingSource([]),
+    );
+    h.emitFailure.error = new Error("database unavailable");
+    const [outcome] = await h.run();
+    expect(outcome).toMatchObject({ outcome: "failed", code: "status-update-failed" });
+    expect(h.spaces.get("s1")).toMatchObject({ sourceFailures: 3, sourceStatus: "disconnected" });
   });
 });

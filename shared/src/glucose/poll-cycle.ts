@@ -47,11 +47,11 @@ export interface PollDb {
       where: { spaceId: string; ts: { in: Date[] } };
       select: { ts: true };
     }): Promise<{ ts: Date }[]>;
-    upsert(args: {
-      where: { spaceId_ts: { spaceId: string; ts: Date } };
-      create: { spaceId: string; ts: Date; mmol: number; trend: string; source: string };
-      update: Record<string, never>;
+    /** Rejects with Prisma's `P2002` when `(spaceId, ts)` exists: the atomic "is it new" decision. */
+    create(args: {
+      data: { spaceId: string; ts: Date; mmol: number; trend: string; source: string };
     }): Promise<unknown>;
+    delete(args: { where: { spaceId_ts: { spaceId: string; ts: Date } } }): Promise<unknown>;
   };
 }
 
@@ -114,6 +114,10 @@ class CycleError extends Error {
     this.name = "CycleError";
   }
 }
+
+/** Prisma's unique-constraint violation, matched by code so this module needs no Prisma import. */
+const isUniqueViolation = (error: unknown): boolean =>
+  typeof error === "object" && error !== null && "code" in error && error.code === "P2002";
 
 const codeOf = (error: unknown): string => {
   if (error instanceof CycleError) return error.code;
@@ -194,21 +198,38 @@ async function pollSpace(space: PollSpaceRow, deps: Resolved): Promise<SpaceOutc
         const ts = new Date(reading.ts);
         if (existing.has(ts.getTime())) continue;
         const payload = Reading.parse(reading);
-        await deps.db.reading.upsert({
-          where: { spaceId_ts: { spaceId, ts } },
-          create: { spaceId, ts, mmol: payload.mmol, trend: payload.trend, source: config.type },
-          update: {},
-        });
+        // The insert decides who is first when two cycles overlap: only the one that created the
+        // row emits, so a row never gets two events.
+        try {
+          await deps.db.reading.create({
+            data: { spaceId, ts, mmol: payload.mmol, trend: payload.trend, source: config.type },
+          });
+        } catch (error) {
+          if (isUniqueViolation(error)) continue;
+          throw error;
+        }
+        try {
+          await deps.emit(spaceId, "reading", payload);
+        } catch (error) {
+          // A row without its event would be skipped forever as "existing": take it back so the
+          // next cycle stores and emits it together.
+          await deps.db.reading.delete({ where: { spaceId_ts: { spaceId, ts } } });
+          throw error;
+        }
         latest = ts;
         stored += 1;
-        await deps.emit(spaceId, "reading", payload);
         deps.onReadingStored?.(spaceId);
       }
     } catch (error) {
       throw new CycleError("store-failed", error);
     }
 
-    const status = await markConnected(space, latest, deps);
+    let status: SourceStatus;
+    try {
+      status = await markConnected(space, latest, deps);
+    } catch (error) {
+      throw new CycleError("status-update-failed", error);
+    }
     deps.log.info("poll.space", {
       spaceId,
       count: stored,
@@ -219,7 +240,11 @@ async function pollSpace(space: PollSpaceRow, deps: Resolved): Promise<SpaceOutc
   } catch (error) {
     const code = error instanceof CycleError ? error.code : "fetch-failed";
     deps.log.warn("poll.space-failed", { spaceId, count: stored, code: codeOf(error) });
-    const status = await markFailed(space, latest, deps);
+    // A database failure after a good fetch says nothing about the source: no failure counted.
+    const status =
+      code === "status-update-failed"
+        ? (space.sourceStatus as SourceStatus)
+        : await markFailed(space, latest, deps);
     return { spaceId, outcome: "failed", code, stored, status };
   }
 }
@@ -232,11 +257,21 @@ function parseConfig(raw: string | null): GlucoseSourceConfig {
   }
 }
 
+/**
+ * The status event goes first, then the column: a change the clients never heard of would not be
+ * sent again, while a repeated event is harmless to them.
+ */
 async function markConnected(
   space: PollSpaceRow,
   latest: Date | null,
   deps: Resolved,
 ): Promise<SourceStatus> {
+  if (space.sourceStatus !== "connected") {
+    await deps.emit(space.id, "source.status", {
+      status: "connected",
+      since: deps.now().toISOString(),
+    });
+  }
   await deps.db.space.update({
     where: { id: space.id },
     data: {
@@ -245,12 +280,6 @@ async function markConnected(
       ...(latest ? { lastReadingAt: latest } : {}),
     },
   });
-  if (space.sourceStatus !== "connected") {
-    await deps.emit(space.id, "source.status", {
-      status: "connected",
-      since: deps.now().toISOString(),
-    });
-  }
   return "connected";
 }
 
@@ -265,6 +294,12 @@ async function markFailed(
     failures >= FAILURES_BEFORE_DISCONNECTED && space.sourceStatus !== "disconnected";
   const status: SourceStatus = disconnect ? "disconnected" : (space.sourceStatus as SourceStatus);
   try {
+    if (disconnect) {
+      await deps.emit(space.id, "source.status", {
+        status: "disconnected",
+        since: deps.now().toISOString(),
+      });
+    }
     await deps.db.space.update({
       where: { id: space.id },
       data: {
@@ -273,14 +308,9 @@ async function markFailed(
         ...(latest ? { lastReadingAt: latest } : {}),
       },
     });
-    if (disconnect) {
-      await deps.emit(space.id, "source.status", {
-        status: "disconnected",
-        since: deps.now().toISOString(),
-      });
-    }
   } catch (error) {
     deps.log.error("poll.status-update-failed", { spaceId: space.id, code: codeOf(error) }, error);
+    return space.sourceStatus as SourceStatus;
   }
   return status;
 }

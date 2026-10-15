@@ -210,3 +210,34 @@ describe("DexcomShareSource and the logger", () => {
     expect((error as Error).message).not.toContain("password failed");
   });
 });
+
+describe("DexcomShareSource deadline", () => {
+  /** Accepts the connection and never answers, until the signal aborts it. */
+  const stalled: DexcomShareSource["fetch"] = (_input, init) =>
+    new Promise((_resolve, reject) => {
+      init?.signal?.addEventListener("abort", () => {
+        reject(new Error("aborted", { cause: init.signal?.reason }));
+      });
+    });
+
+  it("gives every call a deadline, so a stalled service is unreachable rather than a hang", async () => {
+    const s = source(stalled, { timeoutMs: 20 });
+    await expect(s.probe()).resolves.toBe("unreachable");
+    await expect(s.fetchSince(now)).rejects.toMatchObject({
+      name: "DexcomShareError",
+      code: "Timeout",
+    });
+  });
+
+  it("passes an abort signal on every request", async () => {
+    const dexcom = fakeDexcom();
+    const signals: unknown[] = [];
+    const spy: DexcomShareSource["fetch"] = (input, init) => {
+      signals.push(init?.signal);
+      return dexcom.fetch(input, init);
+    };
+    await source(spy).fetchSince(now);
+    expect(signals).toHaveLength(3);
+    expect(signals.every((sig) => sig instanceof AbortSignal)).toBe(true);
+  });
+});
