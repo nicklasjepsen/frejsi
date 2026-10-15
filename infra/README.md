@@ -155,9 +155,11 @@ Frejsi is one person's data on one person's subscription. A fork gets its own co
 1. Fork the repository. In your fork, keep `baseName` as it is or set it in `main.bicepparam`
    (at most 7 characters; names stay globally unique through a suffix derived from the resource
    group id).
-2. Do steps 1–5 above in your own Azure subscription and GitHub repository, with your own
-   repository name in the federated credential subjects (`repo:<you>/<fork>:environment:...`). Create
-   the two environments `production-infra` and `production` in the fork (Settings → Environments),
+2. Do steps 1–5 above in your own Azure subscription and GitHub repository. Build the federated
+   credential subjects from your fork's own prefix, read with the command in step 3
+   (`<prefix>:environment:production-infra`, `…:production`, `…:preview`); a fork created today gets
+   an immutable prefix with its own IDs, so never copy this repository's subjects. Create
+   the environments `production-infra`, `production` and `preview` in the fork (Settings → Environments),
    with yourself as required reviewer on `production-infra`. Add the repository secret
    `CI_SQL_SA_PASSWORD` (any strong password; it is only for the SQL Server container the release
    suite starts).
