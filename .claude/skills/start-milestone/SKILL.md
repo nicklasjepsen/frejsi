@@ -60,7 +60,7 @@ Write the split to the scratchpad as the workflow's `args`:
       "branch": "feat/gh-12-dexcom-live",
       "worktree": "/home/nick/dev/frejsi-lanes/gh-12-dexcom-live",
       "owns": ["shared/src/glucose/dexcom-share/", "poller/src/", "web/app/api/spaces/[id]/readings/", "fixtures/dexcom/"],
-      "shared": ["shared/src/index.ts", "web/messages/da.json", "web/messages/en.json"],
+      "shared": ["shared/src/index.ts", "web/messages/da/index.ts", "web/messages/en/index.ts"],
       "migration": "0003",
       "notes": "Fixtures are recorded JSON; never a live call in tests."
     }

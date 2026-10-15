@@ -11,8 +11,9 @@ text, AI prompts and AI output schemas. Get the diff yourself (`gh pr diff <n>` 
 
 Check:
 
-1. **Both languages.** Every key added to `web/messages/da.json` exists in `web/messages/en.json`
-   and the reverse. No hard-coded UI string in a component; everything goes through the i18n layer.
+1. **Both languages.** Every key added to a `web/messages/da/<namespace>.json` exists in the
+   matching `web/messages/en/<namespace>.json` and the reverse, and every namespace is listed in both
+   `web/messages/da/index.ts` and `web/messages/en/index.ts`. No hard-coded UI string in a component; everything goes through the i18n layer.
    English keys are not Danish strings and the reverse.
 2. **Tone (Danish first, English the same).** Warm, plain, unhurried: a kind nurse, not a startup.
    No exclamation marks in system copy. No "awesome", "crush it", streaks, badges, confetti. A high
