@@ -75,7 +75,9 @@ describe("DELETE /api/spaces/:id/passkeys/:passkeyId", () => {
     });
     world.as("owner");
     const res = await del(PASSKEYS.carerTablet);
-    expect(res.status).toBe(204);
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ signedOut: false });
+    expect(res.headers.get("set-cookie")).toBeNull();
     expect(world.fake.rows("passkey").map((p) => p.id)).not.toContain(PASSKEYS.carerTablet);
     expect(world.fake.rows("session").map((s) => s.id)).not.toContain("sess-carer-tablet");
     await expect(loadSession("sess-carer-tablet", { db: world.fake.db })).resolves.toBeNull();
@@ -90,7 +92,22 @@ describe("DELETE /api/spaces/:id/passkeys/:passkeyId", () => {
 
   it("lets an owner remove one of their own devices too", async () => {
     world.as("owner");
-    expect((await del(PASSKEYS.ownerLaptop)).status).toBe(204);
+    const res = await del(PASSKEYS.ownerLaptop);
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ signedOut: false });
+    expect(world.events.map((e) => e.type)).toEqual(["device.removed"]);
+  });
+
+  it("says so when the removed device is the one making the request, and clears its cookie", async () => {
+    const own = world.fake.rows("session").find((s) => s.id === USERS.owner.session);
+    if (!own) throw new Error("seeded owner session missing");
+    own.passkeyId = PASSKEYS.ownerPhone;
+    world.as("owner");
+    const res = await del(PASSKEYS.ownerPhone);
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ signedOut: true });
+    expect(res.headers.get("set-cookie")).toMatch(/frejsi_session=;.*Max-Age=0/i);
+    await expect(loadSession(USERS.owner.session, { db: world.fake.db })).resolves.toBeNull();
     expect(world.events.map((e) => e.type)).toEqual(["device.removed"]);
   });
 

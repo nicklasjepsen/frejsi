@@ -360,7 +360,7 @@ describe("PeopleScreen · a member's devices and role (design gap: phone detail)
   });
 
   it("lets an owner remove a device after confirming, then reloads the list", async () => {
-    api.removeDevice.mockResolvedValue(undefined);
+    api.removeDevice.mockResolvedValue({ signedOut: false });
     mount();
     fireEvent.click(rowOf("Jonas"));
     const mac = nth(within(detail()).getAllByTestId("device"), 1);
@@ -375,6 +375,20 @@ describe("PeopleScreen · a member's devices and role (design gap: phone detail)
     await waitFor(() => {
       expect(api.load).toHaveBeenCalledWith("s1");
     });
+  });
+
+  it("sends an owner who removed the device they are using to the sign-in page, not a dead list", async () => {
+    api.removeDevice.mockResolvedValue({ signedOut: true });
+    mount();
+    fireEvent.click(rowOf("Jonas"));
+    const phone = nth(within(detail()).getAllByTestId("device"), 0);
+    fireEvent.click(within(phone).getByRole("button", { name: "Fjern" }));
+    fireEvent.click(within(phone).getByRole("button", { name: "Ja, fjern" }));
+    await waitFor(() => {
+      expect(navigation.push).toHaveBeenCalledWith("/da/welcome");
+    });
+    expect(api.load).not.toHaveBeenCalled();
+    expect(screen.queryByRole("alert")).toBeNull();
   });
 
   it("lets an owner make an add-a-device link for a member and shows its QR code and link", async () => {

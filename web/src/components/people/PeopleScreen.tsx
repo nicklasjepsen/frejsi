@@ -38,9 +38,15 @@ export interface PeopleScreenProps {
   initial: PeopleView;
 }
 
-/** What follows a write: the list reloads, or the user has left the space and goes home. */
-export type AfterAction = "reload" | "home";
-export type RunAction = (action: () => Promise<void>, after?: AfterAction) => Promise<void>;
+/**
+ * What follows a write: the list reloads, the user has left the space and goes home, or the
+ * device in hand was removed and goes to sign-in. An action may return one to decide late.
+ */
+export type AfterAction = "reload" | "home" | "signedOut";
+export type RunAction = (
+  action: () => Promise<void> | Promise<AfterAction>,
+  after?: AfterAction,
+) => Promise<void>;
 
 const COLUMNS = ["person", "role", "view", "devices", "lastSeen"] as const;
 
@@ -82,15 +88,16 @@ export function PeopleScreen({
   /**
    * Runs a write, then reloads the list so every row reflects the API's truth. A user who has
    * just removed themselves is no longer a member, so the reload would be 404: they go to the
-   * front page instead, which lands on another space or on the no-space page.
+   * front page instead, which lands on another space or on the no-space page. One who removed
+   * the device they are using has no session left and goes to the sign-in page.
    */
   const onAction = useCallback<RunAction>(
     async (action, after = "reload") => {
       setError(null);
       try {
-        await action();
-        if (after === "home") {
-          router.push(localeHref(locale, "/"));
+        const next = (await action()) ?? after;
+        if (next === "home" || next === "signedOut") {
+          router.push(localeHref(locale, next === "home" ? "/" : "/welcome"));
           router.refresh();
           return;
         }
