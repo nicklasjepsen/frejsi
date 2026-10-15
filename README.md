@@ -4,7 +4,7 @@
 
 Frejsi is a web app — on your phone for the moment you're eating, on your desktop for the evening you want to understand the week — that answers two questions fast: _how many carbs is this?_ and _what did that meal do to my glucose?_ A space brings one person's food library, meals and glucose together, with access for the people they invite.
 
-> **Status: v0.3.0 is live at [frejsi.jepsen.ninja](https://frejsi.jepsen.ninja); v0.3.1 (the Dexcom Clarity import) is being released.** The v0.1.0 foundation (passkeys, roles and live glucose), v0.2.0 food lookup and meal logging, and v0.3.0 meal curves and history are implemented and deployed. Merging does not deploy: a version tag runs the release pipeline, and a [GitHub release](https://github.com/nicklasjepsen/frejsi/releases) is published only after deployment and smoke checks succeed. An existing tag alone does not mean deployment succeeded.
+> **Status: v0.3.1 is live at [frejsi.jepsen.ninja](https://frejsi.jepsen.ninja).** The v0.1.0 foundation (passkeys, roles and live glucose), v0.2.0 food lookup and meal logging, v0.3.0 meal curves and history, and the v0.3.1 Dexcom Clarity import are implemented and deployed. Merging does not deploy: a version tag runs the release pipeline, and a [GitHub release](https://github.com/nicklasjepsen/frejsi/releases) is published only after deployment and smoke checks succeed. An existing tag alone does not mean deployment succeeded.
 
 ## What it does
 
