@@ -6,7 +6,7 @@ import { useEffect, useRef, useState } from "react";
 
 import { formatClock, withLocalTime } from "@/app/[locale]/(app)/log/time";
 import { FoodPhoto } from "@/components/food/FoodPhoto";
-import { PhotoPicker } from "@/components/food/PhotoPicker";
+import { EditPhotoPicker } from "@/components/meal/EditPhotoPicker";
 import { deleteMeal, updateMeal } from "@/components/meal/api";
 import { BolusTap } from "@/components/meal/BolusTap";
 import { editableItems, EditMealItems, refreshNutrition } from "@/components/meal/EditMealItems";
@@ -47,6 +47,7 @@ export function EditMealSheet({
   const [bolusTs, setBolusTs] = useState(view.meal.bolusTs ?? null);
   const [note, setNote] = useState(view.meal.note ?? "");
   const [photo, setPhoto] = useState<string | null>(null);
+  const [photoBusy, setPhotoBusy] = useState(false);
   const [busy, setBusy] = useState(false);
   const [failed, setFailed] = useState(false);
   const [written, setWritten] = useState(false);
@@ -71,7 +72,7 @@ export function EditMealSheet({
     };
   }, []);
   async function save() {
-    if (locked.current || !complete) return;
+    if (locked.current || photoBusy || !complete) return;
     locked.current = true;
     setBusy(true);
     setFailed(false);
@@ -121,12 +122,12 @@ export function EditMealSheet({
       aria-label={t("title")}
       onCancel={(event) => {
         event.preventDefault();
-        if (!busy) onClose();
+        if (!busy && !photoBusy) onClose();
       }}
       onKeyDown={(event) => {
         if (event.key === "Escape") {
           event.preventDefault();
-          if (!busy) onClose();
+          if (!busy && !photoBusy) onClose();
         }
       }}
     >
@@ -135,14 +136,14 @@ export function EditMealSheet({
           type="button"
           className={styles.sheetBack}
           aria-label={t("back")}
-          disabled={busy}
+          disabled={busy || photoBusy}
           onClick={onClose}
         >
           ←
         </button>
         <h2>{t("title")}</h2>
       </div>
-      <fieldset className={styles.sheetBody} disabled={busy || written}>
+      <fieldset className={styles.sheetBody} disabled={busy || written || photoBusy}>
         <EditMealItems
           items={items}
           desktop={size === "desktop"}
@@ -186,7 +187,8 @@ export function EditMealSheet({
         {(photo ?? view.meal.photo) && (
           <FoodPhoto src={photo ?? view.meal.photo?.thumbUrl} alt={view.meal.title} size={72} />
         )}
-        <PhotoPicker
+        <EditPhotoPicker
+          onBusyChange={setPhotoBusy}
           onPhoto={(bytes) => {
             setPhoto(dataUrl(bytes));
           }}
@@ -238,7 +240,7 @@ export function EditMealSheet({
       <TotalBar
         total={items.reduce((sum, item) => sum + (item.input.carbs ?? 0), 0)}
         actionLabel={t(written ? "reload" : "save")}
-        disabled={busy || !complete || confirmDelete}
+        disabled={busy || photoBusy || !complete || confirmDelete}
         onAction={() => void save()}
       />
     </dialog>

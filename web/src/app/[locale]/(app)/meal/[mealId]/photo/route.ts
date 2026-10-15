@@ -2,7 +2,7 @@ import { HttpError } from "@frejsi/shared";
 
 import { settingsRoute } from "@/components/settings/api-route";
 import { authorizeMeal } from "@/lib/meals/server";
-import { getMeal } from "@/lib/meals/service";
+import { HttpReadablePhotoStore } from "./photo-store";
 
 interface Params {
   locale: string;
@@ -15,16 +15,13 @@ interface Params {
 export const GET = settingsRoute<Params>("meal-detail.photo", async (request, { mealId }) => {
   const spaceId = new URL(request.url).searchParams.get("space");
   if (!spaceId) throw new HttpError(400, "validation");
-  const { session, deps } = await authorizeMeal(request, spaceId);
-  const meal = await getMeal(spaceId, mealId, session.locale, deps);
-  if (!meal.photo) throw new HttpError(404, "not-found");
+  const { deps } = await authorizeMeal(request, spaceId);
+  const meal = await deps.repo.find(spaceId, mealId);
+  if (!meal?.photoKey) throw new HttpError(404, "not-found");
+  if (!deps.photos) throw new HttpError(503, "photo-unavailable");
   try {
-    const photo = await fetch(meal.photo.originalUrl, {
-      cache: "no-store",
-      signal: request.signal,
-    });
-    if (!photo.ok) throw new Error("photo-unavailable");
-    return new Response(photo.body, {
+    const photos = new HttpReadablePhotoStore(deps.photos);
+    return new Response(await photos.read(meal.photoKey, "original", request.signal), {
       headers: {
         "content-type": "image/jpeg",
         "cache-control": "private, no-store",
