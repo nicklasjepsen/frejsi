@@ -1,5 +1,6 @@
 import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
+import vm from "node:vm";
 
 import { describe, expect, it } from "vitest";
 
@@ -37,24 +38,156 @@ describe("manifest.webmanifest (plan §6)", () => {
   });
 });
 
+/** A fake request: the worker reads method, url and mode only. */
+interface FakeRequest {
+  method: string;
+  url: string;
+  mode: string;
+}
+
+/** Runs sw.js in a sandbox with a fake cache and fetch, and returns its event listeners. */
+function loadWorker(fetchImpl: (request: FakeRequest) => Promise<Response>) {
+  const store = new Map<string, Response>();
+  const puts: string[] = [];
+  const cache = {
+    addAll: (urls: string[]) => {
+      for (const url of urls) store.set(url, new Response(`cached ${url}`));
+      return Promise.resolve();
+    },
+    put: (request: FakeRequest | string, response: Response) => {
+      const key = typeof request === "string" ? request : new URL(request.url).pathname;
+      puts.push(key);
+      store.set(key, response);
+      return Promise.resolve();
+    },
+    match: (request: FakeRequest | string) => {
+      const key = typeof request === "string" ? request : new URL(request.url).pathname;
+      // A real cache hands out a fresh body each time.
+      return Promise.resolve(store.get(key)?.clone());
+    },
+  };
+  const listeners = new Map<string, (event: unknown) => void>();
+  const sandbox = {
+    self: {
+      addEventListener: (type: string, fn: (event: unknown) => void) => {
+        listeners.set(type, fn);
+      },
+      skipWaiting: () => undefined,
+      clients: { claim: () => Promise.resolve() },
+      location: { origin: "https://frejsi.example" },
+    },
+    caches: {
+      open: () => Promise.resolve(cache),
+      match: (request: FakeRequest | string) => cache.match(request),
+      keys: () => Promise.resolve([]),
+      delete: () => Promise.resolve(true),
+    },
+    fetch: fetchImpl,
+    URL,
+    Response,
+    Promise,
+  };
+  vm.runInNewContext(read("sw.js"), sandbox);
+  const dispatch = async (type: "install" | "fetch", request?: FakeRequest) => {
+    const captured: { response?: Promise<Response | undefined>; wait?: Promise<unknown> } = {};
+    listeners.get(type)?.({
+      request,
+      respondWith: (p: Promise<Response | undefined>) => {
+        captured.response = p;
+      },
+      waitUntil: (p: Promise<unknown>) => {
+        captured.wait = p;
+      },
+    });
+    await captured.wait;
+    return captured.response ? await captured.response : null;
+  };
+  const get = (url: string, mode = "no-cors"): FakeRequest => ({
+    method: "GET",
+    url: `https://frejsi.example${url}`,
+    mode,
+  });
+  return { dispatch, get, store, puts };
+}
+
+const online = (request: FakeRequest) => Promise.resolve(new Response(`live ${request.url}`));
+const offline = () => Promise.reject(new TypeError("Failed to fetch"));
+
 describe("sw.js (the offline shell)", () => {
   const sw = read("sw.js");
   const match = /const PRECACHE = (\[[^\]]*\])/.exec(sw);
   const precache = JSON.parse(match?.[1] ?? "[]") as string[];
 
-  it("precaches the shell routes in both locales, the manifest, the icons and the offline page", () => {
-    for (const route of ["/da", "/en", "/da/now", "/en/now", "/da/welcome", "/en/welcome"]) {
-      expect(precache).toContain(route);
-    }
+  it("precaches the offline page, the manifest and the icons, and no page that carries a person's data", () => {
+    expect(precache).toContain("/offline.html");
     expect(precache).toContain("/manifest.webmanifest");
     expect(precache).toContain("/icons/icon-192.png");
     expect(precache).toContain("/icons/icon-512.png");
-    expect(precache).toContain("/offline.html");
     expect(existsSync(path.join(publicDir, "offline.html"))).toBe(true);
+    expect(precache.some((route) => /^\/(da|en)(\/|$)/.test(route))).toBe(false);
+    expect(precache.some((route) => route.startsWith("/api"))).toBe(false);
   });
 
-  it("never caches the API, so a glucose value is never served from a cache", () => {
-    expect(sw).toContain('"/api/"');
-    expect(precache.some((route) => route.startsWith("/api"))).toBe(false);
+  it("never touches the API, so a glucose value is never served from a cache", async () => {
+    const worker = loadWorker(online);
+    await worker.dispatch("install");
+    const response = await worker.dispatch("fetch", worker.get("/api/health"));
+    expect(response).toBeNull();
+    expect(worker.puts).toEqual([]);
+    expect(worker.store.has("/api/health")).toBe(false);
+  });
+
+  it("serves pages from the network and stores none of them: a signed-in page never outlives its session", async () => {
+    const worker = loadWorker(online);
+    await worker.dispatch("install");
+    const response = await worker.dispatch("fetch", worker.get("/da/now", "navigate"));
+    expect(await response?.text()).toBe("live https://frejsi.example/da/now");
+    expect(worker.puts).toEqual([]);
+    expect(worker.store.has("/da/now")).toBe(false);
+  });
+
+  it("shows the offline page for any navigation while offline, the installed app's start URL included", async () => {
+    const worker = loadWorker(offline);
+    await worker.dispatch("install");
+    for (const url of ["/", "/da", "/da/now", "/en/soon/meals"]) {
+      const response = await worker.dispatch("fetch", worker.get(url, "navigate"));
+      expect(await response?.text(), url).toBe("cached /offline.html");
+    }
+  });
+
+  it("caches Next's hashed static assets on first use and serves them from the cache after", async () => {
+    let calls = 0;
+    const worker = loadWorker((request) => {
+      calls += 1;
+      return online(request);
+    });
+    await worker.dispatch("install");
+    const asset = worker.get("/_next/static/chunks/app.js");
+    const first = await worker.dispatch("fetch", asset);
+    expect(await first?.text()).toContain("live");
+    await Promise.resolve();
+    expect(worker.puts).toEqual(["/_next/static/chunks/app.js"]);
+    const second = await worker.dispatch("fetch", asset);
+    expect(second).toBeDefined();
+    expect(calls).toBe(1);
+  });
+
+  it("leaves other origins and non-GET requests to the browser", async () => {
+    const worker = loadWorker(online);
+    await worker.dispatch("install");
+    expect(
+      await worker.dispatch("fetch", {
+        method: "GET",
+        url: "https://fonts.example/x.woff2",
+        mode: "cors",
+      }),
+    ).toBeNull();
+    expect(
+      await worker.dispatch("fetch", {
+        method: "POST",
+        url: "https://frejsi.example/da/now",
+        mode: "navigate",
+      }),
+    ).toBeNull();
   });
 });
