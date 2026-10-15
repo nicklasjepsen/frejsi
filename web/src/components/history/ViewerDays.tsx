@@ -39,6 +39,7 @@ export function ViewerDays({
   });
   const { ready, lateCursor } = useFeedReady(feed.loaded);
   const [owners, setOwners] = useState<string[]>([]);
+  const [membersVersion, setMembersVersion] = useState(0);
   useEffect(() => {
     if (!ready) return;
     if (previousToday.current !== today) {
@@ -70,13 +71,14 @@ export function ViewerDays({
     return () => {
       controller.abort();
     };
-  }, [spaceId, fetchImpl]);
+  }, [spaceId, fetchImpl, membersVersion]);
   const { subscribe } = feed;
   useEffect(() => {
     const refresh = () => {
       void load(today, true);
     };
     const membershipChanged = () => {
+      setMembersVersion((version) => version + 1);
       void refreshAll();
       router.refresh();
     };
@@ -84,6 +86,11 @@ export function ViewerDays({
       subscribe("meal.created", refresh),
       subscribe("meal.updated", refresh),
       subscribe("meal.deleted", refresh),
+      subscribe("space.updated", () => {
+        void refreshAll();
+        router.refresh();
+      }),
+      subscribe("member.joined", membershipChanged),
       subscribe("member.updated", membershipChanged),
       subscribe("member.removed", membershipChanged),
     ];

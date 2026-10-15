@@ -577,3 +577,69 @@ it("refreshes the viewer's server role gate when membership changes", async () =
   expect(refresh).toHaveBeenCalled();
   expect(calls.filter((p) => p.endsWith("date=2026-10-13"))).toHaveLength(2);
 });
+it("reloads viewer day boundaries and clocks after a space timezone change", async () => {
+  let timezone = "Europe/Copenhagen";
+  reply = (date): DayView => ({ date, timezone, totalCarbs: 50, mealCount: 1, meals: [meal] });
+  await mount(true);
+  timezone = "America/New_York";
+  await flush(() => {
+    sockets.sockets[0]?.receive({
+      spaceId: "s1",
+      seq: 11,
+      type: "space.updated",
+      ts: NOW.toISOString(),
+      payload: { fields: ["timezone"] },
+    });
+  });
+  expect(screen.getAllByText("06:10")).toHaveLength(2);
+  expect(screen.queryByText("12:10")).toBeNull();
+});
+it("keeps the viewer notice's owners current on changed, removed and joined memberships", async () => {
+  reply = (date): DayView => ({
+    date,
+    timezone: "Europe/Copenhagen",
+    totalCarbs: 50,
+    mealCount: 1,
+    meals: [meal],
+  });
+  const network = request;
+  let owner = "Jonas";
+  request = (...args) =>
+    urlOf(args[0]).endsWith("/members")
+      ? Promise.resolve(
+          Response.json({
+            members: [
+              {
+                userId: `u-${owner}`,
+                name: owner,
+                role: "owner",
+                simpleMode: false,
+                lastSeen: null,
+                devices: [],
+              },
+            ],
+            invites: [],
+          }),
+        )
+      : network(...args);
+  await mount(true);
+  expect(screen.getByText(/Blodsukker vises ikke her/)).toHaveTextContent("spørg Jonas");
+  const changes = [
+    { type: "member.updated", owner: "Mette" },
+    { type: "member.removed", owner: "Birthe" },
+    { type: "member.joined", owner: "Søren" },
+  ];
+  for (const [index, change] of changes.entries()) {
+    owner = change.owner;
+    await flush(() => {
+      sockets.sockets[0]?.receive({
+        spaceId: "s1",
+        seq: 11 + index,
+        type: change.type,
+        ts: NOW.toISOString(),
+        payload: { userId: "u-changed", role: "owner" },
+      });
+    });
+    expect(screen.getByText(/Blodsukker vises ikke her/)).toHaveTextContent(`spørg ${owner}`);
+  }
+});
