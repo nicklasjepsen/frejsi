@@ -1,0 +1,103 @@
+.avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: var(--avatar-subject-bg);
+  color: var(--avatar-subject-fg);
+  font-weight: 700;
+  line-height: 1;
+}
+
+.avatar[data-tone="member"] {
+  background: var(--avatar-member-bg);
+  color: var(--avatar-member-fg);
+}
+
+.avatar[data-tone="owner"] {
+  background: var(--avatar-owner-bg);
+  color: var(--avatar-owner-fg);
+}
+
+.card {
+  background: var(--surface);
+  border-radius: var(--radius-card);
+  box-shadow: var(--card-shadow);
+  border: var(--card-border);
+  padding: 16px;
+}
+
+.card[data-size="simple"] {
+  border-radius: var(--radius-card-simple);
+}
+
+.notice {
+  color: var(--text-muted);
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.notice[data-tone="sunken"] {
+  background: var(--surface-sunken);
+  border-radius: var(--radius-card-small);
+  padding: 12px 14px;
+}
+
+.kbd {
+  display: inline-block;
+  font-family: inherit;
+  font-size: 12px;
+  color: var(--text-muted);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-kbd);
+  padding: 2px 6px;
+  line-height: 1.2;
+}
+
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: var(--touch-min);
+  padding: 0 18px;
+  border-radius: var(--radius-button-medium);
+  border: 1px solid transparent;
+  background: var(--accent-base);
+  color: var(--accent-on);
+  font-size: 15px;
+  font-weight: 700;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.button:hover {
+  background: var(--accent-strong);
+  color: var(--accent-on);
+}
+
+.button[data-variant="secondary"] {
+  background: var(--surface);
+  color: var(--text);
+  border-color: var(--hairline-strong);
+}
+
+.button[data-variant="secondary"]:hover {
+  background: var(--surface-selected);
+  color: var(--text);
+}
+
+.button[data-size="phone"] {
+  width: 100%;
+  min-height: 58px;
+  border-radius: var(--radius-primary-phone);
+  font-size: 18px;
+}
+
+.button[data-size="simple"] {
+  width: 100%;
+  min-height: 84px;
+  border-radius: var(--radius-button-simple);
+  font-size: 26px;
+}
