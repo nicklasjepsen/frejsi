@@ -11,6 +11,7 @@ export const OUTPUT = path.join(WEB, "e2e/.output");
 export const SERVER_LOG = path.join(OUTPUT, "server.log");
 
 export const PORT = Number(process.env.E2E_PORT ?? 3100);
+export const BLOB_PORT = PORT + 1;
 export const ORIGIN = `http://localhost:${String(PORT)}`;
 
 /** The release sets the tag as `TAG`; the build check compares `/api/health` with it. */

@@ -165,3 +165,84 @@ For development, `pnpm --filter ./web seed` fills an empty database with the fic
 artboards ("Almas rum": Jonas and Mette as owners, Birthe as a carer, Alma as a carer in simpleMode,
 Lærke as a viewer, a day of fake readings) and prints one add-a-device link per person. It refuses to
 run with `NODE_ENV=production` and on a database that already has a space.
+
+## Food sources and refreshing Frida
+
+`FOOD_SOURCES=off,frida` enables the registered plugins in that order. Empty or missing means no
+external sources; the space library and shared cache still work. `OFF_COUNTRY` selects the country
+boost, `OFF_LANGUAGE` the barcode language, and text search uses the session locale. These settings
+belong to the web app. Results are unverified until a carer checks the space copy; the shared cache
+is never verified.
+
+The OFF adapter shares process-wide token buckets: **10 search HTTP requests and 15 product reads
+per minute**, refilling continuously. Country/world search fallback uses two search tokens. Errors
+consume their tokens too. Multiple web processes sharing an outbound IP still share OFF's upstream
+budget; `rate-limited`/HTTP 429 is a source-status notice, not an empty verified result. Remote text
+search runs on submit; typing searches the library, cache and local plugins. OFF images are neither
+fetched nor stored. See `shared/src/food/off/README.md` for the adapter contract and limits.
+
+Frida is a bundled JSON dataset, not a runtime download or database import. To refresh it:
+
+1. Follow `shared/src/food/frida/data/README.md` to download the pinned DTU workbook (or document a
+   newer release), recheck its licence/hash, and project the named sheets to a UTF-8 CSV.
+2. Use **available carbohydrate, excluding fibre** (parameter 172 in the pinned workbook), not
+   carbohydrate by difference. Recheck the column headers for a new version; do not subtract fibre
+   again. Keep the workbook and CSV outside the repository.
+3. Run `pnpm --filter ./shared frida:import /tmp/frejsi-frida.csv`, then import to
+   `/tmp/frida-check.json` as the optional second argument and compare the two outputs. Run
+   `pnpm --filter ./shared test src/food/frida`.
+4. Commit the generated `shared/src/food/frida/data/frida.json` and its updated provenance,
+   attribution and licence together. Release the app normally to replace the bundled data. Tests
+   use the fictional excerpt and never download DTU or call OFF.
+
+## Private photos and local storage
+
+The private `photos` container contains paired JPEGs at
+`spaces/<spaceId>/foods/<foodId>/<random>/original.jpg` and `thumb.jpg`, or the equivalent
+`meals/<mealId>` paths. Originals are at most 1600 px on the long edge; thumbnails are 320×320.
+The server applies orientation and strips EXIF, GPS and ICC metadata. The API issues read-only SAS
+URLs expiring at the next full hour plus one hour. Treat signed URLs as credentials: do not log or
+share them. Nothing is uploaded on preview; saving the food or meal triggers upload.
+
+Deleting a food commits its database deletion and `food.deleted` event, nulling meal-item links
+while preserving their name/carbs snapshots, then deletes both blobs. Replacing/removing a photo
+also cleans the displaced pair after commit; meal deletion behaves the same way. Cleanup is best
+effort. `photo.cleanup-failed` or `meal.photo-delete-failed` with `photo-unavailable` means the
+record change succeeded but storage cleanup failed. There is no automatic retry queue: inspect
+orphaned pairs against remaining Food/Meal `photoKey` references and remove only unreferenced
+pairs, without logging keys or signed URLs. Production blob soft delete retains deleted blobs for
+seven days; deletion is not an immediate physical purge.
+
+For local development, run Azurite's Blob service on localhost:10000 (for example
+`docker run --rm -p 10000:10000 mcr.microsoft.com/azure-storage/azurite azurite-blob --blobHost 0.0.0.0`).
+Set `BLOB_CONNECTION_STRING=UseDevelopmentStorage=true` in the local web environment and create the
+`photos` container in that emulator using Storage Explorer. The same `BlobPhotoStore` adapter is
+used locally and in production. Without the setting, photo routes return `503 photo-unavailable`;
+food lookup and meal logging continue. The fictional seed stores no photos and needs no emulator.
+
+## Release checks for food and meals
+
+Run `pnpm --filter ./shared test:integration` against a local SQL Server before release. It creates
+and drops random sibling databases, tests the foundation-to-food migration, lookup precedence,
+ten concurrent candidate picks, deletion snapshots, the viewer's SQL projection and seed events.
+The seed adds nine fictional foods (two unverified imports, seven explicitly verified family foods)
+and today's three meals totalling 102 g. It refuses production and nonempty databases.
+
+Build with `NEXT_PUBLIC_APP_VERSION=<tag> pnpm -r build`, then run
+`pnpm --filter ./web test:e2e` with the same version and `DATABASE_URL`. The harness recreates only
+the URL's `_e2e` sibling, registers passkeys through Chromium's virtual authenticator, and checks
+360/1280 px flows. It disables food plugins and telemetry and uses a loopback Blob HTTP fake, so
+no vendor API or Azure call runs. A fixed afternoon wall clock keeps the artboard meals in the past even on morning runs. The viewer's total is checked before the desktop verification
+changes the library; meals created by the picker are deleted through the API after each flow.
+The final check scans the entire standalone server log for seeded names, food names and barcode.
+These suites stay in `release.yml`, never PR CI.
+
+The web build runs `scripts/prepare-standalone.ts` after Next.js to include the generated Prisma
+client/engine that pnpm's file trace misses. The browser suite copies the standalone output and
+static assets into a temporary directory outside the workspace and runs its `server.js`, preventing
+missing dependencies from resolving through the checkout. Its photo check uploads generated pixels
+through the real food-photo route, which runs `processPhoto` with the bundled native `sharp`, reads
+both JPEGs from the Blob fake, asserts orientation, 1200×1600 and 320×320 dimensions and removal of injected EXIF/ICC, then verifies
+food deletion removes both. **No photo fallback is enabled**: a missing native binary fails release.
+This proves the Linux standalone artifact locally; the deployed Static Web Apps smoke remains the
+release pipeline's responsibility.

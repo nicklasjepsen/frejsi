@@ -5,7 +5,7 @@ import { spawnSync } from "node:child_process";
 import path from "node:path";
 
 import { prisma, type EventEnvelope } from "@frejsi/shared";
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./test";
 
 import { SEED_PEOPLE } from "../scripts/seed";
 import { WEB } from "./env";

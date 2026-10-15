@@ -1,10 +1,19 @@
 import fs from "node:fs";
+import { seedTime } from "./scripts/seed";
 
 import { defineConfig } from "@playwright/test";
 
-import { ORIGIN, OUTPUT, PORT, SERVER_LOG, e2eDatabaseUrl, expectedVersion } from "./e2e/env";
+import {
+  BLOB_PORT,
+  ORIGIN,
+  OUTPUT,
+  PORT,
+  SERVER_LOG,
+  e2eDatabaseUrl,
+  expectedVersion,
+} from "./e2e/env";
 
-// The release e2e (plan §8): `next start` on the built app with the job's `DATABASE_URL` (its
+// The release e2e (plan §8): the isolated standalone app with the job's `DATABASE_URL` (its
 // `_e2e` sibling) and `FAKE_GLUCOSE_SOURCE=1`; the global setup migrates and seeds. release.yml
 // only: it needs a SQL Server, a production build and a browser.
 const baseUrl = process.env.DATABASE_URL;
@@ -16,6 +25,8 @@ const version = expectedVersion();
 process.env.DATABASE_URL = databaseUrl;
 process.env.APP_ORIGIN = ORIGIN;
 process.env.E2E_APP_VERSION = version;
+// A stable afternoon on today's local date, shared by browser, app and seed.
+process.env.E2E_NOW = seedTime(new Date(), 15, 13);
 
 fs.mkdirSync(OUTPUT, { recursive: true });
 
@@ -41,35 +52,55 @@ export default defineConfig({
     { name: "release", testMatch: ["seed.spec.ts", "build.spec.ts"] },
     {
       name: "phone",
+      dependencies: ["release"],
       testMatch: appProjects,
       use: { viewport: { width: 360, height: 780 } },
     },
     {
       name: "desktop",
+      dependencies: ["phone"],
       testMatch: appProjects,
+      use: { viewport: { width: 1280, height: 800 } },
+    },
+    {
+      name: "desktop-food",
+      testMatch: ["food.spec.ts"],
+      dependencies: ["desktop"],
       use: { viewport: { width: 1280, height: 800 } },
     },
     // Last: everything the server wrote while the flows ran.
     {
       name: "server-log",
       testMatch: ["server-log.spec.ts"],
-      dependencies: ["release", "phone", "desktop"],
+      dependencies: ["desktop-food"],
     },
   ],
-  webServer: {
-    // The log is the evidence for the no-PII check (server-log.spec.ts).
-    command: `pnpm exec next start --port ${String(PORT)} > "${SERVER_LOG}" 2>&1`,
-    url: `${ORIGIN}/manifest.webmanifest`,
-    reuseExistingServer: false,
-    timeout: 120_000,
-    env: {
-      DATABASE_URL: databaseUrl,
-      APP_ORIGIN: ORIGIN,
-      FAKE_GLUCOSE_SOURCE: "1",
-      NEXT_PUBLIC_APP_VERSION: version,
-      // No Web PubSub: negotiate answers 503 and the client polls (plan §5).
-      WEB_PUBSUB_CONNECTION_STRING: "",
-      APPLICATIONINSIGHTS_CONNECTION_STRING: "",
+  webServer: [
+    {
+      command: "pnpm exec tsx e2e/blob-server.ts",
+      url: `http://127.0.0.1:${String(BLOB_PORT)}/health`,
+      reuseExistingServer: false,
     },
-  },
+    {
+      // The log is the evidence for the no-PII check (server-log.spec.ts).
+      command: `pnpm exec tsx scripts/release-server.ts > "${SERVER_LOG}" 2>&1`,
+      url: `${ORIGIN}/manifest.webmanifest`,
+      reuseExistingServer: false,
+      timeout: 120_000,
+      env: {
+        DATABASE_URL: databaseUrl,
+        E2E_NOW: process.env.E2E_NOW,
+        PORT: String(PORT),
+        FOOD_SOURCES: "",
+        // A fictional key signed only for the local HTTP fake. Never contacts Azure.
+        BLOB_CONNECTION_STRING: `DefaultEndpointsProtocol=http;AccountName=fictional;AccountKey=RmljdGlvbmFs;BlobEndpoint=http://127.0.0.1:${String(BLOB_PORT)}/fictional;`,
+        APP_ORIGIN: ORIGIN,
+        FAKE_GLUCOSE_SOURCE: "1",
+        NEXT_PUBLIC_APP_VERSION: version,
+        // No Web PubSub: negotiate answers 503 and the client polls (plan §5).
+        WEB_PUBSUB_CONNECTION_STRING: "",
+        APPLICATIONINSIGHTS_CONNECTION_STRING: "",
+      },
+    },
+  ],
 });
