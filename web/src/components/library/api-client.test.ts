@@ -1,0 +1,87 @@
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
+import { libraryApi, LibraryApiError } from "./api-client";
+import { artboardFoods } from "./test-support";
+
+const fetchMock = vi.fn<typeof fetch>();
+beforeEach(() => {
+  vi.stubGlobal("fetch", fetchMock);
+});
+afterEach(() => {
+  vi.unstubAllGlobals();
+  fetchMock.mockReset();
+});
+
+const reply = (status: number, body?: unknown) =>
+  new Response(body === undefined ? null : JSON.stringify(body), {
+    status,
+    headers: { "content-type": "application/json" },
+  });
+const sent = (index = 0) => {
+  const call = fetchMock.mock.calls[index];
+  if (!call) throw new Error("no call");
+  const [input, init = {}] = call;
+  return {
+    url: typeof input === "string" ? input : "",
+    init,
+    json: () => JSON.parse(init.body as string) as unknown,
+  };
+};
+
+describe("libraryApi", () => {
+  it("lists with the filter and a trimmed query, and accepts { foods, counts } or a bare array", async () => {
+    const foods = artboardFoods();
+    fetchMock.mockResolvedValueOnce(reply(200, { foods, counts: { all: 5, unverified: 3 } }));
+    await expect(libraryApi.list("s 1", { filter: "unverified", q: " rug " })).resolves.toEqual({
+      foods,
+      counts: { all: 5, unverified: 3 },
+    });
+    expect(sent().url).toBe("/api/spaces/s%201/foods?filter=unverified&q=rug");
+    fetchMock.mockResolvedValueOnce(reply(200, foods));
+    await expect(libraryApi.list("s1", { filter: "all", q: "" })).resolves.toEqual({
+      foods,
+      counts: undefined,
+    });
+    expect(sent(1).url).toBe("/api/spaces/s1/foods?filter=all");
+  });
+
+  it("creates from the library without ever sending verified; verify: true is the explicit tick", async () => {
+    const [food] = artboardFoods();
+    fetchMock.mockImplementation(() => Promise.resolve(reply(201, food)));
+    const fields = { name: "Fictional bread", carbsPer100g: 40, portions: [] };
+    await libraryApi.create("s1", fields, { verify: false });
+    await libraryApi.create("s1", fields, { verify: true });
+    const first = sent(0).json() as Record<string, unknown>;
+    const second = sent(1).json() as Record<string, unknown>;
+    expect(first).toEqual({ ...fields, from: "library" });
+    expect(second).toEqual({ ...fields, from: "library", verify: true });
+    expect("verified" in first || "verified" in second).toBe(false);
+  });
+
+  it("verifies through POST foods/verify and uploads a photo as JPEG bytes", async () => {
+    fetchMock.mockResolvedValueOnce(reply(200, {}));
+    await libraryApi.verify("s1", ["f1", "f2"]);
+    expect(sent().url).toBe("/api/spaces/s1/foods/verify");
+    expect(sent().init.method).toBe("POST");
+    expect(sent().json()).toEqual({ foodIds: ["f1", "f2"] });
+
+    fetchMock.mockResolvedValueOnce(reply(200, artboardFoods()[0]));
+    await expect(libraryApi.putPhoto("s1", "f-rye", new Uint8Array([1, 2]))).resolves.toMatchObject(
+      { id: "f-rye" },
+    );
+    expect(sent(1).url).toBe("/api/spaces/s1/foods/f-rye/photo");
+    expect(sent(1).init.method).toBe("PUT");
+    expect(sent(1).init.headers).toMatchObject({ "content-type": "image/jpeg" });
+  });
+
+  it("turns an error response into its ApiError code, and a gateway page into internal", async () => {
+    fetchMock.mockResolvedValueOnce(
+      reply(400, { error: { code: "simple-mode", message: "simple-mode" } }),
+    );
+    await expect(libraryApi.verify("s1", ["f1"])).rejects.toEqual(
+      new LibraryApiError(400, "simple-mode"),
+    );
+    fetchMock.mockResolvedValueOnce(new Response("<html>", { status: 502 }));
+    await expect(libraryApi.get("s1", "f1")).rejects.toMatchObject({ code: "internal" });
+  });
+});

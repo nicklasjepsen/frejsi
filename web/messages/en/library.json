@@ -1,0 +1,88 @@
+{
+  "title": "Food",
+  "desktopTitle": "Library",
+  "summary": "{count, plural, one {# food} other {# foods}} · {unverified} not checked",
+  "search": "Search food",
+  "searchDesktop": "Search the library",
+  "newFood": "New food",
+  "filters": "Show",
+  "filter": {
+    "all": "All",
+    "unverified": "Not checked · {count}",
+    "own": "Own dishes",
+    "favourites": "Favourites",
+    "recent": "Eaten recently"
+  },
+  "origin": {
+    "off": "From Open Food Facts",
+    "frida": "From Frida",
+    "other": "From {origin}"
+  },
+  "sourceName": {
+    "off": "Open Food Facts",
+    "frida": "Frida",
+    "family": "Own dish",
+    "manual": "Own dish"
+  },
+  "line": {
+    "origin": {
+      "family": "Own dish",
+      "manual": "Own dish",
+      "frida": "Frida"
+    },
+    "per100g": "{amount} g per 100 g",
+    "portion": "{label} {amount} g",
+    "simple": "shown in simple view"
+  },
+  "keyboardHint": "J/K moves · Space selects · V approves · E edits",
+  "columns": {
+    "food": "Food",
+    "per100g": "Per 100 g",
+    "portions": "Portions",
+    "source": "Source",
+    "status": "Status"
+  },
+  "gramsCell": "{amount} g",
+  "edit": "Edit {name}",
+  "batch": {
+    "selected": "{count} selected",
+    "verify": "Approve selected",
+    "remove": "Remove from the library",
+    "confirmRemove": "Remove {count, plural, one {# food} other {# foods}} from the library?",
+    "confirmYes": "Yes, remove",
+    "cancel": "Cancel"
+  },
+  "verify": "Approve {name}",
+  "verified": "Checked",
+  "empty": {
+    "title": "The library is empty so far",
+    "body": "Scan a barcode when you log a meal, or add your own food with New food."
+  },
+  "noMatches": "No food matches what you are looking for.",
+  "loadFailed": "The library could not be loaded right now.",
+  "retry": "Try again",
+  "writeFailed": "It was not saved – try again",
+  "form": {
+    "newTitle": "New food",
+    "editTitle": "Edit food",
+    "close": "Close",
+    "name": "Name",
+    "carbsPer100g": "Carbohydrate per 100 g",
+    "portions": "Portions",
+    "portionName": "Portion",
+    "portionGrams": "g",
+    "portionCarbs": "g carbohydrate",
+    "computed": "{amount} g carbohydrate",
+    "addPortion": "+ Portion",
+    "removePortion": "Remove portion",
+    "favourite": "Favourite",
+    "saveAndVerify": "Save and approve",
+    "save": "Save",
+    "saveFailed": "Could not save – try again",
+    "needsCarbs": "Enter carbohydrate per 100 g or at least one portion with carbohydrate.",
+    "needsName": "Enter a name.",
+    "source": "{source} · barcode {barcode}…",
+    "photoPreview": "The chosen photo",
+    "loadFailed": "The food could not be loaded right now."
+  }
+}
