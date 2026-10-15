@@ -57,6 +57,17 @@ async function leaveGroups(spaceId: string, userId: string, groups: string[]): P
 }
 
 /**
+ * Reads the role as it is after the commit. A racing change back to `carer` or `owner` that
+ * committed after this one keeps glucose, so its socket must not be taken out of the group.
+ */
+async function isViewerNow(spaceId: string, userId: string): Promise<boolean> {
+  const row = await prisma.membership.findUnique({
+    where: { userId_spaceId: { userId, spaceId } },
+  });
+  return row?.role === "viewer";
+}
+
+/**
  * An owner changes a member's role (spec §2). `changeMemberRole` emits `member.updated` in the
  * same transaction and refuses to demote the last owner (`last-owner`, 409).
  */
@@ -66,7 +77,9 @@ export const PATCH = spaceRoute<{ spaceId: string; userId: string }>(
     const { session } = await requireMutation(request, spaceId, "owner");
     const { role } = await parseBody(request, ChangeRoleBody);
     await changeMemberRole({ spaceId, userId, role });
-    if (role === "viewer") await leaveGroups(spaceId, userId, [groupFor(spaceId, "reading")]);
+    if (role === "viewer" && (await isViewerNow(spaceId, userId))) {
+      await leaveGroups(spaceId, userId, [groupFor(spaceId, "reading")]);
+    }
     log.info("people.role-changed", { route: ROUTE, spaceId, userId: session.userId });
     return noContent();
   },

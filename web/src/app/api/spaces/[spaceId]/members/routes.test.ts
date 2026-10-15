@@ -273,6 +273,27 @@ describe("PATCH /api/spaces/:id/members/:userId", () => {
     expect(live.removed).toEqual([]);
   });
 
+  it("revokes against the role as it is now: a racing change back to carer that commits last keeps glucose", async () => {
+    world.as("owner");
+    // A second owner's "back to carer" commits after this request's "to viewer", before its revoke.
+    world.fake.beforeWrite = (table) => {
+      if (table !== "event") return;
+      world.fake.beforeWrite = null;
+      const row = world.fake
+        .rows("membership")
+        .find((m) => m.userId === USERS.carer.id && m.spaceId === "s1");
+      if (row) row.role = "carer";
+    };
+    expect((await patch(USERS.carer.id, { role: "viewer" })).status).toBe(204);
+    expect(
+      world.fake.rows("membership").find((m) => m.userId === USERS.carer.id && m.spaceId === "s1"),
+    ).toMatchObject({ role: "carer" });
+    expect(live.removed).toEqual([]);
+    expect(live.closed).toEqual([]);
+    live.publish("space-s1-glucose", reading);
+    expect(live.received(USERS.carer.id)).toEqual([reading]);
+  });
+
   it("tries a failed revoke once more before giving up", async () => {
     live.failRevokes(1);
     world.as("owner");
