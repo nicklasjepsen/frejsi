@@ -195,6 +195,29 @@ describe("ColourScreen (Farve-Indstilling)", () => {
     expect(navigation.refresh).not.toHaveBeenCalled();
   });
 
+  it("takes refreshed server data over its own earlier state", async () => {
+    const { api } = fakeApi();
+    const view = render(
+      <I18nProvider locale="da" messages={getMessages("da")} timeZone="Europe/Copenhagen">
+        <ColourScreen locale="da" data={data} api={api} />
+      </I18nProvider>,
+    );
+    fireEvent.click(screen.getByRole("radio", { name: "Vælg farven Granat til Jonas" }));
+    await waitFor(() => {
+      expect(screen.getByTestId("colour-preview")).toHaveAttribute("data-accent", "garnet");
+    });
+    const refreshed: SettingsData = {
+      ...data,
+      people: data.people.map((p) => (p.userId === owner.userId ? { ...p, accent: "sea" } : p)),
+    };
+    view.rerender(
+      <I18nProvider locale="da" messages={getMessages("da")} timeZone="Europe/Copenhagen">
+        <ColourScreen locale="da" data={refreshed} api={api} />
+      </I18nProvider>,
+    );
+    expect(screen.getByTestId("colour-preview")).toHaveAttribute("data-accent", "sea");
+  });
+
   it("speaks English for an English user", () => {
     mount({ ...data, me: { ...owner, locale: "en" } }, "en");
     expect(screen.getByRole("radio", { name: "Pick the colour Plum for Jonas" })).toBeInTheDocument();

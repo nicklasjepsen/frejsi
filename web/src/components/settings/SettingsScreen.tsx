@@ -21,6 +21,7 @@ import { formatClock } from "@/lib/i18n/time";
 import type { UserSettingsPatch } from "./contracts";
 import { Row, SegmentedControl, Switch } from "./controls";
 import type { SettingsData, SettingsPerson } from "./load-settings";
+import { useServerState } from "./server-state";
 import { formatDay, sameDay } from "./reading-time";
 import { failureCode, settingsApi, type SettingsApi } from "./settings-client";
 import styles from "./settings.module.css";
@@ -50,8 +51,15 @@ export function SettingsScreen({ locale, data, now, api = settingsApi() }: Setti
   const app = useTranslations("app");
   const router = useRouter();
 
-  const [space, setSpace] = useState(data.space);
-  const [people, setPeople] = useState(data.people);
+  // What the screen shows: the server's data, with this screen's own writes layered on until the
+  // next refresh brings them back from the server (another owner's change arrives the same way).
+  const [{ space, people }, update] = useServerState(data, (d) => ({
+    space: d.space,
+    people: d.people,
+  }));
+  const setSpace = (next: SpaceSettings) => {
+    update((s) => ({ ...s, space: next }));
+  };
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<ApiErrorCode | null>(null);
 
@@ -87,9 +95,10 @@ export function SettingsScreen({ locale, data, now, api = settingsApi() }: Setti
     attempt(async () => {
       const isMe = person.userId === me.userId;
       const next = await api.patchPerson(data.spaceId, person.userId, isMe, patch);
-      setPeople((current) =>
-        current.map((p) => (p.userId === person.userId ? { ...p, ...next } : p)),
-      );
+      update((s) => ({
+        ...s,
+        people: s.people.map((p) => (p.userId === person.userId ? { ...p, ...next } : p)),
+      }));
       // One's own language also changes the URL's locale; the shell re-renders on the refresh.
       if (isMe && patch.locale !== undefined && patch.locale !== locale) {
         router.replace(localeHref(patch.locale, "/settings"));
@@ -381,7 +390,9 @@ function TargetRange({
     setHigh(shown(space.targetHigh));
   }
 
+  /** The typed bound in mmol, or null for an empty or unreadable field: never a silent zero. */
   const toMmol = (text: string) => {
+    if (text.trim() === "") return null;
     const value = Number(text);
     if (!Number.isFinite(value)) return null;
     return unit === "mgdl" ? mgdlToMmol(value) : Math.round(value * 10) / 10;
@@ -405,6 +416,7 @@ function TargetRange({
             className={cx(styles.input, styles.rangeInput)}
             type="number"
             inputMode="decimal"
+            required
             step={unit === "mgdl" ? 1 : 0.1}
             min={0}
             max={unit === "mgdl" ? 700 : 40}
@@ -424,6 +436,7 @@ function TargetRange({
             className={cx(styles.input, styles.rangeInput)}
             type="number"
             inputMode="decimal"
+            required
             step={unit === "mgdl" ? 1 : 0.1}
             min={0}
             max={unit === "mgdl" ? 700 : 40}

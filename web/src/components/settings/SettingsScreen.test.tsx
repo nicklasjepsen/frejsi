@@ -222,6 +222,46 @@ describe("SettingsScreen · unit and target range (per space, owners only)", () 
     expect(nth(calls, 0).body).toEqual({ targetLow: 3.9, targetHigh: 10 });
   });
 
+  it("does not save an emptied bound as zero", () => {
+    const { api, calls } = fakeApi();
+    mount(connected, "da", api);
+    fireEvent.change(screen.getByLabelText("Nedre grænse"), { target: { value: "" } });
+    fireEvent.click(screen.getByRole("button", { name: "Gem" }));
+    expect(calls).toEqual([]);
+    expect(screen.getByLabelText("Nedre grænse")).toBeRequired();
+  });
+
+  it("takes refreshed server data over its own earlier state: another owner's change is seen, not overwritten", async () => {
+    const { api } = fakeApi();
+    const view = render(
+      <I18nProvider locale="da" messages={getMessages("da")} timeZone="Europe/Copenhagen">
+        <SettingsScreen locale="da" data={connected} now={NOW} api={api} />
+      </I18nProvider>,
+    );
+    fireEvent.click(screen.getByRole("radio", { name: "mg/dL" }));
+    await waitFor(() => {
+      expect(screen.getByRole("radio", { name: "mg/dL" })).toHaveAttribute("aria-checked", "true");
+    });
+    // router.refresh() re-renders the page with what the server has now: a new data object.
+    const refreshed: SettingsData = {
+      ...connected,
+      space: { ...space, glucoseUnit: "mmol", targetLow: 3.5, targetHigh: 9 },
+      people: connected.people.map((p) => (p.userId === child.userId ? { ...p, simpleMode: false } : p)),
+    };
+    view.rerender(
+      <I18nProvider locale="da" messages={getMessages("da")} timeZone="Europe/Copenhagen">
+        <SettingsScreen locale="da" data={refreshed} now={NOW} api={api} />
+      </I18nProvider>,
+    );
+    expect(screen.getByRole("radio", { name: "mmol/L" })).toHaveAttribute("aria-checked", "true");
+    expect(screen.getByLabelText("Nedre grænse")).toHaveValue(3.5);
+    expect(screen.getByLabelText("Øvre grænse")).toHaveValue(9);
+    expect(screen.getByRole("switch", { name: "Simpel visning for Alma" })).toHaveAttribute(
+      "aria-checked",
+      "false",
+    );
+  });
+
   it("shows a carer the unit but offers no change, and no target range", () => {
     mount({ ...connected, role: "carer", me: grandma, people: [grandma] });
     expect(screen.getByRole("radio", { name: "mmol/L" })).toBeDisabled();
