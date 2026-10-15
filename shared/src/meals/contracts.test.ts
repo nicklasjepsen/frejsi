@@ -119,6 +119,19 @@ describe("food and meal contracts", () => {
     },
   );
 
+  it.each([
+    { name: "candidate", schema: food.FoodCandidate, input: candidate },
+    {
+      name: "create",
+      schema: food.CreateFoodRequest,
+      input: { name: "Example dish", carbsPer100g: 20 },
+    },
+    { name: "update", schema: food.UpdateFoodRequest, input: { name: "Example dish" } },
+  ])("bounds the folded name at the storage limit for $name", ({ schema, input }) => {
+    expect(schema.safeParse({ ...input, name: "æ".repeat(100) }).success).toBe(true);
+    expect(schema.safeParse({ ...input, name: "æ".repeat(101) }).success).toBe(false);
+  });
+
   it("keeps source candidates with unknown nutrition available for manual completion", () => {
     const unknown = { ...candidate, carbsPer100g: null, portions: [] };
     expect(food.FoodCandidate.parse(unknown)).toEqual(unknown);
