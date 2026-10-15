@@ -230,6 +230,20 @@ describe("food reads", () => {
       getFood("s1", { ...actor, simpleMode: true }, "b", rig.deps),
     ).rejects.toMatchObject({ status: 404 });
   });
+  it("keeps whole-library counts when a search has no matches so the screen can distinguish an empty library", async () => {
+    rig.seed({ id: "a", verified: true });
+    rig.seed({ id: "b", origin: "remote-test" });
+    const result = await listFoods("s1", actor, { q: "no such fictional food" }, rig.deps);
+    expect(result.foods).toEqual([]);
+    expect(result.counts).toMatchObject({ all: 2, unverified: 1 });
+    const simple = await listFoods(
+      "s1",
+      { ...actor, simpleMode: true },
+      { q: "no match" },
+      rig.deps,
+    );
+    expect(simple.counts).toMatchObject({ all: 1, unverified: 0 });
+  });
   it("returns recent foods once each, newest first, within 30 days and this space", async () => {
     for (const id of ["a", "b", "c"]) rig.seed({ id });
     rig.items.push(
