@@ -188,18 +188,18 @@
       "changeLogin": "Skift login",
       "nightscout": "Nightscout",
       "manual": "Manuelt",
-      "vaultNote": "Login til {source} gemmes i et låst hvælv, aldrig i databasen. Ejere får besked, hvis forbindelsen har været nede i mere end 35 minutter.",
+      "vaultNote": "Login til {source} gemmes i en låst boks, aldrig i databasen. Ejere får besked, hvis forbindelsen har været nede i mere end 35 minutter.",
       "connect": "Forbind"
     },
     "connect": {
       "title": "Skift login",
-      "lead": "Log ind med den konto, som sensor-appen deler fra. Frejsi gemmer kun login i et låst hvælv – aldrig i databasen.",
+      "lead": "Log ind med den konto, som sensor-appen deler fra. Frejsi gemmer kun login i en låst boks – aldrig i databasen.",
       "username": "Brugernavn",
       "password": "Kodeord",
       "region": "Server",
       "regionOption": {
         "eu": "EU",
-        "us": "USA"
+        "us": "US"
       },
       "submit": "Forbind",
       "submitting": "Forbinder …",
@@ -218,7 +218,7 @@
       "label": "Sprog"
     },
     "targetRange": {
-      "label": "Mål-område",
+      "label": "Målområde",
       "low": "Nedre grænse",
       "high": "Øvre grænse",
       "note": "{unit} · som aftalt med klinikken",
@@ -227,8 +227,8 @@
       "crossed": "Den nedre grænse skal være lavere end den øvre."
     },
     "simpleMode": {
-      "lead": "Stor, billedbaseret og kun tjekket mad. Pr. person.",
-      "leadDesktop": "Stor, billedbaseret og kun tjekket mad. Slås til pr. person – det er en visning, ikke en rolle.",
+      "lead": "Stor, billedbaseret og kun bekræftet mad. Pr. person.",
+      "leadDesktop": "Stor, billedbaseret og kun bekræftet mad. Slås til pr. person – det er en visning, ikke en rolle.",
       "you": "{name} (dig)",
       "toggle": "Simpel visning for {name}",
       "languageFor": "Sprog for {name}"
