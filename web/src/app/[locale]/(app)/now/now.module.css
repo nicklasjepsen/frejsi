@@ -1,0 +1,156 @@
+/* Nu: phone (Main) under 1280 px, desktop (Nu-Desktop) from 1280 px; simpleMode on both. */
+
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding-top: 28px;
+}
+
+.label {
+  font-size: 15px;
+  color: var(--text-muted);
+}
+
+.phone {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.desktop {
+  display: none;
+}
+
+.chartCard {
+  margin-top: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 16px 16px 14px;
+}
+
+.chartHead {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 14px;
+  color: var(--text-muted);
+}
+
+.chartTitle {
+  font-weight: 700;
+  color: var(--text);
+}
+
+.lastMeal {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* simpleMode (Nu-Simpel): the label, the big number, one button. */
+.simple {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding-top: 36px;
+}
+
+.simpleLabel {
+  font-size: 20px;
+  color: var(--text-muted);
+}
+
+.simpleActions {
+  width: 100%;
+  margin-top: 28px;
+}
+
+@media (min-width: 1280px) {
+  .page {
+    gap: 20px;
+    padding-top: 0;
+  }
+
+  .phone {
+    display: none;
+  }
+
+  .desktop {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  .desktopHead {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .desktopHead h1 {
+    font-size: 30px;
+    letter-spacing: -0.01em;
+  }
+
+  .date {
+    font-size: 14px;
+    color: var(--text-muted);
+  }
+
+  .desktopRow {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    align-items: stretch;
+  }
+
+  .glucoseCard {
+    flex: 1 1 280px;
+    max-width: 360px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 22px 24px;
+  }
+
+  .glucoseCard .label {
+    font-size: 14px;
+  }
+
+  .statusLine {
+    margin-top: auto;
+    padding-top: 12px;
+    border-top: 1px solid var(--hairline);
+  }
+
+  .dayCard {
+    flex: 3 1 480px;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 20px 24px 16px;
+  }
+
+  .dayCard .chartTitle {
+    font-size: 16px;
+  }
+
+  .simple {
+    align-items: flex-start;
+    gap: 10px;
+    padding-top: 0;
+  }
+
+  .simpleLabel {
+    font-size: 24px;
+  }
+
+  .simpleActions {
+    max-width: 420px;
+    margin-top: 32px;
+  }
+}
