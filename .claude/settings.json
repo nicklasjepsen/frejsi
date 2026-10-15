@@ -26,7 +26,6 @@
       "Bash(git push --force*)",
       "Bash(git push -f*)",
       "Bash(gh pr review --approve*)",
-      "Bash(az *)",
       "Bash(gh pr merge --admin*)",
       "Bash(git tag -d*)",
       "Bash(git push --delete*)",
