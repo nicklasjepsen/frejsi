@@ -8,6 +8,7 @@ import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-li
 import type { ReactElement } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
+import { INVITE_TTL_MS } from "@/lib/auth/invites";
 import { I18nProvider } from "@/lib/i18n/Provider";
 import { getMessages } from "@/lib/i18n/messages";
 import type { AppLocale } from "@/lib/i18n/routing";
@@ -101,8 +102,10 @@ describe("GET /[locale]/invite/[token] · the landing (Invitation-Telefon, Invit
     // Kind reassurance, the inviter named as the one to ask again.
     expect(container.textContent).toContain("Ny telefon senere? Så beder du Jonas eller en anden ejer om et nyt link.");
     expect(container.textContent).toContain("Ingen adgangskode.");
-    // The allowed footer line, and nothing about the token in the DOM.
-    expect(container.textContent).toContain("regner aldrig insulin");
+    // The design's one footer line (docs/design/README.md "footers"), the same as the shell's,
+    // and nothing about the token in the DOM.
+    expect(container.textContent).toContain("Frejsi · åben kildekode · regner aldrig insulin");
+    expect(container.textContent).not.toContain("erstatter ikke");
     expect(container.innerHTML).not.toContain(TOKEN);
   });
 
@@ -239,15 +242,47 @@ describe("the button runs task 5's registration and lands signed in (§2b)", () 
     fireEvent.click(screen.getByRole("button", { name: "Opret adgang med denne telefon" }));
     expect(await screen.findByText(/kan ikke bruge adgangsnøgler/)).toBeInTheDocument();
 
+    // Here, and only here, the way out of a failure that keeps happening is a new link.
     mocks.register.mockRejectedValueOnce(new CeremonyError("api", "forbidden"));
     fireEvent.click(screen.getByRole("button", { name: "Opret adgang med denne telefon" }));
-    expect(await screen.findByText(/Det lykkedes ikke denne gang/)).toBeInTheDocument();
+    expect(
+      await screen.findByText(
+        "Det lykkedes ikke denne gang. Prøv igen – og hvis det bliver ved, så bed om et nyt link.",
+      ),
+    ).toBeInTheDocument();
+  });
+
+  it("an add-device link opened on a device that already holds the passkey says so, instead of asking to try again", async () => {
+    mocks.view = { ...soren, name: "Mette", role: "owner", forExistingUser: true };
+    mocks.register.mockRejectedValueOnce(new CeremonyError("already-registered"));
+    await open();
+    const button = screen.getByRole("button", { name: "Opret adgang med denne telefon" });
+    fireEvent.click(button);
+    expect(
+      await screen.findByText(
+        "Den her enhed kan allerede logge ind som dig. Så log ind i stedet, eller åbn linket på den telefon eller computer, du vil tilføje.",
+      ),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("alert")).not.toHaveTextContent(/Prøv igen/);
+    expect(mocks.switchSpace).not.toHaveBeenCalled();
+    expect(button).not.toBeDisabled();
+  });
+
+  it("an authenticator that refused for another reason gets the general line, not the cancelled one", async () => {
+    mocks.view = soren;
+    mocks.register.mockRejectedValueOnce(new CeremonyError("authenticator"));
+    await open();
+    fireEvent.click(screen.getByRole("button", { name: "Opret adgang med denne telefon" }));
+    const alert = await screen.findByRole("alert");
+    expect(alert).toHaveTextContent(/Det lykkedes ikke denne gang/);
+    expect(alert).not.toHaveTextContent(/når du er klar/);
   });
 });
 
 describe("a dead link (expired, used, revoked) · design gap 23", () => {
+  const ttlDays = INVITE_TTL_MS / (24 * 60 * 60 * 1000);
   it.each([
-    ["invite-expired", "Linket er udløbet. Et invitationslink gælder i 7 dage."],
+    ["invite-expired", `Linket er udløbet. Et invitationslink gælder i ${ttlDays} dage.`],
     ["invite-used", "Linket er allerede brugt. Et invitationslink kan kun bruges én gang."],
     ["invite-revoked", "Linket er trukket tilbage af den, der sendte det."],
   ] as const)("%s shows a kind page naming who can send a new one and reveals nothing of the space", async (code, body) => {
@@ -265,6 +300,16 @@ describe("a dead link (expired, used, revoked) · design gap 23", () => {
     expect(container.textContent).not.toContain("Jonas");
     expect(container.textContent).not.toContain("Søren");
     expect(screen.queryByRole("button")).toBeNull();
+    expect(container.textContent).toContain("Frejsi · åben kildekode · regner aldrig insulin");
+  });
+
+  it("the expired line counts the days the auth core gives a link, in English too", async () => {
+    mocks.error = new HttpError(410, "invite-expired");
+    await open("en");
+    expect(
+      screen.getByText(`The link has expired. An invitation link is valid for ${ttlDays} days.`),
+    ).toBeInTheDocument();
+    expect(ttlDays).toBe(7);
   });
 
   it("an unknown token is the localized not-found page", async () => {
