@@ -18,7 +18,14 @@ Insights.
 | `source-connect` | `POST /api/source-connect`, function key    | Parses `ConnectSourceRequest`, runs the adapter's `probe()`, and on `ok` writes the credential to Key Vault as `glucose-<spaceId>` and answers `{ result: "ok", secretRef }`. Otherwise `{ result: "bad-credentials" }` or `{ result: "unreachable" }`, both HTTP 200 (the result is the contract; the Settings route maps it to an `ApiError` code). A body that is not a `ConnectSourceRequest` is HTTP 400 `{ error: { code: "validation" } }`.                                                                                                                                                                                                                                                                                                                                                                                                                               |
 
 The Dexcom session is kept per space for the life of the process (one login per process lifetime
-per space); a changed credential or region replaces the adapter instance.
+per space); a changed credential or region replaces the adapter instance. A credential the service
+refuses (`SSO_AuthenticatePasswordInvalid` and the other codes in `CREDENTIAL_CODES`) is not
+presented again for an hour (`CREDENTIAL_RETRY_MS`): the cycle keeps counting the failure, so the
+space still goes `disconnected` after three, but the poller's own retries cannot lock the Dexcom
+account. A new password stored through `source-connect` is tried on the next cycle. The
+`poll.space-failed` line carries the stage and the cause (`fetch-failed:Timeout`,
+`fetch-failed:SSO_AuthenticatePasswordInvalid`), so one space's bad credential can be told from
+another's timeout.
 
 ## What never reaches a log
 
@@ -39,7 +46,10 @@ App Insights property (the shared telemetry initializer strips `username` and `p
 | `APP_VERSION`                           | both     | the release tag, set by `infra/deploy.sh`                       |
 | `FAKE_GLUCOSE_SOURCE`                   | CLI only | `1` runs the cycle against `FakeGlucoseSource`                  |
 
-`local.settings.example.json` has the local shape; copy it to `local.settings.json` (ignored by git).
+`local.settings.example.json` has the local shape; copy it to `local.settings.json` and fill in your
+own values. That file holds a connection string and is not in the repo's `.gitignore`: never stage
+it. `echo poller/local.settings.json >> .git/info/exclude` keeps it out of `git add -A` on your
+machine without a repo change.
 
 ## Build
 
@@ -60,8 +70,9 @@ zips as is (plan decision 30: Kudu cannot resolve pnpm workspace links):
 Externals, in `esbuild.config.mjs`: `@prisma/client` and `.prisma/client` (engine loaded by path),
 `applicationinsights` and `@opentelemetry/api-logs` (hook `require` at runtime), and
 `@azure/functions-core` (the host's own). `src/index.test.ts` checks every external is a dependency
-of this package and resolves from `dist/`; the build ends with a smoke `require` of each from
-`dist/` with no `NODE_PATH`.
+of this package and, when a `dist/` exists, that each is installed in `dist/node_modules` (the
+check is skipped without a build, since walking up to `poller/node_modules` would prove nothing);
+the build itself ends with a smoke `require` of each from `dist/` with no `NODE_PATH`.
 
 ## Run locally
 
