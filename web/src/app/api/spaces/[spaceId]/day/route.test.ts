@@ -31,6 +31,8 @@ interface MealRow {
 }
 
 let fake: FakeLiveDb;
+/** The test clock: the route and the session check read the same one. */
+let clock: Date = T0;
 let meals: MealRow[];
 let photos: MemoryPhotoStore;
 let logs: ReturnType<typeof captureLog>;
@@ -92,7 +94,8 @@ function addMeal(
 }
 
 beforeEach(() => {
-  fake = new FakeLiveDb(() => T0);
+  clock = T0;
+  fake = new FakeLiveDb(() => clock);
   fake.addSpace("s1", { timezone: "Europe/Copenhagen" });
   fake.addMember("owner-1", "s1", "owner");
   fake.addMember("carer-1", "s1", "carer");
@@ -234,7 +237,8 @@ describe("GET /api/spaces/:id/day?date= (plan §7)", () => {
 
   it("takes today from the space's own timezone, not the server's", async () => {
     // 01:30 UTC on the 16th is still the 15th in New York.
-    configureDay({ db: dayDb(), photos, now: () => new Date("2026-10-16T01:30:00.000Z") });
+    clock = new Date("2026-10-16T01:30:00.000Z");
+    configureDay({ db: dayDb(), photos, now: () => clock });
     const { body } = await day("sess-other-1", undefined, "s2");
     expect(body.date).toBe("2026-10-15");
     expect(body.timezone).toBe("America/New_York");

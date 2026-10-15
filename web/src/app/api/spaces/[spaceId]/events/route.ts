@@ -16,8 +16,8 @@ const ROUTE = "spaces.events";
  * The role filter is applied in the query: a viewer's page never carries a `reading`.
  */
 export const GET = spaceRoute(ROUTE, async (request, spaceId) => {
-  const { db } = liveDeps();
-  const { session, role } = await requireSpaceRole(request, spaceId, [], db);
+  const { db, now } = liveDeps();
+  const { session, role } = await requireSpaceRole(request, spaceId, [], db, now);
   const since = queryNumber(request, "since", SinceSeq, 0);
   const page = await loadEventsPage(spaceId, since, role, db);
   log.info("live.events", {

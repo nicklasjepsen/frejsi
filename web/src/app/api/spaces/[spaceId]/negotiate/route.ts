@@ -12,8 +12,8 @@ const ROUTE = "spaces.negotiate";
  * the client then polls `events?since`.
  */
 export const GET = spaceRoute(ROUTE, async (request, spaceId) => {
-  const { db, issuer } = liveDeps();
-  const { session } = await requireSpaceRole(request, spaceId, [], db);
+  const { db, issuer, now } = liveDeps();
+  const { session } = await requireSpaceRole(request, spaceId, [], db, now);
   const token = await issuer.issueClientToken({ userId: session.userId });
   if (!token) {
     log.info("live.unavailable", { route: ROUTE, spaceId, userId: session.userId, code: 503 });

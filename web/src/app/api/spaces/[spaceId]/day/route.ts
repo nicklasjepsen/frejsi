@@ -11,7 +11,7 @@ const ROUTE = "spaces.day";
  */
 export const GET = spaceRoute(ROUTE, async (request, spaceId) => {
   const deps = dayDeps();
-  const { session } = await requireSpaceRole(request, spaceId, [], deps.db);
+  const { session } = await requireSpaceRole(request, spaceId, [], deps.db, deps.now);
   const date = dateParam(request);
   const view = await loadDay(spaceId, date, session.locale, deps);
   log.info("day.read", { route: ROUTE, spaceId, userId: session.userId, count: view.mealCount });
