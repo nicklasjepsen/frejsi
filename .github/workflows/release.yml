@@ -69,8 +69,15 @@ jobs:
         id: infra
         # Also true when a redeploy asks for it: the parameters come from repository variables, which
         # a file diff cannot see (README step 7, the custom domain).
+        # The baseline is the last published GitHub release, not the last tag: a failed release keeps
+        # its tag but may have deployed nothing (v0.1.0 failed in its suite, before infra), and
+        # diffing against it would skip the infra job and deploy into resources that do not exist.
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
-          PREV=$(git tag -l 'v[0-9]*' --sort=-v:refname | grep -v "^$TAG$" | head -1 || true)
+          RELEASES=$(gh release list --repo "${{ github.repository }}" --exclude-drafts --limit 50 --json tagName --jq '.[].tagName')
+          PREV=$(printf '%s\n' "$RELEASES" | grep -v -x -e "$TAG" -e '' | head -1 || true)
+          echo "Previous release: ${PREV:-none}"
           if [ "${{ github.event.inputs.infra }}" = "true" ] || [ -z "$PREV" ] || git diff --name-only "$PREV" "$TAG" -- infra/ | grep -q .; then
             echo "changed=true" >> "$GITHUB_OUTPUT"
           else
