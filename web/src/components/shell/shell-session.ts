@@ -13,11 +13,22 @@ import { SPACE_COOKIE } from "./space-cookie";
  * one request would both pass the hourly check and write and emit twice. React `cache` keeps one
  * result per request, so the `(app)` layout and every page under it share one load.
  */
-export const getShellSession = cache((): Promise<SessionContext | null> => getSession());
+const getRequestSession = cache((): Promise<SessionContext | null> => getSession());
+
+/**
+ * The selected space's presentation session. Viewer navigation takes precedence over simpleMode,
+ * just as shellVariant does; this does not change the stored preference or API authorization.
+ */
+export const getShellSession = cache(async (): Promise<SessionContext | null> => {
+  const session = await getRequestSession();
+  if (!session?.simpleMode) return session;
+  const shell = await getShell();
+  return shell?.space.role === "viewer" ? { ...session, simpleMode: false } : session;
+});
 
 /** The shell data for the request's session and the device's chosen space, once per request. */
 export const getShell = cache(async (): Promise<ShellData | null> => {
-  const session = await getShellSession();
+  const session = await getRequestSession();
   if (!session) return null;
   return loadShellData(session, (await cookies()).get(SPACE_COOKIE)?.value);
 });
