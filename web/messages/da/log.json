@@ -72,6 +72,7 @@
   "bolus": {
     "button": "Bolus givet nu",
     "at": "Bolus {time}",
+    "remove": "Fjern bolustidspunkt",
     "undo": "Fortryd",
     "note": "\"Bolus givet nu\" gemmer kun tidspunktet, så det kan ses på kurven. Frejsi regner aldrig insulin."
   },

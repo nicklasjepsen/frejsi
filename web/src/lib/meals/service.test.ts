@@ -79,6 +79,7 @@ beforeEach(() => {
       const row = {
         ...previous,
         ...structuredClone(data),
+        bolusTs: data.bolusTs === null ? undefined : (data.bolusTs ?? previous.bolusTs),
         ts: data.ts ?? previous.ts,
         items: data.items ?? previous.items,
         totalCarbs: data.totalCarbs ?? previous.totalCarbs,

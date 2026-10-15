@@ -40,6 +40,13 @@ describe("the bolus tap copy (the single allowed insulin concept: a timestamp)",
     );
   });
 
+  it("allows exactly the two timestamp removal labels", () => {
+    expect(da.bolus.remove).toBe("Fjern bolustidspunkt");
+    expect(en.bolus.remove).toBe("Remove bolus time");
+    expect(findDosingVocabulary([["k", en.bolus.remove]])).toEqual([]);
+    expect(findDosingVocabulary([["k", "Remove bolus time now"]])).toHaveLength(1);
+  });
+
   it("has no amount, unit or ratio next to the bolus anywhere in the log copy", () => {
     const strings = messageStrings({ da, en }).map(([, text]) => text);
     for (const text of strings.filter((s) => /bolus/i.test(s))) {

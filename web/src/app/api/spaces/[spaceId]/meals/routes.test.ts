@@ -60,6 +60,7 @@ beforeEach(() => {
       const row = {
         ...previous,
         ...data,
+        bolusTs: data.bolusTs === null ? undefined : (data.bolusTs ?? previous.bolusTs),
         ts: data.ts ?? previous.ts,
         items: data.items ?? previous.items,
         totalCarbs: data.totalCarbs ?? previous.totalCarbs,
@@ -159,6 +160,34 @@ describe("meal routes", () => {
     expect(logs.all()).not.toMatch(/Fictional|toast|oats|note|data:image/);
     expect(logs.all()).toContain('"count":1');
   });
+  it.each(["owner", "carer"])(
+    "%s can clear a saved timestamp; omission preserves it",
+    async (user) => {
+      auth.addMember("owner", "s1", "owner");
+      const created = await POST(
+        request("POST", user, {
+          items: [{ name: "Fictional toast", carbs: 12 }],
+          bolusTs: at.toISOString(),
+        }),
+        ctx(),
+      );
+      const { id } = (await created.json()) as { id: string };
+      const unchanged = await PATCH(request("PATCH", user, { note: "Fictional edit" }), ctx(id));
+      expect(unchanged.status).toBe(200);
+      expect(await unchanged.json()).toHaveProperty("bolusTs", at.toISOString());
+      const denied = await PATCH(request("PATCH", "viewer", { bolusTs: null }), ctx(id));
+      expect(denied.status).toBe(403);
+      expect(rows.get(id)?.bolusTs).toBe(at.toISOString());
+      expect(events).toEqual(["meal.created", "meal.updated"]);
+      const cleared = await PATCH(request("PATCH", user, { bolusTs: null }), ctx(id));
+      expect(cleared.status).toBe(200);
+      expect(await cleared.json()).not.toHaveProperty("bolusTs");
+      const read = await GET(request("GET", user), ctx(id));
+      expect(await read.json()).not.toHaveProperty("bolusTs");
+      expect(events).toEqual(["meal.created", "meal.updated", "meal.updated"]);
+    },
+  );
+
   it("returns photo-unavailable for a configured store outage without a meal or event write", async () => {
     const put = photos.put.bind(photos);
     vi.spyOn(photos, "put").mockImplementation(async (key, bytes) => {
@@ -232,6 +261,9 @@ describe("meal routes", () => {
     expect(
       (await PATCH(request("PATCH", "carer", { bolusTs: at.toISOString() }), ctx(id))).status,
     ).toBe(400);
+    const clear = await PATCH(request("PATCH", "carer", { bolusTs: null }), ctx(id));
+    expect(clear.status).toBe(400);
+    expect(await clear.json()).toHaveProperty("error.code", "simple-mode");
     expect((await PUT(request("PUT", "carer", { photoDataUrl: png }), ctx(id))).status).toBe(503);
     expect((await DELETE_PHOTO(request("DELETE"), ctx(id))).status).toBe(503);
     expect(events).toEqual(["meal.created"]);

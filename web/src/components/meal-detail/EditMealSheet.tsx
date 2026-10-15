@@ -82,7 +82,7 @@ export function EditMealSheet({
           ts,
           ...(itemsChanged ? { items: items.map((item) => item.input) } : {}),
           note,
-          ...(bolusTs ? { bolusTs } : {}),
+          ...(bolusTs || view.meal.bolusTs ? { bolusTs } : {}),
           ...(photo ? { photoDataUrl: photo } : {}),
         });
         setWritten(true);
@@ -197,6 +197,13 @@ export function EditMealSheet({
           bolusTs={bolusTs}
           timeZone={timeZone}
           canUndo={bolusTs !== (view.meal.bolusTs ?? null)}
+          {...(view.meal.bolusTs && bolusTs === view.meal.bolusTs
+            ? {
+                onRemove: () => {
+                  setBolusTs(null);
+                },
+              }
+            : {})}
           onTap={() => {
             setBolusTs(new Date().toISOString());
           }}

@@ -29,7 +29,13 @@ const requestFields = {
 };
 export const CreateMealRequest = z.strictObject(requestFields);
 export type CreateMealRequest = z.infer<typeof CreateMealRequest>;
-export const UpdateMealRequest = z.strictObject(requestFields).partial();
+export const UpdateMealRequest = z
+  .strictObject({
+    ...requestFields,
+    // Omitted means unchanged; null explicitly clears a saved timestamp.
+    bolusTs: z.iso.datetime().nullable().optional(),
+  })
+  .partial();
 export type UpdateMealRequest = z.infer<typeof UpdateMealRequest>;
 export const MealItemView = z.strictObject(itemFields);
 export type MealItemView = z.infer<typeof MealItemView>;
