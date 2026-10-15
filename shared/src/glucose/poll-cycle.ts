@@ -14,6 +14,8 @@ export const WINDOW_MINUTES = 30;
 export const FIRST_RUN_MINUTES = 1440;
 /** Three consecutive failures mark the source disconnected (spec §3). */
 export const FAILURES_BEFORE_DISCONNECTED = 3;
+/** Spaces polled side by side, so a few stalled sources cannot hold the rest until the host's timeout. */
+export const CONCURRENCY = 4;
 
 /** The Space columns the cycle reads. */
 export interface PollSpaceRow {
@@ -39,7 +41,12 @@ export interface PollDb {
     }): Promise<PollSpaceRow[]>;
     update(args: {
       where: { id: string };
-      data: { sourceStatus?: string; sourceFailures?: number; lastReadingAt?: Date };
+      data: { sourceStatus?: string; sourceFailures?: number };
+    }): Promise<unknown>;
+    /** `lastReadingAt` moves forward only, decided by the database, so overlapping cycles cannot regress it. */
+    updateMany(args: {
+      where: { id: string; OR: [{ lastReadingAt: null }, { lastReadingAt: { lt: Date } }] };
+      data: { lastReadingAt: Date };
     }): Promise<unknown>;
   };
   reading: {
@@ -150,11 +157,27 @@ export async function runPollCycle(
     },
   });
 
-  const outcomes: SpaceOutcome[] = [];
-  for (const space of spaces) {
-    outcomes.push(await pollSpace(space, { ...deps, emit, now, log }));
-  }
-  return outcomes;
+  const resolved = { ...deps, emit, now, log };
+  return mapBounded(spaces, CONCURRENCY, (space) => pollSpace(space, resolved));
+}
+
+/** `Promise.all` with at most `limit` in flight; results in input order. */
+async function mapBounded<T, R>(
+  items: T[],
+  limit: number,
+  fn: (item: T) => Promise<R>,
+): Promise<R[]> {
+  const results: R[] = new Array<R>(items.length);
+  let next = 0;
+  const worker = async () => {
+    while (next < items.length) {
+      const index = next;
+      next += 1;
+      results[index] = await fn(items[index] as T);
+    }
+  };
+  await Promise.all(Array.from({ length: Math.min(limit, items.length) }, worker));
+  return results;
 }
 
 type Resolved = Required<Pick<PollCycleDeps, "db" | "sources" | "emit" | "now" | "log">> &
@@ -240,11 +263,13 @@ async function pollSpace(space: PollSpaceRow, deps: Resolved): Promise<SpaceOutc
   } catch (error) {
     const code = error instanceof CycleError ? error.code : "fetch-failed";
     deps.log.warn("poll.space-failed", { spaceId, count: stored, code: codeOf(error) });
-    // A database failure after a good fetch says nothing about the source: no failure counted.
-    const status =
-      code === "status-update-failed"
-        ? (space.sourceStatus as SourceStatus)
-        : await markFailed(space, latest, deps);
+    // Only the source's own faults count towards "disconnected"; a database failure after a good
+    // fetch says nothing about the source.
+    const sourceFault =
+      code === "config-invalid" || code === "source-unavailable" || code === "fetch-failed";
+    const status = sourceFault
+      ? await markFailed(space, latest, deps)
+      : await keepStatus(space, latest, deps);
     return { spaceId, outcome: "failed", code, stored, status };
   }
 }
@@ -274,13 +299,37 @@ async function markConnected(
   }
   await deps.db.space.update({
     where: { id: space.id },
-    data: {
-      sourceStatus: "connected",
-      sourceFailures: 0,
-      ...(latest ? { lastReadingAt: latest } : {}),
-    },
+    data: { sourceStatus: "connected", sourceFailures: 0 },
   });
+  await advanceLastReadingAt(space.id, latest, deps);
   return "connected";
+}
+
+/** The status is not the source's fault here; only the rows already stored move `lastReadingAt`. */
+async function keepStatus(
+  space: PollSpaceRow,
+  latest: Date | null,
+  deps: Resolved,
+): Promise<SourceStatus> {
+  try {
+    await advanceLastReadingAt(space.id, latest, deps);
+  } catch (error) {
+    deps.log.error("poll.status-update-failed", { spaceId: space.id, code: codeOf(error) }, error);
+  }
+  return space.sourceStatus as SourceStatus;
+}
+
+/** Forward only, decided by the database: an older batch that lands late cannot move it back. */
+async function advanceLastReadingAt(
+  spaceId: string,
+  latest: Date | null,
+  deps: Resolved,
+): Promise<void> {
+  if (!latest) return;
+  await deps.db.space.updateMany({
+    where: { id: spaceId, OR: [{ lastReadingAt: null }, { lastReadingAt: { lt: latest } }] },
+    data: { lastReadingAt: latest },
+  });
 }
 
 /** Counts the failure; the third one in a row flips the status and tells the clients, once. */
@@ -302,12 +351,9 @@ async function markFailed(
     }
     await deps.db.space.update({
       where: { id: space.id },
-      data: {
-        sourceFailures: failures,
-        ...(disconnect ? { sourceStatus: "disconnected" } : {}),
-        ...(latest ? { lastReadingAt: latest } : {}),
-      },
+      data: { sourceFailures: failures, ...(disconnect ? { sourceStatus: "disconnected" } : {}) },
     });
+    await advanceLastReadingAt(space.id, latest, deps);
   } catch (error) {
     deps.log.error("poll.status-update-failed", { spaceId: space.id, code: codeOf(error) }, error);
     return space.sourceStatus as SourceStatus;
