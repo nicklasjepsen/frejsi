@@ -36,9 +36,16 @@ export function useDay(
   subscribe: Subscribe | undefined,
   loaded = false,
 ): DayState {
-  const [state, setState] = useState<DayState>({ status: "loading" });
+  // Scoped to the space it was read for: another space's meals are never shown, not even while
+  // the new space's first read is out or after it failed.
+  const [state, setState] = useState<{ spaceId: string; state: DayState }>({
+    spaceId,
+    state: { status: "loading" },
+  });
   const latest = useRef(0);
   const inFlight = useRef<AbortController | null>(null);
+  /** The last read failed, whether or not an older day is still on screen: the timer retries. */
+  const lastFailed = useRef(false);
 
   const load = useCallback(async () => {
     const id = ++latest.current;
@@ -49,12 +56,15 @@ export function useDay(
     try {
       next = { status: "ready", day: await fetchDay(spaceId, { signal: controller.signal }) };
     } catch {
-      // Shown as "could not be loaded"; the next event or focus tries again.
+      // Shown as "could not be loaded" unless a day is on screen; the recheck tries again.
     }
     if (id !== latest.current) return;
     inFlight.current = null;
+    lastFailed.current = next.status === "failed";
     setState((current) =>
-      next.status === "failed" && current.status === "ready" ? current : next,
+      next.status === "failed" && current.spaceId === spaceId && current.state.status === "ready"
+        ? current
+        : { spaceId, state: next },
     );
   }, [spaceId]);
 
@@ -67,17 +77,17 @@ export function useDay(
     };
   }, [load, loaded]);
 
-  const shown = state.status === "ready" ? state.day : null;
-  const failed = state.status === "failed";
+  const current: DayState = state.spaceId === spaceId ? state.state : { status: "loading" };
+  const shown = current.status === "ready" ? current.day : null;
   useEffect(() => {
     const timer = setInterval(() => {
       const turned = shown && localDateOf(new Date(), shown.timezone) !== shown.date;
-      if (turned || (failed && inFlight.current === null)) void load();
+      if (inFlight.current === null && (turned || lastFailed.current)) void load();
     }, DAY_RECHECK_MS);
     return () => {
       clearInterval(timer);
     };
-  }, [shown, failed, load]);
+  }, [shown, load]);
 
   useEffect(() => {
     if (!subscribe) return;
@@ -96,5 +106,5 @@ export function useDay(
     };
   }, [load]);
 
-  return state;
+  return current;
 }
