@@ -2,14 +2,16 @@
 
 import type { InviteView } from "@frejsi/shared";
 import { useTranslations } from "next-intl";
+import Link from "next/link";
 import { useState, type ReactNode } from "react";
 
 import { switchSpace } from "@/components/shell/actions";
 import { Avatar } from "@/components/ui/Avatar";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
-import type { AppLocale } from "@/lib/i18n/routing";
+import { localeHref, type AppLocale } from "@/lib/i18n/routing";
 
+import { navigate } from "./navigate";
 import { PasskeyIcon } from "./PasskeyIcon";
 import { PublicPage } from "./PublicPage";
 import styles from "./invite.module.css";
@@ -65,34 +67,44 @@ export function InviteLanding({
   const t = useTranslations("invite");
   const root = useTranslations();
   const [busy, setBusy] = useState(false);
-  const [failure, setFailure] = useState<string | null>(null);
+  const [failure, setFailure] = useState<{ text: string; signIn: boolean } | null>(null);
 
-  const messageFor = (error: unknown): string => {
+  const failureFor = (error: unknown): { text: string; signIn: boolean } => {
+    const only = (text: string) => ({ text, signIn: false });
     if (error instanceof CeremonyError) {
-      if (error.kind === "cancelled") return root("passkey.cancelled");
-      if (error.kind === "unsupported") return root("passkey.unsupported");
+      if (error.kind === "cancelled") return only(root("passkey.cancelled"));
+      if (error.kind === "unsupported") return only(root("passkey.unsupported"));
       // An add-device link opened on a device that already signs in as this user: trying again
-      // would throw the same way, so say what to do instead.
-      if (error.kind === "already-registered") return t("alreadyRegistered");
-      if (error.code && INVITE_CODES.has(error.code)) return root(`errors.api.${error.code}`);
+      // would throw the same way, so say what to do instead, and put the sign-in right there.
+      if (error.kind === "already-registered") return { text: t("alreadyRegistered"), signIn: true };
+      if (error.code && INVITE_CODES.has(error.code)) return only(root(`errors.api.${error.code}`));
     }
     // The invitation's own general line: here a new link is the way out if it keeps failing.
-    return t("failed");
+    return only(t("failed"));
   };
 
   const create = async () => {
     if (busy) return;
     setBusy(true);
     setFailure(null);
+    let spaceId: string;
     try {
-      const { spaceId } = await registerWithInvite(token);
+      ({ spaceId } = await registerWithInvite(token));
+    } catch (error) {
+      setFailure(failureFor(error));
+      setBusy(false);
+      return;
+    }
+    // From here the device is signed in and the link is spent, so a failure is not a failed
+    // registration: if pointing the device at the space fails (a dropped connection, or a server
+    // action gone stale after a deploy), go to the front page, which picks a space on its own.
+    try {
       const form = new FormData();
       form.set("locale", locale);
       form.set("spaceId", spaceId);
       await switchSpace(form);
-    } catch (error) {
-      setFailure(messageFor(error));
-      setBusy(false);
+    } catch {
+      navigate(localeHref(locale, "/"));
     }
   };
 
@@ -108,7 +120,13 @@ export function InviteLanding({
       )}
       {failure && (
         <p role="alert" className={pub.alert}>
-          {failure}
+          {failure.text}
+          {failure.signIn && (
+            <>
+              {" "}
+              <Link href={localeHref(locale, "/welcome")}>{t("login")}</Link>
+            </>
+          )}
         </p>
       )}
     </>
@@ -138,7 +156,7 @@ export function InviteLanding({
         {feedback}
       </div>
 
-      <section className={pub.phoneOnly} aria-label={t("desktop.title")}>
+      <section className={pub.phoneOnly} aria-label={t("createTitle")}>
         <Card className={styles.phoneCard}>
           <div className={styles.lines}>
             <Line>{t("phone.noPassword")}</Line>
@@ -155,8 +173,8 @@ export function InviteLanding({
         </div>
       </section>
 
-      <Card className={`${pub.desktopOnly} ${styles.panel}`} aria-label={t("desktop.title")}>
-        <h2 className={styles.panelTitle}>{t("desktop.title")}</h2>
+      <Card className={`${pub.desktopOnly} ${styles.panel}`} aria-label={t("createTitle")}>
+        <h2 className={styles.panelTitle}>{t("createTitle")}</h2>
         <div className={styles.lines}>
           <Line>{t("desktop.noPassword")}</Line>
           <Line>{t("desktop.alsoPhone", { inviter })}</Line>

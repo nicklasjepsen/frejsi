@@ -39,7 +39,7 @@ export function InviteUnavailable({
         <div className={styles.again}>
           <Notice>{t("unavailable.alreadyIn")}</Notice>
           <Button href={localeHref(locale, "/welcome")} variant="secondary">
-            {t("unavailable.login")}
+            {t("login")}
           </Button>
         </div>
       </div>
