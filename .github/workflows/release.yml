@@ -242,6 +242,7 @@ jobs:
           CUSTOM_DOMAIN: ${{ vars.CUSTOM_DOMAIN }}
           SQL_SERVER_ID: ${{ vars.SQL_SERVER_ID }}
           APP_VERSION: ${{ env.TAG }}
+          ALERT_EMAIL: ${{ secrets.ALERT_EMAIL }}
         run: bash infra/deploy.sh
 
       - name: Smoke

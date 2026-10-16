@@ -12,7 +12,8 @@
     "./food": "./src/food/registry.ts",
     "./stats": "./src/stats/index.ts",
     "./ai": "./src/ai/index.ts",
-    "./insights": "./src/insights/index.ts"
+    "./insights": "./src/insights/index.ts",
+    "./push": "./src/push/index.ts"
   },
   "scripts": {
     "postinstall": "prisma generate",
@@ -34,10 +35,12 @@
     "applicationinsights": "3.17.0",
     "csv-parse": "7.0.3",
     "sharp": "0.35.5",
+    "web-push": "3.6.7",
     "zod": "4.6.7"
   },
   "devDependencies": {
     "@types/node": "22.20.5",
+    "@types/web-push": "3.6.4",
     "eslint": "9.39.5",
     "jpeg-js": "0.4.4",
     "prisma": "6.19.3",

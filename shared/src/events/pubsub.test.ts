@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 
-import { createEventSinkFromEnv, WebPubSubEventSink, type WebPubSubClientLike } from "./pubsub";
+import {
+  createEventSinkFromEnv,
+  CompositeEventSink,
+  WebPubSubEventSink,
+  type WebPubSubClientLike,
+} from "./pubsub";
 
 function fakeClient() {
   const sent: { group: string; message: unknown }[] = [];
@@ -120,4 +125,36 @@ describe("createEventSinkFromEnv", () => {
     await expect(sink.removeUserFromGroup("space-s1-glucose", "u1")).resolves.toBeUndefined();
     await expect(sink.closeUserConnections("u1")).resolves.toBeUndefined();
   });
+});
+
+it("composes push when VAPID is complete and preserves live token and revocation methods", async () => {
+  const { client, tokens, removed } = fakeClient();
+  const sink = createEventSinkFromEnv(
+    {
+      WEB_PUBSUB_ENDPOINT: "https://pubsub.example",
+      VAPID_PRIVATE_KEY: "fictional",
+      VAPID_PUBLIC_KEY: "fictional",
+      VAPID_SUBJECT: "https://frejsi.example",
+    },
+    { fromEndpoint: () => client, fromConnectionString: () => client },
+  );
+  expect(sink).toBeInstanceOf(CompositeEventSink);
+  await sink.publish("space-s1", envelope);
+  await sink.issueClientToken({ userId: "u1" });
+  await sink.removeUserFromGroup("space-s1", "u1");
+  expect(tokens).toHaveLength(1);
+  expect(removed).toEqual([{ group: "space-s1", userId: "u1" }]);
+});
+it("still delivers push after live delivery fails", async () => {
+  const seen: unknown[] = [];
+  const live = new WebPubSubEventSink(fakeClient().client);
+  live.publish = () => Promise.reject(new Error("Fictional service failure"));
+  const sink = new CompositeEventSink(live, {
+    publish: (group, event) => {
+      seen.push({ group, event });
+      return Promise.resolve();
+    },
+  });
+  await expect(sink.publish("space-s1", envelope)).rejects.toThrow("Event sink failed");
+  expect(seen).toEqual([{ group: "space-s1", event: envelope }]);
 });

@@ -25,7 +25,7 @@ type Row = Record<string, unknown>;
 type Where = Record<string, unknown>;
 
 export type TableName =
-  "user" | "space" | "membership" | "invite" | "passkey" | "session" | "authChallenge" | "event";
+  "user" | "space" | "membership" | "invite" | "passkey" | "session" | "authChallenge" | "event" | "pushSubscription";
 
 export type Tables = Record<TableName, Row[]>;
 
@@ -38,6 +38,7 @@ const emptyTables = (): Tables => ({
   session: [],
   authChallenge: [],
   event: [],
+  pushSubscription: [],
 });
 
 /** Column defaults the schema gives (plan §3), applied on create when the caller leaves them out. */
@@ -78,6 +79,7 @@ const defaults: Record<TableName, (now: Date) => Row> = {
   session: (now) => ({ passkeyId: null, createdAt: now, lastSeenAt: now }),
   authChallenge: () => ({ id: randomUUID(), inviteToken: null, userId: null }),
   event: (now) => ({ ts: now }),
+  pushSubscription: (now) => ({ id: randomUUID(), createdAt: now, failures: 0 }),
 };
 
 /** Primary and unique keys, so a duplicate insert fails the way SQL Server would. */
@@ -90,6 +92,7 @@ const uniqueKeys: Record<TableName, string[][]> = {
   session: [["id"]],
   authChallenge: [["id"]],
   event: [["spaceId", "seq"]],
+  pushSubscription: [["id"], ["userId", "endpoint"]],
 };
 
 interface Relation {
@@ -326,6 +329,21 @@ export class FakeAuthDb {
         this.checkUnique(table, row);
         rows().push(row);
         return Promise.resolve(this.include(table, row, args.include));
+      },
+      upsert: (args: {where: Where; create: Row; update: Row}) => {
+        record("upsert");
+        this.failIfAsked(table);
+        const row = rows().find((r) => matches(r, args.where));
+        if (row) {
+          const next = {...row, ...strip(args.update, row)};
+          this.checkUnique(table, next, row);
+          Object.assign(row, next);
+          return Promise.resolve({...row});
+        }
+        const created = {...defaults[table](this.now()), ...strip(args.create)};
+        this.checkUnique(table, created);
+        rows().push(created);
+        return Promise.resolve({...created});
       },
       findUnique: (args: { where: Where; include?: Record<string, unknown> }) => {
         record("findUnique");

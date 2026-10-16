@@ -36,6 +36,7 @@ function runDeploy({ env = {}, omit = [], rootServer = true } = {}) {
     AZURE_SUBSCRIPTION_ID: '00000000-0000-0000-0000-000000000000',
     AZURE_RESOURCE_GROUP: 'frejsi',
     APP_VERSION: 'v0.1.0',
+    ALERT_EMAIL: 'alerts@frejsi.example',
     ...env,
   };
   for (const k of omit) delete fullEnv[k];
@@ -171,7 +172,7 @@ test('never echoes a secret', () => {
 });
 
 test('later releases: existing secrets are reused, no user is created', () => {
-  const r = runDeploy({ env: { FAKE_EXISTING_SECRETS: 'database-url web-pubsub-connection-string bootstrap-token' } });
+  const r = runDeploy({ env: { FAKE_EXISTING_SECRETS: 'database-url web-pubsub-connection-string bootstrap-token vapid-private-key vapid-public-key' } });
   assert.equal(r.status, 0, r.output);
   assert.equal(r.calls.filter((c) => c.startsWith('sqlcmd')).length, 1);
   assert.doesNotMatch(readFileSync(path.join(r.logDir, 'sqlcmd-1.sql'), 'utf8'), /CREATE USER|ALTER USER/);
@@ -180,7 +181,7 @@ test('later releases: existing secrets are reused, no user is created', () => {
 });
 
 test('custom domain wins over the default hostname for APP_ORIGIN', () => {
-  const r = runDeploy({ env: { FAKE_EXISTING_SECRETS: 'database-url web-pubsub-connection-string bootstrap-token', CUSTOM_DOMAIN: 'frejsi.jepsen.ninja' } });
+  const r = runDeploy({ env: { FAKE_EXISTING_SECRETS: 'database-url web-pubsub-connection-string bootstrap-token vapid-private-key vapid-public-key', CUSTOM_DOMAIN: 'frejsi.jepsen.ninja' } });
   assert.equal(r.status, 0, r.output);
   const swa = JSON.parse(readFileSync(path.join(r.logDir, 'swa-appsettings.json'), 'utf8')).properties;
   assert.equal(swa.APP_ORIGIN, 'https://frejsi.jepsen.ninja');
@@ -188,14 +189,14 @@ test('custom domain wins over the default hostname for APP_ORIGIN', () => {
 });
 
 test('the firewall rule is removed even when the migration fails', () => {
-  const r = runDeploy({ env: { FAKE_EXISTING_SECRETS: 'database-url web-pubsub-connection-string bootstrap-token', FAKE_FAIL_AT: 'migrate' } });
+  const r = runDeploy({ env: { FAKE_EXISTING_SECRETS: 'database-url web-pubsub-connection-string bootstrap-token vapid-private-key vapid-public-key', FAKE_FAIL_AT: 'migrate' } });
   assert.notEqual(r.status, 0);
   assert.ok(r.calls.some((c) => /sql server firewall-rule delete/.test(c)), r.calls.join('\n'));
   assert.ok(!r.calls.some((c) => /config-zip/.test(c)), 'nothing deployed after a failed migration');
 });
 
 test('waits for the source-connect function key to exist', () => {
-  const r = runDeploy({ env: { FAKE_EXISTING_SECRETS: 'database-url web-pubsub-connection-string bootstrap-token', FAKE_FUNCTION_KEY_RETRIES: '2', DEPLOY_RETRY_SLEEP: '0' } });
+  const r = runDeploy({ env: { FAKE_EXISTING_SECRETS: 'database-url web-pubsub-connection-string bootstrap-token vapid-private-key vapid-public-key', FAKE_FUNCTION_KEY_RETRIES: '2', DEPLOY_RETRY_SLEEP: '0' } });
   assert.equal(r.status, 0, r.output);
   assert.equal(r.calls.filter((c) => /functionapp function keys list/.test(c)).length, 3);
 });
@@ -209,7 +210,7 @@ test('a failed listKeys stops the deploy; no empty Web PubSub secret is written'
 });
 
 test('a failed Key Vault read stops the deploy before the web settings are replaced', () => {
-  const r = runDeploy({ env: { FAKE_EXISTING_SECRETS: 'database-url web-pubsub-connection-string bootstrap-token', FAKE_FAIL_AT: 'secret-show:bootstrap-token' } });
+  const r = runDeploy({ env: { FAKE_EXISTING_SECRETS: 'database-url web-pubsub-connection-string bootstrap-token vapid-private-key vapid-public-key', FAKE_FAIL_AT: 'secret-show:bootstrap-token' } });
   assert.notEqual(r.status, 0);
   assert.match(r.output, /bootstrap-token/);
   assert.ok(!r.calls.some((c) => /^az rest --method put/.test(c)), 'the SWA settings were PUT after a failed read');
@@ -217,7 +218,7 @@ test('a failed Key Vault read stops the deploy before the web settings are repla
 });
 
 test('an empty Key Vault secret is an error, not an empty app setting', () => {
-  const r = runDeploy({ env: { FAKE_EXISTING_SECRETS: 'database-url web-pubsub-connection-string bootstrap-token', FAKE_SECRET_READS_EMPTY: 'web-pubsub-connection-string' } });
+  const r = runDeploy({ env: { FAKE_EXISTING_SECRETS: 'database-url web-pubsub-connection-string bootstrap-token vapid-private-key vapid-public-key', FAKE_SECRET_READS_EMPTY: 'web-pubsub-connection-string' } });
   assert.notEqual(r.status, 0);
   assert.match(r.output, /web-pubsub-connection-string/);
   assert.ok(!r.calls.some((c) => /^az rest --method put/.test(c)), 'the SWA settings were PUT with an empty value');
@@ -225,7 +226,7 @@ test('an empty Key Vault secret is an error, not an empty app setting', () => {
 
 test('a failed Key Vault listing stops the deploy; it never counts as "secret absent"', () => {
   // Otherwise the SQL branch would generate a new password and ALTER USER the live application user.
-  const r = runDeploy({ env: { FAKE_EXISTING_SECRETS: 'database-url web-pubsub-connection-string bootstrap-token', FAKE_FAIL_AT: 'secret-list' } });
+  const r = runDeploy({ env: { FAKE_EXISTING_SECRETS: 'database-url web-pubsub-connection-string bootstrap-token vapid-private-key vapid-public-key', FAKE_FAIL_AT: 'secret-list' } });
   assert.notEqual(r.status, 0);
   assert.equal(r.calls.filter((c) => c.startsWith('sqlcmd')).length, 0, 'a user was created or altered');
   assert.equal(r.calls.filter((c) => /keyvault secret set/.test(c)).length, 0);
@@ -233,7 +234,7 @@ test('a failed Key Vault listing stops the deploy; it never counts as "secret ab
 });
 
 test('registers the connect handler after the web upload, for the connect event only (issue #95)', () => {
-  const r = runDeploy({ env: { FAKE_EXISTING_SECRETS: 'database-url web-pubsub-connection-string bootstrap-token' } });
+  const r = runDeploy({ env: { FAKE_EXISTING_SECRETS: 'database-url web-pubsub-connection-string bootstrap-token vapid-private-key vapid-public-key' } });
   assert.equal(r.status, 0, r.output);
   const upload = r.calls.findIndex((c) => c.startsWith('docker run'));
   const hub = r.calls.findIndex((c) => /rest --method put .*webPubSub\/wps-frejsi-abc\/hubs\/frejsi\?/.test(c));
@@ -317,5 +318,40 @@ test('removing optional AI secrets also removes only their stale Function App se
     assert.equal(deleted.includes('ANTHROPIC_API_KEY'), !remaining);
     assert.ok(!deleted.includes('APP_VERSION'), 'removed unrelated settings');
     assert.equal(existsSync(path.join(r.logDir, 'function-ai-settings.json')), Boolean(remaining));
+  }
+});
+
+test('VAPID: generates a pair once, recovers a partial write, reuses existing keys and never prints values', () => {
+  const first = runDeploy();
+  assert.equal(first.status, 0, first.output);
+  const settings = JSON.parse(readFileSync(path.join(first.logDir, 'swa-appsettings.json'), 'utf8')).properties;
+  assert.equal(settings.VAPID_SUBJECT, 'mailto:alerts@frejsi.example');
+  assert.match(settings.VAPID_PRIVATE_KEY, /^[A-Za-z0-9_-]{43}$/);
+  assert.match(settings.VAPID_PUBLIC_KEY, /^[A-Za-z0-9_-]{87}$/);
+  assert.doesNotMatch(first.output + first.calls.join('\n'), new RegExp(settings.VAPID_PRIVATE_KEY));
+  assert.equal(first.calls.filter((c) => /keyvault secret set .* -n vapid-/.test(c)).length, 2);
+  const recovered = runDeploy({env: {FAKE_EXISTING_SECRETS: 'vapid-private-key', FAKE_VAPID_PRIVATE: settings.VAPID_PRIVATE_KEY}});
+  assert.equal(recovered.status, 0, recovered.output);
+  const repaired = JSON.parse(readFileSync(path.join(recovered.logDir, 'swa-appsettings.json'), 'utf8')).properties;
+  assert.equal(repaired.VAPID_PRIVATE_KEY, settings.VAPID_PRIVATE_KEY);
+  assert.equal(repaired.VAPID_PUBLIC_KEY, settings.VAPID_PUBLIC_KEY);
+  assert.equal(recovered.calls.filter((c) => /keyvault secret set .* -n vapid-private-key/.test(c)).length, 0);
+  assert.equal(recovered.calls.filter((c) => /keyvault secret set .* -n vapid-public-key/.test(c)).length, 1);
+  const existing = runDeploy({env: {FAKE_EXISTING_SECRETS: 'vapid-private-key vapid-public-key'}});
+  assert.equal(existing.status, 0, existing.output);
+  assert.equal(existing.calls.filter((c) => /keyvault secret set .* -n vapid-/.test(c)).length, 0);
+  const next = JSON.parse(readFileSync(path.join(existing.logDir, 'swa-appsettings.json'), 'utf8')).properties;
+  assert.equal(next.VAPID_PRIVATE_KEY, 'FICTIONAL_VAPID_PRIVATE');
+  assert.equal(next.VAPID_PUBLIC_KEY, 'FICTIONAL_VAPID_PUBLIC');
+  assert.doesNotMatch(existing.output + existing.calls.join('\n'), /FICTIONAL_VAPID/);
+});
+test('VAPID: a missing private half or unreadable key fails before replacing app settings', () => {
+  for (const env of [
+    {FAKE_EXISTING_SECRETS: 'vapid-public-key'},
+    {FAKE_EXISTING_SECRETS: 'vapid-private-key vapid-public-key', FAKE_FAIL_AT: 'secret-show:vapid-private-key'},
+  ]) {
+    const r = runDeploy({env});
+    assert.notEqual(r.status, 0);
+    assert.equal(existsSync(path.join(r.logDir, 'swa-appsettings.json')), false);
   }
 });

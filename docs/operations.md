@@ -431,3 +431,31 @@ Cases, scores and the initial `baseline: unset` thresholds are documented in `ev
 A missing key and pending photos are the accepted assumptions of #72: the owner supplies plate-only
 photos and weighed targets; the photo threshold is not enforced until twenty images exist.
 After the first live run, record its baseline and tighten thresholds in a reviewed follow-up PR.
+
+## Browser push for photo questions
+
+Settings → AI help is opt-in per space and owner-managed; carers can read the provider, capabilities
+and local-day usage. An unconfigured provider cannot be selected. Switching AI off is allowed even
+if its provider key has since been removed. The notices explain that only computed statistics reach
+the model and that the browser's voice recognition service is separate from Frejsi.
+
+With AI enabled and VAPID configured, owners and carers can turn on notifications for the current
+browser in that section. Permission is requested only when the switch is tapped. A denied or
+unsupported browser shows a message; the in-app review cards remain available. On iOS, push needs
+an installed PWA and iOS 16.4 or later. The service worker shows the notification and focuses or
+opens the recipient's language-specific library page. It does not cache personal pages or API data.
+
+The `estimate.asked` event reaches the push sink through `emit()`, after the food transaction commits.
+The sink looks up current owner/carer memberships and unexpired sessions, excluding the asker.
+The notification contains the asker's display name, dish name, approximate carbs and link; no photo,
+glucose or insight text. Consider the operating system's lock-screen preview setting when enabling it.
+An endpoint is registered for one space per user at a time, matching the database's `(userId, endpoint)`
+unique key; enabling it in another space moves that registration. Turning it off removes only the
+current session's registration for that space. Removing a device deletes its session and cascades
+its registrations. Expired endpoints (404/410) are removed; other failures increment `failures`.
+There is no background retry queue; the in-app review flow is the fallback.
+
+VAPID keys are generated once by the release script and kept in Key Vault; see `infra/README.md`.
+`GET /api/spaces/:id/ai` serves only the public key, capabilities, caps and counters to owners/carers,
+including simple view sessions. A viewer gets 403 and a non-member gets 404. No keys are required
+for local tests: providers and push transports are faked.

@@ -1,3 +1,5 @@
+import { WebPushSink, webPushSender } from "../push/sink";
+import { PrismaPushRepository } from "../push/repository";
 import { DefaultAzureCredential } from "@azure/identity";
 import { WebPubSubServiceClient } from "@azure/web-pubsub";
 
@@ -116,6 +118,49 @@ export type PubSubEnv = Record<string, string | undefined>;
 export function createEventSinkFromEnv(
   env: PubSubEnv = process.env,
   factory: WebPubSubClientFactory = defaultFactory,
+): EventSink & LiveTokenIssuer & LiveGroupRevoker {
+  const live = createLiveSink(env, factory);
+  if (!env.VAPID_PRIVATE_KEY || !env.VAPID_PUBLIC_KEY || !env.VAPID_SUBJECT) return live;
+  return new CompositeEventSink(
+    live,
+    new WebPushSink(
+      new PrismaPushRepository(),
+      webPushSender({
+        privateKey: env.VAPID_PRIVATE_KEY,
+        publicKey: env.VAPID_PUBLIC_KEY,
+        subject: env.VAPID_SUBJECT,
+      }),
+    ),
+  );
+}
+
+/** A failed live transport cannot prevent the push sink from seeing the committed event. */
+export class CompositeEventSink implements EventSink, LiveTokenIssuer, LiveGroupRevoker {
+  constructor(
+    private readonly live: EventSink & LiveTokenIssuer & LiveGroupRevoker,
+    private readonly push: EventSink,
+  ) {}
+  async publish(group: string, event: EventEnvelope): Promise<void> {
+    const results = await Promise.allSettled([
+      this.live.publish(group, event),
+      this.push.publish(group, event),
+    ]);
+    if (results.some((r) => r.status === "rejected")) throw new Error("Event sink failed");
+  }
+  issueClientToken(request: ClientTokenRequest) {
+    return this.live.issueClientToken(request);
+  }
+  removeUserFromGroup(group: string, userId: string, options?: LiveCallOptions) {
+    return this.live.removeUserFromGroup(group, userId, options);
+  }
+  closeUserConnections(userId: string, options?: LiveCallOptions) {
+    return this.live.closeUserConnections(userId, options);
+  }
+}
+
+function createLiveSink(
+  env: PubSubEnv,
+  factory: WebPubSubClientFactory,
 ): EventSink & LiveTokenIssuer & LiveGroupRevoker {
   const hub = env.WEB_PUBSUB_HUB ?? DEFAULT_HUB;
   const connectionString = env.WEB_PUBSUB_CONNECTION_STRING;
