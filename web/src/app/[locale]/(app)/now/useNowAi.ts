@@ -2,13 +2,14 @@
 import { AiUsage, WeekInsightView } from "@frejsi/shared/schemas/ai";
 import type { Role } from "@frejsi/shared";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { localDateOf } from "@/components/day/format";
+import { summaryWeek } from "./summary-week";
 import type { LiveFeedView } from "@/lib/live/useLiveFeed";
 
 export interface NowAi {
   enabled: boolean;
   provider: string | null;
   ready: boolean;
+  start: string;
 }
 export function useNowAi(
   spaceId: string,
@@ -21,9 +22,9 @@ export function useNowAi(
   now: Date,
   zone: string,
 ): NowAi {
-  const [state, setState] = useState<NowAi>({ enabled, provider, ready: false });
+  const start = summaryWeek(now, zone);
+  const [state, setState] = useState<NowAi>({ enabled, provider, ready: false, start });
   const generation = useRef(0);
-  const date = localDateOf(now, zone);
   const load = useCallback(async () => {
     if (role === "viewer") return;
     const id = ++generation.current;
@@ -33,27 +34,26 @@ export function useNowAi(
       const usage = AiUsage.parse(await response.json());
       let ready = false;
       if (usage.enabled && !simpleMode) {
-        const monday = new Date(`${date}T12:00:00Z`);
-        monday.setUTCDate(monday.getUTCDate() - ((monday.getUTCDay() + 6) % 7));
         const week = await fetch(
-          `/api/spaces/${encodeURIComponent(spaceId)}/history/week/insight?start=${monday.toISOString().slice(0, 10)}`,
+          `/api/spaces/${encodeURIComponent(spaceId)}/history/week/insight?start=${start}`,
         );
         const parsed = week.ok ? WeekInsightView.safeParse(await week.json()) : null;
         ready = parsed?.success === true && parsed.data.state === "ready";
       }
       if (id === generation.current)
-        setState({ enabled: usage.enabled, provider: usage.provider ?? null, ready });
+        setState({ enabled: usage.enabled, provider: usage.provider ?? null, ready, start });
     } catch {
-      if (id === generation.current) setState({ enabled: false, provider: null, ready: false });
+      if (id === generation.current)
+        setState({ enabled: false, provider: null, ready: false, start });
     }
-  }, [spaceId, role, simpleMode, date]);
+  }, [spaceId, role, simpleMode, start]);
   useEffect(() => {
-    setState({ enabled, provider, ready: false });
+    setState({ enabled, provider, ready: false, start });
     if (enabled && loaded) void load();
     return () => {
       ++generation.current;
     };
-  }, [enabled, provider, loaded, load]);
+  }, [enabled, provider, loaded, load, start]);
   useEffect(() => {
     if (role === "viewer") return;
     const offs = (["space.updated", "insight.created", "insight.updated"] as const).map((type) =>
@@ -67,5 +67,5 @@ export function useNowAi(
       });
     };
   }, [subscribe, role, load]);
-  return state;
+  return state.start === start ? state : { enabled, provider, ready: false, start };
 }

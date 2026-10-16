@@ -508,3 +508,8 @@ upserts and session-cascaded push registrations. Playwright runs at 360/1280 px 
 fake AI and local blob storage, including photo review, typed entry, persisted clinic questions,
 viewer denials, themes and log-content checks. No browser, SQL container or deployment is added to
 PR CI. Plate fixtures are generated illustrations containing no person or personal data.
+
+Now's weekly link uses the same Sunday evening/Monday-before-06:00 window as the weekly timer,
+including timezone and daylight-saving transitions, and opens that explicit week. An open simple
+shell refreshes its server layout on `space.updated`, so another adult's AI toggle updates both
+the phone tab and sidebar without a reload. Its subscription requests no readings.

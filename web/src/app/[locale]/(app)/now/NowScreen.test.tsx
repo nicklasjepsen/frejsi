@@ -103,6 +103,7 @@ let historyMeals: DayHistoryMeal[] | null;
 let previousMeals: DayHistoryMeal[];
 let aiEnabled = true;
 let weekReady = false;
+let requestedWeeks: (string | null)[] = [];
 const emptyStats = {
   inRange: {
     minutes: 0,
@@ -126,6 +127,7 @@ beforeEach(() => {
   previousMeals = [];
   aiEnabled = true;
   weekReady = false;
+  requestedWeeks = [];
   vi.stubGlobal("fetch", async (input: RequestInfo | URL, init?: RequestInit) => {
     const url = new URL(
       typeof input === "string" ? input : input instanceof URL ? input.href : input.url,
@@ -141,12 +143,14 @@ beforeEach(() => {
         embedCallsToday: 0,
         embedDailyCap: 500,
       });
-    if (url.pathname.endsWith("/history/week/insight"))
+    if (url.pathname.endsWith("/history/week/insight")) {
+      requestedWeeks.push(url.searchParams.get("start"));
       return Response.json({
         state: weekReady ? "ready" : "pending",
         questionsEdited: false,
         rejectedCount: 0,
       });
+    }
     if (url.pathname.endsWith("/history/day")) {
       api.calls.push({
         method: init?.method ?? "GET",
@@ -720,4 +724,16 @@ it("refreshes the asked-food cards and the stored week state from live events", 
   });
   await waitFor(() => expect(screen.queryByText("Ugens opsummering")).not.toBeInTheDocument());
   expect(screen.getByText("Fra")).toBeInTheDocument();
+});
+
+it("reads and opens the just-finished week before 06:00 on Monday", async () => {
+  vi.setSystemTime(new Date("2026-10-18T23:00:00Z"));
+  weekReady = true;
+  mount({ aiEnabled: true });
+  expect(await screen.findByText("Klar")).toBeInTheDocument();
+  expect(requestedWeeks).toEqual(["2026-10-12"]);
+  expect(screen.getByRole("link", { name: /Ugens opsummering/ })).toHaveAttribute(
+    "href",
+    "/da/history/week?start=2026-10-12#opsummering",
+  );
 });

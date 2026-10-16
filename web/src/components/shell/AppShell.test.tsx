@@ -3,7 +3,7 @@ import "@testing-library/jest-dom/vitest";
 import { readdirSync, readFileSync } from "node:fs";
 import path from "node:path";
 
-import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -13,10 +13,32 @@ import type { AppLocale } from "@/lib/i18n/routing";
 
 import { AppShell, type AppShellProps } from "./AppShell";
 
-const navigation = vi.hoisted(() => ({ pathname: "/da/now", push: vi.fn() }));
+const navigation = vi.hoisted(() => ({ pathname: "/da/now", push: vi.fn(), refresh: vi.fn() }));
 vi.mock("next/navigation", () => ({
   usePathname: () => navigation.pathname,
-  useRouter: () => ({ push: navigation.push, replace: vi.fn(), prefetch: vi.fn() }),
+  useRouter: () => ({
+    push: navigation.push,
+    refresh: navigation.refresh,
+    replace: vi.fn(),
+    prefetch: vi.fn(),
+  }),
+}));
+const shellFeed = vi.hoisted(() => ({
+  handlers: new Map<string, () => void>(),
+  calls: [] as unknown[],
+}));
+vi.mock("@/lib/live/useLiveFeed", () => ({
+  useLiveFeed: (_space: string, options: unknown) => {
+    shellFeed.calls.push(options);
+    return {
+      subscribe: (type: string, handler: () => void) => {
+        shellFeed.handlers.set(type, handler);
+        return () => {
+          shellFeed.handlers.delete(type);
+        };
+      },
+    };
+  },
 }));
 vi.mock("./actions", () => ({ switchSpace: vi.fn() }));
 
@@ -50,6 +72,9 @@ const labels = (nav: HTMLElement) =>
 beforeEach(() => {
   navigation.pathname = "/da/now";
   navigation.push.mockClear();
+  navigation.refresh.mockReset();
+  shellFeed.handlers.clear();
+  shellFeed.calls.length = 0;
 });
 afterEach(cleanup);
 
@@ -302,4 +327,47 @@ it("hides the simple ask navigation while AI is off", () => {
   expect(
     within(sidebar()).queryByRole("link", { name: "Spørg en voksen" }),
   ).not.toBeInTheDocument();
+});
+
+it("updates both simple navigation surfaces after another adult toggles AI", () => {
+  const user = { ...base.user, simpleMode: true };
+  let enabled = false;
+  const view = mount({ user, space: { ...base.space, aiEnabled: enabled } });
+  navigation.refresh.mockImplementation(() => {
+    enabled = !enabled;
+    view.rerender(
+      <I18nProvider locale="da" messages={getMessages("da")}>
+        <AppShell {...base} user={user} space={{ ...base.space, aiEnabled: enabled }} />
+      </I18nProvider>,
+    );
+  });
+  expect(
+    within(tabs()).queryByRole("link", { name: "Spørg" }),
+  ).not.toBeInTheDocument();
+  act(() => {
+    shellFeed.handlers.get("space.updated")?.();
+  });
+  expect(within(tabs()).getByRole("link", { name: "Spørg" })).toHaveAttribute(
+    "href",
+    "/da/ask",
+  );
+  expect(
+    within(sidebar()).getByRole("link", { name: "Spørg en voksen" }),
+  ).toHaveAttribute("href", "/da/ask");
+  expect(shellFeed.calls).toContainEqual({ readings: false });
+  act(() => {
+    shellFeed.handlers.get("space.updated")?.();
+  });
+  expect(
+    within(tabs()).queryByRole("link", { name: "Spørg" }),
+  ).not.toBeInTheDocument();
+  expect(
+    within(sidebar()).queryByRole("link", { name: "Spørg en voksen" }),
+  ).not.toBeInTheDocument();
+  view.unmount();
+  expect(shellFeed.handlers.size).toBe(0);
+});
+it("does not start the simple navigation feed for a viewer", () => {
+  mount({ user: { ...base.user, simpleMode: true }, space: { ...base.space, role: "viewer" } });
+  expect(shellFeed.calls).toHaveLength(0);
 });
