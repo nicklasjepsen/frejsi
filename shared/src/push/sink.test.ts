@@ -103,3 +103,21 @@ describe("WebPushSink", () => {
     }
   });
 });
+
+it.each([404, 500])(
+  "continues delivery when %s failure bookkeeping also fails",
+  async (statusCode) => {
+    const s = setup();
+    s.repo.remove = () => Promise.reject(new Error("Fictional database failure"));
+    s.repo.failed = () => Promise.reject(new Error("Fictional database failure"));
+    const sink = s.sink((recipient, payload) => {
+      if (recipient.id === "r1")
+        return Promise.reject(Object.assign(new Error("Fictional push failure"), { statusCode }));
+      s.sent.push(payload);
+      return Promise.resolve();
+    });
+    await expect(sink.publish("space-s1", envelope)).resolves.toBeUndefined();
+    expect(s.sent).toHaveLength(1);
+    expect(s.logs).toContainEqual({ count: 1, code: "push-bookkeeping-failed" });
+  },
+);
