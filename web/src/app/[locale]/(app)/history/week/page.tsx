@@ -28,7 +28,7 @@ export default async function HistoryWeekPage({
   // no extra space route or glucose window is needed to render the week's table.
   const space = await prisma.space.findUnique({
     where: { id: shell.space.id },
-    select: { glucoseUnit: true },
+    select: { glucoseUnit: true, aiEnabled: true },
   });
   const unit = GlucoseUnit.parse(space?.glucoseUnit ?? "mmol");
   return (
@@ -37,6 +37,7 @@ export default async function HistoryWeekPage({
       spaceId={shell.space.id}
       locale={locale}
       unit={unit}
+      aiEnabled={space?.aiEnabled ?? false}
       start={start}
       view={query.view === "maaltider" ? "maaltider" : "uge"}
     />

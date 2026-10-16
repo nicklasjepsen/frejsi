@@ -30,5 +30,19 @@
   "emptyMeals": "No meals this week",
   "loadFailed": "The week could not be loaded – try again",
   "loading": "Loading the week",
-  "retry": "Try again"
+  "retry": "Try again",
+  "observation": {
+    "summary": "Weekly summary",
+    "title": "Questions for the clinic",
+    "badge": "Observation · AI",
+    "note": "worded from the week’s numbers",
+    "pending": "Ready Sunday evening",
+    "edit": "Edit questions",
+    "save": "Save",
+    "cancel": "Cancel",
+    "copy": "Copy",
+    "saved": "Saved",
+    "copied": "Copied",
+    "failed": "Could not save or copy. Please try again."
+  }
 }

@@ -23,5 +23,10 @@
   "loadFailed": "Dagen kunne ikke hentes lige nu.",
   "retry": "Prøv igen",
   "carbs": "{carbs} g",
-  "peak": "top"
+  "peak": "top",
+  "observation": {
+    "title": "Ugens opsummering",
+    "ready": "Med spørgsmål til klinikken · klar",
+    "pending": "Med spørgsmål til klinikken · klar søndag"
+  }
 }

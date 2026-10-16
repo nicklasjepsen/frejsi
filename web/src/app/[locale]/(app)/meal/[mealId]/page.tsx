@@ -1,3 +1,4 @@
+import { prisma } from "@frejsi/shared";
 import { redirect } from "next/navigation";
 
 import { MealDetail, SimpleMealView } from "@/components/meal-detail";
@@ -33,8 +34,12 @@ export default async function MealPage({
       />
     );
   }
+  const aiEnabled =
+    (await prisma.space.findUnique({ where: { id: shell.space.id }, select: { aiEnabled: true } }))
+      ?.aiEnabled ?? false;
   return (
     <MealDetail
+      aiEnabled={aiEnabled}
       key={`${shell.space.id}:${mealId}`}
       spaceId={shell.space.id}
       mealId={mealId}

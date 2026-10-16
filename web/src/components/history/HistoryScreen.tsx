@@ -13,6 +13,8 @@ import { localeHref, type AppLocale } from "@/lib/i18n/routing";
 import type { SocketFactory } from "@/lib/live/live-feed";
 import { useLiveFeed } from "@/lib/live/useLiveFeed";
 import { dayHeading, shiftDate } from "./dates";
+import { WeekInsightLink } from "@/components/observation/WeekInsightLink";
+import { mondayOf } from "@/components/history-week/dates";
 import { DaySection } from "./DaySection";
 import { DayLoading, OlderDays } from "./OlderDays";
 import { useToday } from "./useToday";
@@ -25,6 +27,7 @@ export interface HistoryProps {
   locale: AppLocale;
   today: string;
   initialDate: string;
+  aiEnabled?: boolean;
   fetch?: typeof fetch;
   socketFactory?: SocketFactory;
 }
@@ -37,6 +40,7 @@ export function HistoryScreen({
   unit,
   fetch: fetchImpl,
   socketFactory,
+  aiEnabled = false,
 }: HistoryProps & { unit: GlucoseUnit }) {
   const t = useTranslations("history");
   const router = useRouter();
@@ -229,6 +233,15 @@ export function HistoryScreen({
         )}
       </div>
       {dates.length === 0 && <DayLoading />}
+      {aiEnabled && (
+        <WeekInsightLink
+          spaceId={spaceId}
+          start={mondayOf(today)}
+          locale={locale}
+          feed={feed}
+          {...(fetchImpl ? { fetch: fetchImpl } : {})}
+        />
+      )}
       {dates.map((date) => {
         const entry = days[date];
         if (!entry) return null;

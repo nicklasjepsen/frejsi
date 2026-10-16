@@ -14,6 +14,7 @@ import { localeHref, type AppLocale } from "@/lib/i18n/routing";
 import { useLiveFeed } from "@/lib/live/useLiveFeed";
 import type { SocketFactory } from "@/lib/live/live-feed";
 import { dateAfter, mondayOf, weekDateLabel } from "./dates";
+import { WeekObservation } from "@/components/observation/WeekObservation";
 import { WeekTiles } from "./WeekTiles";
 import { WeekNumbersTiles } from "./WeekNumbersTiles";
 import { WeekMealsTable } from "./WeekMealsTable";
@@ -25,6 +26,7 @@ export interface HistoryWeekScreenProps {
   unit: GlucoseUnit;
   start: string;
   view: "uge" | "maaltider";
+  aiEnabled?: boolean;
   /** Transport fakes for tests; production uses the browser and the shared feed. */
   fetch?: typeof fetch;
   socketFactory?: SocketFactory;
@@ -44,6 +46,7 @@ export function HistoryWeekScreen({
   view,
   fetch: fetchImpl,
   socketFactory,
+  aiEnabled = false,
 }: HistoryWeekScreenProps) {
   const t = useTranslations("historyWeek");
   const errors = useTranslations("errors.api");
@@ -244,6 +247,14 @@ export function HistoryWeekScreen({
         />
       )}
       <WeekNumbersTiles week={week} unit={unit} locale={locale} />
+      {aiEnabled && (
+        <WeekObservation
+          spaceId={spaceId}
+          start={start}
+          feed={feed}
+          {...(fetchImpl ? { fetch: fetchImpl } : {})}
+        />
+      )}
     </div>
   );
 }
