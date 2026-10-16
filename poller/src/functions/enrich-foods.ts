@@ -91,8 +91,20 @@ export async function runEnrichment(deps: EnrichmentDeps): Promise<void> {
       ...(deps.now ? { now: deps.now } : {}),
     }),
   }));
+  if (!groups.length) {
+    deps.log.info("enrich-foods", { code: "ai-not-configured", count: 0 });
+    return;
+  }
   const spaceIds = enabled.map((space) => space.id);
-  const rows = await deps.repo.normalisationCandidates(deps.remoteOrigins, spaceIds, 50);
+  const normalisationSpaceIds = groups.flatMap((group) =>
+    group.spaceId === null ? [] : [group.spaceId],
+  );
+  const rows = await deps.repo.normalisationCandidates(
+    deps.remoteOrigins,
+    normalisationSpaceIds,
+    50,
+    groups.some((group) => group.spaceId === null),
+  );
   let normalised = 0;
   const processed = new Set<string>();
   for (const row of rows) {

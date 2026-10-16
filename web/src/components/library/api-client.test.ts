@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { libraryApi, LibraryApiError } from "./api-client";
+import { libraryApi, LibraryApiError, lookupVerifiedFoods } from "./api-client";
 import { artboardFoods } from "./test-support";
 
 const fetchMock = vi.fn<typeof fetch>();
@@ -93,4 +93,45 @@ describe("libraryApi", () => {
     fetchMock.mockResolvedValueOnce(new Response("<html>", { status: 502 }));
     await expect(libraryApi.get("s1", "f1")).rejects.toMatchObject({ code: "internal" });
   });
+});
+
+it("the simple-picker adapter submits once and returns only verified library foods with portions", async () => {
+  const base = artboardFoods()[0];
+  if (!base) throw new Error("Missing fixture");
+  const match = {
+    ...base,
+    id: "pasta",
+    name: "Pasta med kødsovs",
+    verified: true,
+    portions: [{ label: "1 plate", carbs: 50 }],
+  };
+  const unchecked = { ...match, id: "unchecked", verified: false };
+  const weighed = { ...match, id: "weighed", portions: [] };
+  fetchMock.mockResolvedValueOnce(
+    reply(200, {
+      results: [
+        { source: "library", food: match, verified: true },
+        { source: "library", food: unchecked, verified: false },
+        { source: "library", food: weighed, verified: true },
+        {
+          source: "cache",
+          food: {
+            name: "Cached pasta",
+            origin: "remote-test",
+            sourceRef: "remote-test:pasta",
+            carbsPer100g: 20,
+            portions: [],
+          },
+          verified: false,
+        },
+      ],
+      sources: { semantic: "ok" },
+      manual: { name: "spagetti" },
+    }),
+  );
+  expect(await lookupVerifiedFoods("s 1", " spagetti ")).toEqual([match]);
+  expect(fetchMock).toHaveBeenCalledTimes(1);
+  expect(sent().url).toBe("/api/spaces/s%201/lookup?q=spagetti&remote=true");
+  expect(await lookupVerifiedFoods("s1", "sp")).toEqual([]);
+  expect(fetchMock).toHaveBeenCalledTimes(1);
 });

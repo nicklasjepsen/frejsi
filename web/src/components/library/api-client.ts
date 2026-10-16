@@ -8,6 +8,7 @@
 import { ApiError, type ApiErrorCode } from "@frejsi/shared/schemas/api";
 import {
   FoodView,
+  LookupResponse,
   type CreateFoodRequest,
   type UpdateFoodRequest,
 } from "@frejsi/shared/schemas/food";
@@ -157,3 +158,34 @@ export const libraryApi = {
     return parsed.success ? parsed.data : null;
   },
 };
+
+/** Submit adapter for the simple-picker lane: verified own foods with pickable portions only.
+ * Call on the explicit submit action; typing stays local in the picker. */
+export async function lookupVerifiedFoods(
+  spaceId: string,
+  query: string,
+  signal?: AbortSignal,
+): Promise<FoodView[]> {
+  const q = searchText(query);
+  if (q.length < 3) return [];
+  const params = new URLSearchParams({ q, remote: "true" });
+  const body = await callJson(
+    `/api/spaces/${encodeURIComponent(spaceId)}/lookup?${params.toString()}`,
+    { method: "GET", ...(signal ? { signal } : {}) },
+    LookupResponse,
+  );
+  const seen = new Set<string>();
+  return body.results.flatMap((result) => {
+    if (result.source !== "library" || !result.verified) return [];
+    const parsed = FoodView.safeParse(result.food);
+    if (
+      !parsed.success ||
+      !parsed.data.verified ||
+      !parsed.data.portions.length ||
+      seen.has(parsed.data.id)
+    )
+      return [];
+    seen.add(parsed.data.id);
+    return [parsed.data];
+  });
+}

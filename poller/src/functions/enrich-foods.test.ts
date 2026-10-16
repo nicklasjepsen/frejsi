@@ -198,3 +198,40 @@ it("a verified copy never prevents an unverified copy from being normalised", as
   });
   expect(r.space.calls.filter((call) => call.kind === "complete")).toHaveLength(1);
 });
+
+it.each(["cache", "space"] as const)(
+  "providerless %s rows cannot fill the normalisation limit ahead of a valid group",
+  async (kind) => {
+    const r = rig();
+    r.deps.env.AI_CACHE_EMBED_PROVIDER = "azure-openai";
+    r.deps.spaces.push({
+      id: "missing",
+      aiProvider: "azure-openai",
+      aiEnabled: true,
+      timezone: "UTC",
+      locale: "en",
+    });
+    const unavailable = Array.from({ length: 60 }, (_, n) =>
+      row(`a-${n}`, kind === "cache" ? null : "missing", {
+        sourceRef: `remote-test:unavailable-${n}`,
+      }),
+    );
+    r.repo.rows.splice(
+      0,
+      r.repo.rows.length,
+      ...unavailable,
+      row("z-valid", "s1", { sourceRef: "remote-test:valid" }),
+    );
+    await runEnrichment(r.deps);
+    expect(r.repo.rows.find((food) => food.id === "z-valid")).toMatchObject({
+      name: "Example loaf",
+      sourceName: "EXAMPLE LOAF 900G",
+    });
+    expect(
+      r.repo.rows
+        .filter((food) => food.id.startsWith("a-"))
+        .every((food) => food.sourceName == null),
+    ).toBe(true);
+    expect(r.cache.calls).toEqual([]);
+  },
+);
