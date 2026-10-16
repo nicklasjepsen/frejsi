@@ -459,3 +459,52 @@ VAPID keys are generated once by the release script and kept in Key Vault; see `
 `GET /api/spaces/:id/ai` serves only the public key, capabilities, caps and counters to owners/carers,
 including simple view sessions. A viewer gets 403 and a non-member gets 404. No keys are required
 for local tests: providers and push transports are faked.
+
+## v0.4.0 release readiness
+
+AI search, typed/voice meal entry, photo questions, meal observations, weekly clinic questions and
+browser push are implemented for v0.4.0. Production AI stays off until the owner configures a
+provider and enables it for a space (#72). Merging this lane deploys nothing.
+
+To add a provider, follow `infra/README.md`: the release script reads the optional Key Vault secrets
+`anthropic-api-key`, `voyage-api-key`, `azure-openai-api-key`, `azure-openai-endpoint`,
+`azure-openai-deployment-small`, `azure-openai-deployment-everyday`, `azure-openai-deployment-insight`,
+`azure-openai-deployment-embed`, `ollama-url`, `ollama-model-small`, `ollama-model-everyday`,
+`ollama-model-insight` and `ollama-model-embed`, mapping them to their uppercase underscore
+environment names. Azure OpenAI can use managed identity instead of an API key. An unset secret
+leaves that adapter unconfigured; do not set `FAKE_AI_PROVIDER` in production. Configure secrets
+privately, redeploy through the tag release workflow, then choose the configured provider in
+Settings → AI help. The separate `vapid-public-key` and `vapid-private-key` secrets are generated
+once by the release script; `VAPID_SUBJECT` is the configured notification contact, not a provider key.
+
+A "Sig det" tool loop typically consumes 2–4 of the 50 daily completion/photo attempts. Embeddings
+use their separate 500-attempt space cap; shared-cache backfill defaults to 2000 per UTC day. When a
+family reaches a cap, use the verified picker or enter known food values manually until the next
+local day. Check content-free `AiCall` usage before changing limits: raising a cap increases the
+possible provider spend. A provider switch leaves keyword search working while the enrichment timer
+re-embeds up to 100 library/cache rows per quarter hour. Normalisation runs first, up to 50 rows.
+A space using another embedding provider searches the shared cache by keyword only, because vectors
+from different providers cannot be compared.
+
+An `ai-rejected` log code means structured output or the generated-text guard failed after the
+service's bounded retry. The content is discarded; never add generated content to diagnostics.
+Voice recognition uses the browser vendor's speech service; Frejsi receives the transcript only
+when the user submits it. Selecting a local AI provider does not make browser speech recognition
+local. Full live evals cost approximately $2 per run, use the dedicated eval key only, and run the
+complete corpus with `EVALS_SCOPE=release`. Without that key only the recorded fake corpus runs.
+
+For local fictional data, `pnpm --filter ./web seed` enables the registry fake with
+`FAKE_AI_PROVIDER=1`, enables Anthropic as the space's fixture provider id, and stores ten foods,
+including Alma's unverified "Pasta med kødsovs", and a stored lunch observation. Foods, meals,
+settings and insights use their emitting services; the seed refuses production and nonempty
+spaces. `web/scripts/import-glucose.ts` remains the separate owner-only import command.
+
+The heavy release suite uses SQL Server 2025 (`mcr.microsoft.com/mssql/server:2025-latest`) and
+compatibility level 170. Its health command was checked against that image:
+`/opt/mssql-tools18/bin/sqlcmd -C -S localhost -U sa -P "$MSSQL_SA_PASSWORD" -Q 'SELECT 1'`.
+Integration tests prove upgrade from the foundation/food migrations, native 1024-dimension vector
+storage, cosine ordering/model isolation, engine rejection of 1536 dimensions, concurrent Insight
+upserts and session-cascaded push registrations. Playwright runs at 360/1280 px with fake glucose,
+fake AI and local blob storage, including photo review, typed entry, persisted clinic questions,
+viewer denials, themes and log-content checks. No browser, SQL container or deployment is added to
+PR CI. Plate fixtures are generated illustrations containing no person or personal data.

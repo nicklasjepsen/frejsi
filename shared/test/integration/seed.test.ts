@@ -18,13 +18,32 @@ afterAll(async () => {
   vi.unstubAllEnvs();
 });
 
-it("seeds nine foods, fourteen reading days and seven meals through the emitting services", async () => {
+it("seeds ten foods, fourteen reading days and seven meals through the emitting services", async () => {
   const { seed } = (await import(SEED)) as {
     seed: (options: { db: PrismaClient; now: () => Date }) => Promise<{ spaceId: string }>;
   };
   const { spaceId } = await seed({ db, now: () => new Date("2026-10-15T13:00:00Z") });
   const foods = await db.food.findMany({ where: { spaceId } });
-  expect(foods).toHaveLength(9);
+  expect(foods).toHaveLength(10);
+  expect(await db.space.findUniqueOrThrow({ where: { id: spaceId } })).toMatchObject({
+    aiEnabled: true,
+    aiProvider: "anthropic",
+  });
+  const asked = foods.find((food) => food.origin === "ai");
+  if (!asked?.createdBy) throw new Error("missing asked food creator");
+  expect(asked).toMatchObject({ name: "Pasta med kødsovs", verified: false });
+  expect((await db.user.findUniqueOrThrow({ where: { id: asked.createdBy } })).name).toBe("Alma");
+  const insight = await db.insight.findFirstOrThrow({ where: { spaceId, kind: "meal" } });
+  expect(insight.text).toBe("Toppen kom omkring en time efter måltidet.");
+  expect(await db.event.count({ where: { spaceId, type: "insight.created" } })).toBe(1);
+  const askedEvents = await db.event.findMany({ where: { spaceId, type: "estimate.asked" } });
+  expect(askedEvents).toHaveLength(1);
+  const askedEvent = askedEvents[0];
+  if (!askedEvent) throw new Error("missing asked event");
+  expect(JSON.parse(askedEvent.payload)).toMatchObject({
+    foodId: asked.id,
+    byUserId: asked.createdBy,
+  });
   expect(
     foods
       .filter((food) => food.verified)

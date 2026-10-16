@@ -49,6 +49,10 @@ const FORBIDDEN = new Set([
   "bolusTs",
   "bolusLead",
   "bolusLeadMinutes",
+  "summary",
+  "questions",
+  "questionsEdited",
+  "statsHash",
 ]);
 function assertMealOnly(value: unknown): void {
   if (Array.isArray(value)) {
@@ -65,6 +69,9 @@ test.use({ serviceWorkers: "block" });
 
 test("a viewer gets the viewer shell and no glucose on any page", async ({ page }) => {
   let checkedBodies = 0;
+  const insightTexts = (
+    await prisma.insight.findMany({ select: { text: true, questions: true } })
+  ).flatMap((row) => [row.text, ...(JSON.parse(row.questions ?? "[]") as string[])]);
   // Read each response before delivering it to the page: Chromium discards bodies on navigation.
   // Fetch exactly once, preserving redirects and the real auth/API responses.
   await page.route("**/*", async (route) => {
@@ -74,6 +81,7 @@ test("a viewer gets the viewer shell and no glucose on any page", async ({ page 
       const text = await response.text();
       if (type.includes("json") && new URL(response.url()).pathname.startsWith("/api/spaces/")) {
         assertMealOnly(JSON.parse(text) as unknown);
+        for (const insight of insightTexts) expect(text).not.toContain(insight);
       }
       expect(text, response.url()).not.toMatch(READING_KEY);
       expect(text, response.url()).not.toMatch(
@@ -128,6 +136,37 @@ test("a viewer gets the viewer shell and no glucose on any page", async ({ page 
   for (const route of [`meals/${meal.id}/curve`, "history/day", "history/week"]) {
     const denied = await page.request.get(`/api/spaces/${space.spaceId}/${route}`);
     expect(denied.status(), route).toBe(403);
+    assertMealOnly(await denied.json());
+  }
+  for (const [method, route] of [
+    ["POST", "parse"],
+    ["POST", "estimates"],
+    ["POST", "estimates/ask"],
+    ["GET", "ai"],
+    ["GET", `meals/${meal.id}/insight`],
+    ["GET", "history/week/insight?start=2026-10-12"],
+    ["PATCH", "history/week/insight?start=2026-10-12"],
+  ] as const) {
+    const denied = await page.request.fetch(`/api/spaces/${space.spaceId}/${route}`, {
+      method,
+      ...(method !== "GET" ? { data: {} } : {}),
+    });
+    expect(denied.status(), `${method} ${route}`).toBe(403);
+    assertMealOnly(await denied.json());
+    for (const insight of insightTexts) expect(await denied.text()).not.toContain(insight);
+  }
+  for (const method of ["POST", "DELETE"]) {
+    const denied = await page.request.fetch("/api/users/me/push-subscriptions", {
+      method,
+      data: {
+        spaceId: space.spaceId,
+        subscription: {
+          endpoint: "https://push.example.test/fictional",
+          keys: { p256dh: "fixture", auth: "fixture" },
+        },
+      },
+    });
+    expect(denied.status(), `${method} push-subscriptions`).toBe(403);
     assertMealOnly(await denied.json());
   }
   const readings = await page.request.get(`/api/spaces/${space.spaceId}/readings?hours=24`);

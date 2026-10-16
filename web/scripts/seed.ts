@@ -7,7 +7,7 @@
 //
 // The people are the design's fixtures (docs/design/README.md: fictional, reusable in seed data).
 // Refuses to run when NODE_ENV=production, and on a database that already has a space.
-import { randomBytes } from "node:crypto";
+import { createHash, randomBytes } from "node:crypto";
 import path from "node:path";
 
 import {
@@ -32,7 +32,14 @@ import { localDate } from "../src/app/api/spaces/[spaceId]/day/load-day";
 import { MemoryEventSink } from "@frejsi/shared/events/memory";
 import { FakeGlucoseSource } from "@frejsi/shared/glucose/fake";
 
-import { saveConnectedSource } from "../src/app/api/spaces/[spaceId]/settings/space-settings";
+import { createInsight, PrismaInsightRepository } from "@frejsi/shared/insights/store";
+import { buildMealInput, localParts } from "@frejsi/shared/ai/insight/input";
+import { loadMealCurve } from "../src/lib/history/meal-curve";
+import { PrismaHistoryRepository } from "../src/lib/history/prisma";
+import {
+  saveConnectedSource,
+  updateSpaceSettings,
+} from "../src/app/api/spaces/[spaceId]/settings/space-settings";
 import { bootstrapSpace } from "../src/lib/auth/bootstrap";
 import { transact, type AuthDeps } from "../src/lib/auth/core";
 import { createInvite, type CreatedInvite } from "../src/lib/auth/invites";
@@ -58,6 +65,9 @@ export const SEED_PEOPLE = {
 export type SeedPersonKey = keyof typeof SEED_PEOPLE;
 
 /** Hand-written artboard foods: fictional nutrition, restricted-circulation barcode, no photos. */
+export const SEED_AI_FOOD = "Pasta med kødsovs";
+export const SEED_INSIGHT = "Toppen kom omkring en time efter måltidet.";
+export const SEED_TRANSCRIPT = "to skiver rugbrød med ost";
 export const SEED_DISH = "Rugbrød med ost og et æble";
 export const SEED_BARCODE = "2000000000015";
 export const SEED_FOODS = [
@@ -118,6 +128,12 @@ export function seedTime(at: Date, hour: number, minute: number): string {
 /** Every name the seed writes; the e2e checks that none of them reaches the server's log. */
 export const SEED_NAMES: readonly string[] = [
   SEED_SPACE.name,
+  SEED_AI_FOOD,
+  SEED_INSIGHT,
+  SEED_TRANSCRIPT,
+  "Example pasta",
+  "Example dish",
+  "The peak followed the meal by about an hour.",
   ...Object.values(SEED_PEOPLE).map((person) => person.name),
   ...SEED_FOODS.map((food) => food.name),
   "Havregrød med æble",
@@ -157,6 +173,8 @@ export interface SeededSpace {
 
 export async function seed(options: SeedOptions = {}): Promise<SeededSpace> {
   assertNotProduction(options.env);
+  // Local fictional data always uses the registry fake; no provider key is needed.
+  process.env.FAKE_AI_PROVIDER = "1";
   const db = options.db ?? prisma;
   const now = options.now ?? (() => new Date());
   // Nothing listens to a seed: the events go to their table, the envelopes nowhere.
@@ -181,6 +199,7 @@ export async function seed(options: SeedOptions = {}): Promise<SeededSpace> {
     throw error;
   }
   const { spaceId } = boot;
+  await updateSpaceSettings(spaceId, { aiEnabled: true, aiProvider: "anthropic" }, deps);
   const owner = await db.membership.findFirstOrThrow({
     where: { spaceId, role: "owner" },
     select: { userId: true },
@@ -264,6 +283,23 @@ export async function seed(options: SeedOptions = {}): Promise<SeededSpace> {
           );
     foods.set(food.name, saved);
   }
+  const aiCandidate = {
+    name: SEED_AI_FOOD,
+    origin: "ai",
+    sourceRef: "ai:fictional-seed",
+    portions: [{ label: "1 tallerken", grams: 300, carbs: 55 }],
+  };
+  const askedFood = await addCandidate(spaceId, session("alma"), aiCandidate, {
+    db,
+    sink,
+    now,
+    sources: [new FakeFoodSource({ id: "ai", kind: "local", candidates: [aiCandidate] })],
+    photos: null,
+  });
+  await createEmit({ db, sink, now })(spaceId, "estimate.asked", {
+    foodId: askedFood.id,
+    byUserId: people.alma.userId,
+  });
   const foodId = (name: string): string => {
     const food = foods.get(name);
     if (!food) throw new Error("a seed food is missing");
@@ -321,7 +357,7 @@ export async function seed(options: SeedOptions = {}): Promise<SeededSpace> {
     },
     mealDeps,
   );
-  await createMeal(
+  const lunch = await createMeal(
     spaceId,
     session("jonas"),
     {
@@ -341,6 +377,45 @@ export async function seed(options: SeedOptions = {}): Promise<SeededSpace> {
     mealDeps,
   );
 
+  const view = await loadMealCurve(spaceId, lunch.id, "da", {
+    repo: new PrismaHistoryRepository(db),
+    photos: null,
+    now,
+  });
+  const input = buildMealInput({
+    locale: "da",
+    glucoseUnit: "mmol",
+    meal: {
+      title: view.meal.title,
+      totalCarbs: view.meal.totalCarbs,
+      slot: view.meal.slot,
+      localTime: localParts(view.meal.ts, SEED_SPACE.timezone).localTime,
+    },
+    stats: view.stats,
+    previous: view.previous.map((p) => ({
+      localDate: localParts(p.ts, SEED_SPACE.timezone).localDate,
+      totalCarbs: p.totalCarbs,
+      stats: p.stats,
+    })),
+  });
+  await db.$transaction((tx) =>
+    createInsight(
+      new PrismaInsightRepository(tx),
+      createEmit({ db: { $transaction: (run) => run(tx) }, sink, now }),
+      {
+        spaceId,
+        kind: "meal",
+        subjectKey: `${lunch.id}:da`,
+        statsHash: createHash("sha256").update(JSON.stringify(input)).digest("hex"),
+        text: SEED_INSIGHT,
+        questions: [],
+        rejectedCount: 0,
+        provider: "anthropic",
+        model: "fixture",
+      },
+      lunch.id,
+    ),
+  );
   return { spaceId, people, ownerInviteUrl: boot.inviteUrl, readings };
 }
 

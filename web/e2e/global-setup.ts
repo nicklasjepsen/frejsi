@@ -29,7 +29,7 @@ export default function globalSetup(): void {
   if (!name.endsWith("_e2e")) throw new Error("the e2e only ever recreates an _e2e database");
   onMaster(
     withDatabase(url, "master"),
-    `IF DB_ID('${name}') IS NOT NULL BEGIN ALTER DATABASE [${name}] SET SINGLE_USER WITH ROLLBACK IMMEDIATE; DROP DATABASE [${name}]; END; CREATE DATABASE [${name}];`,
+    `IF DB_ID('${name}') IS NOT NULL BEGIN ALTER DATABASE [${name}] SET SINGLE_USER WITH ROLLBACK IMMEDIATE; DROP DATABASE [${name}]; END; CREATE DATABASE [${name}]; ALTER DATABASE [${name}] SET COMPATIBILITY_LEVEL = 170;`,
   );
   run(bin(SHARED, "prisma"), ["migrate", "deploy"], SHARED);
   run(bin(WEB, "tsx"), ["--require", path.join(WEB, "e2e/clock.cjs"), "scripts/seed.ts"], WEB, {
