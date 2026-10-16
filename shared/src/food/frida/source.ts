@@ -31,7 +31,7 @@ export class FridaSource implements FoodSource {
       signal.throwIfAborted();
       const candidates: FoodCandidate[] = [];
       for (const entry of entries) {
-        const name = entry.name[locale] || entry.name[locale === "da" ? "en" : "da"];
+        const name = entry.name[locale] || entry.name[locale === "en" ? "da" : "en"];
         const folded = foldForSearch(name);
         if (!words.every((word) => folded.includes(word))) continue;
         candidates.push(

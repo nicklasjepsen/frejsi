@@ -9,6 +9,16 @@ export type Accent = z.infer<typeof Accent>;
 export const Locale = z.enum(["da", "en"]);
 export type Locale = z.infer<typeof Locale>;
 
+/**
+ * The locale a stored value names; a missing or unknown value falls back to the database column's
+ * default, `da`. Code outside `schemas/` uses this instead of
+ * writing a language into a fallback (the literals test refuses that).
+ */
+export function localeOrDefault(value: string | null | undefined): Locale {
+  const parsed = Locale.safeParse(value);
+  return parsed.success ? parsed.data : Locale.enum.da;
+}
+
 /** Per space. Targets are always in mmol; `glucoseUnit` only changes rendering (plan §3). */
 export const SpaceSettings = z
   .strictObject({
