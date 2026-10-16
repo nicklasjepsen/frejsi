@@ -83,10 +83,10 @@ export class BlobPhotoStore implements PhotoStore {
       const sas = await blob.generateSasUrl({
         permissions: BlobSASPermissions.parse("r"),
         expiresOn,
-        // Local Azurite uses HTTP; production uses HTTPS exclusively.
-        protocol: (publicUrl?.href ?? blob.url).startsWith("https:")
-          ? SASProtocol.Https
-          : SASProtocol.HttpsAndHttp,
+        // Local Azurite uses HTTP; production uses HTTPS exclusively. Judged by the address the
+        // server reaches storage at, not the public one: behind a TLS-terminating proxy the browser
+        // uses https while the storage service itself still receives http.
+        protocol: blob.url.startsWith("https:") ? SASProtocol.Https : SASProtocol.HttpsAndHttp,
       });
       if (!publicUrl) return sas;
       // The signature covers the account, container, blob and permissions, not the host.

@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
 # Generates the secrets a Docker Compose install needs, once, on this machine. Nothing it writes is
 # ever committed or put in an image: docker/.env is ignored by git and by .dockerignore, and the two
-# volumes are Docker volumes. Re-running keeps what exists (use --rotate to start over).
+# volumes are Docker volumes. Re-running keeps what exists. --rotate replaces the bootstrap token, the
+# poller key and the storage key, but keeps the SQL password: SQL Server stores the `sa` password in
+# its data volume and MSSQL_SA_PASSWORD does not change it afterwards.
 #
 #   docker/.env              from docker/.env.example, every <generated-by-init-secrets> filled in
 #   volume frejsi-host-keys  host.json and source-connect.json for the Functions host (function key)
@@ -23,9 +25,13 @@ rotate=0
 command -v docker >/dev/null || { echo "docker is required" >&2; exit 1; }
 
 if [ -f "$env_file" ] && [ "$rotate" -eq 0 ]; then
-  echo "docker/.env already exists; keeping it (--rotate replaces it and the keys)."
+  echo "docker/.env already exists; keeping it (--rotate replaces the tokens and keys, not the SQL password)."
 else
   sa_password="Fj$(random 12)aA1"      # meets SQL Server's complexity rules, no ; or } characters
+  if [ -f "$env_file" ]; then
+    kept="$(sed -n 's/^SQL_SA_PASSWORD="\(.*\)"$/\1/p' "$env_file")"
+    [ -n "$kept" ] && sa_password="$kept"
+  fi
   bootstrap_token="$(random 24)"
   connect_key="$(random 24)"
   azurite_key="$(head -c 32 /dev/urandom | base64 | tr -d '\n')"

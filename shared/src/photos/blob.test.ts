@@ -168,6 +168,16 @@ describe("BlobPhotoStore", () => {
     expect(new URL(await internal.readUrl(key, "thumb")).search).toBe(url.search);
   });
 
+  it("keeps the SAS protocol of the storage address when the public endpoint is https behind a proxy", async () => {
+    const local = `DefaultEndpointsProtocol=http;AccountName=${account};AccountKey=${accountKey};BlobEndpoint=http://azurite:10000/${account}`;
+    const store = new BlobPhotoStore(local, {
+      publicEndpoint: `https://photos.example.test/${account}`,
+    });
+    const url = new URL(await store.readUrl(key, "thumb"));
+    expect(url.origin).toBe("https://photos.example.test");
+    expect(url.searchParams.get("spr")).toBe("https,http");
+  });
+
   it("reads BLOB_PUBLIC_ENDPOINT from the environment and rejects one that is not a URL", async () => {
     const local = `DefaultEndpointsProtocol=http;AccountName=${account};AccountKey=${accountKey};BlobEndpoint=http://azurite:10000/${account}`;
     const store = createPhotoStoreFromEnv({
