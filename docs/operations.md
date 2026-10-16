@@ -228,7 +228,7 @@ flows. Both need a SQL Server; the e2e also needs a production build and Chromiu
 
 ```sh
 docker run -d --name frejsi-sql --restart unless-stopped -e ACCEPT_EULA=Y \
-  -e MSSQL_SA_PASSWORD='<a strong password>' -p 14330:1433 mcr.microsoft.com/mssql/server:2022-latest
+  -e MSSQL_SA_PASSWORD='<a strong password>' -p 14330:1433 mcr.microsoft.com/mssql/server:2025-latest
 export DATABASE_URL="sqlserver://localhost:14330;database=frejsi_test;user=sa;password=<the same password>;encrypt=true;trustServerCertificate=true"
 
 pnpm --filter ./shared test:integration      # its own database per run, dropped afterwards
@@ -243,8 +243,10 @@ checks for the seeded names.
 
 For development, `pnpm --filter ./web seed` fills an empty database with the fictional space of the
 artboards ("Almas rum": Jonas and Mette as owners, Birthe as a carer, Alma as a carer in simpleMode,
-Lærke as a viewer, fourteen local dates of fake readings) and prints one add-a-device link per
-person. Today stops at the seed clock. The fake returns at most 24 hours per daily cycle, so a
+Lærke as a viewer, fourteen local dates of fake readings) and a second space, "Arnes rum" (Arne, a
+grandfather without a sensor, as owner; Mette as a carer; source Manuelt with three finger-prick
+readings from the last day, written through `addManualReading`), and prints one add-a-device link
+per person. Today stops at the seed clock. The fake returns at most 24 hours per daily cycle, so a
 25-hour autumn date can have an uncovered hour. It refuses to run with `NODE_ENV=production` and on a database that already has a space.
 
 ## Food sources and refreshing Frida
@@ -513,3 +515,87 @@ Now's weekly link uses the same Sunday evening/Monday-before-06:00 window as the
 including timezone and daylight-saving transitions, and opens that explicit week. An open simple
 shell refreshes its server layout on `space.updated`, so another adult's AI toggle updates both
 the phone tab and sidebar without a reload. Its subscription requests no readings.
+
+## v0.5.0: Nightscout, manual readings and Open Food Facts contributions
+
+Three things arrive in v0.5.0: a second glucose source (**Nightscout**, read-only), a space with no
+sensor at all (**Manuelt**, finger-pricks typed on Nu), and the optional "Send rettelsen til Open
+Food Facts" checkbox on an OFF food. Merging the lanes deploys nothing; the `v0.5.0` tag does.
+
+### Nightscout troubleshooting
+
+Settings → Glukosekilde → Nightscout → Forbind takes the site's address and one credential, a token
+or the API secret. They go to Key Vault, never the database. A space whose source is Nightscout is
+polled like a Dexcom Share space, every five minutes, and the 35-minute alert above covers it.
+
+| What you see | What it means | What to do |
+| --- | --- | --- |
+| The space turns `disconnected` and the poller log says `fetch-failed:401` | The site answered 401: the token or the API secret was changed on the Nightscout site (a new `API_SECRET`, a deleted subject). Three failed cycles in a row mark the source disconnected; the next good cycle clears it. | An owner opens Glukosekilde → Nightscout → "Skift login" and enters the current credential. Nothing else needs changing. |
+| `fetch-failed:Timeout` or `fetch-failed:Network` | The site was unreachable for the poller (a sleeping free-tier host, a lapsed certificate, DNS). | Open the site in a browser. A free host that sleeps needs a ping or a paid plan; the source reconnects by itself when the site answers. |
+| `fetch-failed:301`, `302`, `307` or `308` | The site redirects. Frejsi does not follow redirects, because the credential travels in a header and could be handed to another host. | Enter the address the redirect ends at, for example `https://` and the `www.` form if the site forces it. |
+| The form refuses the address | Only `https://` addresses are accepted, without a query, a fragment or a user name in them. A site on `http://` cannot be connected. | Put the site behind HTTPS (most hosts offer it with one setting), then connect the `https://` address. |
+| `fetch-failed:UnexpectedShape` | The site answered, but not with Nightscout's `entries/sgv.json`. The address points at the wrong page. | Use the site's root address, not `/api/...` or `/report`. |
+
+A site whose default role already lets anyone read answers "ok" to any credential, so a wrong token
+there is not caught when connecting, and the readings come through all the same. The adapter calls
+only `entries/sgv.json` and `verifyauth` with `GET`; it never writes to the site
+(`shared/src/glucose/nightscout/README.md`). The log lines carry a code, never the address or the
+credential.
+
+### A deployment whose only source is Manuelt
+
+There is no poller to run for a space on Manuelt, so there is nothing to `disconnect`. The 35-minute
+alert still counts `reading.stored`, which the readings route sends for every typed value. On a
+deployment whose only space is Manuelt it fires whenever nobody has measured for 35 minutes, which
+is the normal rhythm of finger-pricks, and resolves with the next value. Mute or delete the alert
+rule in Application Insights if that is all the deployment has; with a mixed deployment (any space
+on a sensor) leave it as it is.
+
+### Open Food Facts contributions
+
+The checkbox exists only where the deployment has an Open Food Facts account. To set or rotate it:
+
+```sh
+az keyvault secret set --vault-name <vault> -n off-contribute-user --value <account name>
+az keyvault secret set --vault-name <vault> -n off-contribute-password --file <file with the password>
+```
+
+then run a release (or rerun the `deploy` job of the latest tag): `deploy.sh` copies the two secrets
+into the web app's settings, and an unset one is skipped with a line in the log. Changing the secret
+alone changes nothing until that release. Use `OFF_CONTRIBUTE_HOST=world.openfoodfacts.net` for a
+first try against staging (`infra/README.md`, "Optional OFF secrets and the country variables").
+
+A send is recorded as a `food.contributed` event (`{ foodId, source }`) in the space's `events`
+table, written only after Open Food Facts answered `ok`. A refusal or a timeout emits nothing and
+leaves the food as it was. To see what a space has sent:
+
+```sql
+SELECT seq, payload FROM [Event] WHERE spaceId = '<space id>' AND type = 'food.contributed';
+```
+
+Nothing is sent without a tick on that save, and the tick is never remembered. The request carries
+numbers (barcode, carbs per 100 g, serving size) and a pseudonymous reference, never a name.
+
+### Where to read more
+
+- The managed-identity cutover for the poller, step by step, with rollback: `infra/README.md`,
+  "Managed identity for the poller (v0.5.0)".
+- Running the whole stack on your own machine or server: `docs/deploy-your-own.md`.
+
+### What changed in `release.yml` in v0.5.0
+
+Compared with v0.4.1, three edits and nothing else:
+
+1. `AZURE_RESOURCE_GROUP` is `${{ vars.AZURE_RESOURCE_GROUP || 'frejsi' }}`: a fork may name its
+   resource group; production keeps `frejsi`.
+2. The deploy step passes four optional repository variables to `deploy.sh`: `DEFAULT_LOCALE`,
+   `FOOD_SOURCES`, `OFF_COUNTRY` and `OFF_CONTRIBUTE_HOST`. An unset one is left out of the app
+   settings.
+3. `publish` no longer relies on the implicit `success()`: it runs when `verify` and `deploy` both
+   succeeded even if the `infra` job was skipped. Without this v0.4.1 deployed and no GitHub release
+   was published.
+
+The full suites are unchanged: `pnpm --filter ./shared test:integration` and
+`pnpm --filter ./web test:e2e` pick up the new files by themselves. The e2e sets
+`FAKE_FOOD_CONTRIBUTOR=1` in `playwright.config.ts`, so no Open Food Facts request is made and no
+Nightscout site is contacted.
