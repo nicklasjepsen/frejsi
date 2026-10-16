@@ -29,10 +29,21 @@ export const UserSettingsPatch = z
 export type UserSettingsPatch = z.infer<typeof UserSettingsPatch>;
 
 /**
- * What the connect form posts; the route adds the `spaceId` from the path, so a body with one is
- * refused. Dexcom Share only until the Nightscout form and the `manual` choice reach Settings (v0.5.0).
+ * What the connect forms post; the route adds the `spaceId` from the path, so a body with one is
+ * refused. The Nightscout address is only a bounded string here: the route checks it against the
+ * shared `ConnectSourceRequest` and answers `source-url-invalid`, so a bad address is told apart
+ * from a malformed body.
  */
-export const ConnectSourceBody = ConnectSourceRequest.options[0].omit({ spaceId: true }).strict();
+export const ConnectSourceBody = z.discriminatedUnion("type", [
+  ConnectSourceRequest.options[0].omit({ spaceId: true }).strict(),
+  z.strictObject({
+    type: z.literal("nightscout"),
+    url: z.string().max(2048),
+    token: z.string().min(1).max(200).optional(),
+    apiSecret: z.string().min(1).max(200).optional(),
+  }),
+  z.strictObject({ type: z.literal("manual") }),
+]);
 export type ConnectSourceBody = z.infer<typeof ConnectSourceBody>;
 
 /**

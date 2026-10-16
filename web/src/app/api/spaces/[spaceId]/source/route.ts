@@ -1,4 +1,4 @@
-import { HttpError, log, prisma } from "@frejsi/shared";
+import { ConnectSourceRequest, HttpError, log, prisma } from "@frejsi/shared";
 
 import { json, logOutcome, parseBody, settingsRoute } from "@/components/settings/api-route";
 import { ConnectSourceBody } from "@/components/settings/contracts";
@@ -25,15 +25,34 @@ export const GET = settingsRoute<Params>(ROUTE, async (_request, { spaceId }) =>
 });
 
 /**
- * "Skift login": an owner connects a glucose source. The credential goes to the `source-connect`
- * function, which probes it and writes it to Key Vault; this route saves `{ type, region,
- * secretRef }` and nothing else (decision 9). The route knows the `GlucoseSourceConfig` shape and
- * the connect contract, not any particular source.
+ * "Skift login" and "Vælg": an owner connects a glucose source. The credential goes to the
+ * `source-connect` function, which probes it and writes it to Key Vault; this route saves the
+ * `GlucoseSourceConfig` (`{ type, region, secretRef }`, `{ type, secretRef }` or `{ type }`) and
+ * nothing else (decision 9): a Nightscout address or token is never stored, logged or echoed.
+ * `manual` has nothing to connect to, so it is saved without a call. The route knows the config
+ * shape and the connect contract, not any particular source.
  */
 export const POST = settingsRoute<Params>(ROUTE, async (request, { spaceId }) => {
   await requireRole(spaceId, "owner");
   const body = await parseBody(request, ConnectSourceBody);
-  const outcome = await connectSource({ spaceId, ...body });
+  const full = ConnectSourceRequest.safeParse({ ...body, spaceId });
+  if (!full.success) {
+    // Only the shape of the failure is looked at; the issues carry the input and are dropped.
+    const onUrl = full.error.issues.some((issue) => issue.path[0] === "url");
+    throw new HttpError(
+      400,
+      body.type === "nightscout" && onUrl ? "source-url-invalid" : "validation",
+    );
+  }
+  const connect = full.data;
+
+  if (connect.type === "manual") {
+    const settings = await saveConnectedSource(spaceId, { type: "manual" });
+    logOutcome("source.connected", ROUTE, "ok", { spaceId });
+    return json(settings);
+  }
+
+  const outcome = await connectSource(connect);
   if (outcome.result === "bad-credentials") throw new HttpError(400, "source-bad-credentials");
   if (outcome.result === "unreachable") {
     // The cause (timeout, network, http-<status>, bad-body, ...) goes on its own line; the answer
@@ -41,11 +60,12 @@ export const POST = settingsRoute<Params>(ROUTE, async (request, { spaceId }) =>
     log.warn("source.connect-unreachable", { route: ROUTE, code: outcome.cause, spaceId });
     throw new HttpError(503, "source-unreachable");
   }
-  const settings = await saveConnectedSource(spaceId, {
-    type: body.type,
-    region: body.region,
-    secretRef: outcome.secretRef,
-  });
+  const settings = await saveConnectedSource(
+    spaceId,
+    connect.type === "dexcom-share"
+      ? { type: "dexcom-share", region: connect.region, secretRef: outcome.secretRef }
+      : { type: "nightscout", secretRef: outcome.secretRef },
+  );
   logOutcome("source.connected", ROUTE, "ok", { spaceId });
   return json(settings);
 });
