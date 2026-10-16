@@ -19,14 +19,18 @@ export function parseTyped(text: string, unit: GlucoseUnit): number | null {
 /**
  * The most recent moment at or before `now` whose local time of day is `hhmm`: a time later than
  * the clock means yesterday's. null for a malformed time or one outside the last 24 hours.
+ * Candidates come from every half hour of the last 26, one per local day they fall in, so a day
+ * that is 23 or 25 hours long (daylight saving) cannot hide yesterday.
  */
 export function resolveTime(hhmm: string, now: Date, timeZone: string): Date | null {
-  let at = withLocalTime(now, hhmm, timeZone);
-  if (at && at.getTime() > now.getTime()) {
-    at = withLocalTime(new Date(now.getTime() - MANUAL_WINDOW_MS), hhmm, timeZone);
+  const HALF_HOUR = 30 * 60_000;
+  const earliest = now.getTime() - MANUAL_WINDOW_MS;
+  let best: Date | null = null;
+  for (let step = 0; step <= 52; step += 1) {
+    const at = withLocalTime(new Date(now.getTime() - step * HALF_HOUR), hhmm, timeZone);
+    if (!at) return null;
+    const ms = at.getTime();
+    if (ms <= now.getTime() && ms >= earliest && (!best || ms > best.getTime())) best = at;
   }
-  if (!at || at.getTime() < now.getTime() - MANUAL_WINDOW_MS || at.getTime() > now.getTime()) {
-    return null;
-  }
-  return at;
+  return best;
 }
