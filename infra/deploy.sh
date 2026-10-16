@@ -255,12 +255,17 @@ if ! [[ "$POLLER_CLIENT_ID" =~ ^[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-
   echo "::error::identity $POLLER_IDENTITY has no usable client id" >&2; exit 1
 fi
 log "Creating the database user $POLLER_IDENTITY for the poller's identity"
+# CREATE USER ... WITH SID wants a binary literal, not an expression, so the statement is built as
+# dynamic SQL from the SID computed first.
 ( umask 077; cat > "$WORK/poller-identity.sql" <<EOSQL
-IF EXISTS (SELECT 1 FROM sys.database_principals WHERE name = N'$POLLER_IDENTITY'
-           AND sid <> CONVERT(varbinary(16), CAST('$POLLER_CLIENT_ID' AS uniqueidentifier)))
+DECLARE @sid varbinary(16) = CONVERT(varbinary(16), CAST('$POLLER_CLIENT_ID' AS uniqueidentifier));
+IF EXISTS (SELECT 1 FROM sys.database_principals WHERE name = N'$POLLER_IDENTITY' AND sid <> @sid)
   DROP USER [$POLLER_IDENTITY];
 IF NOT EXISTS (SELECT 1 FROM sys.database_principals WHERE name = N'$POLLER_IDENTITY')
-  CREATE USER [$POLLER_IDENTITY] WITH SID = CONVERT(varbinary(16), CAST('$POLLER_CLIENT_ID' AS uniqueidentifier)), TYPE = E;
+BEGIN
+  DECLARE @create nvarchar(max) = N'CREATE USER [$POLLER_IDENTITY] WITH SID = ' + CONVERT(nvarchar(max), @sid, 1) + N', TYPE = E;';
+  EXEC (@create);
+END;
 ALTER ROLE db_datareader ADD MEMBER [$POLLER_IDENTITY];
 ALTER ROLE db_datawriter ADD MEMBER [$POLLER_IDENTITY];
 EOSQL

@@ -388,7 +388,12 @@ test('creates the identity\'s contained user by SID as the Entra admin, between 
   assert.ok(q, 'no SQL creating a TYPE = E user');
   // Idempotent, named after the identity, SID from its client id (no Microsoft Graph lookup).
   assert.match(q.sql, /IF NOT EXISTS \(SELECT 1 FROM sys\.database_principals WHERE name = N'id-frejsi-abc'/);
-  assert.match(q.sql, new RegExp(`CREATE USER \\[id-frejsi-abc\\] WITH SID = CONVERT\\(varbinary\\(16\\), CAST\\('${clientId}' AS uniqueidentifier\\)\\), TYPE = E`));
+  // SQL Server takes a binary literal after SID =, so the statement is dynamic SQL over the SID
+  // computed from the client id as varbinary(16).
+  assert.match(q.sql, new RegExp(`@sid varbinary\\(16\\) = CONVERT\\(varbinary\\(16\\), CAST\\('${clientId}' AS uniqueidentifier\\)\\)`));
+  assert.match(q.sql, /N'CREATE USER \[id-frejsi-abc\] WITH SID = ' \+ CONVERT\(nvarchar\(max\), @sid, 1\) \+ N', TYPE = E;'/);
+  assert.match(q.sql, /EXEC \(@create\)/);
+  assert.doesNotMatch(q.sql, /WITH SID = CONVERT/, 'an expression after SID = does not parse');
   assert.doesNotMatch(q.sql, /FROM EXTERNAL PROVIDER/);
   // Read and write rows only: the poller never runs DDL.
   assert.match(q.sql, /ALTER ROLE db_datareader ADD MEMBER \[id-frejsi-abc\]/);
