@@ -63,6 +63,7 @@
   background: var(--surface-input);
   color: var(--text);
   font: inherit;
+  font-size: 16px;
   resize: vertical;
 }
 .parsed {

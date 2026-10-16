@@ -212,7 +212,7 @@ button.foodTitle {
   background: var(--surface-input);
   padding: 0 12px;
   font: inherit;
-  font-size: 15px;
+  font-size: 16px;
 }
 @media (min-width: 1280px) {
   .pageHeader h1,

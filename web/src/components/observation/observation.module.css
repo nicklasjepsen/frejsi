@@ -50,6 +50,7 @@
   width: 100%;
   box-sizing: border-box;
   font: inherit;
+  font-size: 16px;
   color: var(--text);
   background: var(--surface-input);
   border: 1px solid var(--hairline);
