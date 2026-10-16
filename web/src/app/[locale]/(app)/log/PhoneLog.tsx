@@ -309,6 +309,7 @@ function ManualView({ controller }: Props) {
         barcode={manual.barcode}
         busy={controller.manualBusy}
         failed={controller.manualFailed}
+        showTitle={false}
         onCreate={(request) => void controller.createManual(request)}
       />
     </div>

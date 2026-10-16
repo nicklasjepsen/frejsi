@@ -11,6 +11,7 @@ import {
   emptyDraft,
   isComplete,
   itemCarbs,
+  knownTotal,
   relinkFood,
   removeItem,
   toMealRequest,
@@ -62,6 +63,14 @@ describe("the meal draft", () => {
     expect(draft.items.map(itemCarbs)).toEqual([36, 14]);
     expect(totalCarbs(draft)).toBe(50);
     expect(isComplete(draft)).toBe(true);
+  });
+
+  it("knows no total until every item has a choice, so a bar never shows a fake 0 g", () => {
+    expect(knownTotal(emptyDraft())).toBeNull();
+    let draft = addFood(addFood(emptyDraft(), bread), lunchbox);
+    expect(knownTotal(draft)).toBeNull();
+    draft = choosePortion(draft, draft.items[0]?.key ?? "", 2);
+    expect(knownTotal(draft)).toBe(totalCarbs(draft));
   });
 
   it("builds the POST meals body from food ids, portion labels and grams, never an amount of anything else", () => {

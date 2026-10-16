@@ -239,7 +239,7 @@ export function EditMealSheet({
         </p>
       )}
       <TotalBar
-        total={items.reduce((sum, item) => sum + (item.input.carbs ?? 0), 0)}
+        total={complete ? items.reduce((sum, item) => sum + (item.input.carbs ?? 0), 0) : null}
         actionLabel={t(written ? "reload" : "save")}
         disabled={busy || photoBusy || !complete || confirmDelete}
         onAction={() => void save()}

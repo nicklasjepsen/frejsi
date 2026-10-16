@@ -48,6 +48,7 @@ describe("meal detail styles (phone, desktop, simple) use tokens only", () => {
         "--surface-sunken",
         "--text",
         "--text-muted",
+        "--touch-min",
         "--touch-min-simple",
       ]
     `);
@@ -82,7 +83,10 @@ describe("meal detail styles (phone, desktop, simple) use tokens only", () => {
     expect(block(css, ".simpleName {")).toContain("22px");
     expect(block(css, ".simpleAmount {")).toContain("font-size: 18px");
     expect(block(css, ".simpleTotalValue {")).toContain("font-size: 30px");
-    expect(block(css, '.compareChips [role="radio"] {')).toMatch(/34px[\s\S]*font-size: 13px/);
+    // A thumb gets 44 px on the phone; the drawn 34 px chips are desktop only.
+    expect(block(css, '.compareChips [role="radio"] {')).toContain("min-height: var(--touch-min)");
+    const desktop = css.slice(css.indexOf("@media (min-width: 1280px)"));
+    expect(block(desktop, '.compareChips [role="radio"] {')).toMatch(/34px[\s\S]*font-size: 13px/);
     expect(block(css, ".actions > button {")).toMatch(/min-height: 36px[\s\S]*border-radius: 10px/);
   });
 });

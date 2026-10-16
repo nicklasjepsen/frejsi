@@ -20,7 +20,10 @@
   align-items: baseline;
   justify-content: space-between;
 }
+/* A 44 px hit area without moving the line: the padding is taken back by the margin. */
 .sectionHead a {
+  padding: 12px 0;
+  margin: -12px 0;
   color: var(--accent-strong);
   font-size: 14px;
 }

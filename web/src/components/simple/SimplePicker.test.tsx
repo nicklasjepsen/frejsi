@@ -103,7 +103,16 @@ describe("Hvad spiser du? (Log-Simpel, simpleMode)", () => {
     fireEvent.click(await screen.findByRole("button", { name: /Havregrød/ }));
     const confirm = screen.getByRole("button", { name: "Ja, det spiser jeg" });
     expect(confirm).toBeDisabled();
-    const portions = screen.getByRole("region", { name: "Hvor meget?" });
+    // Before the child picks: a dash, never a fake "0 g".
+    expect(screen.getByTestId("total-bar")).toHaveTextContent("Havregrød–");
+    expect(screen.getByTestId("total-bar")).not.toHaveTextContent("0 g");
+    // The chips sit in the sticky footer with the chosen food, after the grid, not under it all.
+    const footer = screen.getByTestId("eat-footer");
+    const portions = within(footer).getByRole("region", { name: "Hvor meget?" });
+    expect(
+      screen.getByTestId("eat-grid").compareDocumentPosition(footer) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
     fireEvent.click(within(portions).getByRole("button", { name: "stor skål · 30 g" }));
     expect(screen.getByTestId("total-bar")).toHaveTextContent("30 g kulhydrat");
     expect(within(portions).queryByText("Vej det")).toBeNull();

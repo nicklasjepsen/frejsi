@@ -234,6 +234,9 @@ describe("Log-Telefon", () => {
     expect(within(confirm).getByText("Ikke tjekket")).toBeVisible();
     const save = within(confirm).getByRole("button", { name: "Gem måltid" });
     expect(save).toBeDisabled();
+    // No portion yet: a dash, never a fake "0 g".
+    expect(screen.getByTestId("total-bar")).toHaveTextContent("I alt–");
+    expect(screen.getByTestId("total-bar")).not.toHaveTextContent("0 g");
     fireEvent.click(within(confirm).getByRole("button", { name: "2 skiver · 36 g" }));
     expect(screen.getByTestId("total-bar")).toHaveTextContent("I alt36 g kulhydrat");
     expect(within(confirm).getByRole("button", { name: "Tag et billede" })).toBeVisible();
@@ -326,6 +329,9 @@ describe("Log-Telefon", () => {
     mount();
     await typeAndSubmit("Skriv hvad der spises", "rugbrød");
     fireEvent.click(screen.getByRole("button", { name: /Jeg kender tallet selv/ }));
+    // The phone header is the one title; the form keeps its accessible name without a second.
+    expect(screen.getAllByRole("heading", { name: "Jeg kender tallet selv" })).toHaveLength(1);
+    expect(screen.getByRole("form", { name: "Jeg kender tallet selv" })).toBeVisible();
     expect(screen.getByLabelText("Navn")).toHaveValue("rugbrød");
     fireEvent.change(screen.getByLabelText("Kulhydrat pr. 100 g"), { target: { value: "40" } });
     fireEvent.click(screen.getByRole("button", { name: "Opret og tilføj" }));

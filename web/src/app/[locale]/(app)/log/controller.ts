@@ -32,7 +32,7 @@ import {
   isComplete,
   removeItem,
   toMealRequest,
-  totalCarbs,
+  knownTotal,
   type MealDraft,
 } from "@/components/meal/draft";
 import { isLibraryFood } from "@/components/meal/LookupResults";
@@ -366,7 +366,7 @@ export function useLogController({
     library,
     loadLibrary,
     draft,
-    total: totalCarbs(draft),
+    total: knownTotal(draft),
     complete: isComplete(draft),
     activeKey,
     setActiveKey,

@@ -114,6 +114,10 @@ export const totalCarbs = (draft: MealDraft): number =>
 export const isComplete = (draft: MealDraft): boolean =>
   draft.items.length > 0 && draft.items.every((item) => itemCarbs(item) !== null);
 
+/** The total for a bar: null until every item has a choice, so no fake "0 g" is ever shown. */
+export const knownTotal = (draft: MealDraft): number | null =>
+  isComplete(draft) ? totalCarbs(draft) : null;
+
 function toItemInput(item: DraftItem): MealItemInput {
   const carbs = itemCarbs(item) ?? 0;
   // An unchanged snapshot goes back as stored: with a food id the server would recompute it from

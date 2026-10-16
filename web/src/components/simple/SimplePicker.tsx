@@ -40,6 +40,8 @@ const defaultPortion = (food: FoodView): number | null => (food.portions.length 
  * Hvad spiser du? (Log-Simpel): the space's verified foods as photo tiles, recently eaten first,
  * the first one spanning both columns. Only verified foods with portions can be logged.
  * The capture tile asks for a fresh photo; the separate link searches the verified list.
+ * "Hvor meget?" lives in the sticky footer with the chosen food, so a child who taps a tile in
+ * row two never scrolls past the rest of the grid to answer it.
  */
 export function SimplePicker({ spaceId, locale, simple, initialFoodId }: SimplePickerProps) {
   const t = useTranslations("eat");
@@ -212,7 +214,9 @@ export function SimplePicker({ spaceId, locale, simple, initialFoodId }: SimpleP
                 spaceId={spaceId}
                 simple={simple}
                 tile
-                onUnavailable={() => { setAiUnavailable(true); }}
+                onUnavailable={() => {
+                  setAiUnavailable(true);
+                }}
                 onEstimate={(estimate, photoDataUrl) => {
                   setPendingEstimate({ spaceId, estimate, photoDataUrl });
                   router.push(localeHref(locale, "/ask"));
@@ -221,27 +225,17 @@ export function SimplePicker({ spaceId, locale, simple, initialFoodId }: SimpleP
             )}
           </div>
           {!searching && (
-            <button type="button" className={styles.searchLink} onClick={() => { setSearching(true); }}>
+            <button
+              type="button"
+              className={styles.searchLink}
+              onClick={() => {
+                setSearching(true);
+              }}
+            >
               {t("findOther")}
             </button>
           )}
         </>
-      )}
-
-      {selected && selected.portions.length > 1 && (
-        <section className={styles.portions} aria-label={t("howMuch")}>
-          <h2 className={styles.howMuch}>{t("howMuch")}</h2>
-          <PortionChips
-            portions={choices}
-            carbsPer100g={null}
-            {...(portion !== null ? { selectedIndex: portion } : {})}
-            onSelect={(choice) => {
-              const index = choices.indexOf(choice);
-              setPortion(index >= 0 ? index : null);
-              setSaveFailed(false);
-            }}
-          />
-        </section>
       )}
 
       {saveFailed && (
@@ -250,11 +244,27 @@ export function SimplePicker({ spaceId, locale, simple, initialFoodId }: SimpleP
         </Notice>
       )}
 
+      {/* The footer: "Hvor meget?" right over the chosen food, so the chips are never below the grid. */}
       {selected && (
-        <div className={styles.bar}>
+        <div className={styles.bar} data-testid="eat-footer">
+          {selected.portions.length > 1 && (
+            <section className={styles.portions} aria-label={t("howMuch")}>
+              <h2 className={styles.howMuch}>{t("howMuch")}</h2>
+              <PortionChips
+                portions={choices}
+                carbsPer100g={null}
+                {...(portion !== null ? { selectedIndex: portion } : {})}
+                onSelect={(choice) => {
+                  const index = choices.indexOf(choice);
+                  setPortion(index >= 0 ? index : null);
+                  setSaveFailed(false);
+                }}
+              />
+            </section>
+          )}
           <TotalBar
             name={selected.name}
-            total={carbs ?? 0}
+            total={carbs}
             actionLabel={saving ? t("saving") : t("confirm")}
             onAction={() => void confirm()}
             disabled={carbs === null || saving}

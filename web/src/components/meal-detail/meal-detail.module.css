@@ -21,6 +21,12 @@
     padding: 0 24px 32px;
     background: var(--ground);
   }
+
+  /* The column scrolls; a page taller than the phone must never squeeze a card or the tiles. */
+  .screen > *,
+  .simple > * {
+    flex-shrink: 0;
+  }
 }
 
 .metaHeader {
@@ -115,12 +121,20 @@
   color: var(--text-muted);
 }
 
-/* Maaltid-Desktop draws these two chips at 34 px and 13 px. */
+/* A thumb gets 44 px; Maaltid-Desktop draws these two chips at 34 px and 13 px. */
 .compareChips [role="radio"] {
-  min-height: 34px;
-  height: 34px;
-  padding: 0 12px;
-  font-size: 13px;
+  min-height: var(--touch-min);
+  padding: 0 14px;
+  font-size: 14px;
+}
+
+@media (min-width: 1280px) {
+  .compareChips [role="radio"] {
+    min-height: 34px;
+    height: 34px;
+    padding: 0 12px;
+    font-size: 13px;
+  }
 }
 
 .empty {
@@ -131,6 +145,18 @@
 
 .tiles {
   min-height: 88px;
+}
+
+/* Under 480 px three tiles are too narrow for "2 t 50 min" on one line: two columns, the
+   bolus tile across both. */
+@media (max-width: 479.98px) {
+  div.tiles [data-columns="3"] {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  div.tiles [data-columns="3"] > :nth-child(3) {
+    grid-column: span 2;
+  }
 }
 
 .items {

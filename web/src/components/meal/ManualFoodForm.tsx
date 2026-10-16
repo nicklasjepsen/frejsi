@@ -25,9 +25,12 @@ export function ManualFoodForm({
   failed,
   onCreate,
   onCancel,
+  showTitle = true,
 }: {
   /** Desktop: back to the results without creating anything (the phone has its header back). */
   onCancel?: () => void;
+  /** The phone's page header already carries the title; the form keeps its accessible name. */
+  showTitle?: boolean;
   initialName: string;
   barcode?: string | undefined;
   busy: boolean;
@@ -63,7 +66,7 @@ export function ManualFoodForm({
   };
   return (
     <form className={styles.manualForm} onSubmit={submit} aria-label={t("title")}>
-      <h2 className={styles.sectionTitle}>{t("title")}</h2>
+      {showTitle && <h2 className={styles.sectionTitle}>{t("title")}</h2>}
       {barcode && <p className={styles.muted}>{t("barcode", { code: barcode })}</p>}
       <TextInput
         label={t("name")}

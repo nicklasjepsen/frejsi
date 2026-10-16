@@ -228,6 +228,13 @@ describe("TotalBar", () => {
     fireEvent.click(screen.getByRole("button", { name: /Gem måltid/ }));
     expect(save).toHaveBeenCalledOnce();
   });
+
+  it("shows a dash, never 0 g, while the total is not known yet", () => {
+    mount(<TotalBar total={null} actionLabel="Gem måltid" onAction={vi.fn()} disabled />);
+    const bar = screen.getByTestId("total-bar");
+    expect(bar).toHaveTextContent("I alt–");
+    expect(bar).not.toHaveTextContent("0 g");
+  });
 });
 
 describe("ManualFoodForm", () => {

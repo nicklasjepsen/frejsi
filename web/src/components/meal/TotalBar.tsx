@@ -7,7 +7,8 @@ import styles from "./meal.module.css";
 /**
  * The sticky "I alt · 50 g kulhydrat · Gem måltid" bar (Log-Portioner, Log-Desktop). With `name`
  * it is the simple variant of Log-Simpel: the dish name over "42 g kulhydrat" and the large
- * "Ja, det spiser jeg" (`size` "simple" in simpleMode).
+ * "Ja, det spiser jeg" (`size` "simple" in simpleMode). A `total` of null (no portion chosen yet)
+ * shows a dash, never a fake "0 g".
  */
 export function TotalBar({
   total,
@@ -18,7 +19,7 @@ export function TotalBar({
   name,
   size,
 }: {
-  total: number;
+  total: number | null;
   actionLabel: string;
   onAction: () => void;
   disabled?: boolean;
@@ -29,14 +30,19 @@ export function TotalBar({
 }) {
   const t = useTranslations("log");
   const locale = useLocale();
-  const amount = (
-    <span className={styles.totalAmount}>
-      {t("totalAmount", {
-        amount: new Intl.NumberFormat(locale, { maximumFractionDigits: 0 }).format(total),
-      })}{" "}
-      <span className={styles.totalUnit}>{t("carbs")}</span>
-    </span>
-  );
+  const amount =
+    total === null ? (
+      <span className={styles.totalAmount} data-unknown="true">
+        –
+      </span>
+    ) : (
+      <span className={styles.totalAmount}>
+        {t("totalAmount", {
+          amount: new Intl.NumberFormat(locale, { maximumFractionDigits: 0 }).format(total),
+        })}{" "}
+        <span className={styles.totalUnit}>{t("carbs")}</span>
+      </span>
+    );
   if (name !== undefined) {
     return (
       <div
