@@ -28,6 +28,7 @@ export class MemoryFoodRepository implements FoodRepository {
       this.rows
         .filter(
           (row) =>
+            !row.verified &&
             remoteOrigins.includes(row.origin) &&
             !["ai", "family", "manual"].includes(row.origin) &&
             row.sourceName == null &&
