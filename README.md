@@ -21,7 +21,7 @@ The v0.1.0 foundation (passkeys, roles and live glucose), v0.2.0 food lookup and
 
 On a phone, log a meal from the food picker and tap its marker on Now to open the meal curve. On a desktop, review the week, compare earlier meals and manage the food library and people. Meal attachments are uploaded when you save. In the v0.4.0 implementation, spaces with AI enabled and a configured provider can explicitly capture a plate photo from the picker or `/ask` for an approximate estimate. “Ask an adult” saves it as an unverified library food and stores the photo; it never logs a meal. AI stays off until a provider is configured and the space opts in; browser notifications are opt-in per device.
 
-What is still to come, such as a Docker Compose deployment for people who are not on Azure, is on the [roadmap](#roadmap).
+What is still to come is on the [roadmap](#roadmap). People who are not on Azure can run the app with Docker Compose: see [docs/deploy-your-own.md](docs/deploy-your-own.md#docker-compose-any-host-with-docker).
 
 ## What it will never do
 
@@ -53,7 +53,7 @@ For the owner of an installation, once the site is deployed. Your own address re
 
 ## Stack
 
-pnpm monorepo: `web/` — Next.js App Router and API routes on Azure Static Web Apps; `poller/` — Node 22 Azure Functions; `shared/` — TypeScript, Zod contracts, Prisma and domain logic; `infra/` — Bicep and deployment scripts. Azure SQL Basic stores data, Web PubSub carries live events, Key Vault holds secrets, and private Blob Storage holds photos. Glucose sources, food sources and AI providers are plugins behind interfaces: [docs/architecture.md](docs/architecture.md) is the map. A Docker Compose deployment is future work.
+pnpm monorepo: `web/` — Next.js App Router and API routes on Azure Static Web Apps; `poller/` — Node 22 Azure Functions; `shared/` — TypeScript, Zod contracts, Prisma and domain logic; `infra/` — Bicep and deployment scripts. Azure SQL Basic stores data, Web PubSub carries live events, Key Vault holds secrets, and private Blob Storage holds photos. Glucose sources, food sources and AI providers are plugins behind interfaces: [docs/architecture.md](docs/architecture.md) is the map. `docker/` runs the same code on any host with Docker Compose, with SQL Server, Azurite and file secrets in place of the Azure services.
 
 ## Roadmap
 

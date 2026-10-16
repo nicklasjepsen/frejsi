@@ -30,18 +30,18 @@ settings and plugins: see [Choose your country](#choose-your-country-and-your-so
 Prices are West Europe list prices in October 2026 at about 6.9 DKK per USD; check the invoice after
 the first month.
 
-| Resource | Tier | Purpose | DKK / month |
-|---|---|---|---|
-| Static Web App | Standard | hybrid Next.js (UI + API routes), custom domain, preview environments | ~62 |
-| Function App | Linux Consumption (Y1), Node 22 | the poller, every 5 minutes; well inside the free grant | ~0 |
-| Storage account | Standard LRS | the Function App's own storage (not photos) | <1 |
-| Azure SQL | Basic, 5 DTU, 2 GB | all data; always on, so the poller never has to wake it | ~34 |
-| Web PubSub | Free (F1) | live push, 20 connections, 20k messages/day | 0 |
-| Key Vault | Standard, RBAC | the secrets in [infra/README.md](../infra/README.md#how-secrets-work) | <1 |
-| Log Analytics + Application Insights | Pay-as-you-go, 1 GB/day cap, 30 days | telemetry and the one alert | 0 (under 5 GB free) |
-| Action group + scheduled query alert | none | "no reading for 35 minutes" to `ALERT_EMAIL` | 0 |
-| Photo storage account | Standard LRS | private originals and thumbnails, seven-day soft delete | ~1-3 |
-| **Total** | | | **~98-100** |
+| Resource                             | Tier                                 | Purpose                                                               | DKK / month         |
+| ------------------------------------ | ------------------------------------ | --------------------------------------------------------------------- | ------------------- |
+| Static Web App                       | Standard                             | hybrid Next.js (UI + API routes), custom domain, preview environments | ~62                 |
+| Function App                         | Linux Consumption (Y1), Node 22      | the poller, every 5 minutes; well inside the free grant               | ~0                  |
+| Storage account                      | Standard LRS                         | the Function App's own storage (not photos)                           | <1                  |
+| Azure SQL                            | Basic, 5 DTU, 2 GB                   | all data; always on, so the poller never has to wake it               | ~34                 |
+| Web PubSub                           | Free (F1)                            | live push, 20 connections, 20k messages/day                           | 0                   |
+| Key Vault                            | Standard, RBAC                       | the secrets in [infra/README.md](../infra/README.md#how-secrets-work) | <1                  |
+| Log Analytics + Application Insights | Pay-as-you-go, 1 GB/day cap, 30 days | telemetry and the one alert                                           | 0 (under 5 GB free) |
+| Action group + scheduled query alert | none                                 | "no reading for 35 minutes" to `ALERT_EMAIL`                          | 0                   |
+| Photo storage account                | Standard LRS                         | private originals and thumbnails, seven-day soft delete               | ~1-3                |
+| **Total**                            |                                      |                                                                       | **~98-100**         |
 
 The Standard Static Web App is two thirds of the bill. On the Free plan (a custom domain is still
 included; no SLA, no managed backend scaling) the total is about 35 DKK a month; the change is one
@@ -144,21 +144,21 @@ Azure resources. For previews also create `preview` and set the variable `PREVIE
 
 Under Settings, Secrets and variables, Actions:
 
-| Kind | Name | Value |
-|---|---|---|
-| variable | `AZURE_CLIENT_ID` | the app registration's client ID |
-| variable | `AZURE_TENANT_ID` | your tenant ID |
-| variable | `AZURE_SUBSCRIPTION_ID` | your subscription ID |
-| variable | `AZURE_RESOURCE_GROUP` | the resource group's name, if it is not `frejsi` |
-| variable | `DEFAULT_LOCALE` | `da` or `en`: the language a visitor with no preference gets (unset means `da`) |
-| variable | `FOOD_SOURCES` | the food plugins to switch on, for example `off` or `off,frida` |
-| variable | `OFF_COUNTRY` | a two-letter country code Open Food Facts should prefer; unset means the whole world |
-| variable | `OFF_CONTRIBUTE_HOST` | optional, only with the Open Food Facts account of [step 9](#9-optional-ai-help-and-sending-corrections-to-open-food-facts): the host corrections go to; unset is production, `world.openfoodfacts.net` is the staging host to try first |
-| variable | `CUSTOM_DOMAIN` | leave unset until [step 6](#6-the-custom-domain-before-the-bootstrap) |
-| variable | `SQL_SERVER_ID` | only for [an existing SQL server](../infra/README.md#an-existing-sql-server) |
-| variable | `PREVIEWS_ENABLED` | only with the `preview` environment: `true` |
-| secret | `ALERT_EMAIL` | where the "no readings for 35 minutes" alert goes |
-| secret | `CI_SQL_SA_PASSWORD` | any strong password; only for the SQL Server container the release suite starts |
+| Kind     | Name                    | Value                                                                                                                                                                                                                                    |
+| -------- | ----------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| variable | `AZURE_CLIENT_ID`       | the app registration's client ID                                                                                                                                                                                                         |
+| variable | `AZURE_TENANT_ID`       | your tenant ID                                                                                                                                                                                                                           |
+| variable | `AZURE_SUBSCRIPTION_ID` | your subscription ID                                                                                                                                                                                                                     |
+| variable | `AZURE_RESOURCE_GROUP`  | the resource group's name, if it is not `frejsi`                                                                                                                                                                                         |
+| variable | `DEFAULT_LOCALE`        | `da` or `en`: the language a visitor with no preference gets (unset means `da`)                                                                                                                                                          |
+| variable | `FOOD_SOURCES`          | the food plugins to switch on, for example `off` or `off,frida`                                                                                                                                                                          |
+| variable | `OFF_COUNTRY`           | a two-letter country code Open Food Facts should prefer; unset means the whole world                                                                                                                                                     |
+| variable | `OFF_CONTRIBUTE_HOST`   | optional, only with the Open Food Facts account of [step 9](#9-optional-ai-help-and-sending-corrections-to-open-food-facts): the host corrections go to; unset is production, `world.openfoodfacts.net` is the staging host to try first |
+| variable | `CUSTOM_DOMAIN`         | leave unset until [step 6](#6-the-custom-domain-before-the-bootstrap)                                                                                                                                                                    |
+| variable | `SQL_SERVER_ID`         | only for [an existing SQL server](../infra/README.md#an-existing-sql-server)                                                                                                                                                             |
+| variable | `PREVIEWS_ENABLED`      | only with the `preview` environment: `true`                                                                                                                                                                                              |
+| secret   | `ALERT_EMAIL`           | where the "no readings for 35 minutes" alert goes                                                                                                                                                                                        |
+| secret   | `CI_SQL_SA_PASSWORD`    | any strong password; only for the SQL Server container the release suite starts                                                                                                                                                          |
 
 `ALERT_EMAIL` is a secret and not a variable because the run logs of a public repository are public
 and variables are printed in them unmasked. Frejsi also uses the address as the contact of its
@@ -312,6 +312,86 @@ Open Food Facts is also optional: it needs the Key Vault secrets `off-contribute
 `off-contribute-password` (an Open Food Facts account; try it on the staging host first, with
 `OFF_CONTRIBUTE_HOST`), and without them no screen offers it. The commands are in
 [infra/README.md](../infra/README.md#optional-off-secrets-and-the-country-variables).
+
+## Docker Compose (any host with Docker)
+
+The same app on a machine of your own, with no Azure account: a laptop, a home server, a small VPS.
+Everything is in [docker/](../docker/README.md). It is a second way to run Frejsi, not a replacement:
+the Azure path above is the one every release is shipped and checked on.
+
+**Prerequisites.** Docker with the Compose plugin (`docker compose version` prints a version),
+`bash`, `git`, and about 4 GB of free memory: SQL Server alone asks for 2 GB. Nothing else is
+installed on the host.
+
+**The four commands.**
+
+```sh
+git clone https://github.com/<your fork or the upstream repository>/frejsi.git && cd frejsi
+docker/init-secrets.sh
+docker compose -f docker/compose.yaml up --build -d
+# then, once /api/health answers (about a minute after the build):
+TOKEN=$(sed -n 's/^BOOTSTRAP_TOKEN="\(.*\)"/\1/p' docker/.env)
+curl -fsS -X POST http://localhost:3000/api/bootstrap \
+  -H "content-type: application/json" -H "x-bootstrap-token: $TOKEN" \
+  -d '{"spaceName":"<space name>","ownerName":"<your name>","timezone":"<IANA time zone>"}'
+unset TOKEN
+```
+
+`init-secrets.sh` writes `docker/.env` (mode 600, ignored by git and by Docker) with a generated SQL
+password, bootstrap token, poller key and storage key, and puts the poller's function key in a Docker
+volume. It never prints them and never writes inside the repository tree anywhere else. The answer
+to the bootstrap holds `inviteUrl`: open it in a browser and create a passkey, as in
+[step 7](#7-read-the-bootstrap-token-and-create-the-first-space). Then connect a source in Settings
+under Glukosekilde (step 8). Without a sensor, choose Manuelt and type finger-pricks in. `FAKE_GLUCOSE_SOURCE=1` in `docker/.env` is
+for checking the stack, not for trying the app: the poller then stores fictional readings for every
+space that already has a source configured, but the Settings form still checks a real service
+before it saves one.
+
+**Passkeys need the right address, before the first bootstrap.** A passkey is bound to the origin in
+`APP_ORIGIN`, as in [step 6](#6-the-custom-domain-before-the-bootstrap). On one machine leave it at
+`http://localhost:3000`. For anyone else on the network, put a TLS proxy in front of port 3000 (a
+passkey needs https on any name but `localhost`), set `APP_ORIGIN` in `docker/.env` to the real
+`https://` hostname, and run `docker compose -f docker/compose.yaml up -d` before you bootstrap. An
+owner who registers on `localhost` cannot sign in on another name later. Photos are read by the
+browser straight from port 10000 of the same host: if the app is not on `localhost`, also set
+`BLOB_PUBLIC_ENDPOINT` to an address a browser can reach (for the same host name, port 10000).
+
+**What is different from Azure.**
+
+- The app polls instead of receiving pushes: there is no Web PubSub, so a second device sees a new
+  reading within its polling interval and not at once.
+- Secrets are one file per secret in a Docker volume (`SECRETS_DIR`), not Key Vault. Anyone who can
+  read that volume on the host can read a Nightscout or Dexcom credential: protect the host as you
+  would protect the vault.
+- No "no readings for 35 minutes" alert (it is an Azure Monitor rule), no Application Insights, and
+  no preview deployments.
+- Updating and backups are yours, below.
+
+**Update.** `git pull`, then `docker compose -f docker/compose.yaml up --build -d`. The one-shot
+`migrate` service runs `prisma migrate deploy` before `web` and `poller` start, so a new version's
+migrations are applied in order and nothing starts on a half-migrated database. Roll back by checking
+out the older tag and running the same command; a migration is not undone by that.
+
+**Where the data lives.** Two named volumes hold it: `frejsi_sql-data` (the database) and
+`frejsi_azurite-data` (photos). `docker/init-secrets.sh` made two more, `frejsi-host-keys` and
+`frejsi-credentials`, which hold the keys. `docker compose down` keeps all of them; `down -v` deletes
+the first two, and your data with them. Back the database up with SQL Server itself:
+
+```sh
+docker compose -f docker/compose.yaml exec sql sh -c '/opt/mssql-tools18/bin/sqlcmd -C -S localhost -U sa \
+  -P "$MSSQL_SA_PASSWORD" -Q "BACKUP DATABASE frejsi TO DISK = N'"'"'/var/opt/mssql/data/frejsi.bak'"'"' WITH INIT"'
+docker compose -f docker/compose.yaml cp sql:/var/opt/mssql/data/frejsi.bak ./frejsi.bak
+```
+
+Keep the copy away from the host. Photos are backed up by copying the `frejsi_azurite-data` volume.
+
+**What was checked, and what was not.** docker/README.md records the run: the stack from a clean
+state, the bootstrap, the poller's `source-connect` over the Compose network writing a Nightscout
+credential as a mode-600 file, the timer then storing that source's readings, fictional readings
+from `FAKE_GLUCOSE_SOURCE=1`, and a photo link served from Azurite. Not driven by hand: the Settings
+screen in a browser with a passkey session, a photo uploaded from the app, and a second device.
+Compose is not part of the release workflow; `compose-check` builds it on pull requests that touch
+`docker/`.
 
 ## When something goes wrong
 

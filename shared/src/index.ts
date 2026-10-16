@@ -27,6 +27,7 @@ export {
 export type { Secrets } from "./secrets/types";
 export { glucoseSecretName } from "./secrets/types";
 export { KeyVaultSecrets, createSecretsFromEnv } from "./secrets/keyvault";
+export { FileSecrets } from "./secrets/file";
 
 export { prisma, type PrismaClient } from "./db/client";
 

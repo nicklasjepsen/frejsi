@@ -11,12 +11,19 @@ export type PhotoHttpClient = NonNullable<StoragePipelineOptions["httpClient"]>;
 interface Options {
   now?: () => Date;
   httpClient?: PhotoHttpClient;
+  /**
+   * The base URL a browser reaches the blob account at, when that is not the address the server
+   * uses (Docker Compose: the server talks to `http://azurite:10000/...`, the browser to
+   * `http://localhost:10000/...`). Read URLs carry this host; the signature does not cover it.
+   */
+  publicEndpoint?: string;
 }
 
 /** The only Blob SDK boundary. Credentials and SDK errors never leave this adapter. */
 export class BlobPhotoStore implements PhotoStore {
   private readonly container;
   private readonly now;
+  private readonly publicEndpoint: URL | undefined;
 
   constructor(connectionString: string, options: Options = {}) {
     try {
@@ -27,6 +34,13 @@ export class BlobPhotoStore implements PhotoStore {
       throw new Error("photo-unavailable");
     }
     this.now = options.now ?? (() => new Date());
+    if (options.publicEndpoint) {
+      try {
+        this.publicEndpoint = new URL(options.publicEndpoint);
+      } catch {
+        throw new Error("photo-unavailable");
+      }
+    }
   }
 
   async put(key: string, photos: PhotoBytes): Promise<void> {
@@ -64,13 +78,21 @@ export class BlobPhotoStore implements PhotoStore {
       Math.floor(this.now().getTime() / 3_600_000) * 3_600_000 + 7_200_000,
     );
     const blob = this.container.getBlockBlobClient(`${key}/${size}.jpg`);
+    const publicUrl = this.publicEndpoint;
     try {
-      return await blob.generateSasUrl({
+      const sas = await blob.generateSasUrl({
         permissions: BlobSASPermissions.parse("r"),
         expiresOn,
         // Local Azurite uses HTTP; production uses HTTPS exclusively.
-        protocol: blob.url.startsWith("https:") ? SASProtocol.Https : SASProtocol.HttpsAndHttp,
+        protocol: (publicUrl?.href ?? blob.url).startsWith("https:")
+          ? SASProtocol.Https
+          : SASProtocol.HttpsAndHttp,
       });
+      if (!publicUrl) return sas;
+      // The signature covers the account, container, blob and permissions, not the host.
+      const signed = new URL(sas);
+      const base = publicUrl.pathname.replace(/\/+$/, "");
+      return `${publicUrl.origin}${base}/photos/${key}/${size}.jpg${signed.search}`;
     } catch {
       throw new Error("photo-unavailable");
     }
@@ -81,5 +103,8 @@ export class BlobPhotoStore implements PhotoStore {
 export function createPhotoStoreFromEnv(
   env: Record<string, string | undefined> = process.env,
 ): PhotoStore | null {
-  return env.BLOB_CONNECTION_STRING ? new BlobPhotoStore(env.BLOB_CONNECTION_STRING) : null;
+  if (!env.BLOB_CONNECTION_STRING) return null;
+  return new BlobPhotoStore(env.BLOB_CONNECTION_STRING, {
+    ...(env.BLOB_PUBLIC_ENDPOINT ? { publicEndpoint: env.BLOB_PUBLIC_ENDPOINT } : {}),
+  });
 }

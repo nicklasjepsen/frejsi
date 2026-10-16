@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 
+import { FileSecrets } from "./file";
 import { createSecretsFromEnv, KeyVaultSecrets, type SecretClientLike } from "./keyvault";
 import type { Secrets } from "./types";
 
@@ -48,5 +49,18 @@ describe("createSecretsFromEnv", () => {
     expect(secrets).toBeInstanceOf(KeyVaultSecrets);
     expect(seen).toEqual(["https://kv.example.invalid"]);
     expect(() => createSecretsFromEnv({})).toThrow(/KEY_VAULT_URL/);
+  });
+
+  it("falls back to files under SECRETS_DIR and prefers Key Vault when both are set", () => {
+    expect(createSecretsFromEnv({ SECRETS_DIR: "/run/fictional-secrets" })).toBeInstanceOf(
+      FileSecrets,
+    );
+    expect(
+      createSecretsFromEnv(
+        { KEY_VAULT_URL: "https://kv.example.invalid", SECRETS_DIR: "/run/fictional-secrets" },
+        () => fakeClient({}),
+      ),
+    ).toBeInstanceOf(KeyVaultSecrets);
+    expect(() => createSecretsFromEnv({ SECRETS_DIR: "" })).toThrow(/KEY_VAULT_URL/);
   });
 });

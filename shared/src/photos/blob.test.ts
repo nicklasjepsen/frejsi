@@ -148,6 +148,40 @@ describe("BlobPhotoStore", () => {
     expect(url.searchParams.get("spr")).toBe("https,http");
   });
 
+  it("serves read URLs from BLOB_PUBLIC_ENDPOINT with a signature that still verifies", async () => {
+    const local = `DefaultEndpointsProtocol=http;AccountName=${account};AccountKey=${accountKey};BlobEndpoint=http://azurite:10000/${account}`;
+    const store = new BlobPhotoStore(local, {
+      now: () => new Date("2026-10-15T12:37:29Z"),
+      publicEndpoint: `http://localhost:10000/${account}/`,
+    });
+    const url = new URL(await store.readUrl(key, "thumb"));
+    expect(url.host).toBe("localhost:10000");
+    expect(url.pathname).toBe(`/${account}/photos/${key}/thumb.jpg`);
+    expect(url.searchParams.get("spr")).toBe("https,http");
+    // The same string-to-sign as for the internal address: the host is not part of it.
+    // Path-style addressing: the canonical resource is /blob/<account>/photos/..., once.
+    const canonical = new URL(url);
+    canonical.pathname = url.pathname.slice(`/${account}`.length);
+    expect(url.searchParams.get("sig")).toBe(signature(canonical));
+    expect(url.href).not.toContain(accountKey);
+    const internal = new BlobPhotoStore(local, { now: () => new Date("2026-10-15T12:37:29Z") });
+    expect(new URL(await internal.readUrl(key, "thumb")).search).toBe(url.search);
+  });
+
+  it("reads BLOB_PUBLIC_ENDPOINT from the environment and rejects one that is not a URL", async () => {
+    const local = `DefaultEndpointsProtocol=http;AccountName=${account};AccountKey=${accountKey};BlobEndpoint=http://azurite:10000/${account}`;
+    const store = createPhotoStoreFromEnv({
+      BLOB_CONNECTION_STRING: local,
+      BLOB_PUBLIC_ENDPOINT: `http://localhost:10000/${account}`,
+    });
+    expect(store).not.toBeNull();
+    const url = new URL((await store?.readUrl(key, "original")) ?? "");
+    expect(url.host).toBe("localhost:10000");
+    expect(() =>
+      createPhotoStoreFromEnv({ BLOB_CONNECTION_STRING: local, BLOB_PUBLIC_ENDPOINT: "not a url" }),
+    ).toThrow("photo-unavailable");
+  });
+
   it("rejects invalid keys before the SDK sends a request", async () => {
     const http = transport();
     const store = new BlobPhotoStore(connection, { httpClient: http.client });
