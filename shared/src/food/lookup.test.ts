@@ -61,6 +61,8 @@ describe("Prisma food repository", () => {
     portions: '[{"label":"slice","carbs":18}]',
     barcode: null,
     photoKey: null,
+    sourceName: null,
+    embeddingModel: null,
     origin: "fake-remote",
     sourceRef: "fake-remote:1",
     verified: false,
@@ -92,6 +94,21 @@ describe("Prisma food repository", () => {
     });
     expect(Food.safeParse(rows[0]).success).toBe(true);
   });
+  it("hydrates creator provenance from library database rows", async () => {
+    const db = database();
+    db.food.findMany.mockResolvedValue([
+      {
+        ...dbRow({ spaceId: "s1", createdBy: "u1", sourceName: "ORIGINAL LOAF" }),
+        creator: { id: "u1", name: "Example maker" },
+      },
+    ]);
+    const result = await lookup(new PrismaFoodRepository(db), [], options);
+    expect(result.results[0]?.food).toMatchObject({
+      createdAt: "2026-10-14T08:00:00.000Z",
+      sourceName: "ORIGINAL LOAF",
+      createdBy: { id: "u1", name: "Example maker" },
+    });
+  });
   it("bounds SQL reads, folds every query word and excludes library copies before taking cache rows", async () => {
     const db = database();
     const repo = new PrismaFoodRepository(db);
@@ -102,6 +119,7 @@ describe("Prisma food repository", () => {
         verified: true,
         AND: [{ nameSearch: { contains: "creme" } }, { nameSearch: { contains: "brulee" } }],
       },
+      include: { creator: { select: { id: true, name: true } } },
       orderBy: [{ favourite: "desc" }, { verified: "desc" }, { name: "asc" }, { id: "asc" }],
       take: 20,
     });
@@ -203,6 +221,24 @@ describe("configured source registry", () => {
 });
 
 describe("lookup", () => {
+  it("returns library provenance from the joined creator and retains absent attribution", async () => {
+    const original = row("original", {
+      sourceName: "EXAMPLE ORIGINAL LOAF",
+      createdBy: "u1",
+      creator: { id: "u1", name: "Example maker" },
+    });
+    const result = await lookup(new MemoryFoodRepository([original, row("legacy")]), [], options);
+    const food = result.results.find((r) => "id" in r.food && r.food.id === "original")?.food;
+    expect(food).toMatchObject({
+      sourceName: original.sourceName,
+      createdBy: { id: "u1", name: "Example maker" },
+      createdAt: original.createdAt,
+    });
+    const legacy = result.results.find((r) => "id" in r.food && r.food.id === "legacy")?.food;
+    expect(legacy).toMatchObject({ createdAt: original.createdAt });
+    expect(legacy).toHaveProperty("createdBy", undefined);
+  });
+
   it("orders library, deduplicated cache, then plugins and pre-fills manual", async () => {
     const repo = new MemoryFoodRepository([
       row("normal", { name: "Example Z" }),

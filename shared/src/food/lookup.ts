@@ -40,6 +40,9 @@ function libraryResult(row: Food): LookupResult {
     verifiedBy: row.verifiedBy,
     favourite: row.favourite,
     updatedAt: row.updatedAt,
+    createdAt: row.createdAt,
+    sourceName: row.sourceName ?? undefined,
+    createdBy: row.creator ?? undefined,
   });
   return { source: "library", verified: row.verified, food };
 }

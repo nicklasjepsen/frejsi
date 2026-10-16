@@ -22,6 +22,7 @@ const food: FoodView = {
   origin: "manual",
   verified: false,
   favourite: false,
+  createdAt: "2026-10-14T10:00:00.000Z",
   updatedAt: "2026-10-14T10:00:00.000Z",
 };
 const empty: LookupResponse = { results: [], sources: {}, manual: { name: "x" } };

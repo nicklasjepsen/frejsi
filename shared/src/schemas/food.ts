@@ -67,8 +67,7 @@ export const FoodView = z.strictObject({
   photo: FoodPhoto.optional(),
   sourceName: z.string().max(200).optional(),
   createdBy: z.strictObject({ id: z.string().min(1), name: z.string().min(1) }).optional(),
-  // Existing v0.3 consumers omit provenance; the AI library lane will populate it.
-  createdAt: z.iso.datetime().optional(),
+  createdAt: z.iso.datetime(),
 });
 export type FoodView = z.infer<typeof FoodView>;
 
@@ -83,6 +82,7 @@ export const Food = z
     photoKey: z.string().min(1).max(200).optional(),
     verifiedAt: z.iso.datetime().optional(),
     createdBy: z.string().min(1).optional(),
+    creator: z.strictObject({ id: z.string().min(1), name: z.string().min(1) }).nullish(),
     createdAt: z.iso.datetime(),
   })
   .refine((value) => value.spaceId !== null || !value.verified, "Shared cache cannot be verified")

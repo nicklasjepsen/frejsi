@@ -13,7 +13,7 @@ import { foodSources } from "@frejsi/shared/food";
 import { createPhotoStoreFromEnv, type PhotoStore } from "@frejsi/shared/photos";
 import type { FoodSource } from "@frejsi/shared";
 
-export type FoodTx = Pick<PrismaClient, "food" | "mealItem" | "space" | "event">;
+export type FoodTx = Pick<PrismaClient, "food" | "mealItem" | "space" | "event" | "user">;
 export interface FoodDb extends FoodTx {
   $transaction<T>(
     run: (tx: FoodTx) => Promise<T>,

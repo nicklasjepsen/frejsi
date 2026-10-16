@@ -26,6 +26,7 @@ export function food(id: string, name: string, fields: Partial<FoodView> = {}): 
     verified: true,
     favourite: false,
     portions: [{ label: "1 stk", carbs: 14 }],
+    createdAt: AT,
     updatedAt: AT,
     ...fields,
   });
