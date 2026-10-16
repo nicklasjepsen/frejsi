@@ -1,12 +1,11 @@
 import { createSecretsFromEnv, emit, log, prisma, runPollCycle, type PollDb } from "@frejsi/shared";
-import { FakeGlucoseSource } from "@frejsi/shared/glucose/fake";
 
 import { parseCliArgs } from "./cli-args";
-import { createDexcomSourceFactory } from "./sources";
+import { createSourceFactory } from "./sources";
 
 /**
  * `pnpm --filter ./poller poll --once [--space <id>]`: one cycle from a laptop, against the real
- * Dexcom Share account during setup (spec §3) or against `FakeGlucoseSource` with
+ * Dexcom Share or Nightscout account during setup (spec §3) or against `FakeGlucoseSource` with
  * `FAKE_GLUCOSE_SOURCE=1`. Events go through the real `emit`: rows always, Web PubSub when
  * `WEB_PUBSUB_ENDPOINT` or a connection string is set.
  */
@@ -14,10 +13,10 @@ async function main(): Promise<void> {
   const args = parseCliArgs(process.argv.slice(2));
   const db: PollDb = prisma;
   const fake = process.env.FAKE_GLUCOSE_SOURCE === "1";
-  const sources = fake
-    ? () => new FakeGlucoseSource()
-    : createDexcomSourceFactory({ secrets: createSecretsFromEnv() });
-  log.info("poll.once", { code: fake ? "fake-source" : "dexcom-share" });
+  // The factory itself honours FAKE_GLUCOSE_SOURCE, so the timer and this CLI behave alike; the
+  // secrets client is only built when a credential is read.
+  const sources = createSourceFactory({ secrets: createSecretsFromEnv });
+  log.info("poll.once", { code: fake ? "fake-source" : "configured-sources" });
 
   const outcomes = await runPollCycle(
     { db, sources, emit },
