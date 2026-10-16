@@ -724,3 +724,11 @@ it("refreshes Say after a live AI setting change and closes it on opt-out", asyn
   mounted.unmount();
   expect(live.handlers.has("space.updated")).toBe(false);
 });
+
+it("opens Say through its own availability adapter when the usage route is absent", async () => {
+  api().on("GET /api/spaces/s1/parse", { enabled: true });
+  mount();
+  fireEvent.click(await screen.findByRole("button", { name: "Sig det" }));
+  expect(screen.getByRole("button", { name: "Find maden" })).toBeVisible();
+  expect(writes()).toEqual([]);
+});

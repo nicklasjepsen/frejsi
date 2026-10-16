@@ -16,7 +16,8 @@ export async function parseMeal(
   onToolCall: () => void = () => undefined,
 ): Promise<{ meal: ParsedMeal; count: number }> {
   let count = 0;
-  const found: LookupResult[] = [];
+  const searched = new Map<string, LookupResult[]>();
+  const key = (query: string) => query.trim().toLocaleLowerCase(locale);
   const result = await runToolLoop(
     provider,
     {
@@ -32,8 +33,10 @@ export async function parseMeal(
         count++;
         onToolCall();
         const { query } = LookupInput.parse(input);
+        const queryKey = key(query);
+        if (!searched.has(queryKey)) searched.set(queryKey, []);
         const answer = await lookup(query);
-        found.push(...answer.results);
+        searched.get(queryKey)?.push(...answer.results);
         return answer;
       },
     },
@@ -43,7 +46,13 @@ export async function parseMeal(
   if (!parsed.success) throw new HttpError(502, "ai-rejected");
   // The model selects quantities; identities and nutrition must come from the actual lookup.
   for (const item of parsed.data.items) {
-    if (!item.match) continue;
+    const found = searched.get(key(item.query));
+    if (!found) throw new HttpError(502, "ai-rejected");
+    if (item.estimate) {
+      if (found.length > 0) throw new HttpError(502, "ai-rejected");
+      continue;
+    }
+    if (!item.match) throw new HttpError(502, "ai-rejected");
     const match = item.match;
     // Providers see JSON, which omits undefined optional properties from lookup rows.
     const original = found.find(
@@ -55,6 +64,9 @@ export async function parseMeal(
         ),
     );
     if (!original) throw new HttpError(502, "ai-rejected");
+  }
+  for (const query of parsed.data.unmatched) {
+    if (!searched.has(key(query))) throw new HttpError(502, "ai-rejected");
   }
   return { meal: parsed.data, count };
 }

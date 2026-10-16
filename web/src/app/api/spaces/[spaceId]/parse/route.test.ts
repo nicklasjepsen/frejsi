@@ -8,9 +8,9 @@ import { MemoryFoodRepository } from "@frejsi/shared/food/memory";
 import { FakeFoodSource } from "@frejsi/shared/food/fake";
 import { FakeLiveDb, captureLog, liveRequest, spaceContext } from "@/lib/live/test-support";
 import { configureParse } from "./server";
-import { POST } from "./route";
+import { GET, POST } from "./route";
 
-const meal = { items: [], unmatched: ["Example toast"] };
+const meal = { items: [], unmatched: ["toast"] };
 function setup(simpleMode = false, failure?: HttpError, cap = 50) {
   const auth = new FakeLiveDb(() => new Date());
   auth.addSpace("s1");
@@ -36,6 +36,7 @@ function setup(simpleMode = false, failure?: HttpError, cap = 50) {
     sessionDb: db,
     repo: new MemoryFoodRepository(),
     sources: [source],
+    enabled: () => Promise.resolve(failure?.code !== "ai-disabled"),
     provider: () => {
       if (failure) return Promise.reject(failure);
       return Promise.resolve(
@@ -93,5 +94,30 @@ it("enforces the daily cap and validates text before calling AI", async () => {
   const { fake } = setup(false, undefined, 0);
   expect((await post()).status).toBe(429);
   expect((await post("carer", { text: "" })).status).toBe(400);
+  expect(fake.calls).toEqual([]);
+});
+
+it.each(["owner", "carer"])("provides visibility for %s without a provider call", async (user) => {
+  const { fake } = setup();
+  const response = await GET(liveRequest("s1", "parse", `sess-${user}`), spaceContext("s1"));
+  expect(response.status).toBe(200);
+  expect(await response.json()).toEqual({ enabled: true });
+  expect(fake.calls).toEqual([]);
+});
+it.each([
+  ["viewer", false, 403],
+  ["other", false, 404],
+  ["carer", true, 200],
+] as const)("gates visibility for %s simple=%s", async (user, simple, status) => {
+  const { fake } = setup(simple);
+  const response = await GET(liveRequest("s1", "parse", `sess-${user}`), spaceContext("s1"));
+  expect(response.status).toBe(status);
+  if (simple) expect(await response.json()).toEqual({ enabled: false });
+  expect(fake.calls).toEqual([]);
+});
+it("reports opt-out through the visibility adapter", async () => {
+  const { fake } = setup(false, new HttpError(409, "ai-disabled"));
+  const response = await GET(liveRequest("s1", "parse", "sess-carer"), spaceContext("s1"));
+  expect(await response.json()).toEqual({ enabled: false });
   expect(fake.calls).toEqual([]);
 });

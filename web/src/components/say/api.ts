@@ -1,5 +1,12 @@
 import { AiUsage, ParsedMeal, PhotoEstimate } from "@frejsi/shared/schemas/ai";
+import { ParseAvailability } from "@/ai/parse/contract";
 import type { z } from "zod";
+
+class AiRequestError extends Error {
+  constructor(readonly status: number) {
+    super("ai-unavailable");
+  }
+}
 
 async function request<T>(
   spaceId: string,
@@ -13,10 +20,18 @@ async function request<T>(
     headers: { "content-type": "application/json" },
     ...(body === undefined ? {} : { body: JSON.stringify(body) }),
   });
-  if (!response.ok) throw new Error("ai-unavailable");
+  if (!response.ok) throw new AiRequestError(response.status);
   return schema.parse(await response.json());
 }
-export const aiUsage = (spaceId: string) => request(spaceId, "ai", AiUsage);
+export async function aiUsage(spaceId: string): Promise<{ enabled: boolean }> {
+  try {
+    return await request(spaceId, "ai", AiUsage);
+  } catch (error) {
+    if (error instanceof AiRequestError && error.status === 404)
+      return request(spaceId, "parse", ParseAvailability);
+    throw error;
+  }
+}
 export const parseText = (spaceId: string, text: string) =>
   request(spaceId, "parse", ParsedMeal, { text });
 export function estimatePhoto(spaceId: string, bytes: Uint8Array) {
