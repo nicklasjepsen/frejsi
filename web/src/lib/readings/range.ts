@@ -16,4 +16,3 @@ export function toMmol(value: number, unit: GlucoseUnit): number | null {
   const mmol = unit === "mgdl" ? mgdlToMmol(value) : Math.round(value * 10) / 10;
   return mmol >= MANUAL_MIN_MMOL && mmol <= MANUAL_MAX_MMOL ? mmol : null;
 }
-

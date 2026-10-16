@@ -26,6 +26,12 @@ describe("resolveTime", () => {
     expect(resolveTime("23:00", now, COPENHAGEN)?.toISOString()).toBe("2026-10-25T22:00:00.000Z");
   });
 
+  it("refuses a time the clock skipped on the spring-forward night", () => {
+    const now = new Date("2026-03-29T10:00:00.000Z"); // 12:00 on the 29th
+    expect(resolveTime("02:30", now, COPENHAGEN)).toBeNull();
+    expect(resolveTime("03:30", now, COPENHAGEN)?.toISOString()).toBe("2026-03-29T01:30:00.000Z");
+  });
+
   it("refuses a malformed time", () => {
     expect(resolveTime("", new Date(), COPENHAGEN)).toBeNull();
     expect(resolveTime("25:00", new Date(), COPENHAGEN)).toBeNull();

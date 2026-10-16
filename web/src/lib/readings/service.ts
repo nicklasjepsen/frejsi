@@ -88,12 +88,19 @@ export async function addManualReading(
     });
     if (!space) throw new HttpError(404, "not-found");
     if (!isManual(space.glucoseSource)) throw new HttpError(409, "source-not-manual");
+    // Hold the space row until commit, and only if the source is still the one just read: an owner
+    // switching to a sensor at the same moment waits for this save, or is seen here, never both.
+    const held = await tx.space.updateMany({
+      where: { id: spaceId, glucoseSource: space.glucoseSource },
+      data: { glucoseSource: space.glucoseSource },
+    });
+    if (held.count !== 1) throw new HttpError(409, "source-not-manual");
 
-    const held = await tx.reading.findUnique({
+    const existing = await tx.reading.findUnique({
       where: { spaceId_ts: { spaceId, ts } },
       select: { source: true },
     });
-    if (held && held.source !== "manual") throw new HttpError(409, "reading-exists");
+    if (existing && existing.source !== "manual") throw new HttpError(409, "reading-exists");
 
     const trend = "not-computable" as const;
     await tx.reading.upsert({

@@ -1,7 +1,7 @@
 // What the sheet's two fields mean: the typed number in the space's unit and the time of day.
 import type { GlucoseUnit } from "@frejsi/shared/schemas/index";
 
-import { withLocalTime } from "@/app/[locale]/(app)/log/time";
+import { formatClock, withLocalTime } from "@/app/[locale]/(app)/log/time";
 import { MANUAL_WINDOW_MS, toMmol } from "@/lib/readings/range";
 
 /**
@@ -29,6 +29,9 @@ export function resolveTime(hhmm: string, now: Date, timeZone: string): Date | n
   for (let step = 0; step <= 52; step += 1) {
     const at = withLocalTime(new Date(now.getTime() - step * HALF_HOUR), hhmm, timeZone);
     if (!at) return null;
+    // A time the clock skipped (spring forward) is normalised to the next one: refuse it rather
+    // than store a different time than the one typed.
+    if (formatClock(at, timeZone) !== hhmm) continue;
     const ms = at.getTime();
     if (ms <= now.getTime() && ms >= earliest && (!best || ms > best.getTime())) best = at;
   }
