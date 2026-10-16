@@ -40,8 +40,11 @@ a {
   color: var(--accent-base);
 }
 
-a:hover {
-  color: var(--accent-strong);
+/* Only where a pointer can hover: on touch, a hover colour would stick after a tap. */
+@media (hover: hover) {
+  a:hover {
+    color: var(--accent-strong);
+  }
 }
 
 button {
