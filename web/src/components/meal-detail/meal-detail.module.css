@@ -540,6 +540,7 @@
   background: var(--surface);
   color: var(--text);
   font: inherit;
+  font-size: 16px;
   font-variant-numeric: tabular-nums;
 }
 .sheetField textarea {

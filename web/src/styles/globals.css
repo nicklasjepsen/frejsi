@@ -48,6 +48,14 @@ button {
   color: inherit;
 }
 
+/* Text entry stays at 16px: iOS Safari zooms into any focused control under that size. Module
+   rules that set a control's font keep it at 16px or more; `styles/form-controls.test.ts` checks. */
+input,
+textarea,
+select {
+  font-size: 16px;
+}
+
 :focus-visible {
   outline: 2px solid var(--accent-base);
   outline-offset: 2px;
