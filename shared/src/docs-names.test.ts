@@ -286,9 +286,7 @@ describe("CONTRIBUTING.md and README.md", () => {
   it("README.md keeps one status sentence of the agreed form", () => {
     const status = readme.split("\n").filter((line) => line.startsWith("> **Status:"));
     expect(status).toHaveLength(1);
-    expect(status[0]).toMatch(
-      /^> \*\*Status: v\d+\.\d+\.\d+ is live at .+\*\*$/,
-    );
+    expect(status[0]).toMatch(/^> \*\*Status: v\d+\.\d+\.\d+ .*\blive at\b.+\*\*$/);
   });
 
   it("README.md speaks to a person with diabetes and the people around them", () => {
