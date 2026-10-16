@@ -4,11 +4,15 @@ import { foldForSearch } from "@frejsi/shared/food/search";
 import type { FoodView } from "@frejsi/shared/schemas/food";
 import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import { PhotoTile } from "@/components/food/PhotoTile";
 import { PortionChips, type PortionChoice } from "@/components/food/PortionChips";
 import { SearchField } from "@/components/food/SearchField";
+import { lookupText } from "@/components/meal/api";
+import { EstimateCapture } from "@/components/estimate/EstimateCapture";
+import { useEstimateStatus } from "@/components/estimate/useEstimateStatus";
+import { setPendingEstimate } from "@/components/estimate/pending";
 import { TotalBar } from "@/components/meal/TotalBar";
 import { Button } from "@/components/ui/Button";
 import { Notice } from "@/components/ui/Notice";
@@ -34,11 +38,8 @@ const defaultPortion = (food: FoodView): number | null => (food.portions.length 
 
 /**
  * Hvad spiser du? (Log-Simpel): the space's verified foods as photo tiles, recently eaten first,
- * the first one spanning both columns. Tapping selects; a food with several portions asks "Hvor
- * meget?"; "Ja, det spiser jeg" saves one meal through `POST meals` and goes back to Nu. "Noget
- * andet?" searches the same verified list (the photo path is v0.4.0). There is no bolus control
- * here for anyone, and nothing unverified can be shown: the list is `GET foods`, which the route
- * filters for a simpleMode session, filtered again to verified foods (spec §2).
+ * the first one spanning both columns. Only verified foods with portions can be logged.
+ * The capture tile asks for a fresh photo; the separate link searches the verified list.
  */
 export function SimplePicker({ spaceId, locale, simple, initialFoodId }: SimplePickerProps) {
   const t = useTranslations("eat");
@@ -50,6 +51,33 @@ export function SimplePicker({ spaceId, locale, simple, initialFoodId }: SimpleP
   const [query, setQuery] = useState("");
   const [saving, setSaving] = useState(false);
   const [saveFailed, setSaveFailed] = useState(false);
+  const aiStatus = useEstimateStatus(spaceId);
+  const [aiUnavailable, setAiUnavailable] = useState(false);
+  const [found, setFound] = useState<FoodView[] | null>(null);
+  const searchVersion = useRef(0);
+  async function searchRemote(value: string) {
+    const version = ++searchVersion.current;
+    if (!value.trim()) {
+      setFound(null);
+      return;
+    }
+    try {
+      const response = await lookupText(spaceId, value, true);
+      if (version !== searchVersion.current) return;
+      setFound(
+        response.results.flatMap((result) =>
+          result.source === "library" &&
+          "id" in result.food &&
+          result.food.verified &&
+          result.food.portions.length > 0
+            ? [result.food]
+            : [],
+        ),
+      );
+    } catch {
+      if (version === searchVersion.current) setFound(null);
+    }
+  }
   const now = localeHref(locale, "/now");
 
   const fetchFoods = useCallback(async () => {
@@ -72,15 +100,16 @@ export function SimplePicker({ spaceId, locale, simple, initialFoodId }: SimpleP
   }, [fetchFoods]);
 
   const foods = load.status === "ready" ? load.foods : [];
-  const selected = foods.find((food) => food.id === selectedId) ?? null;
+  const selected = [...foods, ...(found ?? [])].find((food) => food.id === selectedId) ?? null;
   const words = foldForSearch(query).split(/\s+/).filter(Boolean);
   const visible =
-    searching && words.length > 0
+    found ??
+    (searching && words.length > 0
       ? foods.filter((food) => {
           const name = foldForSearch(food.name);
           return words.every((word) => name.includes(word));
         })
-      : foods;
+      : foods);
   const carbs = selected && portion !== null ? portionCarbs(selected, portion) : null;
   const choices: PortionChoice[] = (selected?.portions ?? []).map(({ label, carbs, grams }) => ({
     label,
@@ -142,7 +171,7 @@ export function SimplePicker({ spaceId, locale, simple, initialFoodId }: SimpleP
         </Notice>
       )}
 
-      {load.status === "ready" && foods.length > 0 && (
+      {load.status === "ready" && (
         <>
           {searching && (
             <div className={styles.search}>
@@ -150,8 +179,12 @@ export function SimplePicker({ spaceId, locale, simple, initialFoodId }: SimpleP
                 label={t("searchLabel")}
                 placeholder={t("searchLabel")}
                 value={query}
-                onChange={setQuery}
-                onSubmit={setQuery}
+                onChange={(value) => {
+                  searchVersion.current++;
+                  setFound(null);
+                  setQuery(value);
+                }}
+                onSubmit={(value) => void searchRemote(value)}
               />
             </div>
           )}
@@ -174,27 +207,24 @@ export function SimplePicker({ spaceId, locale, simple, initialFoodId }: SimpleP
                 </div>
               );
             })}
-            {!searching && (
-              <button
-                type="button"
-                className={styles.other}
-                onClick={() => {
-                  setSearching(true);
+            {!searching && aiStatus?.available && !aiUnavailable && (
+              <EstimateCapture
+                spaceId={spaceId}
+                simple={simple}
+                tile
+                onUnavailable={() => { setAiUnavailable(true); }}
+                onEstimate={(estimate, photoDataUrl) => {
+                  setPendingEstimate({ spaceId, estimate, photoDataUrl });
+                  router.push(localeHref(locale, "/ask"));
                 }}
-              >
-                <svg width="40" height="40" viewBox="0 0 24 24" aria-hidden="true">
-                  <circle cx="10" cy="10" r="6" fill="none" stroke="currentColor" strokeWidth="2" />
-                  <path
-                    d="m15 15 5 5"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                  />
-                </svg>
-                {t("somethingElse")}
-              </button>
+              />
             )}
           </div>
+          {!searching && (
+            <button type="button" className={styles.searchLink} onClick={() => { setSearching(true); }}>
+              {t("findOther")}
+            </button>
+          )}
         </>
       )}
 

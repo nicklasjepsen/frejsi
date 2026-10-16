@@ -1,0 +1,22 @@
+{
+  "title": "Your photo",
+  "looksLike": "It looks like",
+  "guess": "A guess · not checked",
+  "amount": "approx. {carbs} g",
+  "uncertain": "uncertain",
+  "total": "Total",
+  "ask": "Ask an adult",
+  "carers": "{carers} will be notified straight away",
+  "sent": "Sent to {carers}",
+  "fallback": "Ask {carers} – they can help you",
+  "adults": "an adult",
+  "busy": "Looking at your photo …",
+  "unavailable": "AI help is unavailable right now",
+  "failed": "It could not be saved – please try again",
+  "photoAlt": "Your plate",
+  "sending": "Sending …",
+  "back": "Back",
+  "portionLabel": "1 plate",
+  "noCarers": "Ask an adult to help you check the photo",
+  "saved": "Saved for review"
+}

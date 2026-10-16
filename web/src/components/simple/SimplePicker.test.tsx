@@ -74,13 +74,15 @@ describe("Hvad spiser du? (Log-Simpel, simpleMode)", () => {
     expect(navigation.push).toHaveBeenCalledWith("/da/now");
   });
 
-  it("never shows an unverified food, not even a favourite that was eaten before, and reads only GET foods", async () => {
+  it("never shows an unverified food, not even a favourite that was eaten before, and reads only foods and capture availability", async () => {
     mount();
     await tileNames();
     expect(screen.queryByText("Chokoladekage")).toBeNull();
     expect(screen.queryByText("Ikke tjekket")).toBeNull();
     expect(screen.queryByText("Mel")).toBeNull();
-    expect(new Set(api.calls.map((c) => `${c.method} ${c.path}`))).toEqual(new Set(["GET foods"]));
+    expect(new Set(api.calls.map((c) => `${c.method} ${c.path}`))).toEqual(
+      new Set(["GET foods", "GET estimates"]),
+    );
   });
 
   it("selects on tap (accent border and check) and shows '{name} · 42 g kulhydrat · Ja, det spiser jeg'", async () => {
@@ -139,10 +141,10 @@ describe("Hvad spiser du? (Log-Simpel, simpleMode)", () => {
     expect(screen.getByRole("button", { name: "Ja, det spiser jeg" })).toBeEnabled();
   });
 
-  it("'Noget andet?' reveals a search over the same verified list", async () => {
+  it("'Find noget andet' reveals a search over the same verified list", async () => {
     mount();
-    fireEvent.click(await screen.findByRole("button", { name: "Noget andet?" }));
-    expect(screen.queryByRole("button", { name: "Noget andet?" })).toBeNull();
+    fireEvent.click(await screen.findByRole("button", { name: "Find noget andet" }));
+    expect(screen.queryByRole("button", { name: "Find noget andet" })).toBeNull();
     fireEvent.change(screen.getByRole("searchbox", { name: "Søg i din mad" }), {
       target: { value: "aeble" },
     });

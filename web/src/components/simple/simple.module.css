@@ -29,26 +29,17 @@
   min-width: 0;
 }
 
-.other {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  min-height: 150px;
-  padding: 10px;
-  border: 3px dashed var(--hairline-strong);
-  border-radius: var(--radius-card-simple);
-  background: var(--surface);
+.searchLink {
+  min-height: 48px;
+  background: none;
+  border: 0;
   color: var(--accent-strong);
-  font: 700 17px/1.2 var(--font-body-stack);
-  text-align: center;
+  text-decoration: underline;
+  font: 700 17px var(--font-body-stack);
   cursor: pointer;
 }
-
-.other:focus-visible {
+.searchLink:focus-visible {
   outline: 2px solid var(--accent-base);
-  outline-offset: 2px;
 }
 
 .search input {

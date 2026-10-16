@@ -27,5 +27,7 @@
     "unverifiedSubtitle": "Gennemgå og godkend",
     "unverifiedLabel": "{count, plural, one {# fødevare er ikke tjekket} other {# fødevarer er ikke tjekket}}",
     "myFood": "Min mad"
-  }
+  },
+  "findOther": "Find noget andet",
+  "photo": "Tag et billede"
 }
