@@ -78,6 +78,7 @@ export { normaliseBarcode } from "./food/barcode";
 export { foldForSearch } from "./food/search";
 export { carbsFor } from "./food/portions";
 export type {
+  FoodContributor,
   FoodRepository,
   FoodSource,
   FoodSourceResult,

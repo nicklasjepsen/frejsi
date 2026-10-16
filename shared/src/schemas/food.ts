@@ -135,3 +135,27 @@ export const VerifyFoodsRequest = z.strictObject({
   foodIds: z.array(z.string().min(1)).min(1).max(50),
 });
 export type VerifyFoodsRequest = z.infer<typeof VerifyFoodsRequest>;
+
+/**
+ * What a carer's correction sends back to the source the food came from (spec §4). Numbers and a
+ * pseudonymous app reference only: no name, no photo, no person.
+ */
+export const FoodCorrection = z.strictObject({
+  barcode,
+  carbsPer100g: z.number().min(0).max(100).multipleOf(0.1).optional(),
+  servingSize: z
+    .strictObject({
+      grams: z.number().min(1).max(5000),
+      label: z.string().min(1).max(40).optional(),
+    })
+    .optional(),
+  appRef: z.string().min(1).max(64),
+});
+export type FoodCorrection = z.infer<typeof FoodCorrection>;
+export const ContributionResult = z.strictObject({
+  status: z.enum(["ok", "bad-credentials", "rejected", "rate-limited", "error"]),
+});
+export type ContributionResult = z.infer<typeof ContributionResult>;
+/** Plugin ids with a configured contributor. Never a credential, a host or anything glucose. */
+export const ContributionsView = z.strictObject({ available: z.array(FoodOrigin) });
+export type ContributionsView = z.infer<typeof ContributionsView>;

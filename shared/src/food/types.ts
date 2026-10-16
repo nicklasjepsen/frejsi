@@ -1,6 +1,12 @@
 import { z } from "zod";
 
-import { FoodCandidate, type Food, type FoodSourceStatus } from "../schemas/food";
+import {
+  FoodCandidate,
+  type ContributionResult,
+  type Food,
+  type FoodCorrection,
+  type FoodSourceStatus,
+} from "../schemas/food";
 import type { Locale } from "../schemas/settings";
 
 export type { FoodSourceStatus } from "../schemas/food";
@@ -13,6 +19,14 @@ export interface FoodSource {
   kind: "remote" | "local";
   search(q: string, locale: Locale, signal: AbortSignal): Promise<FoodSourceResult>;
   byBarcode(barcode: string, signal: AbortSignal): Promise<FoodSourceResult>;
+}
+/**
+ * Sends a human-approved correction back to the source a food came from (spec §4). Never called
+ * automatically; the one caller is the contributions service in web/.
+ */
+export interface FoodContributor {
+  id: string;
+  contribute(correction: FoodCorrection, signal: AbortSignal): Promise<ContributionResult>;
 }
 export interface LibraryOptions {
   verifiedOnly?: boolean;

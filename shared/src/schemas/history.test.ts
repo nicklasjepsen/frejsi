@@ -283,6 +283,16 @@ describe("history contracts", () => {
     );
     expect(eventKeys).toMatchInlineSnapshot(`
       {
+        "food.contributed": [
+          [
+            "root.foodId",
+            "foodId",
+          ],
+          [
+            "root.source",
+            "source",
+          ],
+        ],
         "food.created": [
           [
             "root.foodId",
