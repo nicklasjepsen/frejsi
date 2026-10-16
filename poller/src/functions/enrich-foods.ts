@@ -7,6 +7,7 @@ import {
   type EmitFn,
   type FoodSource,
   type Logger,
+  localeOrDefault,
   type Locale,
 } from "@frejsi/shared";
 import { foodSources } from "@frejsi/shared/food";
@@ -61,7 +62,7 @@ export async function runEnrichment(deps: EnrichmentDeps): Promise<void> {
   const enabled = deps.spaces.filter((space) => space.aiEnabled);
   const groups = [
     ...(cache?.capabilities().embed && cacheId
-      ? [{ spaceId: null, id: cacheId, inner: cache, timezone: "UTC", locale: "da" as Locale }]
+      ? [{ spaceId: null, id: cacheId, inner: cache, timezone: "UTC", locale: localeOrDefault(undefined) }]
       : []),
     ...enabled.flatMap((space) => {
       const id = AiProviderId.safeParse(space.aiProvider);
@@ -183,7 +184,7 @@ app.timer("enrich-foods", {
         .map((source) => source.id),
       spaces: spaces.map((space) => ({
         ...space,
-        locale: space.memberships[0]?.user.locale === "en" ? "en" : "da",
+        locale: localeOrDefault(space.memberships[0]?.user.locale),
       })),
       env: process.env,
       log,

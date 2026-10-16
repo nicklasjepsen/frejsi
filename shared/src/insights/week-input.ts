@@ -3,6 +3,7 @@ import { dayRange } from "../meals/day-range";
 import { mealTitle } from "../meals/title";
 import { AiProviderId, type WeekInsightInput } from "../schemas/ai";
 import type { Reading } from "../schemas/glucose";
+import { localeOrDefault } from "../schemas/settings";
 import type { Target } from "../schemas/history";
 import { dayStats, mealsInRange } from "../stats/day";
 import { mealStats } from "../stats/meal";
@@ -130,7 +131,7 @@ export class PrismaWeekSource implements WeekSource {
               id: r.id,
               timezone: r.timezone,
               glucoseUnit: r.glucoseUnit as WeekSpace["glucoseUnit"],
-              locale: (r.subjectUser?.locale ?? "da") as WeekSpace["locale"],
+              locale: localeOrDefault(r.subjectUser?.locale),
               target: { low: Number(r.targetLow), high: Number(r.targetHigh) },
               aiProvider: provider.data,
             },
