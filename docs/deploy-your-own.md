@@ -124,6 +124,17 @@ domain) at `/subscriptions/<id>/providers/Microsoft.Web/locations/<region>/stati
 outside the resource group. Without the grant the Bicep job hangs with `AuthorizationFailed` until it
 times out. The exact action is not a registered operation, so only the wildcard can grant it.
 
+```sh
+az role definition create --role-definition '{
+  "Name": "frejsi-swa-operations-reader",
+  "Description": "Read the status of asynchronous Static Web Apps operations",
+  "Actions": ["Microsoft.Web/locations/*/read"],
+  "AssignableScopes": ["/subscriptions/<subscription id>"]
+}'
+az role assignment create --assignee <client id> --role frejsi-swa-operations-reader \
+  --scope /subscriptions/<subscription id>
+```
+
 ## 4. GitHub environments, variables and secrets
 
 In the fork, under Settings, Environments, create `production-infra` and `production`. Put yourself
@@ -172,8 +183,14 @@ carry the choice, and the release pipeline writes them to the web app's settings
 
 - `DEFAULT_LOCALE`: `da` or `en`. People can still choose their own language in Settings.
 - `FOOD_SOURCES`: a comma-separated list of food plugin ids. `off` is Open Food Facts (any country);
-  `frida` is the bundled Danish DTU Frida dataset. Empty means no plugin and an empty search: set it.
+  `frida` is the bundled Danish DTU Frida dataset. With none set there is no plugin and the search
+  finds only your own library: set it.
 - `OFF_COUNTRY`: the two-letter code (for example `no`, `se`, `gb`) Open Food Facts should favour.
+
+A variable that is unset or empty writes nothing. The web app's settings are rebuilt on every
+release, so it then loses the setting; the Function App only ever gains settings, so it keeps the
+last value the pipeline wrote until you remove it by hand
+(`az functionapp config appsettings delete -g <your resource group> -n <function app> --setting-names FOOD_SOURCES OFF_COUNTRY`).
 
 A glucose source is chosen per space in Settings after the site is running: Dexcom Share, Nightscout
 or typed-in finger-prick values. A new food or glucose source for your country is a plugin: see
