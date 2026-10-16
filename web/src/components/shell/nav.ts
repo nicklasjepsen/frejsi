@@ -51,11 +51,11 @@ const NORMAL: NavItem[] = [
   { label: "more", sidebarLabel: "settings", href: "/settings", icon: "settings", shortcut: "," },
 ];
 
-/** Three tabs (Nu-Simpel); no settings: the child cannot reach them. Spørg waits for v0.4.0. */
+/** Three tabs (Nu-Simpel); no settings: the child cannot reach them. Spørg is available when the space enables AI. */
 const SIMPLE: NavItem[] = [
   { label: "now", href: "/now", icon: "now" },
   { label: "myFood", href: "/eat", icon: "book" },
-  { label: "ask", sidebarLabel: "askAdult", href: "/soon/ask", icon: "ask" },
+  { label: "ask", sidebarLabel: "askAdult", href: "/ask", icon: "ask" },
 ];
 
 /** Three tabs (Historik-Viewer): never Nu, Måltid or Mad. Tidligere dage opens meal-only history. */
@@ -66,16 +66,16 @@ const VIEWER: NavItem[] = [
 ];
 
 /** The phone tab bar: Personer is reached from Mere on the phone, so it is not a tab. */
-export function phoneItems(variant: ShellVariant): NavItem[] {
-  if (variant === "simple") return SIMPLE;
+export function phoneItems(variant: ShellVariant, aiEnabled = false): NavItem[] {
+  if (variant === "simple") return SIMPLE.filter((item) => aiEnabled || item.label !== "ask");
   if (variant === "viewer") return VIEWER;
   return NORMAL.filter((item) => item.label !== "people").map((item) =>
     item.label === "more" ? { ...item, icon: "dots" } : item,
   );
 }
 
-export function sidebarItems(variant: ShellVariant): NavItem[] {
-  if (variant === "simple") return SIMPLE;
+export function sidebarItems(variant: ShellVariant, aiEnabled = false): NavItem[] {
+  if (variant === "simple") return SIMPLE.filter((item) => aiEnabled || item.label !== "ask");
   if (variant === "viewer") return VIEWER;
   return NORMAL.map((item) => (item.sidebarHref ? { ...item, href: item.sidebarHref } : item));
 }

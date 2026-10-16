@@ -37,7 +37,7 @@ export function settingsRoute<P extends { spaceId?: string }>(
 ): (request: Request, context?: { params: Promise<P> }) => Promise<Response> {
   return async (request, context) => {
     // A route without a dynamic segment is called with `{}` params by Next and with nothing by tests.
-    const params: Partial<P> = context ? await context.params : {};
+    const params: Partial<P> = (await context?.params) ?? {};
     try {
       return await handler(request, params as P);
     } catch (error) {

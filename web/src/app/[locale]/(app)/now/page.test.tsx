@@ -46,6 +46,8 @@ describe("/[locale]/now", () => {
       simpleMode: true,
       timeZone: "Europe/Copenhagen",
       role: "carer",
+      aiEnabled: false,
+      aiProvider: null,
     });
   });
 

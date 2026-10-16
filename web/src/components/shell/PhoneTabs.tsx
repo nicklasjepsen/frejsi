@@ -14,16 +14,18 @@ export function PhoneTabs({
   locale,
   variant,
   path,
+  aiEnabled = false,
 }: {
   locale: AppLocale;
   variant: ShellVariant;
   path: string;
+  aiEnabled?: boolean;
 }) {
   const t = useTranslations("nav");
   const iconSize = variant === "simple" ? 32 : 26;
   return (
     <nav className={styles.tabs} aria-label={t("main")} data-testid="phone-tabs">
-      {phoneItems(variant).map((item) => (
+      {phoneItems(variant, aiEnabled).map((item) => (
         <Link
           key={item.href}
           href={localeHref(locale, item.href)}

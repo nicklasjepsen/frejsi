@@ -4,5 +4,14 @@
   "eatingNow": "Jeg spiser nu",
   "lastMeal": "Sidste måltid",
   "lastMealSoon": "Her kan du snart se det sidste måltid.",
-  "glucoseCard": "Glukose"
+  "glucoseCard": "Glukose",
+  "askAdult": "Spørg en voksen",
+  "askedPhoto": "{child} spurgte om et billede · Gennemgå og godkend",
+  "weekTitle": "Ugens opsummering",
+  "weekPending": "Klar søndag aften",
+  "weekReady": "Klar",
+  "aiHelp": "AI-hjælp",
+  "aiOn": "Til · {provider}",
+  "aiOff": "Fra",
+  "status": "Status"
 }

@@ -208,17 +208,17 @@ describe("AppShell · module boundaries", () => {
 describe("AppShell · simpleMode (Nu-Simpel, Nu-Simpel-Desktop)", () => {
   const simple: Partial<AppShellProps> = {
     user: { name: "Alma", accent: "plum", simpleMode: true },
-    space: { ...base.space, role: "carer" },
+    space: { ...base.space, role: "carer", aiEnabled: true },
   };
 
-  it("renders the three phone tabs Nu, Min mad, Spørg; Min mad opens the picker and Spørg the placeholder", () => {
+  it("renders the three phone tabs Nu, Min mad, Spørg; Min mad opens the picker and Spørg the photo question", () => {
     mount(simple);
     expect(labels(tabs())).toEqual(["Nu", "Min mad", "Spørg"]);
     expect(
       within(tabs())
         .getAllByRole("link")
         .map((a) => a.getAttribute("href")),
-    ).toEqual(["/da/now", "/da/eat", "/da/soon/ask"]);
+    ).toEqual(["/da/now", "/da/eat", "/da/ask"]);
     expect(screen.getByTestId("app-shell")).toHaveAttribute("data-variant", "simple");
   });
 
@@ -294,4 +294,12 @@ describe("AppShell · viewer (Historik-Viewer)", () => {
       expect(source, file).not.toMatch(/components\/glucose|GlucoseValue/);
     }
   });
+});
+
+it("hides the simple ask navigation while AI is off", () => {
+  mount({ user: { ...base.user, simpleMode: true }, space: { ...base.space, aiEnabled: false } });
+  expect(labels(tabs())).toEqual(["Nu", "Min mad"]);
+  expect(
+    within(sidebar()).queryByRole("link", { name: "Spørg en voksen" }),
+  ).not.toBeInTheDocument();
 });

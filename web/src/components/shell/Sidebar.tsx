@@ -20,7 +20,14 @@ export interface SidebarProps {
   variant: ShellVariant;
   path: string;
   user: { name: string };
-  space: { id: string; name: string; role: Role; subjectName: string; ownerName: string | null };
+  space: {
+    id: string;
+    name: string;
+    role: Role;
+    subjectName: string;
+    ownerName: string | null;
+    aiEnabled?: boolean;
+  };
   spaces: { id: string; name: string; role: Role }[];
 }
 
@@ -57,7 +64,7 @@ export function Sidebar({ locale, variant, path, user, space, spaces }: SidebarP
   const t = useTranslations("nav");
   const shell = useTranslations("shell");
   const roles = useTranslations("roles");
-  const items = sidebarItems(variant);
+  const items = sidebarItems(variant, space.aiEnabled);
   useShortcuts(locale, items, variant === "normal");
   const simple = variant === "simple";
 
