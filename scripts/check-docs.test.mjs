@@ -105,7 +105,13 @@ afterEach(() => {
 it("reads the event and diffs the PR head against its merge base, not the checkout's merge commit", () => {
   const dir = mkdtempSync(path.join(tmpdir(), "frejsi-docs-"));
   temporary.push(dir);
-  const git = (...args) => execFileSync("git", args, { cwd: dir, encoding: "utf8" }).trim();
+  // Hooks export repository-local Git variables. Temporary commands must own their repository,
+  // even when this test runs inside pre-push from a linked worktree.
+  const isolatedEnv = Object.fromEntries(
+    Object.entries(process.env).filter(([key]) => !key.startsWith("GIT_")),
+  );
+  const git = (...args) =>
+    execFileSync("git", args, { cwd: dir, encoding: "utf8", env: isolatedEnv }).trim();
   git("init", "-q", "--initial-branch=main");
   git("config", "user.name", "Fictional Contributor");
   git("config", "user.email", "contributor@example.invalid");
@@ -137,7 +143,7 @@ it("reads the event and diffs the PR head against its merge base, not the checko
     );
     return spawnSync(process.execPath, [path.join(import.meta.dirname, "check-docs.mjs")], {
       cwd: dir,
-      env: { ...process.env, GITHUB_EVENT_PATH: eventPath },
+      env: { ...isolatedEnv, GITHUB_EVENT_PATH: eventPath },
       encoding: "utf8",
     });
   };
