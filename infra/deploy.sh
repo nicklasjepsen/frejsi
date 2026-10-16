@@ -323,11 +323,16 @@ AI_SETTING_NAMES=(ANTHROPIC_API_KEY VOYAGE_API_KEY AZURE_OPENAI_ENDPOINT AZURE_O
   OLLAMA_MODEL_INSIGHT OLLAMA_MODEL_EMBED AI_CACHE_EMBED_PROVIDER)
 ( umask 077; printf '{}' > "$WORK/ai-web.json"; printf '{}' > "$WORK/ai-function.json" )
 AI_SETTING_COUNT=0
+FUNCTION_SETTING_NAMES="$(az functionapp config appsettings list -g "$RG" -n "$FUNCTION_APP" --query '[].name' -o tsv)"
+AI_REMOVE_SETTINGS=()
 for AI_SETTING in "${AI_SETTING_NAMES[@]}"; do
   AI_SECRET="${AI_SETTING,,}"
   AI_SECRET="${AI_SECRET//_/-}"
   if ! secret_exists "$AI_SECRET"; then
     log "Skipping optional AI setting $AI_SETTING: Key Vault secret $AI_SECRET is absent"
+    if printf '%s\n' "$FUNCTION_SETTING_NAMES" | grep -qx "$AI_SETTING"; then
+      AI_REMOVE_SETTINGS+=("$AI_SETTING")
+    fi
     continue
   fi
   secret_to_file "$AI_SECRET" "$WORK/ai-value"
@@ -340,6 +345,10 @@ for AI_SETTING in "${AI_SETTING_NAMES[@]}"; do
   )
   AI_SETTING_COUNT=$((AI_SETTING_COUNT + 1))
 done
+# Delete only previously managed settings, after every present secret has been read successfully.
+if [ "${#AI_REMOVE_SETTINGS[@]}" -gt 0 ]; then
+  az functionapp config appsettings delete -g "$RG" -n "$FUNCTION_APP" --setting-names "${AI_REMOVE_SETTINGS[@]}" >/dev/null
+fi
 if [ "$AI_SETTING_COUNT" -gt 0 ]; then
   ( umask 077; jq --slurpfile ai "$WORK/ai-web.json" '.properties += $ai[0]' "$SWA_SETTINGS_FILE" > "$WORK/ai-swa.json" )
   mv "$WORK/ai-swa.json" "$SWA_SETTINGS_FILE"

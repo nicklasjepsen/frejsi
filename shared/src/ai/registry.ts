@@ -30,9 +30,13 @@ export function aiProviders(
               "https://cognitiveservices.azure.com/.default",
             ),
         deployments: {
-          small: env.AZURE_OPENAI_DEPLOYMENT_SMALL ?? env.AZURE_OPENAI_DEPLOYMENT_EVERYDAY,
+          small: env.AZURE_OPENAI_DEPLOYMENT_SMALL?.length
+            ? env.AZURE_OPENAI_DEPLOYMENT_SMALL
+            : env.AZURE_OPENAI_DEPLOYMENT_EVERYDAY,
           everyday: env.AZURE_OPENAI_DEPLOYMENT_EVERYDAY,
-          insight: env.AZURE_OPENAI_DEPLOYMENT_INSIGHT ?? env.AZURE_OPENAI_DEPLOYMENT_EVERYDAY,
+          insight: env.AZURE_OPENAI_DEPLOYMENT_INSIGHT?.length
+            ? env.AZURE_OPENAI_DEPLOYMENT_INSIGHT
+            : env.AZURE_OPENAI_DEPLOYMENT_EVERYDAY,
           embed: env.AZURE_OPENAI_DEPLOYMENT_EMBED,
         },
       });
@@ -40,9 +44,13 @@ export function aiProviders(
       providers.ollama = new OllamaProvider({
         url: env.OLLAMA_URL,
         models: {
-          small: env.OLLAMA_MODEL_SMALL ?? env.OLLAMA_MODEL_EVERYDAY,
+          small: env.OLLAMA_MODEL_SMALL?.length
+            ? env.OLLAMA_MODEL_SMALL
+            : env.OLLAMA_MODEL_EVERYDAY,
           everyday: env.OLLAMA_MODEL_EVERYDAY,
-          insight: env.OLLAMA_MODEL_INSIGHT ?? env.OLLAMA_MODEL_EVERYDAY,
+          insight: env.OLLAMA_MODEL_INSIGHT?.length
+            ? env.OLLAMA_MODEL_INSIGHT
+            : env.OLLAMA_MODEL_EVERYDAY,
           embed: env.OLLAMA_MODEL_EMBED,
         },
       });

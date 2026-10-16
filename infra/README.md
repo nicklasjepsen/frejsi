@@ -336,7 +336,8 @@ Things to know:
 AI stays off in production until the owner supplies settings and enables it for a space. A release
 without these secrets succeeds. `deploy.sh` copies only present secrets into SWA app settings using
 mode-600 files and gives the Function App Key Vault references to the same secrets. Missing secrets
-produce one notice per setting; unreadable or empty existing secrets stop the deploy. Values never
+produce one notice per setting, and any stale Function App references for those settings are removed;
+unreadable or empty existing secrets stop the deploy. Values never
 reach command lines or output. The script also raises SQL compatibility to 170 after migrations if
 it is lower, for the `vector(1024)` column; higher levels are preserved.
 

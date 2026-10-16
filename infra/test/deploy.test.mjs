@@ -307,3 +307,15 @@ test('raises SQL compatibility to 170 only when lower, after migration and befor
   assert.ok(migrate < compatibility && compatibility < close);
   assert.match(r.calls[compatibility], /-b/);
 });
+test('removing optional AI secrets also removes only their stale Function App settings', () => {
+  for (const remaining of ['', 'anthropic-api-key']) {
+    const r = runDeploy({ env: { FAKE_EXISTING_SECRETS: `${baseSecrets} ${remaining}`, FAKE_FUNCTION_SETTING_NAMES: 'APP_VERSION ANTHROPIC_API_KEY OLLAMA_MODEL_SMALL' } });
+    assert.equal(r.status, 0, r.output);
+    const deleted = r.calls.find((c) => /functionapp config appsettings delete/.test(c));
+    assert.ok(deleted, r.calls.join('\n'));
+    assert.match(deleted, /OLLAMA_MODEL_SMALL/);
+    assert.equal(deleted.includes('ANTHROPIC_API_KEY'), !remaining);
+    assert.ok(!deleted.includes('APP_VERSION'), 'removed unrelated settings');
+    assert.equal(existsSync(path.join(r.logDir, 'function-ai-settings.json')), Boolean(remaining));
+  }
+});

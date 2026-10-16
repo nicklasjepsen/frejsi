@@ -261,3 +261,13 @@ it("restores optional tool arguments before the provider-neutral loop validates 
   expect(result).toMatchObject({ kind: "tool-calls", calls: [{ input: { query: "apple" } }] });
   if (result.kind === "tool-calls") expect(result.calls[0]?.input).not.toHaveProperty("limit");
 });
+it("uses the embedding default when its optional setting is blank", async () => {
+  const t = transport(fixture("azure-openai", "embed"));
+  await new AzureOpenAiProvider({
+    endpoint: "https://fictional.openai.azure.com",
+    apiKey: "fictional",
+    deployments: { embed: "" },
+    fetch: t.fetch,
+  }).embed({ texts: ["Apple"] });
+  expect(t.calls[0]?.url).toContain("/deployments/text-embedding-3-small/embeddings");
+});

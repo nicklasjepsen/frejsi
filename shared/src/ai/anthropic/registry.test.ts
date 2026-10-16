@@ -52,3 +52,35 @@ it("leaves an unconfigured deployment inert and registers only configured adapte
     network.mockRestore();
   }
 });
+it.each(["azure-openai", "ollama"] as const)(
+  "treats blank optional %s roles from .env.example as absent",
+  async (id) => {
+    const { fixture, transport } = await import("./test-helpers");
+    const t = transport(fixture(id, "complete-json"));
+    vi.stubGlobal("fetch", t.fetch);
+    try {
+      const env =
+        id === "azure-openai"
+          ? {
+              AZURE_OPENAI_ENDPOINT: "https://fictional.openai.azure.com",
+              AZURE_OPENAI_API_KEY: "fictional",
+              AZURE_OPENAI_DEPLOYMENT_EVERYDAY: "daily",
+              AZURE_OPENAI_DEPLOYMENT_SMALL: "",
+              AZURE_OPENAI_DEPLOYMENT_INSIGHT: "",
+            }
+          : {
+              OLLAMA_URL: "http://127.0.0.1:11434",
+              OLLAMA_MODEL_EVERYDAY: "daily",
+              OLLAMA_MODEL_SMALL: "",
+              OLLAMA_MODEL_INSIGHT: "",
+            };
+      const provider = aiProviders(env)[id];
+      expect(provider).toBeDefined();
+      for (const role of ["small", "insight"] as const) {
+        expect(await provider?.complete({ ...request, role })).toMatchObject({ kind: "json" });
+      }
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  },
+);

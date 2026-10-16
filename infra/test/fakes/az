@@ -74,7 +74,13 @@ case "$cmd" in
       cp "${file#@}" "$FAKE_LOG_DIR/function-ai-settings.json"
       stat -c '%a' "${file#@}" > "$FAKE_LOG_DIR/function-ai-settings-mode"
     fi
-    if [ "${4:-}" = list ]; then echo 'https://stfrejsiabc.blob.core.windows.net/function-releases/poller.zip?sv=FAKESAS'; fi ;;
+    if [ "${4:-}" = list ]; then
+      if [ "$query" = '[].name' ]; then
+        for name in ${FAKE_FUNCTION_SETTING_NAMES:-}; do echo "$name"; done
+      else
+        echo 'https://stfrejsiabc.blob.core.windows.net/function-releases/poller.zip?sv=FAKESAS'
+      fi
+    fi ;;
   "functionapp deployment source") test -s "$(arg --src)" || { echo "fake az: zip missing" >&2; exit 3; } ;;
   "functionapp function keys")
     n=$(cat "$FAKE_LOG_DIR/keys-attempts" 2>/dev/null || echo 0); n=$((n + 1)); echo "$n" > "$FAKE_LOG_DIR/keys-attempts"
