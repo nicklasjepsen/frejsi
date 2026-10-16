@@ -1,0 +1,1 @@
+export { PrismaInsightRepository } from "./store";
