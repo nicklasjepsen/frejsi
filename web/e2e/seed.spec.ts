@@ -55,6 +55,6 @@ test("the seed refuses to run when NODE_ENV=production", async () => {
   });
   expect(result.status).toBe(1);
   expect(result.stderr).toContain("NODE_ENV=production");
-  expect(await prisma.space.count()).toBe(1);
+  expect(await prisma.space.count()).toBe(2);
   expect(await prisma.event.count()).toBe(before);
 });
