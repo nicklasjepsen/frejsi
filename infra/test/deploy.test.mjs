@@ -36,7 +36,7 @@ function runDeploy({ env = {}, omit = [], rootServer = true } = {}) {
     AZURE_SUBSCRIPTION_ID: '00000000-0000-0000-0000-000000000000',
     AZURE_RESOURCE_GROUP: 'frejsi',
     APP_VERSION: 'v0.1.0',
-    ALERT_EMAIL: 'alerts@frejsi.example',
+    ALERT_EMAIL: 'alerts@example.invalid',
     ...env,
   };
   for (const k of omit) delete fullEnv[k];
@@ -325,7 +325,7 @@ test('VAPID: generates a pair once, recovers a partial write, reuses existing ke
   const first = runDeploy();
   assert.equal(first.status, 0, first.output);
   const settings = JSON.parse(readFileSync(path.join(first.logDir, 'swa-appsettings.json'), 'utf8')).properties;
-  assert.equal(settings.VAPID_SUBJECT, 'mailto:alerts@frejsi.example');
+  assert.equal(settings.VAPID_SUBJECT, 'mailto:alerts@example.invalid');
   assert.match(settings.VAPID_PRIVATE_KEY, /^[A-Za-z0-9_-]{43}$/);
   assert.match(settings.VAPID_PUBLIC_KEY, /^[A-Za-z0-9_-]{87}$/);
   assert.doesNotMatch(first.output + first.calls.join('\n'), new RegExp(settings.VAPID_PRIVATE_KEY));
