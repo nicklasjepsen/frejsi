@@ -59,5 +59,11 @@
     "saved": "Gemt i biblioteket · Tjek den under Bibliotek",
     "failed": "Kunne ikke gemme – prøv igen",
     "name": "Rettens navn"
+  },
+  "observation": {
+    "badge": "Observation · AI",
+    "note": "ud fra tallene, ikke et råd",
+    "desktopNote": "ud fra tallene ovenfor, ikke et råd",
+    "pending": "Observationen kommer, når der er gået tre timer"
   }
 }

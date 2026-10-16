@@ -23,5 +23,10 @@
   "loadFailed": "This day could not be loaded just now.",
   "retry": "Try again",
   "carbs": "{carbs} g",
-  "peak": "peak"
+  "peak": "peak",
+  "observation": {
+    "title": "Weekly summary",
+    "ready": "With questions for the clinic · ready",
+    "pending": "With questions for the clinic · ready Sunday"
+  }
 }

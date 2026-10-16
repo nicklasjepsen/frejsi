@@ -59,5 +59,11 @@
     "saved": "Saved in the library · Check it under Library",
     "failed": "Could not save – try again",
     "name": "Dish name"
+  },
+  "observation": {
+    "badge": "Observation · AI",
+    "note": "from the numbers, not advice",
+    "desktopNote": "from the numbers above, not advice",
+    "pending": "The observation arrives after three hours"
   }
 }

@@ -9,6 +9,10 @@ const mocks = vi.hoisted(() => ({
   shell: null as { space: { id: string; role: string; timezone: string } } | null,
   unitCalls: [] as string[],
 }));
+vi.mock("@frejsi/shared", async (actual) => ({
+  ...(await actual<object>()),
+  prisma: { space: { findUnique: () => Promise.resolve({ aiEnabled: true }) } },
+}));
 vi.mock("@/components/shell/shell-session", () => ({
   getShellSession: () => Promise.resolve(mocks.session),
   getShell: () => Promise.resolve(mocks.shell),
@@ -57,6 +61,7 @@ describe("/[locale]/meal/[mealId]", () => {
         locale: "da",
         timeZone: "Europe/Copenhagen",
         unit: "mgdl",
+        aiEnabled: true,
       });
     }
   });

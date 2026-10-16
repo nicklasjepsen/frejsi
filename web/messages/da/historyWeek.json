@@ -30,5 +30,19 @@
   "emptyMeals": "Ingen måltider denne uge",
   "loadFailed": "Kunne ikke hente ugen – prøv igen",
   "loading": "Henter ugen",
-  "retry": "Prøv igen"
+  "retry": "Prøv igen",
+  "observation": {
+    "summary": "Ugens opsummering",
+    "title": "Spørgsmål til klinikken",
+    "badge": "Observation · AI",
+    "note": "formuleret ud fra ugens tal",
+    "pending": "Klar søndag aften",
+    "edit": "Ret spørgsmålene",
+    "save": "Gem",
+    "cancel": "Annuller",
+    "copy": "Kopiér",
+    "saved": "Gemt",
+    "copied": "Kopieret",
+    "failed": "Kunne ikke gemme eller kopiere. Prøv igen."
+  }
 }

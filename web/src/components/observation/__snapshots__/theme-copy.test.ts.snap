@@ -1,0 +1,241 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`snapshots inherited light/dark and all accents for cards at 360 and 1280 px > dark forest: observation, questions, phone week 1`] = `
+{
+  "values": {
+    "--accent-base": "#86bbad",
+    "--accent-strong": "#a3d0c4",
+    "--accent-tint": "#27403a",
+    "--accent-tint-border": "#3a5c53",
+    "--hairline": "#3a332c",
+    "--radius-button-small": "10px",
+    "--radius-card": "20px",
+    "--radius-pill": "999px",
+    "--radius-primary-phone": "18px",
+    "--surface": "#2a2521",
+    "--surface-input": "#2a2521",
+    "--text": "#f1eadf",
+    "--text-muted": "#b5aa9a",
+  },
+  "widths": [
+    360,
+    1280,
+  ],
+}
+`;
+
+exports[`snapshots inherited light/dark and all accents for cards at 360 and 1280 px > dark garnet: observation, questions, phone week 1`] = `
+{
+  "values": {
+    "--accent-base": "#c98a9c",
+    "--accent-strong": "#dba7b6",
+    "--accent-tint": "#43303a",
+    "--accent-tint-border": "#5f4552",
+    "--hairline": "#3a332c",
+    "--radius-button-small": "10px",
+    "--radius-card": "20px",
+    "--radius-pill": "999px",
+    "--radius-primary-phone": "18px",
+    "--surface": "#2a2521",
+    "--surface-input": "#2a2521",
+    "--text": "#f1eadf",
+    "--text-muted": "#b5aa9a",
+  },
+  "widths": [
+    360,
+    1280,
+  ],
+}
+`;
+
+exports[`snapshots inherited light/dark and all accents for cards at 360 and 1280 px > dark olive: observation, questions, phone week 1`] = `
+{
+  "values": {
+    "--accent-base": "#9dae78",
+    "--accent-strong": "#b8c797",
+    "--accent-tint": "#353b2a",
+    "--accent-tint-border": "#4a5438",
+    "--hairline": "#3a332c",
+    "--radius-button-small": "10px",
+    "--radius-card": "20px",
+    "--radius-pill": "999px",
+    "--radius-primary-phone": "18px",
+    "--surface": "#2a2521",
+    "--surface-input": "#2a2521",
+    "--text": "#f1eadf",
+    "--text-muted": "#b5aa9a",
+  },
+  "widths": [
+    360,
+    1280,
+  ],
+}
+`;
+
+exports[`snapshots inherited light/dark and all accents for cards at 360 and 1280 px > dark plum: observation, questions, phone week 1`] = `
+{
+  "values": {
+    "--accent-base": "#b59ad0",
+    "--accent-strong": "#cdb8e3",
+    "--accent-tint": "#3a2f47",
+    "--accent-tint-border": "#54456a",
+    "--hairline": "#3a332c",
+    "--radius-button-small": "10px",
+    "--radius-card": "20px",
+    "--radius-pill": "999px",
+    "--radius-primary-phone": "18px",
+    "--surface": "#2a2521",
+    "--surface-input": "#2a2521",
+    "--text": "#f1eadf",
+    "--text-muted": "#b5aa9a",
+  },
+  "widths": [
+    360,
+    1280,
+  ],
+}
+`;
+
+exports[`snapshots inherited light/dark and all accents for cards at 360 and 1280 px > dark sea: observation, questions, phone week 1`] = `
+{
+  "values": {
+    "--accent-base": "#8fb0cd",
+    "--accent-strong": "#aac6de",
+    "--accent-tint": "#2c3a47",
+    "--accent-tint-border": "#405466",
+    "--hairline": "#3a332c",
+    "--radius-button-small": "10px",
+    "--radius-card": "20px",
+    "--radius-pill": "999px",
+    "--radius-primary-phone": "18px",
+    "--surface": "#2a2521",
+    "--surface-input": "#2a2521",
+    "--text": "#f1eadf",
+    "--text-muted": "#b5aa9a",
+  },
+  "widths": [
+    360,
+    1280,
+  ],
+}
+`;
+
+exports[`snapshots inherited light/dark and all accents for cards at 360 and 1280 px > light forest: observation, questions, phone week 1`] = `
+{
+  "values": {
+    "--accent-base": "#2f6b5e",
+    "--accent-strong": "#22514a",
+    "--accent-tint": "#ddebe6",
+    "--accent-tint-border": "#b3cfc6",
+    "--hairline": "#e7dfd0",
+    "--radius-button-small": "10px",
+    "--radius-card": "20px",
+    "--radius-pill": "999px",
+    "--radius-primary-phone": "18px",
+    "--surface": "#fffcf6",
+    "--surface-input": "#ffffff",
+    "--text": "#2b2622",
+    "--text-muted": "#6e6458",
+  },
+  "widths": [
+    360,
+    1280,
+  ],
+}
+`;
+
+exports[`snapshots inherited light/dark and all accents for cards at 360 and 1280 px > light garnet: observation, questions, phone week 1`] = `
+{
+  "values": {
+    "--accent-base": "#7a3a4b",
+    "--accent-strong": "#5c2a38",
+    "--accent-tint": "#f0e0e4",
+    "--accent-tint-border": "#d3b5bd",
+    "--hairline": "#e7dfd0",
+    "--radius-button-small": "10px",
+    "--radius-card": "20px",
+    "--radius-pill": "999px",
+    "--radius-primary-phone": "18px",
+    "--surface": "#fffcf6",
+    "--surface-input": "#ffffff",
+    "--text": "#2b2622",
+    "--text-muted": "#6e6458",
+  },
+  "widths": [
+    360,
+    1280,
+  ],
+}
+`;
+
+exports[`snapshots inherited light/dark and all accents for cards at 360 and 1280 px > light olive: observation, questions, phone week 1`] = `
+{
+  "values": {
+    "--accent-base": "#5a6a3b",
+    "--accent-strong": "#3f4c28",
+    "--accent-tint": "#e9ecdf",
+    "--accent-tint-border": "#c9cdb8",
+    "--hairline": "#e7dfd0",
+    "--radius-button-small": "10px",
+    "--radius-card": "20px",
+    "--radius-pill": "999px",
+    "--radius-primary-phone": "18px",
+    "--surface": "#fffcf6",
+    "--surface-input": "#ffffff",
+    "--text": "#2b2622",
+    "--text-muted": "#6e6458",
+  },
+  "widths": [
+    360,
+    1280,
+  ],
+}
+`;
+
+exports[`snapshots inherited light/dark and all accents for cards at 360 and 1280 px > light plum: observation, questions, phone week 1`] = `
+{
+  "values": {
+    "--accent-base": "#5b3f73",
+    "--accent-strong": "#432c57",
+    "--accent-tint": "#eae3ef",
+    "--accent-tint-border": "#cdbfd8",
+    "--hairline": "#e7dfd0",
+    "--radius-button-small": "10px",
+    "--radius-card": "20px",
+    "--radius-pill": "999px",
+    "--radius-primary-phone": "18px",
+    "--surface": "#fffcf6",
+    "--surface-input": "#ffffff",
+    "--text": "#2b2622",
+    "--text-muted": "#6e6458",
+  },
+  "widths": [
+    360,
+    1280,
+  ],
+}
+`;
+
+exports[`snapshots inherited light/dark and all accents for cards at 360 and 1280 px > light sea: observation, questions, phone week 1`] = `
+{
+  "values": {
+    "--accent-base": "#3b5f7e",
+    "--accent-strong": "#2b4660",
+    "--accent-tint": "#e0e8ef",
+    "--accent-tint-border": "#b8c8d6",
+    "--hairline": "#e7dfd0",
+    "--radius-button-small": "10px",
+    "--radius-card": "20px",
+    "--radius-pill": "999px",
+    "--radius-primary-phone": "18px",
+    "--surface": "#fffcf6",
+    "--surface-input": "#ffffff",
+    "--text": "#2b2622",
+    "--text-muted": "#6e6458",
+  },
+  "widths": [
+    360,
+    1280,
+  ],
+}
+`;

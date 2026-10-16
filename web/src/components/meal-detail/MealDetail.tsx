@@ -4,8 +4,10 @@ import type { GlucoseUnit } from "@frejsi/shared/schemas/glucose";
 import type { MealCurveView } from "@frejsi/shared/schemas/history";
 import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useState } from "react";
 
+import { Observation } from "@/components/observation/Observation";
+import type { LiveFeedView } from "@/lib/live/useLiveFeed";
 import { useNow } from "@/components/glucose/useNow";
 import { Button, PageHeader } from "@/components/ui";
 import { localeHref, type AppLocale } from "@/lib/i18n/routing";
@@ -34,6 +36,7 @@ export interface MealDetailProps {
   unit: GlucoseUnit;
   /** Forces a layout (tests); otherwise 1280 px and up is desktop, as in the shell. */
   layout?: "phone" | "desktop";
+  aiEnabled?: boolean;
 }
 
 const typing = (target: EventTarget | null) =>
@@ -48,7 +51,15 @@ const typing = (target: EventTarget | null) =>
  * window, so the screen calls `curve`, `negotiate` and `events` and nothing else (plan §8). The
  * curve is read again once the feed has its cursor, on `meal.updated` and on `space.updated`.
  */
-export function MealDetail({ spaceId, mealId, locale, timeZone, unit, layout }: MealDetailProps) {
+export function MealDetail({
+  spaceId,
+  mealId,
+  locale,
+  timeZone,
+  unit,
+  layout,
+  aiEnabled = false,
+}: MealDetailProps) {
   const router = useRouter();
   const feed = useLiveFeed(spaceId, { readings: false });
   const desktop = useDesktop(layout);
@@ -77,7 +88,7 @@ export function MealDetail({ spaceId, mealId, locale, timeZone, unit, layout }: 
     setEditing(false);
   }, [mealId]);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!desktop || editing || state.status !== "ready") return;
     const onKey = (event: KeyboardEvent) => {
       if (event.repeat) return;
@@ -107,6 +118,8 @@ export function MealDetail({ spaceId, mealId, locale, timeZone, unit, layout }: 
     <div className={styles.screen} data-layout={size} data-testid="meal-detail">
       {state.status === "ready" ? (
         <Ready
+          aiEnabled={aiEnabled}
+          feed={feed}
           view={state.data}
           live={feed.readings}
           size={size}
@@ -141,6 +154,8 @@ export function MealDetail({ spaceId, mealId, locale, timeZone, unit, layout }: 
 }
 
 function Ready({
+  aiEnabled,
+  feed,
   view,
   live,
   size,
@@ -151,6 +166,8 @@ function Ready({
   onOpen,
   spaceId,
 }: {
+  aiEnabled: boolean;
+  feed: LiveFeedView;
   view: MealCurveView;
   live: Parameters<typeof liveCurve>[1];
   size: "phone" | "desktop";
@@ -186,6 +203,15 @@ function Ready({
       onTogetherChange={setTogether}
     />
   );
+  const observation = aiEnabled ? (
+    <Observation
+      spaceId={spaceId}
+      mealId={view.meal.id}
+      complete={curve.stats.inRange.complete}
+      size={size}
+      feed={feed}
+    />
+  ) : null;
   if (size === "phone") {
     return (
       <>
@@ -197,6 +223,7 @@ function Ready({
         />
         {card}
         {tiles}
+        {observation}
         <MealItems items={view.meal.items} size="phone" />
       </>
     );
@@ -229,6 +256,7 @@ function Ready({
               onOpen={onOpen}
             />
           )}
+          {observation}
         </section>
       </div>
     </>

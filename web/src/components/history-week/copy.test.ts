@@ -1,6 +1,6 @@
 import { expect, it } from "vitest";
 import { getMessages } from "@/lib/i18n/messages";
-import { findDosingVocabulary } from "@frejsi/shared/dosing-vocabulary";
+import { findDosingVocabulary, messageStrings } from "@frejsi/shared/dosing-vocabulary";
 
 it("has matching Danish and English keys and descriptive copy without advice", () => {
   const da = getMessages("da").historyWeek;
@@ -10,15 +10,13 @@ it("has matching Danish and English keys and descriptive copy without advice", (
     ["da", da],
     ["en", en],
   ] as const) {
-    for (const value of Object.values(messages)) {
+    for (const [, value] of messageStrings({ messages })) {
       expect(value).not.toMatch(
         /(?<![\p{L}\p{N}_])(bør|skal|should|take|give|giv|næste gang|next time)(?![\p{L}\p{N}_])/iu,
       );
     }
-    expect(
-      findDosingVocabulary(
-        Object.entries(messages).map(([key, value]) => [`${locale}.historyWeek.${key}`, value]),
-      ),
-    ).toEqual([]);
+    expect(findDosingVocabulary(messageStrings({ [`${locale}.historyWeek`]: messages }))).toEqual(
+      [],
+    );
   }
 });

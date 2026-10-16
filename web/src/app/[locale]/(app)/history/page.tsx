@@ -29,10 +29,15 @@ export default async function HistoryPage({
   // Membership was checked by getShell. No reading query is made during the server render.
   const space = await prisma.space.findUnique({
     where: { id: shell.space.id },
-    select: { glucoseUnit: true },
+    select: { glucoseUnit: true, aiEnabled: true },
   });
   if (!space) return null;
   return (
-    <HistoryScreen key={shell.space.id} {...props} unit={GlucoseUnit.parse(space.glucoseUnit)} />
+    <HistoryScreen
+      aiEnabled={space.aiEnabled}
+      key={shell.space.id}
+      {...props}
+      unit={GlucoseUnit.parse(space.glucoseUnit)}
+    />
   );
 }

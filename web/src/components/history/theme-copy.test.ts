@@ -1,13 +1,14 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { expect, it } from "vitest";
+import { messageStrings } from "@frejsi/shared/dosing-vocabulary";
 import da from "../../../messages/da/history.json";
 import en from "../../../messages/en/history.json";
 const read = (name: string) => readFileSync(path.resolve(import.meta.dirname, name), "utf8");
 it("translates every history string and keeps the copy descriptive", () => {
   expect(Object.keys(da).sort()).toEqual(Object.keys(en).sort());
   for (const copy of [da, en]) {
-    for (const text of Object.values(copy)) {
+    for (const [, text] of messageStrings({ history: copy })) {
       expect(text).not.toMatch(
         /(?<![\p{L}\p{N}_])(bør|skal|should|take|give|giv|næste gang|next time)(?![\p{L}\p{N}_])/iu,
       );
