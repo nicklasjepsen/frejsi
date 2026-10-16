@@ -41,7 +41,10 @@ export async function setPushEnabled(
   enabled: boolean,
   deps = browser(),
 ): Promise<"on" | "off" | "denied"> {
-  if (enabled && (await deps.permission()) !== "granted") return "denied";
+  if (enabled) {
+    const permission = await deps.permission();
+    if (permission !== "granted") return permission === "denied" ? "denied" : "off";
+  }
   const manager = await deps.manager();
   const subscription =
     (await manager.getSubscription()) ??

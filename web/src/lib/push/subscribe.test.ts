@@ -56,3 +56,9 @@ it("removes the current-space registration without revoking browser subscription
   expect(s.calls.at(0)?.init?.method).toBe("DELETE");
   expect(s.permissionRequest).not.toHaveBeenCalled();
 });
+it("keeps a dismissed permission prompt off so the person can try again", async () => {
+  const s = setup("default");
+  expect(await setPushEnabled("s1", "AQID", true, s.browser)).toBe("off");
+  expect(s.calls).toEqual([]);
+  expect(s.subscribe).not.toHaveBeenCalled();
+});
