@@ -34,6 +34,12 @@
     "ai-cap-reached": "Dagens AI-kald er brugt op – prøv igen i morgen.",
     "ai-unavailable": "AI-hjælp er ikke tilgængelig lige nu. Prøv igen senere.",
     "ai-rejected": "AI-svaret kunne ikke bruges. Prøv igen.",
-    "push-not-configured": "Beskeder er ikke sat op her."
+    "push-not-configured": "Beskeder er ikke sat op her.",
+    "source-not-manual": "Du kan kun taste målinger ind, når målingerne er sat til Manuelt. Ret det under Indstillinger.",
+    "reading-exists": "Der er allerede en måling fra sensoren på det tidspunkt. Vælg et andet tidspunkt.",
+    "reading-out-of-window": "Tidspunktet skal være inden for det sidste døgn.",
+    "source-url-invalid": "Adressen skal begynde med https:// og må ikke indeholde ? eller #. Tjek den og prøv igen.",
+    "contribution-unavailable": "Det kan ikke lade sig gøre lige nu. Prøv igen om lidt.",
+    "contribution-rejected": "Open Food Facts tog ikke imod ændringen. Prøv igen senere."
   }
 }

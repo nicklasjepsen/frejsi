@@ -32,6 +32,12 @@ describe("ApiError", () => {
       "ai-unavailable",
       "ai-rejected",
       "push-not-configured",
+      "source-not-manual",
+      "reading-exists",
+      "reading-out-of-window",
+      "source-url-invalid",
+      "contribution-unavailable",
+      "contribution-rejected",
     ]);
   });
 

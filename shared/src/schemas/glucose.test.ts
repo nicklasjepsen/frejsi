@@ -4,7 +4,10 @@ import {
   ConnectSourceRequest,
   ConnectSourceResult,
   GlucoseSourceConfig,
+  GlucoseSourceType,
   GlucoseUnit,
+  ManualReadingRequest,
+  NightscoutCredential,
   Reading,
   SourceStatus,
   Trend,
@@ -57,10 +60,20 @@ describe("GlucoseSourceConfig", () => {
     ).toBe(true);
   });
 
-  it("rejects an unknown type and an unknown region", () => {
+  it("narrows the three variants and rejects shapes that belong to another", () => {
+    expect(
+      GlucoseSourceConfig.safeParse({ type: "nightscout", secretRef: "glucose-s1" }).success,
+    ).toBe(true);
+    expect(GlucoseSourceConfig.safeParse({ type: "manual" }).success).toBe(true);
+    expect(GlucoseSourceConfig.safeParse({ type: "nightscout" }).success).toBe(false);
+    expect(GlucoseSourceConfig.safeParse({ type: "manual", secretRef: "x" }).success).toBe(false);
     expect(
       GlucoseSourceConfig.safeParse({ type: "nightscout", region: "eu", secretRef: "x" }).success,
     ).toBe(false);
+    expect(GlucoseSourceConfig.safeParse({ type: "libre", secretRef: "x" }).success).toBe(false);
+  });
+
+  it("rejects an unknown region", () => {
     expect(
       GlucoseSourceConfig.safeParse({ type: "dexcom-share", region: "dk", secretRef: "x" }).success,
     ).toBe(false);
@@ -105,5 +118,79 @@ describe("ConnectSourceRequest and ConnectSourceResult", () => {
     ).toBe(false);
     expect(ConnectSourceResult.safeParse({ result: "maybe" }).success).toBe(false);
     expect(ConnectSourceResult.safeParse({ result: "ok" }).success).toBe(false);
+  });
+});
+
+describe("GlucoseSourceType", () => {
+  it("accepts nightscout and manual", () => {
+    expect(GlucoseSourceType.options).toEqual(["dexcom-share", "nightscout", "manual"]);
+  });
+});
+
+describe("NightscoutCredential", () => {
+  const url = "https://example-ns.example.invalid";
+  it("accepts an https URL with exactly one of token and apiSecret", () => {
+    expect(NightscoutCredential.safeParse({ url, token: "t-123" }).success).toBe(true);
+    expect(NightscoutCredential.safeParse({ url, apiSecret: "twelve-chars" }).success).toBe(true);
+    expect(NightscoutCredential.safeParse({ url: `${url}/base/`, token: "t" }).success).toBe(true);
+  });
+
+  it("rejects http, a query, a fragment, userinfo, both secrets and neither", () => {
+    const bad = [
+      { url: "http://example-ns.example.invalid", token: "t" },
+      { url: `${url}/?token=abc`, token: "t" },
+      { url: `${url}/#x`, token: "t" },
+      { url: "https://user:pw@example-ns.example.invalid", token: "t" },
+      { url: "https://user@example-ns.example.invalid", token: "t" },
+      { url, token: "t", apiSecret: "s" },
+      { url },
+      { url, token: "" },
+      { url: "not a url", token: "t" },
+    ];
+    for (const candidate of bad) {
+      expect(NightscoutCredential.safeParse(candidate).success, JSON.stringify(candidate)).toBe(
+        false,
+      );
+    }
+  });
+});
+
+describe("ConnectSourceRequest union", () => {
+  it("accepts the nightscout and manual variants", () => {
+    expect(
+      ConnectSourceRequest.safeParse({
+        type: "nightscout",
+        spaceId: "s1",
+        url: "https://example-ns.example.invalid",
+        token: "t",
+      }).success,
+    ).toBe(true);
+    expect(ConnectSourceRequest.safeParse({ type: "manual", spaceId: "s1" }).success).toBe(true);
+  });
+
+  it("rejects nightscout with http, with both secrets, with neither, and a region on it", () => {
+    const base = { type: "nightscout", spaceId: "s1", url: "https://example-ns.example.invalid" };
+    expect(
+      ConnectSourceRequest.safeParse({ ...base, url: "http://x.example.invalid", token: "t" })
+        .success,
+    ).toBe(false);
+    expect(ConnectSourceRequest.safeParse({ ...base, token: "t", apiSecret: "s" }).success).toBe(
+      false,
+    );
+    expect(ConnectSourceRequest.safeParse(base).success).toBe(false);
+  });
+});
+
+describe("ManualReadingRequest", () => {
+  it("defaults ts to now and requires a unit", () => {
+    const parsed = ManualReadingRequest.parse({ value: 6.2, unit: "mmol" });
+    expect(Math.abs(Date.parse(parsed.ts) - Date.now())).toBeLessThan(5000);
+    expect(ManualReadingRequest.safeParse({ value: 6.2 }).success).toBe(false);
+    expect(ManualReadingRequest.safeParse({ value: 6.2, unit: "mg/dL" }).success).toBe(false);
+  });
+
+  it("keeps a given ts", () => {
+    const ts = "2026-10-15T10:00:00.000Z";
+    expect(ManualReadingRequest.parse({ ts, value: 110, unit: "mgdl" }).ts).toBe(ts);
   });
 });
