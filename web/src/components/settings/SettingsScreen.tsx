@@ -4,7 +4,7 @@
 // pull in the Prisma client or App Insights that the index exports (plan §2; see routing.ts).
 import type { ApiErrorCode, SpaceSettings } from "@frejsi/shared";
 import { mgdlToMmol, mmolToMgdl } from "@frejsi/shared/glucose/units";
-import { GlucoseSourceType, GlucoseUnit } from "@frejsi/shared/schemas/glucose";
+import { GlucoseUnit } from "@frejsi/shared/schemas/glucose";
 import { Locale } from "@frejsi/shared/schemas/settings";
 import { useFormatter, useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
@@ -15,6 +15,7 @@ import { Avatar } from "@/components/ui/Avatar";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Notice } from "@/components/ui/Notice";
+import { SETTINGS_SOURCE_TYPES } from "./source-types";
 import { localeHref, type AppLocale } from "@/lib/i18n/routing";
 import { formatClock } from "@/lib/i18n/time";
 
@@ -218,7 +219,7 @@ export function SettingsScreen({ locale, data, now, api = settingsApi() }: Setti
                 <Row title={t("source.manual")} sub={t("comingLater")} />
               </Card>
               <div className={cx(styles.sourceCards, styles.desktopOnly)}>
-                {GlucoseSourceType.options.map((type) => {
+                {SETTINGS_SOURCE_TYPES.map((type) => {
                   const selected = type === source.type;
                   return (
                     <div
