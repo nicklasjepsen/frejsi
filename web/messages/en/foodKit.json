@@ -14,5 +14,6 @@
   "carbs": "{amount} g carbohydrate",
   "per100g": "{amount} g per 100 g",
   "portion": "{label} · {amount} g",
-  "search": "Search"
+  "search": "Search",
+  "estimateNotice": "This is a guess. An adult needs to look at it before you use the number."
 }

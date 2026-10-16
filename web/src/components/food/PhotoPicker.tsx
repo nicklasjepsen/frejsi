@@ -1,12 +1,20 @@
 "use client";
 import { useTranslations } from "next-intl";
-import { useRef, useState, type ChangeEvent } from "react";
+import { useRef, useState, type ReactNode, type ChangeEvent } from "react";
 import { downscale } from "@/lib/photos/downscale";
 import { Button } from "../ui/Button";
 import styles from "./food.module.css";
 
 /** Prepares bytes for local preview. The caller uploads only when the form is saved. */
-export function PhotoPicker({ onPhoto }: { onPhoto: (bytes: Uint8Array) => void }) {
+export function PhotoPicker({
+  onPhoto,
+  renderCapture,
+  cameraOnly = false,
+}: {
+  onPhoto: (bytes: Uint8Array) => void;
+  renderCapture?: (open: () => void, busy: boolean) => ReactNode;
+  cameraOnly?: boolean;
+}) {
   const t = useTranslations("foodKit");
   const capture = useRef<HTMLInputElement>(null);
   const file = useRef<HTMLInputElement>(null);
@@ -29,12 +37,18 @@ export function PhotoPicker({ onPhoto }: { onPhoto: (bytes: Uint8Array) => void 
   }
   return (
     <div className={styles.picker} aria-busy={busy}>
-      <Button variant="secondary" onClick={() => capture.current?.click()} disabled={busy}>
-        {t("takePhoto")}
-      </Button>
-      <Button variant="secondary" onClick={() => file.current?.click()} disabled={busy}>
-        {t("attachPhoto")}
-      </Button>
+      {renderCapture ? (
+        renderCapture(() => capture.current?.click(), busy)
+      ) : (
+        <Button variant="secondary" onClick={() => capture.current?.click()} disabled={busy}>
+          {t("takePhoto")}
+        </Button>
+      )}
+      {!cameraOnly && (
+        <Button variant="secondary" onClick={() => file.current?.click()} disabled={busy}>
+          {t("attachPhoto")}
+        </Button>
+      )}
       <input
         hidden
         ref={capture}

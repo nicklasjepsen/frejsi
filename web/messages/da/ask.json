@@ -1,0 +1,22 @@
+{
+  "title": "Dit billede",
+  "looksLike": "Det ligner",
+  "guess": "Et gæt · ikke tjekket",
+  "amount": "ca. {carbs} g",
+  "uncertain": "usikkert",
+  "total": "I alt",
+  "ask": "Spørg en voksen",
+  "carers": "{carers} får besked med det samme",
+  "sent": "Sendt til {carers}",
+  "fallback": "Spørg {carers} – de kan hjælpe dig",
+  "adults": "en voksen",
+  "busy": "Kigger på dit billede …",
+  "unavailable": "AI-hjælp er ikke tilgængelig lige nu",
+  "failed": "Det blev ikke gemt – prøv igen",
+  "photoAlt": "Din tallerken",
+  "sending": "Sender …",
+  "back": "Tilbage",
+  "portionLabel": "1 tallerken",
+  "noCarers": "Spørg en voksen om hjælp til at tjekke billedet",
+  "saved": "Gemt til gennemgang"
+}

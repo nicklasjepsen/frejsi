@@ -3,6 +3,7 @@
 // and one key below (docs/agent-workflow.md §3).
 import accent from "./accent.json";
 import app from "./app.json";
+import ask from "./ask.json";
 import chart from "./chart.json";
 import eat from "./eat.json";
 import errors from "./errors.json";
@@ -32,6 +33,7 @@ import welcome from "./welcome.json";
 const messages = {
   accent,
   app,
+  ask,
   chart,
   eat,
   errors,

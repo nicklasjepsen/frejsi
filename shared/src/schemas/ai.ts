@@ -14,8 +14,9 @@ const state = z.enum(["ready", "pending", "off", "cap", "unavailable"]);
 const questions = z.array(z.string().min(10).max(240)).max(5);
 const photoDataUrl = z
   .string()
-  .max(8_000_000)
-  .regex(/^data:image\/jpeg;base64,(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/)
+  .max("data:image/jpeg;base64,".length + 4 * Math.ceil((8 * 1024 * 1024) / 3))
+  .regex(/^data:image\/jpeg;base64,[A-Za-z0-9+/]*={0,2}$/)
+  .refine((value) => (value.length - "data:image/jpeg;base64,".length) % 4 === 0)
   .refine((value) => value.length > "data:image/jpeg;base64,".length);
 
 export const AiProviderId = z.enum(["anthropic", "azure-openai", "ollama"]);

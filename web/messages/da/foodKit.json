@@ -14,5 +14,6 @@
   "carbs": "{amount} g kulhydrat",
   "per100g": "{amount} g pr. 100 g",
   "portion": "{label} · {amount} g",
-  "search": "Søg"
+  "search": "Søg",
+  "estimateNotice": "Det er et gæt. En voksen skal kigge på det, før du bruger tallet."
 }
