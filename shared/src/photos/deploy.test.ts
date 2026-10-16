@@ -52,10 +52,11 @@ fi
       PHOTO_DISCOVERED: discovered,
       FAKE_LOG: log,
       FAKE_LOG_DIR: path.join(dir, "log"),
-      FAKE_EXISTING_SECRETS: `database-url web-pubsub-connection-string bootstrap-token${existing ? " blob-connection-string" : ""}`,
+      FAKE_EXISTING_SECRETS: `database-url web-pubsub-connection-string bootstrap-token vapid-private-key vapid-public-key${existing ? " blob-connection-string" : ""}`,
       AZURE_SUBSCRIPTION_ID: "00000000-0000-0000-0000-000000000000",
       AZURE_RESOURCE_GROUP: "fictional",
       APP_VERSION: "v0.2.0",
+      ALERT_EMAIL: "alerts@frejsi.example",
       PHOTOS_STORAGE_ACCOUNT: account,
     },
   });

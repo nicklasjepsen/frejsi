@@ -45,6 +45,8 @@ case "$cmd" in
       database-url) echo 'sqlserver://sql-frejsi-abc.database.windows.net:1433;database=frejsi;user=frejsi_app;password=FAKEDBPASSWORD;encrypt=true' ;;
       web-pubsub-connection-string) echo 'Endpoint=https://wps-frejsi-abc.webpubsub.azure.com;AccessKey=FAKEWPSKEY;Version=1.0;' ;;
       bootstrap-token) echo FAKEBOOTSTRAPTOKEN ;;
+      vapid-private-key) printf '%s\n' "${FAKE_VAPID_PRIVATE:-FICTIONAL_VAPID_PRIVATE}" ;;
+      vapid-public-key) echo FICTIONAL_VAPID_PUBLIC ;;
       anthropic-api-key|voyage-api-key|azure-openai-*|ollama-*|ai-cache-embed-provider) echo "FICTIONAL_AI_$(arg -n)" ;;
       *) echo "fake az: unknown secret $(arg -n)" >&2; exit 3 ;;
     esac ;;

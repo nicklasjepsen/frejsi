@@ -256,6 +256,33 @@ const aiBoundaryRule = {
 
 export const boundaries = [
   {
+    name: "frejsi/boundaries/push",
+    files: ["**/*.ts", "**/*.tsx", "**/*.mts", "**/*.cts"],
+    plugins: {
+      "frejsi-push": {
+        rules: {
+          vendor: {
+            meta: { type: "problem", schema: [] },
+            create(context) {
+              if (context.filename.replaceAll("\\", "/").endsWith("/shared/src/push/sink.ts"))
+                return {};
+              return {
+                Literal(node) {
+                  if (typeof node.value === "string" && /^web-push(?:\/|$)/.test(node.value))
+                    context.report({
+                      node,
+                      message: "Only WebPushSink imports web-push; publish through emit().",
+                    });
+                },
+              };
+            },
+          },
+        },
+      },
+    },
+    rules: { "frejsi-push/vendor": "error" },
+  },
+  {
     name: "frejsi/boundaries/ai",
     files: ["**/*.ts", "**/*.tsx", "**/*.mts", "**/*.cts"],
     plugins: { "frejsi-ai": { rules: { boundaries: aiBoundaryRule } } },

@@ -398,3 +398,26 @@ $0.07/week; normalisation and embeddings add cents per month. A full live eval r
 These are planning estimates, not a billing guarantee; model prices and input sizes can change.
 No production keys are assumed present and tests use fictional fixtures with injected transports,
 or the existing `FAKE_AI_PROVIDER=1` registry.
+
+### Browser push for photo questions
+
+On a release, `deploy.sh` generates a P-256 VAPID pair into Key Vault secrets
+`vapid-private-key` and `vapid-public-key` once. Later releases reuse them; if a release stopped
+between the two writes, the public half is derived from the saved private half. A public half
+without its private half fails the release rather than rotating subscriptions silently.
+The script writes `VAPID_PRIVATE_KEY`, `VAPID_PUBLIC_KEY` and `VAPID_SUBJECT` to SWA app settings
+through private files. The subject is `mailto:` plus the existing `ALERT_EMAIL` repository secret,
+passed into the deploy step. No extra Azure resource is provisioned. Keep the pair across releases;
+rotating it requires every browser to subscribe again. Keys never enter a build-time public variable.
+
+Owners and carers opt in per signed-in browser under Settings → AI help. The public key is served
+at runtime by the authenticated AI usage route. A subscription is tied to the current session;
+removing that device cascades its registrations. Only photo questions trigger notifications,
+with the dish's approximate carbs and a library link. Browser subscriptions support the Chrome/FCM, Firefox, Safari and Windows notification services;
+arbitrary hosts and ports are refused before registration and delivery to prevent outbound proxying.
+Delivery uses the
+[web-push transport](https://github.com/web-push-libs/web-push); 404/410 registrations are removed,
+other failures are counted, and delivery logs contain counts and outcome codes only.
+
+`bash infra/deploy.test.sh` exercises generation, reuse, failed reads and silent settings delivery
+against stub commands. It never contacts Azure.
