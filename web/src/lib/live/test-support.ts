@@ -14,6 +14,7 @@ type Row = Record<string, unknown>;
 export interface FakeUser {
   id: string;
   name: string;
+  simpleMode?: boolean;
   memberships: { spaceId: string; role: Role }[];
 }
 
@@ -27,7 +28,7 @@ export class FakeLiveDb {
   users: FakeUser[] = [];
   sessions: { id: string; userId: string }[] = [];
   spaces: Row[] = [];
-  readings: { spaceId: string; ts: Date; mmol: number; trend: string }[] = [];
+  readings: { spaceId: string; ts: Date; mmol: number; trend: string; source?: string }[] = [];
   events: { spaceId: string; seq: number; type: string; payload: string; ts: Date }[] = [];
   readonly updates: string[] = [];
   /** Runs inside `event.findMany`, before the rows are read: a write that commits mid-query. */
@@ -95,7 +96,7 @@ export class FakeLiveDb {
           user: {
             id: user.id,
             name: user.name,
-            simpleMode: false,
+            simpleMode: user.simpleMode ?? false,
             accent: "olive",
             locale: "da",
             memberships: user.memberships.map((m) => ({ ...m, userId: user.id })),
