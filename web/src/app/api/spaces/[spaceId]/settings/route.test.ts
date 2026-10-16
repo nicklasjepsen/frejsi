@@ -55,6 +55,7 @@ beforeEach(() => {
   });
 });
 afterEach(() => {
+  vi.unstubAllEnvs();
   vi.restoreAllMocks();
   vi.useRealTimers();
 });
@@ -84,6 +85,7 @@ describe("GET /api/spaces/:id/settings", () => {
     const res = await get("carer");
     expect(res.status).toBe(200);
     expect(await res.json()).toEqual({
+      aiEnabled: false,
       name: "Example space",
       timezone: "Europe/Copenhagen",
       glucoseUnit: "mmol",
@@ -104,6 +106,30 @@ describe("GET /api/spaces/:id/settings", () => {
 });
 
 describe("PATCH /api/spaces/:id/settings", () => {
+  it("opts in with a configured provider, persists both fields and emits; off still works after keys disappear", async () => {
+    vi.stubEnv("FAKE_AI_PROVIDER", "1");
+    const res = await patch("owner", { aiEnabled: true, aiProvider: "anthropic" });
+    expect(res.status).toBe(200);
+    expect(await res.json()).toMatchObject({ aiEnabled: true, aiProvider: "anthropic" });
+    expect(fake.rows("space")[0]).toMatchObject({ aiEnabled: true, aiProvider: "anthropic" });
+    expect(events).toEqual([
+      { spaceId: "s1", type: "space.updated", payload: { fields: ["aiEnabled", "aiProvider"] } },
+    ]);
+    vi.stubEnv("FAKE_AI_PROVIDER", "0");
+    vi.stubEnv("ANTHROPIC_API_KEY", "");
+    expect((await patch("owner", { aiEnabled: false })).status).toBe(200);
+    expect(fake.rows("space")[0]).toMatchObject({ aiEnabled: false });
+  });
+
+  it("refuses an unconfigured provider and enabling without one without writing", async () => {
+    vi.stubEnv("FAKE_AI_PROVIDER", "0");
+    vi.stubEnv("ANTHROPIC_API_KEY", "");
+    expect(
+      await (await patch("owner", { aiEnabled: true, aiProvider: "anthropic" })).json(),
+    ).toMatchObject({ error: { code: "ai-not-configured" } });
+    expect((await patch("owner", { aiEnabled: true })).status).toBe(400);
+    expect(events).toEqual([]);
+  });
   it("lets an owner change the unit and the target range, emits space.updated and answers with the new values", async () => {
     const res = await patch("owner", { glucoseUnit: "mgdl", targetLow: 3.9, targetHigh: 9.5 });
     expect(res.status).toBe(200);

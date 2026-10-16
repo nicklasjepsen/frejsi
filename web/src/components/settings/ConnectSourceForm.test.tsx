@@ -26,6 +26,7 @@ function fakeApi(answer: () => Response) {
 }
 
 const settings = {
+  aiEnabled: false,
   name: "Almas rum",
   timezone: "Europe/Copenhagen",
   glucoseUnit: "mmol",

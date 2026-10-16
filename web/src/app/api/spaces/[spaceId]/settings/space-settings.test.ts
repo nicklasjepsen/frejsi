@@ -44,6 +44,7 @@ describe("toSpaceSettings", () => {
         lastReadingAt: new Date("2026-10-15T13:13:00.000Z"),
       }),
     ).toEqual({
+      aiEnabled: false,
       name: "Example space",
       timezone: "Europe/Copenhagen",
       glucoseUnit: "mgdl",

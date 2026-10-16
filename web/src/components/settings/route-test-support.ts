@@ -19,6 +19,8 @@ export const USERS = { owner: "u-owner", carer: "u-carer", viewer: "u-viewer", s
 export function seedSpace(fake: FakeAuthDb): void {
   const expiresAt = new Date(T0.getTime() + 60 * 60 * 1000);
   const space = {
+    aiEnabled: false,
+    aiProvider: null,
     timezone: "Europe/Copenhagen",
     glucoseUnit: "mmol",
     targetLow: 4,

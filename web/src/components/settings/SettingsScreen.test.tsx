@@ -59,6 +59,7 @@ const viewer: SettingsPerson = {
 };
 
 const space: SpaceSettings = {
+  aiEnabled: false,
   name: "Almas rum",
   timezone: "Europe/Copenhagen",
   glucoseUnit: "mmol",
