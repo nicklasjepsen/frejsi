@@ -1,8 +1,9 @@
 import { describe, expect, expectTypeOf, it } from "vitest";
 
-import type { GlucoseSourceType } from "../schemas/glucose";
+import type { PolledSourceType } from "../schemas/glucose";
 import { DexcomShareSource } from "./dexcom-share/source";
 import { FakeGlucoseSource } from "./fake";
+import { NightscoutSource } from "./nightscout/source";
 import type { GlucoseSource } from "./types";
 
 /**
@@ -31,11 +32,11 @@ interface Registered {
 }
 
 /**
- * One entry per `GlucoseSourceType` (the poller's `ADAPTERS` picks a class by the same key) plus
+ * One entry per polled source type (`manual` has no adapter; the poller's `ADAPTERS` picks a class by the same key) plus
  * the fake used by the seed, the CLI and tests. A source type added to the schema fails to compile
  * here until its adapter is listed.
  */
-const SOURCES: Record<GlucoseSourceType | "fake", Registered> = {
+const SOURCES: Record<PolledSourceType | "fake", Registered> = {
   "dexcom-share": {
     make: () =>
       new DexcomShareSource({
@@ -49,6 +50,21 @@ const SOURCES: Record<GlucoseSourceType | "fake", Registered> = {
       "session", // the cached session id, or one login shared by concurrent fetches
       "login", // authenticate + login: two allow-listed POSTs
       "readLatest", // the allow-listed latest-values read
+      "request", // the one path to the transport, which holds the allow-list
+      "decode", // parses a response body
+      "fetch", // the injected fetch; only the transport calls it (lint)
+      "now", // the injected clock
+    ],
+  },
+  nightscout: {
+    make: () =>
+      new NightscoutSource({
+        url: "https://example-ns.example.invalid",
+        token: "<fixture-token>",
+        fetch: unreachable,
+      }),
+    members: [
+      ...READ_ONLY_METHODS,
       "request", // the one path to the transport, which holds the allow-list
       "decode", // parses a response body
       "fetch", // the injected fetch; only the transport calls it (lint)
