@@ -215,6 +215,43 @@ describe("AppShell · normal mode (Main, Nu-Desktop)", () => {
   });
 });
 
+describe("AppShell · the phone tab bar stays at the bottom of the screen", () => {
+  const css = readFileSync(path.join(import.meta.dirname, "shell.module.css"), "utf8");
+  const block = (selector: string, source = css) => {
+    const start = source.indexOf(selector);
+    expect(start, selector).toBeGreaterThanOrEqual(0);
+    return source.slice(source.indexOf("{", start), source.indexOf("}", start));
+  };
+
+  it("fixes the bar to the viewport bottom with the home-indicator inset, and pads the page by its height", () => {
+    const tabs = block(".tabs {");
+    expect(tabs).toMatch(/position: fixed[\s\S]*left: 0[\s\S]*right: 0[\s\S]*bottom: 0/);
+    expect(tabs).toContain("height: var(--phone-tabs-height)");
+    expect(tabs).toContain("env(safe-area-inset-bottom)");
+    expect(block(".shell {")).toMatch(
+      /--phone-tabs-height: calc\(1px \+ 10px \+ 48px \+ max\(28px, env\(safe-area-inset-bottom\)\)\)/,
+    );
+    expect(block('.shell[data-variant="simple"] {')).toContain("12px + 56px");
+    expect(block(".main {")).toContain("calc(24px + var(--phone-tabs-height))");
+  });
+
+  it("marks the shell chromeless on the picker, which zeroes the bar height the page is padded by", () => {
+    mount();
+    expect(screen.getByTestId("app-shell")).not.toHaveAttribute("data-chromeless");
+    cleanup();
+    navigation.pathname = "/da/eat";
+    mount({ user: { ...base.user, simpleMode: true } });
+    expect(screen.getByTestId("app-shell")).toHaveAttribute("data-chromeless", "true");
+    expect(block('.shell[data-chromeless="true"] {')).toContain("--phone-tabs-height: 0px");
+  });
+
+  it("has no bar from 1280 px: hidden, and nothing padded for it", () => {
+    const desktop = css.slice(css.indexOf("@media (min-width: 1280px)"));
+    expect(block(".shell {", desktop)).toContain("--phone-tabs-height: 0px");
+    expect(desktop).toMatch(/\.tabs \{\s*display: none/);
+  });
+});
+
 describe("AppShell · module boundaries", () => {
   it("client modules export components only: a function from a 'use client' file cannot be called on the server", () => {
     const dir = import.meta.dirname;

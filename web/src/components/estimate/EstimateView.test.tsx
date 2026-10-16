@@ -45,7 +45,10 @@ it("renders only back and ask controls, approximate items, low confidence and th
     screen.getByText("This is a guess. An adult needs to look at it before you use the number."),
   ).toBeVisible();
   expect(screen.getByText("Rowan and Sky will be notified straight away")).toBeVisible();
-  expect(screen.getAllByRole("button").map((b) => b.textContent)).toEqual(["←", "Ask an adult"]);
+  expect(
+    screen.getAllByRole("button").map((b) => b.getAttribute("aria-label") ?? b.textContent),
+  ).toEqual(["Back", "Ask an adult"]);
+  expect(screen.getByRole("button", { name: "Back" })).toHaveAttribute("data-size", "simple");
   expect(screen.queryByRole("spinbutton")).toBeNull();
 });
 it.each([true, false])(

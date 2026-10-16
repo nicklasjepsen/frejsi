@@ -42,9 +42,10 @@
 .list li {
   border-bottom: 1px solid var(--hairline);
 }
+/* Sticks just above the shell's fixed tab bar (0 on desktop, where there is none). */
 .phoneTotal {
   position: sticky;
-  bottom: 0;
+  bottom: var(--phone-tabs-height, 0px);
   margin: 0 calc(-1 * var(--phone-gutter));
 }
 
@@ -60,7 +61,7 @@
 }
 .confirmHeader {
   display: grid;
-  grid-template-columns: 44px 1fr auto;
+  grid-template-columns: 48px 1fr auto;
   align-items: center;
   gap: 8px;
   padding: var(--phone-safe-top) 16px 0 12px;
@@ -76,16 +77,6 @@
   margin: 0;
   font-size: 13px;
   color: var(--text-muted);
-}
-.iconButton {
-  width: 44px;
-  height: 44px;
-  border: 0;
-  border-radius: 50%;
-  background: none;
-  color: var(--text-muted);
-  font-size: 22px;
-  cursor: pointer;
 }
 .cancel {
   min-height: 44px;

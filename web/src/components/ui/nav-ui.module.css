@@ -30,8 +30,7 @@
 }
 
 .chip:focus-visible,
-.arrow:focus-visible,
-.metaBack:focus-visible {
+.arrow:focus-visible {
   outline: 2px solid var(--accent-base);
   outline-offset: 2px;
 }
@@ -76,20 +75,11 @@
   gap: 8px;
 }
 
-.metaBack {
-  display: flex;
-  align-items: center;
-  justify-content: center;
+/* Holds the BackButton's place when a header has no way back, so the meta line stays centred. */
+.metaSpacer {
   flex-shrink: 0;
-  width: 44px;
-  height: 44px;
-  border-radius: 50%;
-  border: 0;
-  background: transparent;
-  color: var(--text-muted);
-  font-size: 22px;
-  text-decoration: none;
-  cursor: pointer;
+  width: 48px;
+  height: 48px;
 }
 
 .metaLine {
@@ -104,7 +94,7 @@
 .metaTrailing {
   display: flex;
   justify-content: flex-end;
-  min-width: 44px;
+  min-width: 48px;
   font-size: 15px;
 }
 

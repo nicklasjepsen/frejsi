@@ -33,5 +33,6 @@ it("uses existing theme variables for the sheet, parsed rows and desktop panel",
     expect(tokens).toContain(`[data-accent="${accent}"]`);
   expect(css).toContain("min-width: 1280px");
   expect(css).toContain("width: 58px");
-  expect(css).toContain("width: 44px");
+  // The back control is the shared BackButton (ui/back-button.module.css), not a 44 px of its own.
+  expect(css).not.toContain(".back");
 });

@@ -75,10 +75,10 @@
   color: var(--text-muted);
 }
 
-/* The primary "Log et måltid" sits above the tab bar (Main). */
+/* The primary "Log et måltid" sits above the shell's fixed tab bar (Main); 12 px on desktop. */
 .logAction {
   position: sticky;
-  bottom: 12px;
+  bottom: calc(var(--phone-tabs-height, 0px) + 12px);
   margin-top: 8px;
   display: flex;
   flex-direction: column;

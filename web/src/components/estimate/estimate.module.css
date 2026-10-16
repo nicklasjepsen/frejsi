@@ -6,36 +6,19 @@
   max-width: 720px;
   padding: 20px 0 36px;
 }
+/* The BackButton (48 px, 56 in simpleMode) and an empty cell of the same width centre the title. */
 .header {
   display: grid;
-  grid-template-columns: 44px 1fr 44px;
+  grid-template-columns: 48px 1fr 48px;
   gap: 12px;
   align-items: center;
-}
-.header button {
-  width: 44px;
-  height: 44px;
-  border: 0;
-  border-radius: 50%;
-  background: var(--surface);
-  color: var(--text-muted);
-  cursor: pointer;
-  font-size: 24px;
 }
 .header h1 {
   text-align: center;
   font: 600 26px var(--font-display-stack);
 }
 .page[data-simple="true"] .header {
-  grid-template-columns: 48px 1fr 48px;
-}
-.page[data-simple="true"] .header button {
-  width: 48px;
-  height: 48px;
-}
-.header button:focus-visible {
-  outline: 2px solid var(--accent-base);
-  outline-offset: 2px;
+  grid-template-columns: 56px 1fr 56px;
 }
 .photo {
   width: 100%;

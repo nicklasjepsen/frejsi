@@ -11,7 +11,7 @@ import { deleteMeal, updateMeal } from "@/components/meal/api";
 import { BolusTap } from "@/components/meal/BolusTap";
 import { editableItems, EditMealItems, refreshNutrition } from "@/components/meal/EditMealItems";
 import { TotalBar } from "@/components/meal/TotalBar";
-import { Button } from "@/components/ui";
+import { BackButton, Button } from "@/components/ui";
 
 import styles from "./meal-detail.module.css";
 
@@ -132,15 +132,7 @@ export function EditMealSheet({
       }}
     >
       <div className={styles.sheetHeader}>
-        <button
-          type="button"
-          className={styles.sheetBack}
-          aria-label={t("back")}
-          disabled={busy || photoBusy}
-          onClick={onClose}
-        >
-          ←
-        </button>
+        <BackButton onClick={onClose} label={t("back")} disabled={busy || photoBusy} />
         <h2>{t("title")}</h2>
       </div>
       <fieldset className={styles.sheetBody} disabled={busy || written || photoBusy}>

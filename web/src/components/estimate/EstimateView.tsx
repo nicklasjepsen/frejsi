@@ -1,6 +1,7 @@
 "use client";
 import type { PhotoEstimate } from "@frejsi/shared/schemas/ai";
 import { useTranslations } from "next-intl";
+import { BackButton } from "@/components/ui/BackButton";
 import { Button } from "@/components/ui/Button";
 import { Notice } from "@/components/ui/Notice";
 import type { AppLocale } from "@/lib/i18n/routing";
@@ -35,9 +36,12 @@ export function EstimateView({
   return (
     <div className={styles.page} data-simple={simple}>
       <header className={styles.header}>
-        <button type="button" aria-label={t("back")} disabled={sending} onClick={onBack}>
-          ←
-        </button>
+        <BackButton
+          onClick={onBack}
+          label={t("back")}
+          disabled={sending}
+          size={simple ? "simple" : "normal"}
+        />
         <h1>{t("title")}</h1>
         <span />
       </header>

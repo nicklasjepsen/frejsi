@@ -1,12 +1,25 @@
 /* The shell: phone header + bottom tabs under 1280 px, a sidebar from 1280 px (tokens.json#nav). */
 
 .shell {
+  /* The bottom tab bar's height: its hairline, 10 px top padding, 48 px items and the 28 px
+     home-indicator inset or the safe area, whichever is more. `.main` is padded by it so nothing
+     ends up behind the fixed bar, and a page's own sticky bar (Nu's "Log et måltid", the Log
+     total) sits above it. 0 where the bar is not drawn: chromeless screens and from 1280 px. */
+  --phone-tabs-height: calc(1px + 10px + 48px + max(28px, env(safe-area-inset-bottom)));
   min-height: 100vh;
   min-height: 100dvh;
   display: flex;
   flex-direction: column;
   background: var(--ground);
   color: var(--text);
+}
+
+.shell[data-variant="simple"] {
+  --phone-tabs-height: calc(1px + 12px + 56px + max(28px, env(safe-area-inset-bottom)));
+}
+
+.shell[data-chromeless="true"] {
+  --phone-tabs-height: 0px;
 }
 
 .sidebar {
@@ -18,7 +31,7 @@
   min-width: 0;
   display: flex;
   flex-direction: column;
-  padding: 0 var(--phone-gutter) 24px;
+  padding: 0 var(--phone-gutter) calc(24px + var(--phone-tabs-height));
 }
 
 .phoneHeader {
@@ -27,7 +40,6 @@
   justify-content: space-between;
   gap: 12px;
   padding: var(--phone-safe-top) var(--phone-gutter) 0;
-  padding-top: max(var(--phone-safe-top), calc(env(safe-area-inset-top) + 20px));
 }
 
 .phoneHeaderName {
@@ -71,10 +83,17 @@
 }
 
 /* Bottom tabs: 10/8/28 padding, 64 px items, 26 px icons, 12 px labels; the active tab in the
-   accent's strong shade at 700. */
+   accent's strong shade at 700. Fixed to the viewport, not sticky: sticky pins only while its
+   containing block (the shell) reaches the viewport bottom and only against the layout viewport,
+   and on iOS the dynamic toolbar, `100dvh` and the `100vh` body let the two drift apart, so the bar
+   scrolled away with the page. Fixed depends on neither. Below every overlay (z 5 and up). */
 .tabs {
-  position: sticky;
+  position: fixed;
+  left: 0;
+  right: 0;
   bottom: 0;
+  z-index: 3;
+  height: var(--phone-tabs-height);
   display: flex;
   justify-content: space-around;
   align-items: flex-start;
@@ -402,6 +421,7 @@
 /* Desktop from 1280 px: the sidebar appears, the phone header and tabs go. */
 @media (min-width: 1280px) {
   .shell {
+    --phone-tabs-height: 0px;
     flex-direction: row;
     align-items: stretch;
   }

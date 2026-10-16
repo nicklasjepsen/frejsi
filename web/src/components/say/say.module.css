@@ -22,16 +22,6 @@
   margin: 0;
   font: 600 24px/1.2 var(--font-display-stack);
 }
-.back {
-  width: 44px;
-  height: 44px;
-  border: 0;
-  border-radius: 50%;
-  background: var(--surface-sunken);
-  color: var(--text);
-  font-size: 24px;
-  cursor: pointer;
-}
 .mic {
   display: grid;
   place-items: center;
