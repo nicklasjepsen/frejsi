@@ -34,6 +34,12 @@
     "ai-cap-reached": "Today’s AI calls are used up – try again tomorrow.",
     "ai-unavailable": "AI help is unavailable right now. Try again later.",
     "ai-rejected": "The AI response could not be used. Try again.",
-    "push-not-configured": "Notifications are not set up here."
+    "push-not-configured": "Notifications are not set up here.",
+    "source-not-manual": "You can only type readings in when readings are set to Manual. Change it in Settings.",
+    "reading-exists": "There is already a sensor reading at that time. Choose another time.",
+    "reading-out-of-window": "The time must be within the last day.",
+    "source-url-invalid": "The address must start with https:// and must not contain ? or #. Check it and try again.",
+    "contribution-unavailable": "That isn't possible right now. Try again in a little while.",
+    "contribution-rejected": "Open Food Facts didn't accept the change. Try again later."
   }
 }

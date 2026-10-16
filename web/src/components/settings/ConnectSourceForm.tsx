@@ -58,7 +58,7 @@ export function ConnectSourceForm({
     setBusy(true);
     setError(null);
     try {
-      await api.connectSource(spaceId, { type: sourceType, region, username, password });
+      await api.connectSource(spaceId, { type: "dexcom-share", region, username, password });
       setPassword("");
       router.push(back);
       router.refresh();

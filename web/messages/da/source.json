@@ -2,6 +2,12 @@
   "dexcom-share": {
     "name": "Dexcom Share"
   },
+  "nightscout": {
+    "name": "Nightscout"
+  },
+  "manual": {
+    "name": "Manuelt"
+  },
   "disconnected": "Ingen forbindelse til {source} siden {time}",
   "disconnectedNoTime": "Ingen forbindelse til {source}"
 }

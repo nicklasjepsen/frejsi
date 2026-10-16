@@ -44,7 +44,7 @@ export function toSourceView(row: SpaceSettingsRow, since: string | null): Sourc
   const config = sourceConfigOf(row.glucoseSource);
   return SourceView.parse({
     type: config?.type ?? null,
-    region: config?.region ?? null,
+    region: config && "region" in config ? config.region : null,
     status: row.sourceStatus,
     lastReadingAt: row.lastReadingAt ? row.lastReadingAt.toISOString() : null,
     since,

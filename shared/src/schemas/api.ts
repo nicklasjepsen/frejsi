@@ -29,6 +29,12 @@ export const ApiErrorCode = z.enum([
   "ai-unavailable",
   "ai-rejected",
   "push-not-configured",
+  "source-not-manual",
+  "reading-exists",
+  "reading-out-of-window",
+  "source-url-invalid",
+  "contribution-unavailable",
+  "contribution-rejected",
 ]);
 export type ApiErrorCode = z.infer<typeof ApiErrorCode>;
 
