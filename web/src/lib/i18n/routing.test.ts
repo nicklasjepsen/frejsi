@@ -1,10 +1,11 @@
 import { Locale } from "@frejsi/shared";
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
-  DEFAULT_LOCALE,
+  FALLBACK_LOCALE,
   LOCALES,
   isLocale,
+  defaultLocale,
   localeHref,
   negotiateLocale,
   resolveLocale,
@@ -15,7 +16,7 @@ describe("routing", () => {
   it("knows exactly the locales of the shared contract, da first and default", () => {
     // Duplicated on purpose: the middleware runs on the edge and must not import @frejsi/shared.
     expect([...LOCALES]).toEqual([...Locale.options]);
-    expect(DEFAULT_LOCALE).toBe("da");
+    expect(FALLBACK_LOCALE).toBe("da");
   });
 
   it("isLocale and resolveLocale accept only da and en", () => {
@@ -46,5 +47,34 @@ describe("routing", () => {
     expect(stripLocale("/da/now")).toEqual({ locale: "da", path: "/now" });
     expect(stripLocale("/en")).toEqual({ locale: "en", path: "/" });
     expect(stripLocale("/sv/now")).toEqual({ locale: null, path: "/sv/now" });
+  });
+});
+
+describe("the configured default locale (DEFAULT_LOCALE)", () => {
+  afterEach(() => vi.unstubAllEnvs());
+
+  it("is the documented fallback, da, when the variable is unset, empty or not one of ours", () => {
+    expect(defaultLocale({})).toBe("da");
+    for (const value of ["", "  ", "sv", "EN-GB", "undefined"]) {
+      expect(defaultLocale({ DEFAULT_LOCALE: value }), value).toBe("da");
+    }
+  });
+
+  it("is en when the deployment says so", () => {
+    expect(defaultLocale({ DEFAULT_LOCALE: "en" })).toBe("en");
+    expect(defaultLocale({ DEFAULT_LOCALE: " en " })).toBe("en");
+  });
+
+  it("reads process.env at call time, so the setting applies without a rebuild", () => {
+    expect(defaultLocale()).toBe("da");
+    vi.stubEnv("DEFAULT_LOCALE", "en");
+    expect(defaultLocale()).toBe("en");
+  });
+
+  it("is what resolveLocale gives for anything that is not a locale", () => {
+    vi.stubEnv("DEFAULT_LOCALE", "en");
+    expect(resolveLocale("sv")).toBe("en");
+    expect(resolveLocale(null)).toBe("en");
+    expect(resolveLocale("da")).toBe("da");
   });
 });

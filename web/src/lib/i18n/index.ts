@@ -1,9 +1,10 @@
 export { getMessages, type Messages } from "./messages";
 export {
-  DEFAULT_LOCALE,
+  FALLBACK_LOCALE,
   LOCALES,
   LOCALE_COOKIE,
   LOCALE_HEADER,
+  defaultLocale,
   isLocale,
   localeHref,
   negotiateLocale,

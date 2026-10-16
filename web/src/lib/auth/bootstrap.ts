@@ -5,6 +5,8 @@ import { createHash, timingSafeEqual } from "node:crypto";
 import { HttpError } from "@frejsi/shared";
 import { z } from "zod";
 
+import { defaultLocale } from "@/lib/i18n/routing";
+
 import { resolve, transact, type AuthDeps } from "./core";
 import { createInvite } from "./invites";
 import { addMember } from "./members";
@@ -87,7 +89,9 @@ export async function bootstrapSpace(
       const space = await tx.space.create({
         data: { name: body.spaceName, timezone: body.timezone },
       });
-      const owner = await tx.user.create({ data: { name: body.ownerName } });
+      const owner = await tx.user.create({
+        data: { name: body.ownerName, locale: defaultLocale() },
+      });
       await addMember({ spaceId: space.id, userId: owner.id, role: "owner" }, txDeps);
       const invite = await createInvite(
         {

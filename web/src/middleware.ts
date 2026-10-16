@@ -3,6 +3,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import {
   LOCALE_COOKIE,
   LOCALE_HEADER,
+  defaultLocale,
   localeHref,
   negotiateLocale,
   resolveLocale,
@@ -27,11 +28,16 @@ export function isProtectedPath(path: string): boolean {
   return !PUBLIC_PAGES.some((page) => page === path || path.startsWith(`${page}/`));
 }
 
-/** The locale for a request without one in the URL: last used, then the browser's, then `da`. */
+/**
+ * The locale for a request without one in the URL: last used, then the browser's, then the
+ * deployment's `DEFAULT_LOCALE` (`da` when unset). The setting is read from `process.env` here, which
+ * the Next server provides to the middleware at request time; if a platform ever withholds it, the
+ * fallback is `da`, which is also what an unset variable means, so the worst case is today's behaviour.
+ */
 function preferredLocale(request: NextRequest): AppLocale {
   const remembered = request.cookies.get(LOCALE_COOKIE)?.value;
   if (remembered) return resolveLocale(remembered);
-  return negotiateLocale(request.headers.get("accept-language")) ?? resolveLocale(null);
+  return negotiateLocale(request.headers.get("accept-language")) ?? defaultLocale();
 }
 
 function rememberLocale(response: NextResponse, locale: AppLocale): NextResponse {
@@ -44,7 +50,7 @@ function rememberLocale(response: NextResponse, locale: AppLocale): NextResponse
 }
 
 /**
- * Locale routing (`/` → `/da` by default, `/en` when remembered or preferred; a URL with a locale
+ * Locale routing (`/` → the default locale, `da` unless `DEFAULT_LOCALE` says otherwise, `/en` when remembered or preferred; a URL with a locale
  * keeps it) and a convenience redirect: a request under `(app)` without the session cookie goes
  * to `welcome`. The redirect is not security; the `(app)` layout calls `getSession()` and every
  * route calls `requireRole` (plan §6).

@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { NextRequest } from "next/server";
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { SESSION_COOKIE as AUTH_SESSION_COOKIE } from "@/lib/auth/session";
 
@@ -81,5 +81,32 @@ describe("middleware", () => {
     expect(isProtectedPath("/welcome")).toBe(false);
     expect(isProtectedPath("/invite/x")).toBe(false);
     expect(isProtectedPath("/welcomes")).toBe(true);
+  });
+});
+
+describe("middleware with DEFAULT_LOCALE", () => {
+  afterEach(() => vi.unstubAllEnvs());
+
+  it("lands a first visit with no cookie and no Accept-Language on /en", () => {
+    vi.stubEnv("DEFAULT_LOCALE", "en");
+    expect(location(middleware(request("/")))).toBe("/en/welcome");
+    const signedIn = middleware(request("/now", { cookie: "frejsi_session=abc" }));
+    expect(signedIn.headers.get("location")).toBe("http://localhost:3000/en/now");
+    expect(signedIn.cookies.get("frejsi_locale")?.value).toBe("en");
+  });
+
+  it("still lets the visitor's own signals win: the cookie, then Accept-Language", () => {
+    vi.stubEnv("DEFAULT_LOCALE", "en");
+    expect(location(middleware(request("/", { cookie: "frejsi_locale=da" })))).toBe("/da/welcome");
+    expect(location(middleware(request("/", { acceptLanguage: "da-DK,da;q=0.9" })))).toBe(
+      "/da/welcome",
+    );
+  });
+
+  it("falls back to da when the variable is unset or invalid", () => {
+    for (const value of [undefined, "", "sv", "english"]) {
+      vi.stubEnv("DEFAULT_LOCALE", value);
+      expect(location(middleware(request("/"))), String(value)).toBe("/da/welcome");
+    }
   });
 });

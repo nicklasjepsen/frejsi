@@ -1,10 +1,10 @@
 "use client";
 
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { usePathname } from "next/navigation";
 
 import { Button } from "@/components/ui/Button";
-import { localeHref, stripLocale } from "@/lib/i18n/routing";
+import { localeHref, resolveLocale, stripLocale } from "@/lib/i18n/routing";
 
 /**
  * A kind page in the user's language when a screen fails (plan §9): no stack, no message from the
@@ -13,7 +13,9 @@ import { localeHref, stripLocale } from "@/lib/i18n/routing";
  */
 export default function LocaleError({ reset }: { error: Error; reset: () => void }) {
   const t = useTranslations("errors.page");
-  const locale = stripLocale(usePathname()).locale ?? "da";
+  // The provider's locale is the URL's, validated by the layout; no literal default here.
+  const providerLocale = resolveLocale(useLocale());
+  const locale = stripLocale(usePathname()).locale ?? providerLocale;
   return (
     <main style={{ maxWidth: 560, margin: "0 auto", padding: "80px 24px" }}>
       <h1 style={{ fontSize: 28 }}>{t("title")}</h1>

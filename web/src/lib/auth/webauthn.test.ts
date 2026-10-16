@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { createEmit } from "@frejsi/shared";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { CHALLENGE_TTL_MS } from "./challenges";
 import { appOrigin, rpId } from "./core";
@@ -153,6 +153,28 @@ describe("registration", () => {
     expect(w.events).toEqual([
       { spaceId: "s1", type: "member.joined", payload: { userId: result.userId, role: "carer" } },
     ]);
+  });
+
+  it("gives the new user the deployment's default locale: da, or en with DEFAULT_LOCALE=en", async () => {
+    const first = world();
+    const da = await registerCarer(first);
+    expect(first.fake.rows("user").find((u) => u.id === da.userId)).toMatchObject({ locale: "da" });
+    for (const value of ["", "sv"]) {
+      vi.stubEnv("DEFAULT_LOCALE", value);
+      const w = world();
+      const result = await registerCarer(w);
+      expect(
+        w.fake.rows("user").find((u) => u.id === result.userId),
+        value,
+      ).toMatchObject({
+        locale: "da",
+      });
+    }
+    vi.stubEnv("DEFAULT_LOCALE", "en");
+    const w = world();
+    const result = await registerCarer(w);
+    expect(w.fake.rows("user").find((u) => u.id === result.userId)).toMatchObject({ locale: "en" });
+    vi.unstubAllEnvs();
   });
 
   it("is one transaction: a failure on the session leaves no user, passkey, membership or used invite, and no event", async () => {
