@@ -180,6 +180,8 @@ export async function listFoods(
   let filtered = rows.filter(
     (row) => selected(row, filter) && words.every((word) => row.nameSearch.includes(word)),
   );
+  if (filter === "recent")
+    filtered.sort((a, b) => recentIds.indexOf(a.id) - recentIds.indexOf(b.id));
   if (mode === "semantic" && q.length >= 3) {
     const embed = await deps.searchEmbedding(spaceId, session);
     const embedding = await embed?.(q);
@@ -200,8 +202,6 @@ export async function listFoods(
       );
     }
   }
-  if (filter === "recent")
-    filtered.sort((a, b) => recentIds.indexOf(a.id) - recentIds.indexOf(b.id));
   return { foods: await viewsOf(filtered, deps), counts };
 }
 export async function getFood(
