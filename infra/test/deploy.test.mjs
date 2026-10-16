@@ -79,7 +79,7 @@ test('first release: creates the database user and the Web PubSub secret once, m
   assert.match(sqlFiles, /ALTER ROLE db_owner ADD MEMBER \[frejsi_app\]/);
   assert.doesNotMatch(sqlFiles, /LOGIN/, 'no server login');
   const sqlcmds = r.calls.filter((c) => c.startsWith('sqlcmd'));
-  assert.equal(sqlcmds.length, 1, sqlcmds.join('\n'));
+  assert.equal(sqlcmds.length, 2, sqlcmds.join('\n'));
   assert.match(sqlcmds[0], /-d frejsi /);
   assert.doesNotMatch(calls, /sqlcmd .*-d master/);
   const password = sqlFiles.match(/PASSWORD = N?'([^']+)'/)[1];
@@ -173,7 +173,8 @@ test('never echoes a secret', () => {
 test('later releases: existing secrets are reused, no user is created', () => {
   const r = runDeploy({ env: { FAKE_EXISTING_SECRETS: 'database-url web-pubsub-connection-string bootstrap-token' } });
   assert.equal(r.status, 0, r.output);
-  assert.equal(r.calls.filter((c) => c.startsWith('sqlcmd')).length, 0);
+  assert.equal(r.calls.filter((c) => c.startsWith('sqlcmd')).length, 1);
+  assert.doesNotMatch(readFileSync(path.join(r.logDir, 'sqlcmd-1.sql'), 'utf8'), /CREATE USER|ALTER USER/);
   assert.equal(r.calls.filter((c) => /keyvault secret set/.test(c)).length, 0);
   assert.match(readFileSync(path.join(r.logDir, 'pnpm-database-url'), 'utf8'), /password=FAKEDBPASSWORD/);
 });
@@ -257,4 +258,52 @@ test('retries the connect handler while the new build comes up, and fails the re
   const never = runDeploy({ env: { FAKE_EXISTING_SECRETS: secrets, FAKE_HUB_VALIDATION_FAILURES: '99', DEPLOY_RETRY_SLEEP: '0' } });
   assert.notEqual(never.status, 0);
   assert.match(never.stderr, /connect handler .* never validated/);
+});
+
+const aiNames = ['ANTHROPIC_API_KEY', 'VOYAGE_API_KEY', 'AZURE_OPENAI_ENDPOINT', 'AZURE_OPENAI_API_KEY',
+  'AZURE_OPENAI_DEPLOYMENT_SMALL', 'AZURE_OPENAI_DEPLOYMENT_EVERYDAY', 'AZURE_OPENAI_DEPLOYMENT_INSIGHT',
+  'AZURE_OPENAI_DEPLOYMENT_EMBED', 'OLLAMA_URL', 'OLLAMA_MODEL_SMALL', 'OLLAMA_MODEL_EVERYDAY',
+  'OLLAMA_MODEL_INSIGHT', 'OLLAMA_MODEL_EMBED', 'AI_CACHE_EMBED_PROVIDER'];
+const baseSecrets = 'database-url web-pubsub-connection-string bootstrap-token';
+test('optional AI settings: absent secrets are skipped, present values and references stay off argv and stdout', () => {
+  const absent = runDeploy({ env: { FAKE_EXISTING_SECRETS: baseSecrets } });
+  assert.equal(absent.status, 0, absent.output);
+  const swaAbsent = JSON.parse(readFileSync(path.join(absent.logDir, 'swa-appsettings.json'), 'utf8')).properties;
+  for (const name of aiNames) {
+    assert.ok(!Object.hasOwn(swaAbsent, name));
+    assert.match(absent.output, new RegExp(`Skipping optional AI setting ${name}:`));
+  }
+  const secrets = aiNames.map((name) => name.toLowerCase().replaceAll('_', '-'));
+  const present = runDeploy({ env: { FAKE_EXISTING_SECRETS: `${baseSecrets} ${secrets.join(' ')}` } });
+  assert.equal(present.status, 0, present.output);
+  const swa = JSON.parse(readFileSync(path.join(present.logDir, 'swa-appsettings.json'), 'utf8')).properties;
+  const func = JSON.parse(readFileSync(path.join(present.logDir, 'function-ai-settings.json'), 'utf8'));
+  for (const [index, name] of aiNames.entries()) {
+    assert.equal(swa[name], `FICTIONAL_AI_${secrets[index]}`);
+    assert.equal(func[name], `@Microsoft.KeyVault(SecretUri=https://kv-frejsi-abc.vault.azure.net/secrets/${secrets[index]}/)`);
+    assert.ok(!present.output.includes(swa[name]), `${name} in output`);
+    assert.ok(!present.calls.join('\n').includes(swa[name]), `${name} in argv`);
+  }
+  assert.equal(readFileSync(path.join(present.logDir, 'function-ai-settings-mode'), 'utf8').trim(), '600');
+});
+test('an unreadable or empty optional AI secret stops the deploy before replacing web settings', () => {
+  for (const failure of [{ FAKE_FAIL_AT: 'secret-show:anthropic-api-key' }, { FAKE_SECRET_READS_EMPTY: 'anthropic-api-key' }]) {
+    const r = runDeploy({ env: { FAKE_EXISTING_SECRETS: `${baseSecrets} anthropic-api-key`, ...failure } });
+    assert.notEqual(r.status, 0);
+    assert.match(r.output, /anthropic-api-key/);
+    assert.ok(!existsSync(path.join(r.logDir, 'swa-appsettings.json')));
+  }
+});
+test('raises SQL compatibility to 170 only when lower, after migration and before firewall closure', () => {
+  const r = runDeploy({ env: { FAKE_EXISTING_SECRETS: baseSecrets } });
+  assert.equal(r.status, 0, r.output);
+  const sql = readFileSync(path.join(r.logDir, 'sqlcmd-1.sql'), 'utf8');
+  assert.match(sql, /compatibility_level.*< 170/s);
+  assert.match(sql, /COMPATIBILITY_LEVEL = 170/);
+  assert.match(sql, /QUOTENAME\(DB_NAME\(\)\)/);
+  const migrate = r.calls.findIndex((c) => /^pnpm .*migrate deploy/.test(c));
+  const compatibility = r.calls.findIndex((c) => /^sqlcmd /.test(c));
+  const close = r.calls.findIndex((c) => /firewall-rule delete/.test(c));
+  assert.ok(migrate < compatibility && compatibility < close);
+  assert.match(r.calls[compatibility], /-b/);
 });
