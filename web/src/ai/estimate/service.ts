@@ -11,7 +11,7 @@ import { estimatePhoto } from "@frejsi/shared/ai/estimate/estimate";
 import { guardOutput } from "@frejsi/shared/ai/guard";
 import { AskRequest, EstimateRequest } from "@frejsi/shared/schemas/ai";
 import { FoodCandidate } from "@frejsi/shared/schemas/food";
-import { photoKey } from "@frejsi/shared/photos";
+import type { PhotoStore } from "@frejsi/shared/photos";
 import { aiForSpace } from "@/ai/provider";
 import { assertRole } from "@/lib/auth/session";
 import { addCandidate, setFoodPhoto } from "@/lib/foods";
@@ -80,7 +80,16 @@ export async function askAboutEstimate(
   });
   if (!candidate.success) throw new HttpError(400, "validation");
   if (!deps.photos) throw new HttpError(503, "photo-unavailable");
-  let foodId: string | undefined;
+  const store = deps.photos;
+  let uploadedKey: string | undefined;
+  const photos: PhotoStore = {
+    put: async (key, bytes) => {
+      uploadedKey = key;
+      await store.put(key, bytes);
+    },
+    delete: (key) => store.delete(key),
+    readUrl: (key, size) => store.readUrl(key, size),
+  };
   const queued: { group: string; envelope: EventEnvelope }[] = [];
   const sink = {
     publish: (group: string, envelope: EventEnvelope) => {
@@ -97,11 +106,11 @@ export async function askAboutEstimate(
         const joined = {
           ...deps,
           sources: [...deps.sources, aiSource],
+          photos,
           db: { ...tx, $transaction: <T>(run: (tx: FoodTx) => Promise<T>) => run(tx) },
           sink,
         };
         const food = await addCandidate(spaceId, session, candidate.data, joined);
-        foodId = food.id;
         await setFoodPhoto(spaceId, session, food.id, bytes, joined);
         await emit(spaceId, "estimate.asked", { foodId: food.id, byUserId: session.userId });
         return { foodId: food.id };
@@ -109,9 +118,9 @@ export async function askAboutEstimate(
       { isolationLevel: "Serializable" },
     );
   } catch (error) {
-    if (foodId) {
+    if (uploadedKey) {
       try {
-        await deps.photos.delete(photoKey(spaceId, "foods", foodId));
+        await store.delete(uploadedKey);
       } catch {
         deps.log.warn("estimate.photo-cleanup-failed", { spaceId, code: "photo-unavailable" });
       }
