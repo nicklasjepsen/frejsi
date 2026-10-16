@@ -119,8 +119,11 @@ in [.env.example](../.env.example) (a test keeps that file and the code equal):
 | `OFF_CONTRIBUTE_HOST` | Which Open Food Facts host receives corrections; empty is production, `world.openfoodfacts.net` is the staging host to try first. |
 | `AI_DAILY_CAP`, `AI_EMBED_DAILY_CAP`, `AI_EMBED_BACKFILL_DAILY_CAP` | The per-space daily limits on AI calls. |
 
-In a deployment the release pipeline writes these from repository variables
-([deploy-your-own.md](deploy-your-own.md)).
+In a deployment the release pipeline writes `DEFAULT_LOCALE`, `FOOD_SOURCES`, `OFF_COUNTRY` and
+`OFF_CONTRIBUTE_HOST` from repository variables of the same names
+([deploy-your-own.md](deploy-your-own.md)). The AI caps are read from the process environment and
+the pipeline does not set them, so a deployment runs on the defaults (50, 500 and 2000) unless
+`infra/deploy.sh` is changed to write them.
 
 ### The only Danish defaults, each behind a setting
 
