@@ -387,7 +387,10 @@ const {createECDH} = require('node:crypto');
 const {writeFileSync} = require('node:fs');
 const key = createECDH('prime256v1');
 key.generateKeys();
-writeFileSync(process.argv[2], key.getPrivateKey().toString('base64url'), {mode: 0o600});
+// getPrivateKey() drops leading zero bytes (1 key in 256): pad to the 32 bytes web-push expects.
+const raw = key.getPrivateKey();
+const padded = Buffer.concat([Buffer.alloc(32 - raw.length), raw]);
+writeFileSync(process.argv[2], padded.toString('base64url'), {mode: 0o600});
 NODE
   )
   secret_write_from_file vapid-private-key "$WORK/vapid-private"
