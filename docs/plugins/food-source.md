@@ -36,7 +36,8 @@ flow are the app's.
      never reach for the global one inside the class, so tests can serve fixtures. A `local` source
      takes a loader instead, as `shared/src/food/frida/source.ts` does.
    - `map.ts`: pure functions turning the vendor's response into `FoodCandidate`s, parsed through
-     `FoodCandidate.parse` so a bad row is dropped and not stored. See `shared/src/food/off/map.ts`.
+     `FoodCandidate.safeParse` that returns `null` for a bad row, so one malformed row is dropped and
+     never aborts the lookup or reaches the library. See `shared/src/food/off/map.ts`.
    - `README.md`: what the dataset is, its licence and attribution, the endpoints or files used, and
      what the plugin deliberately ignores. See `shared/src/food/off/README.md`.
    - `source.test.ts` and `lint-boundaries.test.ts` (below).

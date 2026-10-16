@@ -54,9 +54,11 @@ Open a task issue first, with the `plugin:food-source` or `plugin:glucose-source
 - Agents do much of the building here. A lane owns a disjoint set of paths, so two pull requests do
   not edit the same file; if your change needs a file another open pull request owns, say so in the
   pull request and wait for it to merge.
-- The gate agents (a spec guardian, a reviewer and a copy reviewer) and Codex read every line; the
-  owner reads the summary and the gate reports. Answer each thread with the commit that fixes it or
-  the reason it does not, and resolve it. See [the agent workflow](docs/agent-workflow.md).
+- Today `ci` and Codex's GitHub review gate every pull request, and Codex reads every line. Claude
+  Code's gate agents (a spec guardian, a reviewer and a copy reviewer) are off until the pre-1.0
+  audit, when they run once over the whole codebase; they can still be asked for on a single pull
+  request. The owner reads the summary. Answer each thread with the commit that fixes it or the
+  reason it does not, and resolve it. See [the agent workflow](docs/agent-workflow.md).
 - **`ci` (`.github/workflows/ci.yml`) is the only required check.** It is fast on purpose: typecheck,
   lint and unit tests on what changed. Slower suites run at release.
 - Nothing deploys when a pull request merges. A version tag runs the release pipeline.
