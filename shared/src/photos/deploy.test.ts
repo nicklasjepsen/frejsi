@@ -56,7 +56,7 @@ fi
       AZURE_SUBSCRIPTION_ID: "00000000-0000-0000-0000-000000000000",
       AZURE_RESOURCE_GROUP: "fictional",
       APP_VERSION: "v0.2.0",
-      ALERT_EMAIL: "alerts@frejsi.example",
+      ALERT_EMAIL: "alerts@example.invalid",
       PHOTOS_STORAGE_ACCOUNT: account,
     },
   });
