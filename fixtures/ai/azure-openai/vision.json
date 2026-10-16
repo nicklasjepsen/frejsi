@@ -1,0 +1,12 @@
+{
+  "model": "fixture-chat",
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "message": {
+        "role": "assistant",
+        "content": "{\"name\":\"Apple\"}"
+      }
+    }
+  ]
+}

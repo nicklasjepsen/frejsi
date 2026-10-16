@@ -105,7 +105,25 @@ const aiBoundaryRule = {
     const property = (node) =>
       node?.type === "MemberExpression" ? name(node.property) : undefined;
     const report = (node, message) => context.report({ node, message });
+    const vendorLiteral = (node, value) => {
+      if (test || typeof value !== "string") return;
+      const vendors = [
+        ["anthropic", /@anthropic-ai\/sdk|claude-/],
+        ["voyage", /api\.voyageai\.com|voyage-/],
+        ["azure-openai", /\.openai\.azure\.com|text-embedding/],
+        ["ollama", /localhost:11434|127\.0\.0\.1:11434|mxbai/],
+      ];
+      for (const [folder, pattern] of vendors)
+        if (pattern.test(value) && !file.includes(`/shared/src/ai/${folder}/`))
+          report(node, "Vendor SDKs, hosts and model ids stay in their AI adapter.");
+    };
     return {
+      Literal(node) {
+        vendorLiteral(node, node.value);
+      },
+      TemplateElement(node) {
+        vendorLiteral(node, node.value.raw);
+      },
       ImportDeclaration(node) {
         const source = String(node.source.value);
         const names = node.specifiers.map((specifier) => name(specifier.imported));

@@ -330,3 +330,70 @@ Things to know:
   and stays silent. Either leave `WEB_PUBSUB_CONNECTION_STRING` unset (negotiate answers 503 and the
   screens poll), or use a hub of your own whose handler is `tunnel:///api/pubsub` (connect event
   only) and run `awps-tunnel run --hub frejsi --upstream http://localhost:3000`.
+
+## Optional AI adapters (v0.4.0)
+
+AI stays off in production until the owner supplies settings and enables it for a space. A release
+without these secrets succeeds. `deploy.sh` copies only present secrets into SWA app settings using
+mode-600 files and gives the Function App Key Vault references to the same secrets. Missing secrets
+produce one notice per setting; unreadable or empty existing secrets stop the deploy. Values never
+reach command lines or output. The script also raises SQL compatibility to 170 after migrations if
+it is lower, for the `vector(1024)` column; higher levels are preserved.
+
+| App setting | Optional Key Vault secret |
+|---|---|
+| `ANTHROPIC_API_KEY` | `anthropic-api-key` |
+| `VOYAGE_API_KEY` | `voyage-api-key` |
+| `AZURE_OPENAI_ENDPOINT` | `azure-openai-endpoint` |
+| `AZURE_OPENAI_API_KEY` | `azure-openai-api-key` |
+| `AZURE_OPENAI_DEPLOYMENT_SMALL` | `azure-openai-deployment-small` |
+| `AZURE_OPENAI_DEPLOYMENT_EVERYDAY` | `azure-openai-deployment-everyday` |
+| `AZURE_OPENAI_DEPLOYMENT_INSIGHT` | `azure-openai-deployment-insight` |
+| `AZURE_OPENAI_DEPLOYMENT_EMBED` | `azure-openai-deployment-embed` |
+| `OLLAMA_URL` | `ollama-url` |
+| `OLLAMA_MODEL_SMALL` | `ollama-model-small` |
+| `OLLAMA_MODEL_EVERYDAY` | `ollama-model-everyday` |
+| `OLLAMA_MODEL_INSIGHT` | `ollama-model-insight` |
+| `OLLAMA_MODEL_EMBED` | `ollama-model-embed` |
+| `AI_CACHE_EMBED_PROVIDER` | `ai-cache-embed-provider` |
+
+The owner creates the secrets (issue #72), using a protected UTF-8 file rather than putting a value
+in shell history. For example, with a fictional vault name:
+
+```sh
+az keyvault secret set --vault-name kv-frejsi-example --name anthropic-api-key \
+  --file /secure/path/anthropic-api-key --encoding utf-8 --output none
+```
+
+Do this for each setting needed by the selected provider. No adapter provisions Azure resources.
+Azure OpenAI remains inert until an endpoint and everyday deployment are supplied. It uses the key
+when present; otherwise `DefaultAzureCredential` supplies a token (the Function App identity needs
+access to that Azure OpenAI resource; SWA needs a key). Ollama requires a URL reachable from the
+server and an everyday model installed there; localhost refers to the app host, not a family device.
+Small and insight deployments/models default to the configured everyday one if omitted. The
+embedding defaults are `text-embedding-3-small` for Azure and `mxbai-embed-large` for Ollama. An
+Ollama everyday model must support tools and vision for those calls. Unsupported requests fail as
+unavailable; they never switch provider or model silently.
+
+Anthropic uses the plan's role models: Claude Haiku 5.5 (small), Sonnet 5.5 (everyday), Fable 5.1
+(insight). Structured output and strict automatic tool calling run through the SDK. Calls have
+20/30/120-second deadlines by role, and all embeddings have a 10-second deadline. Adapters make
+one attempt without automatic retries; the existing capped provider counts attempts and checks
+outputs. Every embedding response must contain one finite, 1024-dimensional vector per input.
+
+Anthropic embeddings use **Voyage AI**, a separate vendor that receives the family's dish names,
+with `voyage-3.5` at 1024 dimensions. Without `voyage-api-key`, Anthropic advertises no embedding
+capability and search retains its keyword path. The owner's stated assumption accepts Voyage;
+there is no implicit alternate embedding vendor. `AI_CACHE_EMBED_PROVIDER` selects the configured
+provider for shared-cache enrichment; per-space and shared-cache vectors must use the same model
+to be comparable. Fable 5.1 requires the account's 30-day retention setting; issue #72 tracks the
+owner's confirmation. Weekly input is statistics and family-typed meal titles, never raw readings.
+
+The plan's informational budget at the default caps (`AI_DAILY_CAP=50`, `AI_EMBED_DAILY_CAP=500`,
+`AI_EMBED_BACKFILL_DAILY_CAP=2000`) is about **$3/month per space** for a family logging ten times a
+day, up to approximately **$15/month** if all 50 everyday calls are used daily. A parse uses roughly
+three completions ($0.011), a photo estimate $0.007, a meal sentence $0.01, a weekly summary
+$0.07/week; normalisation and embeddings add cents per month. A full live eval run is roughly $2.
+These are planning estimates, not a billing guarantee; model prices and input sizes can change.
+No production keys are assumed present and tests use fictional fixtures with injected transports,
+or the existing `FAKE_AI_PROVIDER=1` registry.

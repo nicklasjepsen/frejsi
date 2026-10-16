@@ -1,0 +1,9 @@
+{
+  "model": "fixture-chat",
+  "done": true,
+  "message": {
+    "role": "assistant",
+    "content": "",
+    "refusal": "Declined"
+  }
+}
