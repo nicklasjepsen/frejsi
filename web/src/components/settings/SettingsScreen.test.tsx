@@ -160,6 +160,14 @@ describe("SettingsScreen · the source (Indstillinger-Telefon, Indstillinger-Des
     expect(screen.getByText("Frejsi · åben kildekode · regner aldrig insulin")).toBeInTheDocument();
   });
 
+  it("shows each deferred source once on the phone and once on the desktop, without a Connect button", () => {
+    mount(connected);
+    // One phone row and one desktop card each: the source enum must not add cards of its own.
+    expect(screen.getAllByText("Nightscout")).toHaveLength(2);
+    expect(screen.getAllByText("Manuelt")).toHaveLength(2);
+    expect(screen.getAllByRole("link", { name: /Forbind|Skift login/ })).toHaveLength(1);
+  });
+
   it("shows the SourceStatusBanner while disconnected, with the time it went down", () => {
     mount({
       ...connected,
