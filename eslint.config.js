@@ -17,6 +17,7 @@ const FAKE_CONSUMERS = [
   "**/test/**",
   "web/scripts/seed.ts",
   "poller/src/cli.ts",
+  "poller/src/sources.ts",
 ];
 
 const noFakes = {
@@ -51,9 +52,18 @@ const dexcomHost = [
   },
 ];
 
+/** The Nightscout paths and auth header live in the adapter folder only (plan §2, §5). */
+const NIGHTSCOUT_LITERAL = "api\\/v1\\/entries|verifyauth|api-secret";
+const nightscoutMessage =
+  "The Nightscout paths and auth header live in shared/src/glucose/nightscout/ only (plan §2).";
+const nightscoutProtocol = [
+  { selector: `Literal[value=/${NIGHTSCOUT_LITERAL}/i]`, message: nightscoutMessage },
+  { selector: `TemplateElement[value.raw=/${NIGHTSCOUT_LITERAL}/i]`, message: nightscoutMessage },
+];
+
 /**
  * Hard rule: glucose sources are read-only. The one caller of fetch under shared/src/glucose/ is
- * the Dexcom transport, whose allow-list holds the reads Frejsi makes; a new source adds its own
+ * the Dexcom and Nightscout transports, whose allow-lists hold the reads Frejsi makes; a new source adds its own
  * transport file to the ignores below, with its own allow-list, instead of calling fetch from its
  * adapter.
  */
@@ -67,6 +77,7 @@ const glucoseFetch = [
 }));
 const glucoseFetchCallers = [
   "shared/src/glucose/dexcom-share/transport.ts",
+  "shared/src/glucose/nightscout/transport.ts",
   "shared/src/glucose/**/*.test.ts",
   "shared/src/glucose/**/test-server.ts",
 ];
@@ -263,7 +274,7 @@ export const boundaries = [
           ],
         },
       ],
-      "no-restricted-syntax": ["error", eventWrite, ...dexcomHost],
+      "no-restricted-syntax": ["error", eventWrite, ...dexcomHost, ...nightscoutProtocol],
     },
   },
   {
@@ -386,25 +397,74 @@ export const boundaries = [
           selector: "Literal[value=/dexcom\\.com|ShareWebServices/i]",
           message: "The Dexcom host lives in shared/src/glucose/dexcom-share/ only (plan §2).",
         },
+        ...nightscoutProtocol,
       ],
     },
   },
   {
     name: "frejsi/boundaries/dexcom-share",
     files: ["shared/src/glucose/dexcom-share/**/*.ts"],
-    rules: { "no-restricted-syntax": ["error", eventWrite] },
+    rules: { "no-restricted-syntax": ["error", eventWrite, ...nightscoutProtocol] },
+  },
+  {
+    name: "frejsi/boundaries/nightscout",
+    files: ["shared/src/glucose/nightscout/**/*.ts"],
+    rules: { "no-restricted-syntax": ["error", eventWrite, ...dexcomHost] },
   },
   {
     name: "frejsi/boundaries/glucose-read-only",
     files: ["shared/src/glucose/**/*.ts"],
-    ignores: ["shared/src/glucose/dexcom-share/**", ...glucoseFetchCallers],
-    rules: { "no-restricted-syntax": ["error", eventWrite, ...dexcomHost, ...glucoseFetch] },
+    ignores: [
+      "shared/src/glucose/dexcom-share/**",
+      "shared/src/glucose/nightscout/**",
+      ...glucoseFetchCallers,
+    ],
+    rules: {
+      "no-restricted-syntax": [
+        "error",
+        eventWrite,
+        ...dexcomHost,
+        ...nightscoutProtocol,
+        ...glucoseFetch,
+      ],
+    },
   },
   {
     name: "frejsi/boundaries/glucose-read-only/dexcom-share",
     files: ["shared/src/glucose/dexcom-share/**/*.ts"],
     ignores: glucoseFetchCallers,
-    rules: { "no-restricted-syntax": ["error", eventWrite, ...glucoseFetch] },
+    rules: {
+      "no-restricted-syntax": ["error", eventWrite, ...nightscoutProtocol, ...glucoseFetch],
+    },
+  },
+  {
+    name: "frejsi/boundaries/glucose-read-only/nightscout",
+    files: ["shared/src/glucose/nightscout/**/*.ts"],
+    ignores: glucoseFetchCallers,
+    rules: { "no-restricted-syntax": ["error", eventWrite, ...dexcomHost, ...glucoseFetch] },
+  },
+  {
+    // The adapters' default `fetch` is wired in these two files and nowhere else in the poller.
+    name: "frejsi/boundaries/poller-fetch",
+    files: ["poller/src/**/*.ts"],
+    ignores: [
+      "poller/src/sources.ts",
+      "poller/src/source-connect-handler.ts",
+      "poller/src/**/*.test.ts",
+    ],
+    rules: {
+      "no-restricted-syntax": [
+        "error",
+        eventWrite,
+        ...dexcomHost,
+        ...nightscoutProtocol,
+        {
+          selector: 'MemberExpression[object.name="globalThis"][property.name="fetch"]',
+          message:
+            "A glucose adapter gets its fetch in poller/src/sources.ts or source-connect-handler.ts only (CLAUDE.md hard rules).",
+        },
+      ],
+    },
   },
   {
     name: "frejsi/boundaries/english-in-web",
@@ -423,6 +483,7 @@ export const boundaries = [
           selector: "Literal[value=/dexcom\\.com|ShareWebServices/i]",
           message: "The Dexcom host lives in shared/src/glucose/dexcom-share/ only (plan §2).",
         },
+        ...nightscoutProtocol,
         {
           selector: `Literal[value=/${DANISH_LETTERS}/]`,
           message:

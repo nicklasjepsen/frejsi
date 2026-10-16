@@ -1,0 +1,11 @@
+{
+  "status": 200,
+  "message": {
+    "canRead": false,
+    "canWrite": false,
+    "isAdmin": false,
+    "message": "UNAUTHORIZED",
+    "rolesGathered": true,
+    "authorized": null
+  }
+}
