@@ -501,19 +501,6 @@
   margin: 0;
   font: 600 22px/1.2 var(--font-display-stack);
 }
-.sheetBack {
-  width: 44px;
-  height: 44px;
-  border: 0;
-  border-radius: 50%;
-  background: var(--surface);
-  color: var(--text-muted);
-  font: inherit;
-  cursor: pointer;
-}
-.sheetBack:focus-visible {
-  outline: 2px solid var(--accent-base);
-}
 .sheetBody {
   display: flex;
   flex-direction: column;

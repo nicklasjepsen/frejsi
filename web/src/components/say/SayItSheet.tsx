@@ -3,6 +3,7 @@ import type { ParsedItem, ParsedMeal } from "@frejsi/shared/schemas/ai";
 import { useTranslations } from "next-intl";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { PhotoPicker } from "../food/PhotoPicker";
+import { BackButton } from "../ui/BackButton";
 import { Button } from "../ui/Button";
 import { Notice } from "../ui/Notice";
 import { parseText, estimatePhoto } from "./api";
@@ -86,15 +87,7 @@ export function SayItSheet({
       }}
     >
       <header className={styles.header}>
-        <button
-          type="button"
-          className={styles.back}
-          aria-label={t("back")}
-          onClick={onClose}
-          disabled={busy}
-        >
-          ←
-        </button>
+        <BackButton onClick={onClose} label={t("back")} disabled={busy} />
         <h2>{t("title")}</h2>
       </header>
       {active && <MicButton locale={locale} onTranscript={updateText} disabled={busy} />}

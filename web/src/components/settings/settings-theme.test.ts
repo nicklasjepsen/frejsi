@@ -29,7 +29,6 @@ it("uses the shared theme variables for the AI row, picker and push switch at bo
       "--switch-off",
       "--text",
       "--text-muted",
-      "--touch-min",
     ]
   `);
   expect(css).toContain("@media (min-width: 1280px)");

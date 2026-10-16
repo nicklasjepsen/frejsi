@@ -1,0 +1,90 @@
+/* BackButton: the back control of every phone sub-screen and sheet. A 48 px thumb target (56 px in
+   simpleMode) with a 28 px chevron in the text colour on the sunken surface, a pressed state and
+   the shared focus ring; a quieter 40 px from 1280 px. Tokens only, so dark mode and the accent
+   follow. --touch-min (44 px) stays the floor for inline controls; a back control sits at the top
+   edge of the screen, where the thumb reaches least, so it gets more. */
+.back {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  flex-shrink: 0;
+  box-sizing: border-box;
+  min-width: 48px;
+  min-height: 48px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: var(--surface-sunken);
+  color: var(--text);
+  font: inherit;
+  font-size: 15px;
+  text-decoration: none;
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.back svg {
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+}
+
+.back[data-label="true"] {
+  padding: 0 16px 0 8px;
+}
+
+.label {
+  white-space: nowrap;
+}
+
+.back:hover {
+  background: var(--surface-selected);
+  color: var(--text);
+}
+
+.back:active {
+  background: var(--hairline);
+  transform: scale(0.96);
+}
+
+.back:focus-visible {
+  outline: 2px solid var(--accent-base);
+  outline-offset: 2px;
+}
+
+.back:disabled {
+  opacity: 0.5;
+  cursor: default;
+  transform: none;
+}
+
+.back[data-size="simple"] {
+  min-width: 56px;
+  min-height: 56px;
+}
+
+.back[data-size="simple"] svg {
+  width: 32px;
+  height: 32px;
+}
+
+@media (min-width: 1280px) {
+  .back {
+    min-width: 40px;
+    min-height: 40px;
+    background: transparent;
+  }
+
+  .back svg {
+    width: 24px;
+    height: 24px;
+  }
+
+  .back[data-size="simple"] {
+    min-width: 48px;
+    min-height: 48px;
+  }
+}

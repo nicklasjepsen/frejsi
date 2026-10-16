@@ -8,6 +8,7 @@ export { Chip } from "./Chip";
 export { ListRow } from "./ListRow";
 export { DataTable, type DataColumn, type DataTableProps } from "./DataTable";
 export { PageHeader, type PageHeaderProps } from "./PageHeader";
+export { BackButton, type BackButtonProps } from "./BackButton";
 export { ChipGroup, type ChipGroupProps, type ChipOption } from "./ChipGroup";
 export { ArrowNav, type ArrowAction, type ArrowNavProps } from "./ArrowNav";
 export { QuickLinkCard } from "./QuickLinkCard";

@@ -27,17 +27,6 @@
   white-space: nowrap;
 }
 
-.back {
-  align-self: flex-start;
-  min-height: var(--touch-min);
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  color: var(--text-muted);
-  text-decoration: none;
-  font-size: 15px;
-}
-
 .head {
   display: flex;
   flex-direction: column;

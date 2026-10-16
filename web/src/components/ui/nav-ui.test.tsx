@@ -109,7 +109,7 @@ describe("ArrowNav", () => {
 });
 
 describe('PageHeader variant="meta" (Maaltid-Telefon)', () => {
-  it("has a 44 px back link, a centred muted line and a trailing link", () => {
+  it("has the shared 48 px back link with its chevron, a centred muted line and a trailing link", () => {
     mount(
       <PageHeader
         variant="meta"
@@ -118,13 +118,23 @@ describe('PageHeader variant="meta" (Maaltid-Telefon)', () => {
         trailing={<a href="#ret">Ret</a>}
       />,
     );
-    expect(screen.getByRole("link", { name: "Tilbage" })).toHaveAttribute("href", "/da/history");
+    const back = screen.getByRole("link", { name: "Tilbage" });
+    expect(back).toHaveAttribute("href", "/da/history");
+    expect(back.querySelector("svg")).not.toBeNull();
     expect(screen.getByText("I dag 12:10 · Jonas")).toHaveAttribute("data-part", "meta");
     expect(screen.getByRole("link", { name: "Ret" })).toBeInTheDocument();
     expect(screen.queryByRole("heading")).toBeNull();
-    expect(block(".metaBack {")).toMatch(/width: 44px[\s\S]*height: 44px/);
+    expect(css).not.toContain(".metaBack");
     expect(block(".metaLine {")).toMatch(/font-size: 14px[\s\S]*var\(--text-muted\)/);
-    expect(block(".metaTrailing {")).toContain("font-size: 15px");
+    expect(block(".metaTrailing {")).toMatch(/min-width: 48px[\s\S]*font-size: 15px/);
+  });
+
+  it("keeps the back button's place with a 48 px spacer when there is no way back", () => {
+    const { container } = mount(<PageHeader variant="meta" meta="I går 18:40" />);
+    expect(screen.queryByRole("link")).toBeNull();
+    expect(screen.queryByRole("button")).toBeNull();
+    expect(container.querySelector("header > span[aria-hidden=true]")).not.toBeNull();
+    expect(block(".metaSpacer {")).toMatch(/width: 48px[\s\S]*height: 48px/);
   });
 
   it("takes a back button too", () => {

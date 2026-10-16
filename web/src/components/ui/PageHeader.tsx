@@ -1,7 +1,7 @@
 "use client";
 import { useTranslations } from "next-intl";
-import Link from "next/link";
 import type { ReactNode } from "react";
+import { BackButton } from "./BackButton";
 import styles from "./food-ui.module.css";
 import nav from "./nav-ui.module.css";
 
@@ -17,8 +17,8 @@ export type PageHeaderProps =
     }
   | {
       /**
-       * Maaltid-Telefon: a 44 px back, a centred 14 px muted line ("I dag 12:10 · Jonas") and a
-       * trailing 15 px link ("Ret"). The screen carries its own h1 below it.
+       * Maaltid-Telefon: a 48 px back (BackButton), a centred 14 px muted line ("I dag 12:10 ·
+       * Jonas") and a trailing 15 px link ("Ret"). The screen carries its own h1 below it.
        */
       variant: "meta";
       meta: string;
@@ -39,19 +39,14 @@ function MetaHeader({
   trailing,
 }: Extract<PageHeaderProps, { variant: "meta" }>) {
   const t = useTranslations("foodKit");
-  const glyph = <span aria-hidden="true">←</span>;
   return (
     <header className={nav.metaHeader} data-variant="meta">
       {backHref !== undefined ? (
-        <Link href={backHref} className={nav.metaBack} aria-label={t("back")}>
-          {glyph}
-        </Link>
+        <BackButton href={backHref} label={t("back")} />
       ) : onBack ? (
-        <button type="button" className={nav.metaBack} aria-label={t("back")} onClick={onBack}>
-          {glyph}
-        </button>
+        <BackButton onClick={onBack} label={t("back")} />
       ) : (
-        <span className={nav.metaBack} aria-hidden="true" />
+        <span className={nav.metaSpacer} aria-hidden="true" />
       )}
       <p className={nav.metaLine} data-part="meta">
         {meta}
@@ -76,15 +71,19 @@ function DefaultHeader({
       data-simple={simple}
       data-navigation={Boolean(onBack ?? onClose)}
     >
-      {(onBack ?? onClose) && (
+      {onClose ? (
         <button
           className={styles.headerNavigation}
           type="button"
-          onClick={onClose ?? onBack}
-          aria-label={t(onClose ? "close" : "back")}
+          onClick={onClose}
+          aria-label={t("close")}
         >
-          <span aria-hidden="true">{onClose ? "×" : "←"}</span>
+          <span aria-hidden="true">×</span>
         </button>
+      ) : (
+        onBack && (
+          <BackButton onClick={onBack} label={t("back")} size={simple ? "simple" : "normal"} />
+        )
       )}
       <div>
         <h1>{title}</h1>

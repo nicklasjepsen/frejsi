@@ -57,7 +57,9 @@
   --sidebar-width: 240px;
   --sidebar-width-simple: 260px;
   --phone-gutter: 24px;
-  --phone-safe-top: 56px;
+  /* The phone header's top inset (tokens.json safeTop 56), or the status bar plus 20 px when the
+     installed app draws under it (viewport-fit=cover), so no header control sits in the bar. */
+  --phone-safe-top: max(56px, calc(env(safe-area-inset-top) + 20px));
   --touch-min: 44px;
   --touch-min-simple: 48px;
 }

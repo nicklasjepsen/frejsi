@@ -17,6 +17,7 @@ import { MealItems } from "@/components/meal/MealItems";
 import { PortionSheet } from "@/components/meal/PortionSheet";
 import { TotalBar } from "@/components/meal/TotalBar";
 import { useSourceLine } from "@/components/meal/source-line";
+import { BackButton } from "@/components/ui/BackButton";
 import { Chip } from "@/components/ui/Chip";
 import { ListRow } from "@/components/ui/ListRow";
 import { Notice } from "@/components/ui/Notice";
@@ -320,16 +321,12 @@ function ConfirmView({ controller, phone, timeZone, simpleMode }: Props) {
   return (
     <div className={styles.confirm} data-testid="log-confirm">
       <header className={styles.confirmHeader}>
-        <button
-          type="button"
-          className={styles.iconButton}
-          aria-label={kit("back")}
+        <BackButton
+          label={kit("back")}
           onClick={() => {
             phone.setView("entry");
           }}
-        >
-          <span aria-hidden="true">←</span>
-        </button>
+        />
         <div className={styles.confirmTitle}>
           <h1>{slot}</h1>
           <p>{when}</p>

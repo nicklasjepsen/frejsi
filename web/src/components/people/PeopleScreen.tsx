@@ -2,11 +2,11 @@
 
 import type { ApiErrorCode, Role } from "@frejsi/shared";
 import { useTranslations } from "next-intl";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Fragment, useCallback, useRef, useState, type KeyboardEvent } from "react";
 
 import { Avatar } from "@/components/ui/Avatar";
+import { BackButton } from "@/components/ui/BackButton";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Notice } from "@/components/ui/Notice";
@@ -366,9 +366,9 @@ export function PeopleScreen({
 
   return (
     <div className={styles.page} data-testid="people">
-      <Link href={localeHref(locale, "/settings")} className={`${styles.back} ${styles.phoneOnly}`}>
-        ‹ {t("back")}
-      </Link>
+      <div className={styles.phoneOnly}>
+        <BackButton href={localeHref(locale, "/settings")} label={t("back")} showLabel />
+      </div>
       <header className={styles.head}>
         <div>
           <h1 className={styles.title}>{t("titleIn", { space: spaceName })}</h1>

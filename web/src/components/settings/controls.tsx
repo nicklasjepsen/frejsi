@@ -4,6 +4,7 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 
 import { ChevronIcon } from "@/components/shell/icons";
+import { BackButton } from "@/components/ui/BackButton";
 
 import styles from "./settings.module.css";
 
@@ -110,7 +111,7 @@ export function Row({
   );
 }
 
-/** Phone sub-screen header: a 44 px back link, the centred serif title, a spacer (design: `PageHeader`). */
+/** Phone sub-screen header: the 48 px back link, the centred serif title, a spacer (design: `PageHeader`). */
 export function PageHeader({
   backHref,
   backLabel,
@@ -122,11 +123,7 @@ export function PageHeader({
 }) {
   return (
     <header className={styles.pageHeader}>
-      <Link href={backHref} className={styles.backButton} aria-label={backLabel}>
-        <span className={styles.backChevron} aria-hidden="true">
-          <ChevronIcon />
-        </span>
-      </Link>
+      <BackButton href={backHref} label={backLabel} />
       <h1 className={styles.pageTitle}>{title}</h1>
       <span className={styles.backSpacer} aria-hidden="true" />
     </header>

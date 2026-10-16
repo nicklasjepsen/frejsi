@@ -349,29 +349,11 @@
   gap: 8px;
 }
 
-.backButton {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: var(--touch-min);
-  height: var(--touch-min);
-  border-radius: 50%;
-  color: var(--text);
-}
-
-.backButton:hover {
-  background: var(--surface-selected);
-  color: var(--text);
-}
-
-.backChevron {
-  display: inline-flex;
-  transform: rotate(180deg);
-}
-
+/* Balances the 48 px BackButton so the title stays centred. */
 .backSpacer {
-  width: var(--touch-min);
-  height: var(--touch-min);
+  flex-shrink: 0;
+  width: 48px;
+  height: 48px;
 }
 
 .pageTitle {

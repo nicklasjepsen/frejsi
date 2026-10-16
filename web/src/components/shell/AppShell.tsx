@@ -38,12 +38,14 @@ export function AppShell({ locale, user, space, spaces, children }: AppShellProp
   const variant = shellVariant(space.role, user.simpleMode);
   const path = stripLocale(usePathname()).path;
   // The picker has its own 48 px close and no tab bar on the phone; the desktop sidebar stays.
+  // `data-chromeless` zeroes the tab bar height the page is padded by (shell.module.css).
   const chromeless = isChromeless(path);
   return (
     <div
       className={styles.shell}
       data-variant={variant}
       data-accent={user.accent}
+      data-chromeless={chromeless ? "true" : undefined}
       data-testid="app-shell"
     >
       {variant === "simple" && <SettingsLiveRefresh spaceId={space.id} />}
