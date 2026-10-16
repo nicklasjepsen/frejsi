@@ -150,6 +150,8 @@ it("keeps AI event payloads viewer-safe and narrows each envelope", () => {
       ).toBe(false);
     }
   }
+});
+
 describe("food.contributed", () => {
   it("narrows to { foodId, source } and carries no glucose key", () => {
     const parsed = EventEnvelope.parse({
