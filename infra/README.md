@@ -13,7 +13,7 @@ infra/
                       staticwebapp, alerts, photos-storage; functionapp/appsettings.bicep merges the Function App's
                       settings into the live ones instead of replacing them
   deploy.sh           what the `deploy` job runs after infra: secrets once, migrations, poller, web
-  test/               node:test suite over the built ARM JSON and over deploy.sh against fake tools
+  test/               node:test suite over the built ARM JSON, the workflows and deploy.sh against fake tools
 ```
 
 ## Resources and cost
@@ -70,25 +70,33 @@ No secret is ever in this repository, in a parameter file, in a log or on a comm
 
 | Secret | Created by | Lives in | Read by |
 |---|---|---|---|
-| SQL application user password (a contained database user) | `deploy.sh`, once, as the deploy principal (the dedicated server's Entra admin, or `db_owner` in the database on an existing server) | Key Vault `database-url` | Function App (Key Vault reference), web app (app setting written by `deploy.sh`) |
+| SQL application user password (a contained database user, `frejsi_app`) | `deploy.sh`, once, as the deploy principal (the dedicated server's Entra admin, or `db_owner` in the database on an existing server) | Key Vault `database-url` | the web app (app setting written by `deploy.sh`) and the migration step in `deploy.sh`. **Not the poller** since v0.5.0: it signs in as its managed identity and holds no database password |
 | Web PubSub connection string | `deploy.sh`, once, from the resource's keys | Key Vault `web-pubsub-connection-string` | web app (app setting) |
 | `bootstrap-token` | Bicep, `newGuid()` parameter default; rotates on every infra deploy | Key Vault | web app (app setting); the owner reads it once (step 9) |
-| `glucose-<spaceId>` (Dexcom credential) | the Function App's `source-connect` trigger from Settings | Key Vault | the poller, through its managed identity |
+| `glucose-<spaceId>` (glucose source credential: Dexcom or Nightscout) | the Function App's `source-connect` trigger from Settings | Key Vault | the poller, through its managed identity |
+| `off-contribute-user`, `off-contribute-password` (optional) | the owner, by hand (below) | Key Vault | web app (app settings `OFF_CONTRIBUTE_USER`, `OFF_CONTRIBUTE_PASSWORD`, written by `deploy.sh` only when the secret exists) |
 | Function App storage key, App Insights connection string | Azure | app settings | the Function App (the Functions host on a Consumption plan needs a key-based `AzureWebJobsStorage`; the key never leaves Azure) |
 
-Why the deploy principal is the SQL server's Entra admin: Prisma cannot authenticate with Entra
-tokens, so the application needs a SQL user with a password; Bicep must never hold a password; so
-the user is created by `deploy.sh` through `sqlcmd` with the pipeline's own identity, and the password
+Why the web app still has a database password: Static Web Apps gives hybrid Next.js no usable
+managed identity, so the web app (and `prisma migrate deploy`, which runs in the pipeline) cannot
+sign in with Entra and needs a SQL user with a password. Bicep must never hold a password, so the
+user is created by `deploy.sh` through `sqlcmd` with the pipeline's own identity, and the password
 it generates goes straight into Key Vault. It is a contained user (`CREATE USER ... WITH PASSWORD`
 in the database, no login in `master`), so the deploy principal needs `db_owner` in that one
-database and nothing server-wide. Bicep creates the server Entra-only (which lets the SQL admin be
+database and nothing server-wide. A new installation creates it with `db_datareader`, `db_datawriter`
+and `db_ddladmin` (the migrations run DDL), not `db_owner`. Entra-only authentication on the server
+therefore stays off. The poller is the component that runs unattended every five minutes with a real
+identity, so it is the one that holds no password (below). Bicep creates the server Entra-only (which lets the SQL admin be
 omitted) and then turns SQL authentication on with the `azureADOnlyAuthentications/Default` child
 resource.
 
-The Function App's managed identity holds Key Vault Secrets Officer (it writes `glucose-<spaceId>`)
-and Web PubSub Service Owner (it publishes without a key). The deploy principal holds Key Vault
-Secrets Officer. Static Web Apps gives hybrid Next.js no usable managed identity, so the web app's
-settings are written by `deploy.sh` from Key Vault on every release (plan decision 10).
+The Function App has one user-assigned managed identity, `id-<baseName>-<suffix>` (for example
+`id-frejsi-<13 characters>`; it is the only identity on the app). It holds Key Vault Secrets Officer
+(it writes `glucose-<spaceId>`), Web PubSub Service Owner (it publishes without a key) and a contained
+database user in SQL with `db_datareader` and `db_datawriter` only. The app setting `AZURE_CLIENT_ID`
+makes `DefaultAzureCredential` use it for Key Vault, Web PubSub and SQL. The deploy principal holds Key
+Vault Secrets Officer. The web app's settings are written by `deploy.sh` from Key Vault on every
+release (plan decision 10).
 
 ## What the owner does once
 
@@ -230,21 +238,29 @@ plugins. Docker Compose for non-Azure hosting is planned for a later version (sp
    Insights by type in the resource group; with `SQL_SERVER_ID` set, the SQL server is that one
    (its subscription and resource group come from the ID, for the hostname and the firewall rule).
 3. If `database-url` is absent in Key Vault: generates a 40-character password, creates the
-   application's contained database user with `db_owner` in the database
-   (`sqlcmd --authentication-method ActiveDirectoryDefault`, SQL from a mode-600 file, never argv;
-   nothing in `master`), and stores the Prisma URL. If `web-pubsub-connection-string` is absent:
+   application's contained database user with `db_datareader`, `db_datawriter` and `db_ddladmin`
+   (`sqlcmd --authentication-method ActiveDirectoryDefault`, SQL from a mode-600 file that is
+   removed afterwards, never argv; nothing in `master`), and stores the Prisma URL. If `web-pubsub-connection-string` is absent:
    reads the primary connection string and stores it. Neither is ever rotated by a deploy; rotate by
    deleting the secret and releasing (and, for SQL, `ALTER USER` runs because the user exists).
-4. Opens a SQL firewall rule for the runner's IP, runs `prisma migrate deploy`, and removes the rule
-   on exit even if something failed (a `trap`).
+4. Opens a SQL firewall rule for the runner's IP and runs `prisma migrate deploy`. While the rule is
+   still open it runs, as the Entra admin, an idempotent script that creates the contained user
+   named after the poller's identity (`CREATE USER [id-...] WITH SID = <its client id as
+   varbinary(16)>, TYPE = E`, the client id read with `az identity show` and checked) and adds it
+   to `db_datareader` and `db_datawriter`; then the compatibility-level statement for AI vector
+   storage (`ALTER DATABASE` needs the Entra admin, not `frejsi_app`). The rule is removed on exit
+   even if something failed (a `trap`).
 5. Poller: sets `SCM_DO_BUILD_DURING_DEPLOYMENT=false`, `ENABLE_ORYX_BUILD=false` and
    `APP_VERSION`, zips `poller/dist` and deploys it; on Linux Consumption the zip deploy stores the
    package in the storage account and sets `WEBSITE_RUN_FROM_PACKAGE` to it, which the script
-   verifies. Waits for the `source-connect` function key.
+   verifies. Only then does it delete the Function App's `DATABASE_URL` setting if it is there (the
+   new bundle, which connects as the identity, is the one running; a new installation has no such
+   setting and nothing is deleted). Waits for the `source-connect` function key.
 6. Static Web App settings (plan section 7): `DATABASE_URL`, `BOOTSTRAP_TOKEN`,
    `WEB_PUBSUB_CONNECTION_STRING`, `WEB_PUBSUB_HUB`, `SOURCE_CONNECT_URL`, `SOURCE_CONNECT_KEY`,
    `APPLICATIONINSIGHTS_CONNECTION_STRING`, `APP_ORIGIN`, `NEXT_PUBLIC_APP_VERSION`, written as one
-   JSON body from a mode-600 file through `az rest`. The script owns these settings: anything set by
+   JSON body from a mode-600 file through `az rest`, plus the optional AI settings, the optional OFF
+   settings and the country variables below. The script owns these settings: anything set by
    hand in the portal is replaced on the next release.
 7. Uploads the web build with the Static Web Apps deployment client (the container the
    `Azure/static-web-apps-deploy` action wraps; the SWA CLI does not support hybrid Next.js), with
@@ -262,6 +278,93 @@ A Bicep redeploy keeps the Function App settings `deploy.sh` wrote (`WEBSITE_RUN
 with `list()` and merges Bicep's own into them, so the poller keeps running from its package while
 the deploy job is still on its way. `deploy.sh` sets the deploy-time ones again anyway; the release
 order stays infra, then deploy.
+
+## Managed identity for the poller (v0.5.0)
+
+The poller connects to Azure SQL as a user-assigned managed identity, not with a password. A
+user-assigned identity is used because `CREATE USER ... FROM EXTERNAL PROVIDER` would make the SQL
+server read Microsoft Graph with its own identity, which needs a tenant-level grant no pipeline or
+fork should need. `CREATE USER ... WITH SID = <application id>, TYPE = E` needs only the identity's
+client id, and ARM exposes that only for a user-assigned identity.
+
+| | |
+|---|---|
+| Name in Azure | `id-<baseName>-<suffix>` (resource type Managed Identity, in the resource group; `baseName` is `frejsi` unless a fork changed it) |
+| Name in SQL | the same string, a contained database user in the `frejsi` database, created by `deploy.sh` |
+| SQL permissions | `db_datareader`, `db_datawriter`. No DDL: the poller reads and writes rows |
+| Function App settings | `AZURE_CLIENT_ID` (its client id), `SQL_SERVER_FQDN`, `SQL_DATABASE`; no `DATABASE_URL` |
+| Bicep output | `functionIdentityClientId` and `functionIdentityName` |
+
+`createPrismaFromEnv` in `shared/src/db/` picks the connection: `DATABASE_URL` set gives the usual
+engine-backed client (the web app, local development, tests); otherwise `SQL_SERVER_FQDN` and
+`SQL_DATABASE` give a client over `@prisma/adapter-mssql` with `azure-active-directory-default`
+authentication, which acquires and refreshes the token itself. With neither, it throws and names both.
+
+**What a release does, in this order.**
+
+1. The `infra` job runs because `infra/` changed (the owner's tap on `production-infra`). Bicep
+   creates the identity, moves the Key Vault and Web PubSub roles to it, assigns it to the Function
+   App as its only identity and its Key Vault reference identity, and adds the three new settings. The
+   running bundle keeps working on `DATABASE_URL`, which is still live because the settings merge
+   keeps what Bicep no longer names, while the role assignment propagates (about a minute).
+2. The `deploy` job runs `deploy.sh`: migrations, then the identity's contained user while the runner's
+   firewall rule is open, then the new poller bundle. Once `WEBSITE_RUN_FROM_PACKAGE` is verified,
+   `DATABASE_URL` is deleted from the Function App. The next five-minute poll connects as the identity.
+
+`DATABASE_URL` is deleted by `deploy.sh` on every release (a no-op when absent) and not by Bicep,
+because deleting it before the new bundle is running would leave the old one without a connection,
+and an infra deploy between the two steps would put it back.
+
+**Rollback.** Redeploy the previous tag with `workflow_dispatch`. The `infra` job runs by itself
+for that, because the `infra/` diff between the two tags is not empty (the infra box is only for
+changes to variables). Bicep puts the `DATABASE_URL` Key Vault reference back and the old bundle
+reads it. The identity and its SQL user stay; they do no harm.
+
+**The one symptom.** `Login failed for user '<token-identified principal>'` in the poller's log means
+the contained user is missing, for example after the identity was deleted and recreated (a new client
+id). The repair is the script that runs in every release: rerun the `deploy` job. It drops a user of
+that name with a different SID, creates it again from the current client id, and adds the two roles.
+
+## Optional OFF secrets and the country variables
+
+Open Food Facts contribution is off until the owner creates two Key Vault secrets (the checkbox is
+absent without them). `deploy.sh` writes `OFF_CONTRIBUTE_USER` and `OFF_CONTRIBUTE_PASSWORD` to the
+web app's settings only for a secret that exists; for one that does not it prints
+`Skipping optional OFF setting <NAME>: Key Vault secret <name> is absent` and carries on.
+
+```
+az keyvault secret set --vault-name <vault> -n off-contribute-user --value <account name>
+az keyvault secret set --vault-name <vault> -n off-contribute-password --file <file with the password>
+```
+
+Three repository variables are optional deployment settings. `release.yml` hands them to `deploy.sh`,
+which writes each to the web app's settings only when it is set (an unset or empty one is left out):
+
+| Repository variable | App setting | Meaning |
+|---|---|---|
+| `DEFAULT_LOCALE` | `DEFAULT_LOCALE` | `da` or `en`: the first language for a visitor with no cookie and no `Accept-Language`, and the locale of a new user. Unset or anything else means `da` |
+| `FOOD_SOURCES` | `FOOD_SOURCES` | the food source plugins switched on, comma separated by id (`off`, `frida`) |
+| `OFF_COUNTRY` | `OFF_COUNTRY` | the Open Food Facts country, a two-letter code such as `dk`; unset means `world` |
+
+`AZURE_RESOURCE_GROUP` is a fourth optional repository variable: `release.yml` and `preview.yml`
+read it as `vars.AZURE_RESOURCE_GROUP || 'frejsi'`, so a fork can name its resource group. Create the
+group yourself first, as in step 1 of "What the owner does once".
+
+## Tightening an existing `frejsi_app` login
+
+A deployment created before v0.5.0 has `frejsi_app` as `db_owner`; `deploy.sh` leaves an existing
+user alone. Nothing needs it to stay that way: the migrations only need DDL. To tighten it, connect to
+the `frejsi` database as the Entra admin (or any `db_owner`) and run:
+
+```sql
+ALTER ROLE db_owner DROP MEMBER [frejsi_app];
+ALTER ROLE db_datareader ADD MEMBER [frejsi_app];
+ALTER ROLE db_datawriter ADD MEMBER [frejsi_app];
+ALTER ROLE db_ddladmin ADD MEMBER [frejsi_app];
+```
+
+Release once afterwards: if the migration step reports a permission error, add the missing grant and
+tell us which one.
 
 ## Checking locally
 
@@ -419,5 +522,5 @@ Delivery uses the
 [web-push transport](https://github.com/web-push-libs/web-push); 404/410 registrations are removed,
 other failures are counted, and delivery logs contain counts and outcome codes only.
 
-`bash infra/deploy.test.sh` exercises generation, reuse, failed reads and silent settings delivery
-against stub commands. It never contacts Azure.
+`node --test infra/test/deploy.test.mjs` exercises generation, reuse, failed reads and silent
+settings delivery against stub commands. It never contacts Azure.
