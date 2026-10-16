@@ -2,7 +2,7 @@ import { prisma } from "@frejsi/shared";
 import { GlucoseUnit } from "@frejsi/shared/schemas/glucose";
 import { buildMealInput, localParts } from "@frejsi/shared/ai/insight/input";
 import { route, json } from "@/app/api/auth/http";
-import { mealInsight } from "@/ai/insight/service";
+import { insightDeps, mealInsight } from "@/ai/insight/service";
 import { authorizeHistory } from "@/lib/history/server";
 import { loadMealCurve } from "@/lib/history/meal-curve";
 export function GET(
@@ -15,7 +15,7 @@ export function GET(
     const view = await loadMealCurve(spaceId, mealId, session.locale, deps);
     const space = await prisma.space.findUniqueOrThrow({
       where: { id: spaceId },
-      select: { timezone: true, glucoseUnit: true },
+      select: { timezone: true, glucoseUnit: true, aiProvider: true },
     });
     const input = buildMealInput({
       locale: session.locale,
@@ -33,6 +33,11 @@ export function GET(
         stats: p.stats,
       })),
     });
-    return json(await mealInsight(spaceId, mealId, session, input));
+    return json(
+      await mealInsight(spaceId, mealId, session, input, {
+        ...insightDeps(),
+        ...(space.aiProvider ? { providerName: space.aiProvider } : {}),
+      }),
+    );
   })(request);
 }

@@ -81,6 +81,7 @@ beforeEach(() => {
   settings.find.mockImplementation(() =>
     Promise.resolve({
       aiEnabled: settings.enabled,
+      aiProvider: "anthropic",
       timezone: "Europe/Copenhagen",
       glucoseUnit: "mmol",
     }),
@@ -114,6 +115,7 @@ it("generates a meal once and rejects a member's request for a foreign meal", as
   });
   await mealRequest("sess-carer");
   expect(provider.calls).toHaveLength(1);
+  expect(repo.rows[0]?.provider).toBe("anthropic");
   expect(emit).toHaveBeenCalledTimes(1);
   const call = provider.calls[0];
   expect(call?.kind).toBe("complete");

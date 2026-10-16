@@ -144,3 +144,39 @@ it("includes and accepts deterministic display glucose statistics for mg/dL", as
   if (content?.type !== "text") throw new Error("Expected statistics input");
   expect(content.text).toContain('"displayPeakValues":[202]');
 });
+it("rejects invented weekly summary numerals and drops invented question numerals", async () => {
+  const week = WeekInsightInput.parse({
+    locale: "en",
+    glucoseUnit: "mmol",
+    isoWeek: 42,
+    weekStart: "2026-10-12",
+    numbers: {
+      inRangePercent: 60,
+      lowEpisodes: { count: 0, atNight: 0 },
+      carbsPerDay: 0,
+      mealCount: 0,
+      lead: { registered: 0, of: 0 },
+    },
+    days: Array.from({ length: 7 }, (_, i) => ({
+      localDate: `2026-10-${12 + i}`,
+      mealCount: 0,
+      totalCarbs: 0,
+    })),
+    meals: [],
+  });
+  const invented = answer({ summary: "Time in range was 80% this week.", questions: [] });
+  const rejected = new FakeAiProvider([invented, invented]);
+  await expect(narrateWeek(capped(rejected), week)).rejects.toMatchObject({ code: "ai-rejected" });
+  expect(rejected.calls).toHaveLength(2);
+  const fake = new FakeAiProvider([
+    answer({
+      summary: "Time in range was 60% this week.",
+      questions: ["What patterns appeared this week?", "Why was time in range 80% this week?"],
+    }),
+  ]);
+  expect(await narrateWeek(capped(fake), week)).toMatchObject({
+    summary: "Time in range was 60% this week.",
+    questions: ["What patterns appeared this week?"],
+    rejectedCount: 1,
+  });
+});

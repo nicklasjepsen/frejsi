@@ -106,3 +106,8 @@ it("keeps both locales cached when clients refetch each other's creation events"
   expect(deps.repo.rows).toHaveLength(2);
   for (const call of deps.emit.mock.calls) expect(call[2]).toMatchObject({ subjectKey: "meal" });
 });
+it("persists the configured provider instead of the capped wrapper identity", async () => {
+  const { deps } = setup();
+  await mealInsight("space", "meal", session, input, { ...deps, providerName: "anthropic" });
+  expect(deps.repo.rows[0]?.provider).toBe("anthropic");
+});
