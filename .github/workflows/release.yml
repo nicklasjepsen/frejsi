@@ -262,7 +262,9 @@ jobs:
 
   publish:
     needs: [verify, deploy]
-    if: github.event_name == 'push'
+    # Not the implicit success(): when the infra job is skipped (no Bicep change), every job
+    # downstream of it is skipped too unless it opts out, and v0.4.1 deployed without a release.
+    if: ${{ !cancelled() && github.event_name == 'push' && needs.verify.result == 'success' && needs.deploy.result == 'success' }}
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
