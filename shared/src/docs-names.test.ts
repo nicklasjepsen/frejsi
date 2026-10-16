@@ -287,7 +287,7 @@ describe("CONTRIBUTING.md and README.md", () => {
     const status = readme.split("\n").filter((line) => line.startsWith("> **Status:"));
     expect(status).toHaveLength(1);
     expect(status[0]).toMatch(
-      /^> \*\*Status: v\d+\.\d+\.\d+ is implemented; v\d+\.\d+\.\d+ is live at .+\*\*$/,
+      /^> \*\*Status: v\d+\.\d+\.\d+ is live at .+\*\*$/,
     );
   });
 
