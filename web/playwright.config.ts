@@ -39,6 +39,8 @@ const appProjects = [
   "history.spec.ts",
   "ai.spec.ts",
   "now-theme.spec.ts",
+  "manual-readings.spec.ts",
+  "source-settings.spec.ts",
 ];
 
 export default defineConfig({
@@ -73,7 +75,7 @@ export default defineConfig({
     },
     {
       name: "desktop-food",
-      testMatch: ["food.spec.ts"],
+      testMatch: ["food.spec.ts", "contribution.spec.ts"],
       dependencies: ["desktop"],
       use: { viewport: { width: 1280, height: 800 } },
     },
@@ -106,6 +108,8 @@ export default defineConfig({
         APP_ORIGIN: ORIGIN,
         FAKE_GLUCOSE_SOURCE: "1",
         FAKE_AI_PROVIDER: "1",
+        // The OFF correction goes to a local fake: no account, no request to Open Food Facts.
+        FAKE_FOOD_CONTRIBUTOR: "1",
         NEXT_PUBLIC_APP_VERSION: version,
         // No Web PubSub: negotiate answers 503 and the client polls (plan §5).
         WEB_PUBSUB_CONNECTION_STRING: "",

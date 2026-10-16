@@ -4,7 +4,7 @@
 import { prisma } from "@frejsi/shared";
 import { expect, test } from "./test";
 
-import { inviteLink, navLabels, registerFromInvite, seededSpace } from "./support";
+import { assertMealOnly, inviteLink, navLabels, registerFromInvite, seededSpace } from "./support";
 
 const PAGES = [
   "/da/today",
@@ -33,37 +33,6 @@ const GLUCOSE = [
  * messages carry the unit's label under the same key (`"mmol":"mmol/L"`), so a digit must follow.
  */
 const READING_KEY = /mmol\\?"\s*:\s*(\\?")?\d/;
-
-const FORBIDDEN = new Set([
-  "mmol",
-  "mgdl",
-  "trend",
-  "reading",
-  "readings",
-  "glucose",
-  "peak",
-  "inRange",
-  "inRangePercent",
-  "stats",
-  "curve",
-  "bolusTs",
-  "bolusLead",
-  "bolusLeadMinutes",
-  "summary",
-  "questions",
-  "questionsEdited",
-  "statsHash",
-]);
-function assertMealOnly(value: unknown): void {
-  if (Array.isArray(value)) {
-    for (const item of value) assertMealOnly(item);
-  } else if (value !== null && typeof value === "object") {
-    for (const [key, item] of Object.entries(value)) {
-      expect(FORBIDDEN.has(key), key).toBe(false);
-      assertMealOnly(item);
-    }
-  }
-}
 
 test.use({ serviceWorkers: "block" });
 
