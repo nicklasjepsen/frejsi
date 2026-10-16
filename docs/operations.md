@@ -353,9 +353,16 @@ its default script repeats fictional meal, photo, normalisation and insight outp
 1024-dimensional fixture vectors. These exercise the flows, not language or image accuracy. Tests
 can inject `aiProviders(env, { fakeScript })` with an answer queue or responder; an exhausted queue
 or an unknown output schema returns `ai-unavailable`. Actual adapters,
-provider keys, the web factory, settings routes, service prompts, UI and push delivery are separate
+provider keys, settings routes, service prompts, UI and push delivery are separate
 integration work. The unresolved provider and wording defaults are tracked in issue #72; they do
 not enable AI by themselves.
+
+`aiForSpace(spaceId, session)` is the web factory. It authorizes owners/carers, rejects spaces
+with AI disabled or without a configured adapter, and returns a `CappedAiProvider` backed by
+`PrismaAiCallRepository`. The environment defaults are declared in `.env.example`: `AI_DAILY_CAP=50`,
+`AI_EMBED_DAILY_CAP=500`, `AI_EMBED_BACKFILL_DAILY_CAP=2000`; `AI_CACHE_EMBED_PROVIDER` and
+`FAKE_AI_PROVIDER` are empty until explicitly configured. Food views include their creation time,
+the preserved source name when present, and creator id/name when attributed.
 
 `CappedAiProvider` defaults to 50 combined completion/photo attempts and 500 embedding attempts per
 space per local calendar day, using the space timezone (including daylight-saving changes). A null
