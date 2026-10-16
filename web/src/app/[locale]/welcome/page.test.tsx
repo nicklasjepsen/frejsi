@@ -63,7 +63,9 @@ describe("/[locale]/welcome · the returning sign-in (plan §6, design gap 23)",
     const login = screen.getByRole("button", { name: "Log ind" });
     const firstTime = screen.getByText("Første gang her?");
     expect(firstTime).toBeInTheDocument();
-    expect(login.compareDocumentPosition(firstTime) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(
+      login.compareDocumentPosition(firstTime) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
     expect(container.textContent).toContain(
       "Så skal du have et invitationslink fra en ejer af rummet.",
     );

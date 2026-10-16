@@ -45,6 +45,7 @@ describe("/[locale]/now", () => {
       locale: "da",
       simpleMode: true,
       timeZone: "Europe/Copenhagen",
+      role: "carer",
     });
   });
 

@@ -23,6 +23,7 @@ export default async function NowPage({ params }: { params: Promise<{ locale: st
       locale={locale}
       simpleMode={session.simpleMode}
       timeZone={shell.space.timezone}
+      role={shell.space.role}
     />
   );
 }

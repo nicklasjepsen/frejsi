@@ -35,7 +35,11 @@ describe("toSpaceSettings", () => {
         glucoseUnit: "mgdl",
         targetLow: { toString: () => "3.9" },
         targetHigh: 10,
-        glucoseSource: JSON.stringify({ type: "dexcom-share", region: "eu", secretRef: "glucose-s1" }),
+        glucoseSource: JSON.stringify({
+          type: "dexcom-share",
+          region: "eu",
+          secretRef: "glucose-s1",
+        }),
         sourceStatus: "connected",
         lastReadingAt: new Date("2026-10-15T13:13:00.000Z"),
       }),
@@ -58,7 +62,11 @@ describe("toSpaceSettings", () => {
       glucoseUnit: "mmol",
       targetLow: 4,
       targetHigh: 10,
-      glucoseSource: JSON.stringify({ type: "dexcom-share", region: "us", secretRef: "glucose-s1" }),
+      glucoseSource: JSON.stringify({
+        type: "dexcom-share",
+        region: "us",
+        secretRef: "glucose-s1",
+      }),
       sourceStatus: "connected",
       lastReadingAt: null,
     });
@@ -88,7 +96,11 @@ describe("updateSpaceSettings", () => {
     const result = await updateSpaceSettings("s1", { glucoseUnit: "mgdl" }, deps);
     expect(result.glucoseUnit).toBe("mgdl");
     expect(result.targetLow).toBe(4);
-    expect(fake.rows("space")[0]).toMatchObject({ glucoseUnit: "mgdl", targetLow: 4, targetHigh: 10 });
+    expect(fake.rows("space")[0]).toMatchObject({
+      glucoseUnit: "mgdl",
+      targetLow: 4,
+      targetHigh: 10,
+    });
     expect(events).toEqual([
       { spaceId: "s1", type: "space.updated", payload: { fields: ["glucoseUnit"] } },
     ]);
@@ -150,7 +162,11 @@ describe("saveConnectedSource", () => {
         type: "source.status",
         payload: { status: "connected", since: "2026-10-15T08:00:00.000Z" },
       },
-      { spaceId: "s1", type: "space.updated", payload: { fields: ["glucoseSource", "sourceStatus"] } },
+      {
+        spaceId: "s1",
+        type: "space.updated",
+        payload: { fields: ["glucoseSource", "sourceStatus"] },
+      },
     ]);
   });
 });

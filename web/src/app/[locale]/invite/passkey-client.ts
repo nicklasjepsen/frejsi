@@ -27,11 +27,7 @@ import { z } from "zod";
  * authenticator. `api` carries the server's stable code.
  */
 export type CeremonyFailure =
-  | "unsupported"
-  | "cancelled"
-  | "already-registered"
-  | "authenticator"
-  | "api";
+  "unsupported" | "cancelled" | "already-registered" | "authenticator" | "api";
 
 export class CeremonyError extends Error {
   readonly kind: CeremonyFailure;
@@ -67,7 +63,10 @@ const realBrowser: WebAuthnBrowser = {
   authenticate: startAuthentication,
 };
 
-const Started = z.object({ challengeId: z.string().min(1), options: z.record(z.string(), z.unknown()) });
+const Started = z.object({
+  challengeId: z.string().min(1),
+  options: z.record(z.string(), z.unknown()),
+});
 const Registered = z.object({ role: Role, spaceId: z.string().min(1) });
 const SignedIn = z.object({ userId: z.string().min(1) });
 

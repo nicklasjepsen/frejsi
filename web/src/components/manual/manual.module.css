@@ -1,0 +1,72 @@
+/* The manual entry sheet (undrawn, design gap): tokens only, so dark and the accents follow. */
+
+.sheet {
+  position: fixed;
+  inset: auto 0 0 0;
+  z-index: 30;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  width: 100%;
+  max-width: none;
+  border-radius: var(--radius-card) var(--radius-card) 0 0;
+  background: var(--ground);
+  color: var(--text);
+  font-family: var(--font-body-stack);
+}
+
+.sheet::backdrop {
+  background: var(--text);
+  opacity: 0.35;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 24px 24px max(24px, env(safe-area-inset-bottom));
+}
+
+.title {
+  margin: 0;
+  font: 600 22px/1.2 var(--font-display-stack);
+}
+
+.when {
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+}
+
+.when > :last-child {
+  flex: 1;
+}
+
+.error {
+  margin: 0;
+  font-size: 14px;
+  color: var(--text);
+  border-left: 3px solid var(--accent-base);
+  padding-left: 10px;
+}
+
+.actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+@media (min-width: 1280px) {
+  .sheet {
+    inset: 0;
+    margin: auto;
+    width: 440px;
+    border-radius: var(--radius-card);
+    border: 1px solid var(--hairline);
+    box-shadow: var(--card-shadow);
+  }
+
+  .actions {
+    flex-direction: row-reverse;
+  }
+}

@@ -26,7 +26,10 @@ function fakeFetch(answers: { status: number; body: unknown }[]) {
     const url = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
     const body: unknown = typeof init?.body === "string" ? JSON.parse(init.body) : undefined;
     calls.push({ url, body });
-    const next = answers.shift() ?? { status: 500, body: { error: { code: "internal", message: "internal" } } };
+    const next = answers.shift() ?? {
+      status: 500,
+      body: { error: { code: "internal", message: "internal" } },
+    };
     return Promise.resolve(
       new Response(JSON.stringify(next.body), {
         status: next.status,
@@ -81,7 +84,9 @@ describe("registerWithInvite (task 5's routes, in the order the browser runs the
   });
 
   it("surfaces the API's error code when the link is dead, before any prompt", async () => {
-    const { fetchFn } = fakeFetch([{ status: 410, body: { error: { code: "invite-used", message: "invite-used" } } }]);
+    const { fetchFn } = fakeFetch([
+      { status: 410, body: { error: { code: "invite-used", message: "invite-used" } } },
+    ]);
     const web = browser();
     const failure = registerWithInvite("tok", deps(fetchFn, web));
     await expect(failure).rejects.toMatchObject({ kind: "api", code: "invite-used" });
@@ -107,7 +112,10 @@ describe("registerWithInvite (task 5's routes, in the order the browser runs the
       code: "ERROR_CEREMONY_ABORTED",
     });
     await expect(
-      registerWithInvite("tok", deps(aborted.fetchFn, browser({ register: vi.fn(() => Promise.reject(wrapped)) }))),
+      registerWithInvite(
+        "tok",
+        deps(aborted.fetchFn, browser({ register: vi.fn(() => Promise.reject(wrapped)) })),
+      ),
     ).rejects.toEqual(new CeremonyError("cancelled"));
   });
 
@@ -117,10 +125,13 @@ describe("registerWithInvite (task 5's routes, in the order the browser runs the
     ]);
     // The browser throws InvalidStateError when the credential is in excludeCredentials;
     // @simplewebauthn/browser names it ERROR_AUTHENTICATOR_PREVIOUSLY_REGISTERED.
-    const previouslyRegistered = Object.assign(new Error("The authenticator was previously registered"), {
-      name: "InvalidStateError",
-      code: "ERROR_AUTHENTICATOR_PREVIOUSLY_REGISTERED",
-    });
+    const previouslyRegistered = Object.assign(
+      new Error("The authenticator was previously registered"),
+      {
+        name: "InvalidStateError",
+        code: "ERROR_AUTHENTICATOR_PREVIOUSLY_REGISTERED",
+      },
+    );
     const web = browser({ register: vi.fn(() => Promise.reject(previouslyRegistered)) });
     await expect(registerWithInvite("tok", deps(fetchFn, web))).rejects.toEqual(
       new CeremonyError("already-registered"),
@@ -152,14 +163,16 @@ describe("registerWithInvite (task 5's routes, in the order the browser runs the
       { status: 200, body: { challengeId: "ch1", options: creation } },
       { status: 403, body: { error: { code: "forbidden", message: "forbidden" } } },
     ]);
-    await expect(
-      registerWithInvite("tok", deps(fetchFn, browser())),
-    ).rejects.toMatchObject({ kind: "api", code: "forbidden" });
+    await expect(registerWithInvite("tok", deps(fetchFn, browser()))).rejects.toMatchObject({
+      kind: "api",
+      code: "forbidden",
+    });
 
     const broken = fakeFetch([{ status: 502, body: "<html>bad gateway</html>" }]);
-    await expect(
-      registerWithInvite("tok", deps(broken.fetchFn, browser())),
-    ).rejects.toMatchObject({ kind: "api", code: "internal" });
+    await expect(registerWithInvite("tok", deps(broken.fetchFn, browser()))).rejects.toMatchObject({
+      kind: "api",
+      code: "internal",
+    });
   });
 });
 
@@ -187,7 +200,9 @@ describe("signInWithPasskey (discoverable credential, no username)", () => {
         deps(
           dismissed.fetchFn,
           browser({
-            authenticate: vi.fn(() => Promise.reject(new DOMException("denied", "NotAllowedError"))),
+            authenticate: vi.fn(() =>
+              Promise.reject(new DOMException("denied", "NotAllowedError")),
+            ),
           }),
         ),
       ),
@@ -212,8 +227,9 @@ describe("signInWithPasskey (discoverable credential, no username)", () => {
       { status: 200, body: { challengeId: "ch2", options: request } },
       { status: 403, body: { error: { code: "forbidden", message: "forbidden" } } },
     ]);
-    await expect(signInWithPasskey(deps(fetchFn, browser()))).rejects.toMatchObject(
-      { kind: "api", code: "forbidden" },
-    );
+    await expect(signInWithPasskey(deps(fetchFn, browser()))).rejects.toMatchObject({
+      kind: "api",
+      code: "forbidden",
+    });
   });
 });
