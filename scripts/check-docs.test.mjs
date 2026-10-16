@@ -97,6 +97,14 @@ describe("PR docs declaration", () => {
   ])("does not count %s", (file) => expect(isDocFile(file)).toBe(false));
 });
 
+/**
+ * The environment without git's own variables. A git hook runs with GIT_DIR and GIT_INDEX_FILE set,
+ * and a test that inherited them would run `git init` and `git commit` against the real repository
+ * (it rewrote a worktree's branch and index from the pre-push hook).
+ */
+const cleanEnv = () =>
+  Object.fromEntries(Object.entries(process.env).filter(([name]) => !name.startsWith("GIT_")));
+
 const temporary = [];
 afterEach(() => {
   for (const dir of temporary.splice(0)) rmSync(dir, { recursive: true, force: true });
@@ -105,7 +113,8 @@ afterEach(() => {
 it("reads the event and diffs the PR head against its merge base, not the checkout's merge commit", () => {
   const dir = mkdtempSync(path.join(tmpdir(), "frejsi-docs-"));
   temporary.push(dir);
-  const git = (...args) => execFileSync("git", args, { cwd: dir, encoding: "utf8" }).trim();
+  const git = (...args) =>
+    execFileSync("git", args, { cwd: dir, env: cleanEnv(), encoding: "utf8" }).trim();
   git("init", "-q", "--initial-branch=main");
   git("config", "user.name", "Fictional Contributor");
   git("config", "user.email", "contributor@example.invalid");
@@ -137,7 +146,7 @@ it("reads the event and diffs the PR head against its merge base, not the checko
     );
     return spawnSync(process.execPath, [path.join(import.meta.dirname, "check-docs.mjs")], {
       cwd: dir,
-      env: { ...process.env, GITHUB_EVENT_PATH: eventPath },
+      env: { ...cleanEnv(), GITHUB_EVENT_PATH: eventPath },
       encoding: "utf8",
     });
   };
