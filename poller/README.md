@@ -132,7 +132,8 @@ still equals the source's original; each space change emits `food.updated`. Fail
 normalisation keeps the original and marks it finished. AI and typed foods are never normalised.
 
 Space rows use their enabled space's provider and local-day caps (`AI_DAILY_CAP`, default 50;
-`AI_EMBED_DAILY_CAP`, default 500). AI-off spaces are skipped, including name propagation. Cache
+`AI_EMBED_DAILY_CAP`, default 500). AI-off spaces are skipped, including name propagation. Groups without an available embedding
+provider are excluded before applying the normalisation limit. Cache
 rows use `AI_CACHE_EMBED_PROVIDER`, or the first configured embedding adapter, with the UTC-day
 `AI_EMBED_BACKFILL_DAILY_CAP` (default 2000). The 100-row embedding budget is shared between groups. Without an embedding adapter the timer logs `ai-not-configured` once and exits without
 querying the database. Logs contain counts and codes, never food names or model inputs.
