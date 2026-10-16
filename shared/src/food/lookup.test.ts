@@ -497,3 +497,67 @@ describe("lookup", () => {
     expect(code).not.toMatch(/\b(?:prisma|emit|createFood|updateFood|deleteFood)\b/);
   });
 });
+
+describe("submitted semantic search", () => {
+  const vector = [1, ...Array<number>(1023).fill(0)];
+  it("merges within library/cache tiers, retaining keyword order and distance threshold", async () => {
+    const repo = new MemoryFoodRepository([
+      row("keyword"),
+      row("pasta", { name: "Pasta med kødsovs", nameSearch: "pasta med kodsovs" }),
+      row("cache", {
+        spaceId: null,
+        sourceRef: "remote-test:cache",
+        name: "Noodles",
+        nameSearch: "noodles",
+      }),
+      row("far", { name: "Far", nameSearch: "far" }),
+    ]);
+    await repo.setEmbeddings([
+      { id: "keyword", vector, model: "test:model" },
+      { id: "pasta", vector, model: "test:model" },
+      { id: "cache", vector, model: "test:model" },
+      { id: "far", vector: vector.map((n) => -n), model: "test:model" },
+    ]);
+    const embed = vi.fn().mockResolvedValue({ vector, model: "test:model" });
+    const found = await lookup(repo, [], {
+      ...options,
+      embed,
+      query: { q: "example", remote: true },
+    });
+    expect(found.results.map((r) => r.food.name)).toEqual([
+      "Example loaf",
+      "Pasta med kødsovs",
+      "Noodles",
+    ]);
+    expect(embed).toHaveBeenCalledExactlyOnceWith("example");
+    expect(found.sources.semantic).toBe("ok");
+  });
+  it("a child's misspelling searches only verified own foods, never cache", async () => {
+    const repo = new MemoryFoodRepository([
+      row("pasta", { name: "Pasta med kødsovs", nameSearch: "pasta med kodsovs", verified: true }),
+      row("unchecked"),
+      row("cache", { spaceId: null }),
+      row("other", { spaceId: "s2", verified: true }),
+    ]);
+    await repo.setEmbeddings(repo.rows.map(({ id }) => ({ id, vector, model: "test:model" })));
+    const result = await lookup(repo, [], {
+      ...options,
+      session: { simpleMode: true },
+      query: { q: "spagetti", remote: true },
+      embed: () => Promise.resolve({ vector, model: "test:model" }),
+    });
+    expect(result.results.map((r) => r.food.name)).toEqual(["Pasta med kødsovs"]);
+  });
+  it("typing, short queries, unavailable embeddings and barcodes retain keyword lookup", async () => {
+    const repo = new MemoryFoodRepository([row("a")]);
+    const semantic = vi.spyOn(repo, "searchLibrarySemantic");
+    const embed = vi.fn().mockResolvedValue(null);
+    for (const query of [{ q: "example", remote: false }, { q: "ex", remote: true }, { barcode }])
+      await lookup(repo, [], { ...options, query, embed });
+    expect(embed).not.toHaveBeenCalled();
+    const result = await lookup(repo, [], { ...options, embed });
+    expect(result.results).toHaveLength(1);
+    expect(result.sources.semantic).toBe("skipped");
+    expect(semantic).not.toHaveBeenCalled();
+  });
+});

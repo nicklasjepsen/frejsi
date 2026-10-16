@@ -3,6 +3,7 @@ import {
   createEventSinkFromEnv,
   log,
   prisma,
+  PrismaFoodRepository,
   type EmitFn,
   type EventEnvelope,
   type EventSink,
@@ -13,17 +14,25 @@ import { foodSources } from "@frejsi/shared/food";
 import { createPhotoStoreFromEnv, type PhotoStore } from "@frejsi/shared/photos";
 import type { FoodSource } from "@frejsi/shared";
 
-export type FoodTx = Pick<PrismaClient, "food" | "mealItem" | "space" | "event" | "user">;
+export type FoodTx = Pick<
+  PrismaClient,
+  "food" | "mealItem" | "space" | "event" | "user" | "$executeRaw"
+>;
 export interface FoodDb extends FoodTx {
   $transaction<T>(
     run: (tx: FoodTx) => Promise<T>,
     options?: { isolationLevel: "Serializable" },
   ): Promise<T>;
 }
+import type { FoodRepository, SearchEmbed } from "@frejsi/shared/food/types";
+import type { SessionContext } from "@frejsi/shared";
+import { foodSearchEmbed } from "./semantic";
 import type { SessionDb } from "@/lib/auth/session";
 
 export interface FoodDeps {
   sessionDb?: SessionDb;
+  repo?: FoodRepository;
+  searchEmbedding?: (spaceId: string, session: SessionContext) => Promise<SearchEmbed | null>;
   db?: FoodDb;
   sink?: EventSink;
   now?: () => Date;
@@ -39,6 +48,8 @@ export function configureFoods(deps: FoodDeps): void {
 export function resolveFoods(deps: FoodDeps = {}) {
   const all = { ...overrides, ...deps };
   return {
+    repo: all.repo ?? new PrismaFoodRepository(all.db ?? prisma),
+    searchEmbedding: all.searchEmbedding ?? foodSearchEmbed,
     db: (all.db ?? prisma) as FoodDb,
     sessionDb: all.sessionDb ?? prisma,
     sink: all.sink ?? createEventSinkFromEnv(),

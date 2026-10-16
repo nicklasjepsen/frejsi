@@ -190,12 +190,14 @@ export function FoodForm({ spaceId, food, onSaved }: FoodFormProps) {
   const current = saved ?? food;
   const sourceLine =
     current && !text.isOwn(current.origin)
-      ? current.barcode
-        ? t("source", {
-            source: text.sourceName(current.origin),
-            barcode: current.barcode.slice(0, 4),
-          })
-        : text.sourceName(current.origin)
+      ? current.sourceName
+        ? `${text.sourceName(current.origin)} · ${current.sourceName}`
+        : current.barcode
+          ? t("source", {
+              source: text.sourceName(current.origin),
+              barcode: current.barcode.slice(0, 4),
+            })
+          : text.sourceName(current.origin)
       : undefined;
 
   return (

@@ -18,13 +18,15 @@
     "manual": "Fra måltidsloggen",
     "off": "Fra Open Food Facts",
     "frida": "Fra Frida",
-    "other": "Fra {origin}"
+    "other": "Fra {origin}",
+    "ai": "AI fra billede"
   },
   "sourceName": {
     "off": "Open Food Facts",
     "frida": "Frida",
     "family": "Egen ret",
-    "manual": "Egen ret"
+    "manual": "Egen ret",
+    "ai": "AI fra billede"
   },
   "line": {
     "origin": {
@@ -87,5 +89,16 @@
     "source": "{source} · stregkode {barcode}…",
     "photoPreview": "Det valgte billede",
     "loadFailed": "Fødevaren kunne ikke hentes lige nu."
+  },
+  "estimate": {
+    "title": "{name} (fra billede)",
+    "asked": "ca. {amount} g · {child} spurgte {time}",
+    "someone": "En person",
+    "portion": "1 tallerken ca. {amount} g",
+    "gramsCell": "ca. {amount} g",
+    "status": "Et gæt",
+    "badge": "Et gæt · ikke tjekket",
+    "askedDesktop": "{child} spurgte {date} {time}",
+    "today": "i dag"
   }
 }
