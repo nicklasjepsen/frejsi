@@ -43,6 +43,7 @@ export interface CliUser {
   name: string;
   simpleMode: boolean;
   accent: string;
+  theme: string;
   locale: string;
   memberships: { spaceId: string; role: string }[];
 }
@@ -58,6 +59,7 @@ export function requireOwner(user: CliUser | null, spaceId: string): SessionCont
     name: user.name,
     simpleMode: user.simpleMode,
     accent: user.accent,
+    theme: user.theme,
     locale: user.locale,
     memberships: user.memberships.map((m) => ({ spaceId: m.spaceId, role: m.role })),
   });

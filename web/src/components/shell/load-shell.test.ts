@@ -8,6 +8,7 @@ const session: SessionContext = {
   name: "Jonas",
   simpleMode: false,
   accent: "olive",
+  theme: "system",
   locale: "da",
   memberships: [
     { spaceId: "s2", role: "carer" },

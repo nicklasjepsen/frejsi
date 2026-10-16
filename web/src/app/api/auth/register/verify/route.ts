@@ -3,6 +3,7 @@ import type { RegistrationResponseJSON } from "@simplewebauthn/server";
 import { z } from "zod";
 
 import { assertOrigin, finishRegistration } from "@/lib/auth/webauthn";
+import { themeCookie } from "@/lib/theme/theme";
 
 import { json, parseBody, route, sessionCookie } from "../../http";
 
@@ -42,6 +43,6 @@ export const POST = route("auth/register/verify", async (request) => {
   });
   return json(
     { userId: result.userId, spaceId: result.spaceId, role: result.role },
-    { cookie: sessionCookie(result.sessionId) },
+    { cookie: [sessionCookie(result.sessionId), themeCookie(result.theme)] },
   );
 });

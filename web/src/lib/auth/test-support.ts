@@ -48,6 +48,7 @@ const defaults: Record<TableName, (now: Date) => Row> = {
     avatar: null,
     simpleMode: false,
     accent: "olive",
+    theme: "system",
     locale: "da",
     createdAt: now,
     lastSeen: null,

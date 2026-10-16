@@ -1,6 +1,14 @@
 import { describe, expect, it } from "vitest";
 
-import { Accent, Locale, SpaceSettings, UserSettings, localeOrDefault } from "./settings";
+import {
+  Accent,
+  Locale,
+  SpaceSettings,
+  Theme,
+  UserSettings,
+  localeOrDefault,
+  themeOrDefault,
+} from "./settings";
 
 describe("localeOrDefault", () => {
   it("keeps a known locale and falls back to the column's default for anything else", () => {
@@ -18,6 +26,21 @@ describe("Accent and Locale", () => {
     expect(Accent.safeParse("blomme").success).toBe(false);
     expect(Locale.options).toEqual(["da", "en"]);
     expect(Locale.safeParse("de").success).toBe(false);
+  });
+});
+
+describe("Theme", () => {
+  it("is system, light or dark, with system first as the column's default", () => {
+    expect(Theme.options).toEqual(["system", "light", "dark"]);
+    expect(Theme.safeParse("auto").success).toBe(false);
+  });
+
+  it("themeOrDefault keeps a known theme and falls back to system for anything else", () => {
+    expect(themeOrDefault("dark")).toBe("dark");
+    expect(themeOrDefault("light")).toBe("light");
+    for (const unknown of ["auto", "", null, undefined]) {
+      expect(themeOrDefault(unknown)).toBe("system");
+    }
   });
 });
 
@@ -69,17 +92,16 @@ describe("SpaceSettings", () => {
 });
 
 describe("UserSettings", () => {
-  it("accepts locale, simpleMode and accent", () => {
-    expect(UserSettings.parse({ locale: "en", simpleMode: true, accent: "sea" })).toEqual({
-      locale: "en",
-      simpleMode: true,
-      accent: "sea",
-    });
+  const valid = { locale: "en", simpleMode: true, accent: "sea", theme: "dark" };
+
+  it("accepts locale, simpleMode, accent and theme", () => {
+    expect(UserSettings.parse(valid)).toEqual(valid);
   });
 
-  it("rejects an unknown accent", () => {
-    expect(UserSettings.safeParse({ locale: "en", simpleMode: true, accent: "red" }).success).toBe(
-      false,
-    );
+  it("rejects an unknown accent or theme, and a missing theme", () => {
+    expect(UserSettings.safeParse({ ...valid, accent: "red" }).success).toBe(false);
+    expect(UserSettings.safeParse({ ...valid, theme: "auto" }).success).toBe(false);
+    const { theme: _theme, ...withoutTheme } = valid;
+    expect(UserSettings.safeParse(withoutTheme).success).toBe(false);
   });
 });

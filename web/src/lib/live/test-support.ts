@@ -98,6 +98,7 @@ export class FakeLiveDb {
             name: user.name,
             simpleMode: user.simpleMode ?? false,
             accent: "olive",
+            theme: "system",
             locale: "da",
             memberships: user.memberships.map((m) => ({ ...m, userId: user.id })),
           },

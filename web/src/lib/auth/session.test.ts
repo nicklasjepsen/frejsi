@@ -61,6 +61,7 @@ interface Row {
     name: string;
     simpleMode: boolean;
     accent: string;
+    theme: string;
     locale: string;
     memberships: { spaceId: string; role: string }[];
   };
@@ -113,6 +114,7 @@ const alive = (): Row => ({
     name: "Example Person",
     simpleMode: true,
     accent: "plum",
+    theme: "dark",
     locale: "en",
     memberships: [
       { spaceId: "s1", role: "carer" },
@@ -126,6 +128,7 @@ const expected: SessionContext = {
   name: "Example Person",
   simpleMode: true,
   accent: "plum",
+  theme: "dark",
   locale: "en",
   memberships: [
     { spaceId: "s1", role: "carer" },

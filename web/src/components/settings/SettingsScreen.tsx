@@ -328,7 +328,14 @@ export function SettingsScreen({
               })}
               <Row
                 title={t("colour.row")}
-                sub={accents(me.accent)}
+                sub={
+                  me.theme === "system"
+                    ? accents(me.accent)
+                    : t("colour.rowWithTheme", {
+                        colour: accents(me.accent),
+                        theme: t(`colour.themeOptions.${me.theme}`),
+                      })
+                }
                 href={settingsHref("/colour")}
                 testId="colour-row"
               />

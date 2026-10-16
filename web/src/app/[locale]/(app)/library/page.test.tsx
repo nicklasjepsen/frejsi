@@ -33,6 +33,7 @@ const session = (simpleMode: boolean, role: "owner" | "carer" | "viewer"): Sessi
   name: "Example Carer",
   simpleMode,
   accent: "olive",
+  theme: "system",
   locale: "da",
   memberships: [{ spaceId: "s1", role }],
 });

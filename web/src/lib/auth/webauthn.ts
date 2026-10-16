@@ -3,7 +3,7 @@
 // that removing a device revokes it at once; the cookie carries only the session id.
 import { randomBytes, randomUUID } from "node:crypto";
 
-import { HttpError, type Role } from "@frejsi/shared";
+import { HttpError, Theme, themeOrDefault, type Role } from "@frejsi/shared";
 import {
   generateAuthenticationOptions,
   generateRegistrationOptions,
@@ -53,6 +53,8 @@ export interface RegistrationResult {
   passkeyId: string;
   spaceId: string;
   role: Role;
+  /** The stored theme, so the route can mirror it into the device's cookie at sign-in. */
+  theme: Theme;
 }
 
 export interface LoginInput {
@@ -64,6 +66,8 @@ export interface LoginResult {
   sessionId: string;
   expiresAt: Date;
   userId: string;
+  /** The stored theme, so the route can mirror it into the device's cookie at sign-in. */
+  theme: Theme;
 }
 
 /**
@@ -166,6 +170,7 @@ export async function finishRegistration(
   const expiresAt = sessionExpiry(at);
   const userId = challenge.userId;
   let role = invite.role as Role;
+  let theme: Theme = Theme.enum.system;
 
   const passkeyId = await transact(
     db,
@@ -180,6 +185,8 @@ export async function finishRegistration(
         });
         if (!membership) throw new HttpError(404, "not-found");
         role = membership.role as Role;
+        const user = await tx.user.findUnique({ where: { id: userId } });
+        theme = themeOrDefault(user?.theme);
       } else {
         await tx.user.create({
           data: { id: userId, name: invite.name, locale: defaultLocale() },
@@ -207,7 +214,7 @@ export async function finishRegistration(
     { now, log },
   );
 
-  return { sessionId, expiresAt, userId, passkeyId, spaceId: invite.spaceId, role };
+  return { sessionId, expiresAt, userId, passkeyId, spaceId: invite.spaceId, role, theme };
 }
 
 /** Starts a sign-in with a discoverable credential: no username, no `allowCredentials`. */
@@ -259,6 +266,7 @@ export async function finishLogin(input: LoginInput, deps: AuthDeps = {}): Promi
   const at = now();
   const sessionId = newSessionId();
   const expiresAt = sessionExpiry(at);
+  let theme: Theme = Theme.enum.system;
   await transact(
     db,
     sink,
@@ -271,7 +279,8 @@ export async function finishLogin(input: LoginInput, deps: AuthDeps = {}): Promi
         data: { counter: verification.authenticationInfo.newCounter, lastUsedAt: at },
       });
       if (count !== 1) throw new HttpError(403, "forbidden");
-      await tx.user.update({ where: { id: passkey.userId }, data: { lastSeen: at } });
+      const user = await tx.user.update({ where: { id: passkey.userId }, data: { lastSeen: at } });
+      theme = themeOrDefault(user.theme);
       const memberships = await tx.membership.findMany({ where: { userId: passkey.userId } });
       for (const membership of memberships) {
         await emit(membership.spaceId, "member.updated", { userId: passkey.userId });
@@ -288,7 +297,7 @@ export async function finishLogin(input: LoginInput, deps: AuthDeps = {}): Promi
     },
     { now, log },
   );
-  return { sessionId, expiresAt, userId: passkey.userId };
+  return { sessionId, expiresAt, userId: passkey.userId, theme };
 }
 
 /**

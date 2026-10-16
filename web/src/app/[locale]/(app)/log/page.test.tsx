@@ -25,6 +25,7 @@ const jonas: SessionContext = {
   name: "Jonas",
   simpleMode: false,
   accent: "olive",
+  theme: "system",
   locale: "da",
   memberships: [{ spaceId: "s1", role: "carer" }],
 };

@@ -18,6 +18,7 @@ const actor: SessionContext = {
   name: "Example",
   simpleMode: true,
   accent: "olive",
+  theme: "system",
   locale: "en",
   memberships: [{ spaceId: "s1", role: "carer" }],
 };

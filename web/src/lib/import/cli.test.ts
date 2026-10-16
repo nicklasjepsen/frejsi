@@ -8,6 +8,7 @@ const user = (role: "owner" | "carer" | "viewer", spaceId = "s1"): CliUser => ({
   name: "Test",
   simpleMode: false,
   accent: "olive",
+  theme: "system",
   locale: "da",
   memberships: [{ spaceId, role }],
 });

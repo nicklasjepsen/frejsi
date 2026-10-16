@@ -57,6 +57,7 @@ export async function loadSession(
     name: row.user.name,
     simpleMode: row.user.simpleMode,
     accent: row.user.accent,
+    theme: row.user.theme,
     locale: row.user.locale,
     memberships: row.user.memberships.map((m) => ({ spaceId: m.spaceId, role: m.role })),
   });

@@ -121,8 +121,10 @@ describe("POST /api/auth/register/options and /verify", () => {
     const body = (await res.json()) as { userId: string; spaceId: string; role: string };
     expect(body).toMatchObject({ spaceId: "s1", role: "carer" });
 
-    const cookie = res.headers.get("set-cookie") ?? "";
+    const cookie = res.headers.getSetCookie()[0] ?? "";
     expect(cookie).toMatch(COOKIE);
+    // A new user follows the device; any theme left by an earlier user on this device goes.
+    expect(res.headers.getSetCookie()[1]).toBe("frejsi_theme=; Path=/; SameSite=Lax; Max-Age=0");
     const sessionId = COOKIE.exec(cookie)?.[1] ?? "";
     await expect(loadSession(sessionId, { db: fake.db })).resolves.toMatchObject({
       userId: body.userId,
@@ -220,6 +222,9 @@ describe("POST /api/auth/login/options and /verify", () => {
   it("sign a registered device in with a discoverable credential and set the cookie", async () => {
     const token = await invite("Example Carer");
     const registered = (await (await register(token)).json()) as { userId: string };
+    // Chosen on another device earlier; this device gets it with the session.
+    const stored = fake.rows("user").find((u) => u.id === registered.userId);
+    if (stored) stored.theme = "dark";
 
     const started = await loginOptions(post("/api/auth/login/options"));
     expect(started.status).toBe(200);
@@ -235,8 +240,11 @@ describe("POST /api/auth/login/options and /verify", () => {
     const res = await loginVerify(post("/api/auth/login/verify", { challengeId, response }));
     expect(res.status).toBe(200);
     expect(await res.json()).toEqual({ userId: registered.userId });
-    const cookie = res.headers.get("set-cookie") ?? "";
+    const cookie = res.headers.getSetCookie()[0] ?? "";
     expect(cookie).toMatch(COOKIE);
+    expect(res.headers.getSetCookie()[1]).toBe(
+      "frejsi_theme=dark; Path=/; SameSite=Lax; Max-Age=31536000",
+    );
     const sessionId = COOKIE.exec(cookie)?.[1] ?? "";
     await expect(loadSession(sessionId, { db: fake.db })).resolves.toMatchObject({
       userId: registered.userId,
@@ -283,7 +291,7 @@ describe("POST /api/auth/login/options and /verify", () => {
 describe("POST /api/auth/logout", () => {
   it("deletes the current session and clears the cookie", async () => {
     const token = await invite("Example Carer");
-    const cookie = (await register(token)).headers.get("set-cookie") ?? "";
+    const cookie = (await register(token)).headers.getSetCookie()[0] ?? "";
     const sessionId = COOKIE.exec(cookie)?.[1] ?? "";
     expect(fake.rows("session").map((s) => s.id)).toEqual([sessionId]);
 
@@ -291,9 +299,10 @@ describe("POST /api/auth/logout", () => {
       post("/api/auth/logout", undefined, { cookie: `other=1; frejsi_session=${sessionId}` }),
     );
     expect(res.status).toBe(204);
-    expect(res.headers.get("set-cookie")).toBe(
+    expect(res.headers.getSetCookie()).toEqual([
       "frejsi_session=; HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=0",
-    );
+      "frejsi_theme=; Path=/; SameSite=Lax; Max-Age=0",
+    ]);
     expect(fake.rows("session")).toEqual([]);
     await expect(loadSession(sessionId, { db: fake.db })).resolves.toBeNull();
 

@@ -3,7 +3,7 @@
 // Values come from the pure modules by path, never from the shared index: a client bundle must not
 // pull in the Prisma client or App Insights that the index exports (plan §2; see routing.ts).
 import type { ApiErrorCode, GlucoseUnit } from "@frejsi/shared";
-import { Accent } from "@frejsi/shared/schemas/settings";
+import { Accent, Theme } from "@frejsi/shared/schemas/settings";
 import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -16,8 +16,10 @@ import { Card } from "@/components/ui/Card";
 import { Notice } from "@/components/ui/Notice";
 import { localeHref, type AppLocale } from "@/lib/i18n/routing";
 import { useLiveFeed } from "@/lib/live/useLiveFeed";
+import { applyTheme } from "@/lib/theme/theme";
 
-import { PageHeader } from "./controls";
+import type { UserSettingsPatch } from "./contracts";
+import { PageHeader, Row, SegmentedControl } from "./controls";
 import type { SettingsData } from "./load-settings";
 import { useServerState } from "./server-state";
 import { failureCode, settingsApi, type SettingsApi } from "./settings-client";
@@ -32,8 +34,10 @@ export interface ColourScreenProps {
 /**
  * Farve (Farve-Indstilling, design README "Per-person accent colour"): an owner picks for anyone
  * in the space, a person for themselves. The preview card carries `data-accent` so the choice is
- * seen at once; the shell follows on the refresh. A viewer's preview never mounts a glucose
- * reading (plan task 9, §2).
+ * seen at once; the shell follows on the refresh. The same screen holds light or dark: one's own
+ * choice switches the whole document before the save answers (and back if it is refused); for
+ * another member it is only stored, and their devices follow at their next sign-in or page. A
+ * viewer's preview never mounts a glucose reading (plan task 9, §2).
  */
 export function ColourScreen({ locale, data, api = settingsApi() }: ColourScreenProps) {
   const t = useTranslations("settings");
@@ -51,21 +55,35 @@ export function ColourScreen({ locale, data, api = settingsApi() }: ColourScreen
   const isMe = selected.userId === data.me.userId;
   const canSeeGlucose = data.role !== "viewer";
 
-  async function pick(accent: Accent) {
-    if (accent === selected.accent) return;
+  async function save(patch: UserSettingsPatch, revert?: () => void) {
     setBusy(true);
     setError(null);
     try {
-      const next = await api.patchPerson(data.spaceId, selected.userId, isMe, { accent });
+      const next = await api.patchPerson(data.spaceId, selected.userId, isMe, patch);
       setPeople((current) =>
         current.map((p) => (p.userId === selected.userId ? { ...p, ...next } : p)),
       );
       router.refresh();
     } catch (failure) {
+      revert?.();
       setError(failureCode(failure));
     } finally {
       setBusy(false);
     }
+  }
+
+  async function pick(accent: Accent) {
+    if (accent === selected.accent) return;
+    await save({ accent });
+  }
+
+  async function pickTheme(theme: Theme) {
+    if (theme === selected.theme) return;
+    const previous = selected.theme;
+    if (isMe) applyTheme(theme);
+    await save({ theme }, () => {
+      if (isMe) applyTheme(previous);
+    });
   }
 
   return (
@@ -116,6 +134,26 @@ export function ColourScreen({ locale, data, api = settingsApi() }: ColourScreen
           </button>
         ))}
       </div>
+
+      <Card className={styles.list}>
+        <Row
+          title={t("colour.theme")}
+          sub={t("colour.themeLead")}
+          testId="theme-row"
+          control={
+            <SegmentedControl
+              label={t("colour.themeFor", { name: selected.name })}
+              value={selected.theme}
+              options={Theme.options.map((theme) => ({
+                value: theme,
+                label: t(`colour.themeOptions.${theme}`),
+              }))}
+              onChange={(theme) => void pickTheme(theme)}
+              disabled={busy}
+            />
+          }
+        />
+      </Card>
 
       {error && (
         <Notice tone="sunken" role="alert">

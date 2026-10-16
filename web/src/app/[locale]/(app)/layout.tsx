@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 import { AppShell } from "@/components/shell/AppShell";
 import { NoSpace } from "@/components/shell/NoSpace";
 import { getShell, getShellSession } from "@/components/shell/shell-session";
+import { ThemeSync } from "@/components/shell/ThemeSync";
 import { localeHref, resolveLocale } from "@/lib/i18n/routing";
 
 /**
@@ -23,17 +24,30 @@ export default async function AppLayout({
   const session = await getShellSession();
   if (!session) redirect(localeHref(locale, "/welcome"));
 
+  // The stored theme reaches the device's cookie here when it did not at sign-in.
+  const theme = <ThemeSync theme={session.theme} />;
+
   const shell = await getShell();
-  if (!shell) return <NoSpace accent={session.accent} />;
+  if (!shell) {
+    return (
+      <>
+        {theme}
+        <NoSpace accent={session.accent} />
+      </>
+    );
+  }
 
   return (
-    <AppShell
-      locale={locale}
-      user={{ name: session.name, accent: session.accent, simpleMode: session.simpleMode }}
-      space={shell.space}
-      spaces={shell.spaces}
-    >
-      {children}
-    </AppShell>
+    <>
+      {theme}
+      <AppShell
+        locale={locale}
+        user={{ name: session.name, accent: session.accent, simpleMode: session.simpleMode }}
+        space={shell.space}
+        spaces={shell.spaces}
+      >
+        {children}
+      </AppShell>
+    </>
   );
 }

@@ -12,6 +12,7 @@ const session = SessionContext.parse({
   name: "Fictional member",
   simpleMode: false,
   accent: "olive",
+  theme: "system",
   locale: "en",
   memberships: [{ spaceId: "space", role: "owner" }],
 });

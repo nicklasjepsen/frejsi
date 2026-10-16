@@ -23,6 +23,7 @@ const session = (userId: string, role: "owner" | "carer" | "viewer"): SessionCon
   name: "whoever",
   simpleMode: false,
   accent: "olive",
+  theme: "system",
   locale: "da",
   memberships: [{ spaceId: "s1", role }],
 });
@@ -43,9 +44,9 @@ function setup() {
     lastSeq: 2,
   });
   const person = { createdAt: T0 };
-  fake.rows("user").push({ id: "u-owner", name: "Example Owner", simpleMode: false, accent: "olive", locale: "da", ...person });
-  fake.rows("user").push({ id: "u-child", name: "Example Subject", simpleMode: true, accent: "plum", locale: "da", ...person });
-  fake.rows("user").push({ id: "u-viewer", name: "Example Viewer", simpleMode: false, accent: "sea", locale: "en", ...person });
+  fake.rows("user").push({ id: "u-owner", name: "Example Owner", simpleMode: false, accent: "olive", theme: "system", locale: "da", ...person });
+  fake.rows("user").push({ id: "u-child", name: "Example Subject", simpleMode: true, accent: "plum", theme: "system", locale: "da", ...person });
+  fake.rows("user").push({ id: "u-viewer", name: "Example Viewer", simpleMode: false, accent: "sea", theme: "system", locale: "en", ...person });
   const at = (minutes: number) => new Date(T0.getTime() + minutes * 60_000);
   fake.rows("membership").push({ userId: "u-child", spaceId: "s1", role: "carer", createdAt: at(1) });
   fake.rows("membership").push({ userId: "u-owner", spaceId: "s1", role: "owner", createdAt: at(0) });
@@ -103,6 +104,7 @@ describe("loadSettingsData (plan task 9)", () => {
       role: "owner",
       simpleMode: false,
       accent: "olive",
+      theme: "system",
       locale: "da",
     });
     expect(JSON.stringify(data)).not.toContain("glucose-s1");

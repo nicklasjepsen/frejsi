@@ -34,7 +34,7 @@ export function seedSpace(fake: FakeAuthDb): void {
   };
   fake.rows("space").push({ id: "s1", name: "Example space", ...space });
   fake.rows("space").push({ id: "s2", name: "Second space", ...space });
-  const person = { simpleMode: false, accent: "olive", locale: "da", createdAt: T0 };
+  const person = { simpleMode: false, accent: "olive", theme: "system", locale: "da", createdAt: T0 };
   fake.rows("user").push({ id: USERS.owner, name: "Example Owner", ...person });
   fake.rows("user").push({ id: USERS.carer, name: "Example Carer", ...person });
   fake.rows("user").push({ id: USERS.viewer, name: "Example Viewer", ...person });

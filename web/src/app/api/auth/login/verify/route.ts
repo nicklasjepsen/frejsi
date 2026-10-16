@@ -3,6 +3,7 @@ import type { AuthenticationResponseJSON } from "@simplewebauthn/server";
 import { z } from "zod";
 
 import { assertOrigin, finishLogin } from "@/lib/auth/webauthn";
+import { themeCookie } from "@/lib/theme/theme";
 
 import { json, parseBody, route, sessionCookie } from "../../http";
 
@@ -23,7 +24,10 @@ const Body = z.object({
   }),
 });
 
-/** Finishes a sign-in: counter check, passkey and user bookkeeping, a new session and its cookie. */
+/**
+ * Finishes a sign-in: counter check, passkey and user bookkeeping, a new session and its cookie,
+ * and the theme cookie from the stored preference so the first page paints right.
+ */
 export const POST = route("auth/login/verify", async (request) => {
   assertOrigin(request.headers.get("origin"));
   const body = await parseBody(request, Body);
@@ -32,5 +36,8 @@ export const POST = route("auth/login/verify", async (request) => {
     response: body.response as AuthenticationResponseJSON,
   });
   log.info("auth.login", { route: "auth/login/verify", userId: result.userId });
-  return json({ userId: result.userId }, { cookie: sessionCookie(result.sessionId) });
+  return json(
+    { userId: result.userId },
+    { cookie: [sessionCookie(result.sessionId), themeCookie(result.theme)] },
+  );
 });

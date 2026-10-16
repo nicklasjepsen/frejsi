@@ -130,7 +130,16 @@
     "noReadings": "Ingen målinger endnu",
     "eatingNow": "Jeg spiser nu",
     "note": "Måltider er altid teglrøde, og tallet er altid sort – uanset farve. {name} kan også selv skifte under Mere.",
-    "noteSelf": "Måltider er altid teglrøde, og tallet er altid sort – uanset farve."
+    "noteSelf": "Måltider er altid teglrøde, og tallet er altid sort – uanset farve.",
+    "theme": "Lys eller mørk",
+    "themeFor": "Lys eller mørk for {name}",
+    "themeLead": "Følg enheden, eller vælg lys eller mørk.",
+    "themeOptions": {
+      "system": "Som enheden",
+      "light": "Lys",
+      "dark": "Mørk"
+    },
+    "rowWithTheme": "{colour} · {theme}"
   },
   "data": {
     "lead": "Eksport til klinikken",

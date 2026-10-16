@@ -166,10 +166,24 @@ describe("PATCH /api/spaces/:id/settings", () => {
 
 describe("PATCH /api/spaces/:id/settings/members/:userId", () => {
   it("lets an owner set a member's view, colour and language, emitting member.updated to each of that member's spaces", async () => {
-    const res = await patchFor("owner", USERS.carer, { simpleMode: true, accent: "forest" });
+    const res = await patchFor("owner", USERS.carer, {
+      simpleMode: true,
+      accent: "forest",
+      theme: "dark",
+    });
     expect(res.status).toBe(200);
-    expect(await res.json()).toEqual({ locale: "da", simpleMode: true, accent: "forest" });
-    expect(fake.rows("user").find((u) => u.id === USERS.carer)).toMatchObject({ simpleMode: true });
+    expect(await res.json()).toEqual({
+      locale: "da",
+      simpleMode: true,
+      accent: "forest",
+      theme: "dark",
+    });
+    expect(fake.rows("user").find((u) => u.id === USERS.carer)).toMatchObject({
+      simpleMode: true,
+      theme: "dark",
+    });
+    // The member's theme is stored for their devices; the owner's device gets no theme cookie.
+    expect(res.headers.getSetCookie()).toEqual([]);
     expect(events).toEqual([
       { spaceId: "s1", type: "member.updated", payload: { userId: USERS.carer } },
       { spaceId: "s2", type: "member.updated", payload: { userId: USERS.carer } },

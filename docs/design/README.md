@@ -102,7 +102,7 @@ Names are the ones the implementation should use. "Variants" are what the artboa
 
 ## Dark mode
 
-System-driven. One artboard, `Nu-Moerk.dc.html`, fixes the dark palette for the olive accent (see `tokens.json#color.dark`). Cards lose the hairline shadow and gain a 1 px `#3A332C` border; the primary button is dark text on the lifted olive. Everything else keeps its structure.
+System-driven by default; since the theme switch a person may also force light or dark under Farve (stored on `users` like the accent, mirrored into the `frejsi_theme` cookie so the first paint has it). One artboard, `Nu-Moerk.dc.html`, fixes the dark palette for the olive accent (see `tokens.json#color.dark`). Cards lose the hairline shadow and gain a 1 px `#3A332C` border; the primary button is dark text on the lifted olive. Everything else keeps its structure.
 
 ## Danish vocabulary (glossary)
 

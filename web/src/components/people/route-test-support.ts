@@ -92,6 +92,7 @@ export function createWorld(holders: Holders): World {
       name: user.name,
       simpleMode: false,
       accent: "olive",
+      theme: "system",
       locale: "da",
       lastSeen: T0,
     });

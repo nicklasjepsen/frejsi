@@ -279,6 +279,7 @@ export async function seed(options: SeedOptions = {}): Promise<SeededSpace> {
   const session = (key: SeedPersonKey): SessionContext => ({
     ...people[key],
     accent: "olive",
+    theme: "system",
     locale: "da",
     memberships: [{ spaceId, role: people[key].role }],
   });

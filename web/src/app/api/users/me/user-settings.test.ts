@@ -12,9 +12,14 @@ function setup() {
   const { sink, events } = recordingSink();
   fake.rows("space").push({ id: "s1", name: "Example space", timezone: "Europe/Copenhagen" });
   fake.rows("space").push({ id: "s2", name: "Other space", timezone: "Europe/Copenhagen" });
-  fake
-    .rows("user")
-    .push({ id: "u1", name: "Example Person", simpleMode: false, accent: "olive", locale: "da" });
+  fake.rows("user").push({
+    id: "u1",
+    name: "Example Person",
+    simpleMode: false,
+    accent: "olive",
+    theme: "system",
+    locale: "da",
+  });
   fake.rows("membership").push({ userId: "u1", spaceId: "s1", role: "carer", createdAt: T0 });
   fake.rows("membership").push({ userId: "u1", spaceId: "s2", role: "viewer", createdAt: T0 });
   return { fake, sink, events, deps: { db: fake.db, sink, now: () => T0 } };
@@ -24,8 +29,15 @@ describe("updateUserSettings", () => {
   it("writes the given fields only and returns the user's settings", async () => {
     const { fake, deps } = setup();
     const result = await updateUserSettings("u1", { accent: "plum" }, deps);
-    expect(result).toEqual({ locale: "da", simpleMode: false, accent: "plum" });
+    expect(result).toEqual({ locale: "da", simpleMode: false, accent: "plum", theme: "system" });
     expect(fake.rows("user")[0]).toMatchObject({ accent: "plum", locale: "da", simpleMode: false });
+  });
+
+  it("writes the theme like any other presentation setting", async () => {
+    const { fake, deps } = setup();
+    const result = await updateUserSettings("u1", { theme: "dark" }, deps);
+    expect(result).toEqual({ locale: "da", simpleMode: false, accent: "olive", theme: "dark" });
+    expect(fake.rows("user")[0]).toMatchObject({ theme: "dark" });
   });
 
   it("emits member.updated { userId } to every space the user belongs to, in the same transaction", async () => {

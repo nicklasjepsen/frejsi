@@ -39,16 +39,24 @@ export async function parseBody<T>(request: Request, schema: z.ZodType<T>): Prom
   return parsed.data;
 }
 
-export function json(body: unknown, init: { status?: number; cookie?: string } = {}): Response {
-  const headers = new Headers({ "content-type": "application/json" });
-  if (init.cookie) headers.append("set-cookie", init.cookie);
+/** One `Set-Cookie` header per value in `cookie`; a string is one cookie, an array several. */
+function withCookies(headers: Headers, cookie: string | string[] | undefined): Headers {
+  for (const value of typeof cookie === "string" ? [cookie] : (cookie ?? [])) {
+    headers.append("set-cookie", value);
+  }
+  return headers;
+}
+
+export function json(
+  body: unknown,
+  init: { status?: number; cookie?: string | string[] } = {},
+): Response {
+  const headers = withCookies(new Headers({ "content-type": "application/json" }), init.cookie);
   return new Response(JSON.stringify(body), { status: init.status ?? 200, headers });
 }
 
-export function noContent(init: { cookie?: string } = {}): Response {
-  const headers = new Headers();
-  if (init.cookie) headers.append("set-cookie", init.cookie);
-  return new Response(null, { status: 204, headers });
+export function noContent(init: { cookie?: string | string[] } = {}): Response {
+  return new Response(null, { status: 204, headers: withCookies(new Headers(), init.cookie) });
 }
 
 /**

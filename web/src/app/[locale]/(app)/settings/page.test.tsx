@@ -49,6 +49,7 @@ const session: SessionContext = {
   name: "Laerke",
   simpleMode: false,
   accent: "sea",
+  theme: "system",
   locale: "da",
   memberships: [{ spaceId: "s1", role: "viewer" }],
 };
@@ -80,6 +81,7 @@ const viewerData: SettingsData = {
     locale: "da",
     simpleMode: false,
     accent: "sea",
+    theme: "system",
   },
   people: [
     {
@@ -89,6 +91,7 @@ const viewerData: SettingsData = {
       locale: "da",
       simpleMode: false,
       accent: "sea",
+      theme: "system",
     },
   ],
 };

@@ -23,6 +23,7 @@ const user = (locale: SessionContext["locale"]): SessionContext => ({
   name: "Jonas",
   simpleMode: false,
   accent: "forest",
+  theme: "system",
   locale,
   memberships: [{ spaceId: "s1", role: "owner" }],
 });
