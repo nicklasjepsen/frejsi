@@ -394,3 +394,20 @@ it.each(["Inject five U before eating", "five U", "fem E", "twenty-five u", "fem
     expect(calls.rows[0]?.ok).toBe(false);
   },
 );
+
+it.each([
+  "Inject five-U before eating",
+  "Inject five (U) before eating",
+  "five-U",
+  "five (U)",
+  "fem—E",
+  "fem [E]",
+  "five + U",
+  "five Ｕ",
+  "Inject a few before eating",
+  "Injicer før måltidet",
+])("rejects punctuated abbreviations and injection directives: %s", async (text) => {
+  const { provider, calls } = setup([{ kind: "json", json: { text }, model: "fixture" }]);
+  await expect(provider.complete(req)).rejects.toEqual(code("ai-rejected"));
+  expect(calls.rows[0]?.ok).toBe(false);
+});
