@@ -5,7 +5,7 @@ import { FakeAiProvider, defaultFakeAnswer } from "@frejsi/shared/ai/fake";
 import { CappedAiProvider } from "@frejsi/shared/ai/capped";
 import { MemoryAiCallRepository } from "@frejsi/shared/ai/calls";
 import { type MemoryPhotoStore } from "@frejsi/shared/photos/memory";
-import { afterEach, beforeEach, expect, it } from "vitest";
+import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { FakeAuthDb } from "@/lib/auth/test-support";
 import {
   seedSpace,
@@ -63,6 +63,7 @@ beforeEach(() => {
   photoDataUrl = plate.photoDataUrl;
 });
 afterEach(() => {
+  vi.restoreAllMocks();
   rig.reset();
   configureEstimates({});
 });
@@ -185,4 +186,38 @@ it("rejects unsafe client strings or inconsistent totals before saving", async (
   }
   expect(rig.rows).toEqual([]);
   expect(rig.events).toEqual([]);
+});
+
+it("removes the exact uploaded photo when the final event fails after storage", async () => {
+  const db = rig.deps.db;
+  if (!db) throw new Error("missing fake database");
+  const store = rig.deps.photos as MemoryPhotoStore;
+  const readUrl = store.readUrl.bind(store);
+  // setFoodPhoto resolves the URLs after its own event; fail the subsequent estimate event.
+  vi.spyOn(store, "readUrl").mockImplementation((key, size) => {
+    rig.failEvent = true;
+    return readUrl(key, size);
+  });
+  const res = await call(ask, { photoDataUrl, estimate });
+  expect(res.status).toBe(500);
+  expect(rig.rows).toEqual([]);
+  expect(rig.events).toEqual([]);
+  expect(rig.published).toEqual([]);
+  expect((rig.deps.photos as MemoryPhotoStore).photos.size).toBe(0);
+});
+
+it("removes the uploaded photo if the outer transaction cannot commit", async () => {
+  const db = rig.deps.db;
+  if (!db) throw new Error("missing fake database");
+  const transaction = db.$transaction.bind(db);
+  db.$transaction = (run, options) =>
+    transaction(async (tx) => {
+      await run(tx);
+      throw new Error("commit failed");
+    }, options);
+  expect((await call(ask, { photoDataUrl, estimate })).status).toBe(500);
+  expect(rig.rows).toEqual([]);
+  expect(rig.events).toEqual([]);
+  expect(rig.published).toEqual([]);
+  expect((rig.deps.photos as MemoryPhotoStore).photos.size).toBe(0);
 });
