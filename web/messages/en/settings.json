@@ -57,6 +57,8 @@
     "submit": "Connect",
     "submitting": "Connecting …",
     "cancel": "Cancel",
+    "noRecentReadings": "The login is saved and works, but no readings came through for the last day. Check that it is the account on the phone with the sensor, not a follower account, and that sharing is on in the app.",
+    "toSettings": "Back to settings",
     "nightscout": {
       "title": "Connect Nightscout",
       "lead": "Enter the address of your own Nightscout site. Frejsi keeps the address and the access in a locked vault – never in the database.",
@@ -65,7 +67,8 @@
       "secretKind": "Access token · API secret",
       "token": "Access token",
       "apiSecret": "API secret",
-      "badCredentials": "Nightscout refused the access – check the token or API secret"
+      "badCredentials": "Nightscout refused the access – check the token or API secret",
+      "noRecentReadings": "The address is saved and works, but no readings came through for the last day. Check that your Nightscout site receives data from the sensor."
     }
   },
   "ai": {

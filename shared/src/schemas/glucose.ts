@@ -125,8 +125,17 @@ export const ManualReadingRequest = z.strictObject({
 });
 export type ManualReadingRequest = z.infer<typeof ManualReadingRequest>;
 
+/**
+ * `recentReadings` is how many readings the source returned for the last day once the login
+ * worked: zero usually means a follower's login rather than the sharer's, or sharing turned off.
+ * Absent when that read failed; the credential is stored either way.
+ */
 export const ConnectSourceResult = z.discriminatedUnion("result", [
-  z.object({ result: z.literal("ok"), secretRef: z.string().min(1) }),
+  z.object({
+    result: z.literal("ok"),
+    secretRef: z.string().min(1),
+    recentReadings: z.number().int().nonnegative().optional(),
+  }),
   z.object({ result: z.literal("bad-credentials") }),
   z.object({ result: z.literal("unreachable") }),
 ]);

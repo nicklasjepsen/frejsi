@@ -11,11 +11,11 @@ is how to run a copy.
 pnpm monorepo. The dependency direction is one way: `web` and `poller` depend on `shared`, never the
 reverse, and `web` and `poller` never import each other.
 
-| Package | What it is | Runs on |
-|---|---|---|
-| `web/` | Next.js App Router: the screens and the API routes under `web/src/app/api/` | Azure Static Web Apps |
+| Package   | What it is                                                                                                                                                    | Runs on                      |
+| --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------- |
+| `web/`    | Next.js App Router: the screens and the API routes under `web/src/app/api/`                                                                                   | Azure Static Web Apps        |
 | `poller/` | Node 22 Azure Functions: the timer that fetches glucose every five minutes, the `source-connect` HTTP function, the food enrichment and weekly insight timers | Azure Functions, Consumption |
-| `shared/` | Zod schemas (the contract between web, poller and AI output), Prisma, and the domain logic: sources, events, statistics, photos | imported by both |
+| `shared/` | Zod schemas (the contract between web, poller and AI output), Prisma, and the domain logic: sources, events, statistics, photos                               | imported by both             |
 
 `infra/` holds the Bicep and the deployment script ([infra/README.md](../infra/README.md)); `fixtures/`
 holds hand-written, fictional responses of every external service; `evals/` holds the AI checks.
@@ -65,7 +65,8 @@ registry that decides what is switched on, and a fake for tests.
 
 - The interface: `shared/src/glucose/types.ts`. `fetchSince(since)` returns readings, oldest first,
   each with its timestamp; `probe()` checks a credential and returns `ok`, `bad-credentials` or
-  `unreachable`.
+  `unreachable`. `source-connect` follows an `ok` with `fetchSince` over the last day and reports
+  the count, so a login that works but has nothing to read (a follower's) is caught at connect time.
 - Adapters: `shared/src/glucose/dexcom-share/` and `shared/src/glucose/nightscout/`. `manual` has no
   adapter on purpose.
 - The registry: the `GlucoseSourceType` enum and the `GlucoseSourceConfig` variants in
@@ -111,13 +112,13 @@ calls only the endpoints on its own allow-list.
 The things a different country or a different household changes are settings, and every one is listed
 in [.env.example](../.env.example) (a test keeps that file and the code equal):
 
-| Setting | What it decides |
-|---|---|
-| `DEFAULT_LOCALE` | The language a visitor with no preference gets: `da` or `en`. |
-| `FOOD_SOURCES` | Which food plugins are switched on, as a comma-separated list of ids. |
-| `OFF_COUNTRY` | Which country's Open Food Facts products are preferred; empty means the whole world. |
-| `OFF_CONTRIBUTE_HOST` | Which Open Food Facts host receives corrections; empty is production, `world.openfoodfacts.net` is the staging host to try first. |
-| `AI_DAILY_CAP`, `AI_EMBED_DAILY_CAP`, `AI_EMBED_BACKFILL_DAILY_CAP` | The per-space daily limits on AI calls. |
+| Setting                                                             | What it decides                                                                                                                   |
+| ------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| `DEFAULT_LOCALE`                                                    | The language a visitor with no preference gets: `da` or `en`.                                                                     |
+| `FOOD_SOURCES`                                                      | Which food plugins are switched on, as a comma-separated list of ids.                                                             |
+| `OFF_COUNTRY`                                                       | Which country's Open Food Facts products are preferred; empty means the whole world.                                              |
+| `OFF_CONTRIBUTE_HOST`                                               | Which Open Food Facts host receives corrections; empty is production, `world.openfoodfacts.net` is the staging host to try first. |
+| `AI_DAILY_CAP`, `AI_EMBED_DAILY_CAP`, `AI_EMBED_BACKFILL_DAILY_CAP` | The per-space daily limits on AI calls.                                                                                           |
 
 In a deployment the release pipeline writes `DEFAULT_LOCALE`, `FOOD_SOURCES`, `OFF_COUNTRY` and
 `OFF_CONTRIBUTE_HOST` from repository variables of the same names

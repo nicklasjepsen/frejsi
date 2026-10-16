@@ -5,7 +5,11 @@
 import type { ApiErrorCode } from "@frejsi/shared";
 import { ApiError } from "@frejsi/shared/schemas/api";
 import { GlucoseImportResult, type GlucoseImportRequest } from "@frejsi/shared/schemas/glucose";
-import { SpaceSettings, UserSettings } from "@frejsi/shared/schemas/settings";
+import {
+  ConnectedSourceSettings,
+  SpaceSettings,
+  UserSettings,
+} from "@frejsi/shared/schemas/settings";
 import type { z } from "zod";
 
 import type { ConnectSourceBody, SpaceSettingsPatch, UserSettingsPatch } from "./contracts";
@@ -69,8 +73,9 @@ export function settingsApi(fetchImpl: typeof fetch = (...args) => fetch(...args
     /** One's own settings through `/users/me`; another member's through the owner route. */
     patchPerson: (spaceId: string, userId: string, isMe: boolean, patch: UserSettingsPatch) =>
       isMe ? patchMe(patch) : patchMember(spaceId, userId, patch),
+    /** The settings, with `recentReadings` when the function could read the last day. */
     connectSource: (spaceId: string, body: ConnectSourceBody) =>
-      call(`/api/spaces/${id(spaceId)}/source`, "POST", body, SpaceSettings, fetchImpl),
+      call(`/api/spaces/${id(spaceId)}/source`, "POST", body, ConnectedSourceSettings, fetchImpl),
     /** The export file as text; the answer is counts (#154). */
     importGlucose: (spaceId: string, body: GlucoseImportRequest) =>
       call(`/api/spaces/${id(spaceId)}/import`, "POST", body, GlucoseImportResult, fetchImpl),

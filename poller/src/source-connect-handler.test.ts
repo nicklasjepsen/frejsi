@@ -7,10 +7,15 @@ import {
   parseNightscoutCredential,
   type ProbeResult,
 } from "@frejsi/shared";
+import { fakeDexcom } from "@frejsi/shared/glucose/dexcom-share/test-server";
 import { MemorySecrets } from "@frejsi/shared/secrets/memory";
 import { describe, expect, it } from "vitest";
 
-import { createSourceConnectHandler, probeSourceFor } from "./source-connect-handler";
+import {
+  createSourceConnectHandler,
+  probeSourceFor,
+  type ProbeOutcome,
+} from "./source-connect-handler";
 
 const body = {
   spaceId: "s1",
@@ -20,23 +25,40 @@ const body = {
   password: "<fixture-password>",
 };
 
-function harness(probeResult: ProbeResult | Error) {
+function harness(probeResult: ProbeResult | Error, recentReadings?: number) {
   const secrets = new MemorySecrets();
   const lines: string[] = [];
   const probes: unknown[] = [];
+  const outcome: ProbeOutcome =
+    probeResult instanceof Error
+      ? { result: "unreachable" }
+      : { result: probeResult, ...(recentReadings === undefined ? {} : { recentReadings }) };
   const handler = createSourceConnectHandler({
     secrets,
     log: createLogger((line) => lines.push(line)),
     probe: (request) => {
       probes.push(request);
-      return probeResult instanceof Error
-        ? Promise.reject(probeResult)
-        : Promise.resolve(probeResult);
+      return probeResult instanceof Error ? Promise.reject(probeResult) : Promise.resolve(outcome);
     },
   });
   const call = (json: unknown) =>
     handler({ json: () => Promise.resolve(json) } as never, {} as never);
   return { secrets, lines, probes, call };
+}
+
+/** The handler with its default probe: the real adapter over the fake Dexcom. */
+function defaultHarness(fetch: ReturnType<typeof fakeDexcom>["fetch"], now: Date) {
+  const secrets = new MemorySecrets();
+  const lines: string[] = [];
+  const handler = createSourceConnectHandler({
+    secrets,
+    log: createLogger((line) => lines.push(line)),
+    fetch,
+    now: () => now,
+  });
+  const call = (json: unknown) =>
+    handler({ json: () => Promise.resolve(json) } as never, {} as never);
+  return { secrets, lines, call };
 }
 
 describe("probeSourceFor", () => {
@@ -178,7 +200,7 @@ describe("source-connect", () => {
     const response = await createSourceConnectHandler({
       secrets: h.secrets,
       log: createLogger(() => undefined),
-      probe: () => Promise.resolve("ok"),
+      probe: () => Promise.resolve({ result: "ok" }),
     })({ json: () => Promise.reject(new SyntaxError("Unexpected token")) } as never, {} as never);
     expect(response).toMatchObject({ status: 400, jsonBody: { error: { code: "validation" } } });
   });
@@ -193,5 +215,68 @@ describe("source-connect", () => {
       expect(output).not.toContain(body.username);
       expect(output).toContain('"spaceId":"s1"');
     }
+  });
+});
+
+describe("source-connect and the last day's readings", () => {
+  it("answers recentReadings when the probe read the last day, and warns on its own line when there are none", async () => {
+    const some = harness("ok", 6);
+    expect(await some.call(body)).toEqual({
+      status: 200,
+      jsonBody: { result: "ok", secretRef: glucoseSecretName("s1"), recentReadings: 6 },
+    });
+    expect(some.lines.join("\n")).toContain(
+      '"msg":"source-connect.ok","spaceId":"s1","count":6,"code":"ok"',
+    );
+    expect(some.lines.join("\n")).not.toContain("no-recent-readings");
+
+    // The credential works, so it is stored; the warning is for the owner to act on.
+    const none = harness("ok", 0);
+    expect(await none.call(body)).toEqual({
+      status: 200,
+      jsonBody: { result: "ok", secretRef: glucoseSecretName("s1"), recentReadings: 0 },
+    });
+    expect(parseCredential((await none.secrets.get("glucose-s1")) ?? "")).toEqual({
+      username: body.username,
+      password: body.password,
+    });
+    expect(none.lines.join("\n")).toContain('"msg":"source-connect.no-recent-readings"');
+    expect(none.lines.join("\n")).toContain('"spaceId":"s1"');
+  });
+
+  it("leaves recentReadings out when the probe could not read the day", async () => {
+    const h = harness("ok");
+    expect(await h.call(body)).toEqual({
+      status: 200,
+      jsonBody: { result: "ok", secretRef: glucoseSecretName("s1") },
+    });
+    expect(h.lines.join("\n")).not.toContain('"count"');
+  });
+
+  it("by default probes the adapter and reads the last day on the one login", async () => {
+    // The fixtures hold six readings, 10:00 to 10:25 UTC on 2026-10-15.
+    const now = new Date("2026-10-15T10:27:00.000Z");
+    const dexcom = fakeDexcom();
+    const h = defaultHarness(dexcom.fetch, now);
+    expect(await h.call(body)).toEqual({
+      status: 200,
+      jsonBody: { result: "ok", secretRef: glucoseSecretName("s1"), recentReadings: 6 },
+    });
+    expect(dexcom.count("authenticate")).toBe(1);
+    expect(dexcom.count("login")).toBe(1);
+    expect(dexcom.count("glucose")).toBe(1);
+  });
+
+  it("by default logs the code the service refused the login with, and never the credential", async () => {
+    const dexcom = fakeDexcom({ badCredentials: true });
+    const h = defaultHarness(dexcom.fetch, new Date("2026-10-15T10:27:00.000Z"));
+    expect(await h.call(body)).toEqual({ status: 200, jsonBody: { result: "bad-credentials" } });
+    const output = h.lines.join("\n");
+    // Dexcom's own code tells a wrong password from a locked account; the fixture is the former.
+    expect(output).toContain('"msg":"dexcom.probe-failed"');
+    expect(output).toContain('"code":"SSO_AuthenticatePasswordInvalid"');
+    expect(output).not.toContain(body.password);
+    expect(output).not.toContain(body.username);
+    await expect(h.secrets.get("glucose-s1")).resolves.toBeUndefined();
   });
 });

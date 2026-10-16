@@ -57,6 +57,8 @@
     "submit": "Forbind",
     "submitting": "Forbinder …",
     "cancel": "Annullér",
+    "noRecentReadings": "Login er gemt og virker, men der kom ingen målinger for det sidste døgn. Tjek, at det er kontoen på telefonen med sensoren – ikke en følger-konto – og at deling er slået til i appen.",
+    "toSettings": "Til indstillinger",
     "nightscout": {
       "title": "Forbind Nightscout",
       "lead": "Skriv adressen på din egen Nightscout-side. Frejsi gemmer adressen og adgangen i en låst boks – aldrig i databasen.",
@@ -65,7 +67,8 @@
       "secretKind": "Adgangstoken · API-secret",
       "token": "Adgangstoken",
       "apiSecret": "API-secret",
-      "badCredentials": "Nightscout afviste adgangen – tjek token eller API-secret"
+      "badCredentials": "Nightscout afviste adgangen – tjek token eller API-secret",
+      "noRecentReadings": "Adressen er gemt og virker, men der kom ingen målinger for det sidste døgn. Tjek, at din Nightscout-side får data fra sensoren."
     }
   },
   "ai": {

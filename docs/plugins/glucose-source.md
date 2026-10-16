@@ -17,7 +17,10 @@ message keys and a `SourceCard`.
   no way to build a reading without its time: a glucose value never travels or renders without it.
   Map the vendor's units and trend words to these; `shared/src/glucose/units.ts` converts mg/dL.
 - `probe()`: checks a credential without storing anything. Return `ok`, `bad-credentials` or
-  `unreachable`; never throw for a bad login.
+  `unreachable`; never throw for a bad login. After `ok`, `source-connect` calls `fetchSince` for
+  the last day on the same instance and reports the count, so keep the session a probe opened
+  rather than logging in again. Log the service's own refusal code (never the credential) through
+  the `log` option: it is what tells a wrong password from a locked account in App Insights.
 - **Read-only.** Frejsi never writes to a glucose service: no uploads, no follower or alert changes,
   even when the credential would allow it. Your transport carries an allow-list of the methods and
   paths it may call and refuses anything else before `fetch` is called (see `READ_ONLY_ENDPOINTS` in
@@ -46,14 +49,14 @@ database and never calls `emit()`.
      inside the folder.
    - `index.ts`, `README.md` (calls made, authentication, units, error codes, what is and is not
      verified against a live service) and `lint-boundaries.test.ts`.
-   Export what the poller needs from `shared/src/index.ts`.
+     Export what the poller needs from `shared/src/index.ts`.
 4. **Wire the poller** in two places, and let the compiler lead you: both are typed over every polled
    `GlucoseSourceType`, so a new type without an adapter fails to compile.
    - `poller/src/sources.ts`: the branch in `createSourceFactory` that builds your adapter from the
      credential in Key Vault.
    - `poller/src/source-connect-handler.ts`: one entry in `ADAPTERS` (the probe at connect time) and
      one case in `serializeSecret` (what is stored as `glucose-<spaceId>`).
-   These two files are the only places the real `fetch` reaches a glucose adapter.
+     These two files are the only places the real `fetch` reaches a glucose adapter.
 5. **Add the lint rule.** In `eslint.config.js`, put the vendor's host and path strings into a
    `no-restricted-syntax` selector like `dexcomHost` and `nightscoutProtocol`, add it to the rules
    that apply to every file and to the other adapters' blocks, and add a `frejsi/boundaries/<id>`

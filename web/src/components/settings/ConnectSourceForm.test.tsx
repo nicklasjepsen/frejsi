@@ -137,6 +137,37 @@ describe("ConnectSourceForm ('Skift login', plan task 9)", () => {
     );
   });
 
+  it("stays on the form and says so when the login works but no readings came through for the last day", async () => {
+    const { api } = fakeApi(() => Response.json({ ...settings, recentReadings: 0 }));
+    mount(api);
+    fill();
+    fireEvent.click(screen.getByRole("button", { name: "Forbind" }));
+    expect(await screen.findByRole("status")).toHaveTextContent(
+      "Login er gemt og virker, men der kom ingen målinger for det sidste døgn.",
+    );
+    expect(screen.getByRole("status")).toHaveTextContent("ikke en følger-konto");
+    expect(navigation.push).not.toHaveBeenCalled();
+    expect(screen.queryByRole("alert")).toBeNull();
+    // The owner can try another login, or go on with this one.
+    expect(screen.getByRole("button", { name: "Forbind" })).toBeEnabled();
+    expect(screen.getByLabelText("Kodeord")).toHaveValue("");
+    expect(screen.getByRole("link", { name: "Til indstillinger" })).toHaveAttribute(
+      "href",
+      "/da/settings",
+    );
+  });
+
+  it("goes on to Settings when readings came through, and when the count is unknown", async () => {
+    const some = fakeApi(() => Response.json({ ...settings, recentReadings: 12 }));
+    mount(some.api);
+    fill();
+    fireEvent.click(screen.getByRole("button", { name: "Forbind" }));
+    await waitFor(() => {
+      expect(navigation.push).toHaveBeenCalledWith("/da/settings");
+    });
+    expect(screen.queryByRole("status")).toBeNull();
+  });
+
   it("does not post without a username and a password", () => {
     const { api, calls } = fakeApi(() => Response.json(settings));
     mount(api);
@@ -230,6 +261,17 @@ describe("ConnectSourceForm · Nightscout (undrawn, design gap)", () => {
     expect(await screen.findByRole("alert")).toHaveTextContent(
       "Vi kunne ikke få forbindelse til kilden lige nu. Prøv igen om lidt.",
     );
+  });
+
+  it("says so in Nightscout's words when the address works but no readings came through", async () => {
+    const { api } = fakeApi(() =>
+      Response.json({ ...settings, sourceType: "nightscout", recentReadings: 0 }),
+    );
+    mountNightscout(api);
+    fillNightscout();
+    fireEvent.click(screen.getByRole("button", { name: "Forbind" }));
+    expect(await screen.findByRole("status")).toHaveTextContent(labels.noRecentReadings);
+    expect(navigation.push).not.toHaveBeenCalled();
   });
 
   it("shows the address message for source-url-invalid", async () => {

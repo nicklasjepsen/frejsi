@@ -30,7 +30,9 @@ export interface ConnectSourceFormProps {
  * "Skift login" (plan task 9; no artboard, design gap): username, password and server region,
  * posted to `/api/spaces/:id/source`. The password lives in this form's state and the request
  * body only; it is never put in the URL, a cookie or a log line. A refusal shows the translated
- * code; success returns to Settings, which then shows the source connected.
+ * code; success returns to Settings, which then shows the source connected. A login that works
+ * but gave no readings for the last day (a follower's login, or sharing off) is saved too, and
+ * the form stays to say so: the owner can try another login or go on to Settings.
  */
 export function ConnectSourceForm({
   locale,
@@ -49,6 +51,7 @@ export function ConnectSourceForm({
   const [region, setRegion] = useState<DexcomShareRegion>(initialRegion);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<ApiErrorCode | null>(null);
+  const [noRecentReadings, setNoRecentReadings] = useState(false);
 
   const [url, setUrl] = useState("");
   const [secretKind, setSecretKind] = useState<"token" | "apiSecret">("token");
@@ -62,8 +65,9 @@ export function ConnectSourceForm({
     if (nightscout ? !url || !secret : !username || !password) return;
     setBusy(true);
     setError(null);
+    setNoRecentReadings(false);
     try {
-      await api.connectSource(
+      const connected = await api.connectSource(
         spaceId,
         nightscout
           ? { type: "nightscout", url: url.trim(), [secretKind]: secret }
@@ -71,6 +75,11 @@ export function ConnectSourceForm({
       );
       setPassword("");
       setSecret("");
+      if (connected.recentReadings === 0) {
+        setNoRecentReadings(true);
+        setBusy(false);
+        return;
+      }
       router.push(localeHref(locale, "/settings"));
       router.refresh();
     } catch (failure) {
@@ -208,13 +217,26 @@ export function ConnectSourceForm({
               {errors(error)}
             </Notice>
           )}
+          {noRecentReadings && (
+            <Notice tone="sunken" role="status">
+              {nightscout
+                ? t("connect.nightscout.noRecentReadings")
+                : t("connect.noRecentReadings")}
+            </Notice>
+          )}
           <div className={styles.actions}>
             <Button type="submit" disabled={busy}>
               {busy ? t("connect.submitting") : t("connect.submit")}
             </Button>
-            <Button variant="secondary" href={back}>
-              {t("connect.cancel")}
-            </Button>
+            {noRecentReadings ? (
+              <Button variant="secondary" href={localeHref(locale, "/settings")}>
+                {t("connect.toSettings")}
+              </Button>
+            ) : (
+              <Button variant="secondary" href={back}>
+                {t("connect.cancel")}
+              </Button>
+            )}
           </div>
         </form>
       </Card>

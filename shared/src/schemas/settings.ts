@@ -39,6 +39,16 @@ export const SpaceSettings = z
   });
 export type SpaceSettings = z.infer<typeof SpaceSettings>;
 
+/**
+ * The answer to connecting a source: the settings, plus `recentReadings` from
+ * `ConnectSourceResult` when the function could read the last day (zero is the follower-login
+ * case the form warns about).
+ */
+export const ConnectedSourceSettings = SpaceSettings.safeExtend({
+  recentReadings: z.number().int().nonnegative().optional(),
+});
+export type ConnectedSourceSettings = z.infer<typeof ConnectedSourceSettings>;
+
 /** Per user: a grandparent and a child in one space may read different languages. */
 export const UserSettings = z.object({
   locale: Locale,

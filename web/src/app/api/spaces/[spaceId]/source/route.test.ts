@@ -176,6 +176,20 @@ describe("POST /api/spaces/:id/source (plan task 9: connect a glucose source)", 
     ]);
   });
 
+  it("passes the function's recentReadings through to the answer, and leaves it out when there is none", async () => {
+    upstream.answer = () =>
+      Response.json({ result: "ok", secretRef: "glucose-s1", recentReadings: 0 });
+    const none = await post("owner");
+    expect(none.status).toBe(200);
+    expect(await none.json()).toMatchObject({ sourceStatus: "connected", recentReadings: 0 });
+    // Zero is a warning, not a refusal: the credential is saved and the source connected.
+    expect(space()).toMatchObject({ sourceStatus: "connected" });
+
+    upstream.answer = () => Response.json({ result: "ok", secretRef: "glucose-s1" });
+    const unknown = (await (await post("owner")).json()) as Record<string, unknown>;
+    expect(unknown).not.toHaveProperty("recentReadings");
+  });
+
   it("never lets the credential reach the database, the log or the response", async () => {
     const ok = await post("owner");
     upstream.answer = () => Response.json({ result: "bad-credentials" });

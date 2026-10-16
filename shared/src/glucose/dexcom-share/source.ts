@@ -116,10 +116,12 @@ export class DexcomShareSource implements GlucoseSource {
       .sort((a, b) => Date.parse(a.ts) - Date.parse(b.ts));
   }
 
-  /** Logs in and throws the session away: a probe checks the credential, it stores nothing. */
+  /** Logs in and keeps the session; a probe checks the credential and stores nothing else. */
   async probe(): Promise<ProbeResult> {
     try {
-      await this.login();
+      // The session is kept: a fetch right after the probe (source-connect reads the last day)
+      // reuses it instead of logging in a second time.
+      this.sessionId = await this.login();
       return "ok";
     } catch (error) {
       const code = error instanceof DexcomShareError ? error.code : "network";

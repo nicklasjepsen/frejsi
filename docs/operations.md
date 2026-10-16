@@ -123,12 +123,25 @@ invitations or alert settings on the Dexcom account, and the adapter refuses any
 2. Enter the username and password of the Dexcom account that **shares** the data (the one on the
    phone running the Dexcom app, not a follower's), and the server region: EU for accounts outside
    the US.
-3. **Forbind.** Frejsi asks Dexcom right away:
+3. **Forbind.** Frejsi asks Dexcom right away, and on a working login also reads the last day:
    - accepted: the status turns "Forbundet" and the next cycle (within five minutes) fetches.
+   - accepted, but "der kom ingen målinger for det sidste døgn": the login works and is saved, but
+     the account returned no readings for the last day. Almost always a follower's login instead of
+     the sharer's (a follower's Dexcom account logs in fine and has nothing to read), or sharing
+     turned off in the Dexcom app. Enter the sharer's login, or go on to Settings and watch the
+     status; the poller keeps asking every five minutes.
    - "Brugernavn eller kodeord passer ikke." (`source-bad-credentials`): nothing was saved; the old
-     login stays. Check the username, the password and the region.
+     login stays. Check the username, the password and the region. A dependent's (child's) Dexcom
+     login is its username, never the email on the account.
    - "Vi kunne ikke få forbindelse til kilden lige nu." (`source-unreachable`): nothing was saved; try
      again later.
+
+In App Insights, the poller's `source-connect.ok` line carries the day's readings as `count`, and a zero also
+writes `source-connect.no-recent-readings`. A refused login writes `dexcom.probe-failed` with
+Dexcom's own code before `source-connect.failed`: `SSO_AuthenticatePasswordInvalid` is a wrong
+password, `SSO_AuthenticateAccountNotFound` a wrong username or region, and
+`SSO_AuthenticateMaxAttemptsExceeded` an account Dexcom has locked after repeated failures (wait
+an hour before trying again; the poller never retries a refused login within the hour).
 
 Carers see the source and its status but cannot change it; viewers do not see it.
 
@@ -528,13 +541,13 @@ Settings → Glukosekilde → Nightscout → Forbind takes the site's address an
 or the API secret. They go to Key Vault, never the database. A space whose source is Nightscout is
 polled like a Dexcom Share space, every five minutes, and the 35-minute alert above covers it.
 
-| What you see | What it means | What to do |
-| --- | --- | --- |
-| The space turns `disconnected` and the poller log says `fetch-failed:401` | The site answered 401: the token or the API secret was changed on the Nightscout site (a new `API_SECRET`, a deleted subject). Three failed cycles in a row mark the source disconnected; the next good cycle clears it. | An owner opens Glukosekilde → Nightscout → "Skift login" and enters the current credential. Nothing else needs changing. |
-| `fetch-failed:Timeout` or `fetch-failed:Network` | The site was unreachable for the poller (a sleeping free-tier host, a lapsed certificate, DNS). | Open the site in a browser. A free host that sleeps needs a ping or a paid plan; the source reconnects by itself when the site answers. |
-| `fetch-failed:301`, `302`, `307` or `308` | The site redirects. Frejsi does not follow redirects, because the credential travels in a header and could be handed to another host. | Enter the address the redirect ends at, for example `https://` and the `www.` form if the site forces it. |
-| The form refuses the address | Only `https://` addresses are accepted, without a query, a fragment or a user name in them. A site on `http://` cannot be connected. | Put the site behind HTTPS (most hosts offer it with one setting), then connect the `https://` address. |
-| `fetch-failed:UnexpectedShape` | The site answered, but not with Nightscout's `entries/sgv.json`. The address points at the wrong page. | Use the site's root address, not `/api/...` or `/report`. |
+| What you see                                                              | What it means                                                                                                                                                                                                            | What to do                                                                                                                              |
+| ------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------- |
+| The space turns `disconnected` and the poller log says `fetch-failed:401` | The site answered 401: the token or the API secret was changed on the Nightscout site (a new `API_SECRET`, a deleted subject). Three failed cycles in a row mark the source disconnected; the next good cycle clears it. | An owner opens Glukosekilde → Nightscout → "Skift login" and enters the current credential. Nothing else needs changing.                |
+| `fetch-failed:Timeout` or `fetch-failed:Network`                          | The site was unreachable for the poller (a sleeping free-tier host, a lapsed certificate, DNS).                                                                                                                          | Open the site in a browser. A free host that sleeps needs a ping or a paid plan; the source reconnects by itself when the site answers. |
+| `fetch-failed:301`, `302`, `307` or `308`                                 | The site redirects. Frejsi does not follow redirects, because the credential travels in a header and could be handed to another host.                                                                                    | Enter the address the redirect ends at, for example `https://` and the `www.` form if the site forces it.                               |
+| The form refuses the address                                              | Only `https://` addresses are accepted, without a query, a fragment or a user name in them. A site on `http://` cannot be connected.                                                                                     | Put the site behind HTTPS (most hosts offer it with one setting), then connect the `https://` address.                                  |
+| `fetch-failed:UnexpectedShape`                                            | The site answered, but not with Nightscout's `entries/sgv.json`. The address points at the wrong page.                                                                                                                   | Use the site's root address, not `/api/...` or `/report`.                                                                               |
 
 A site whose default role already lets anyone read answers "ok" to any credential, so a wrong token
 there is not caught when connecting, and the readings come through all the same. The adapter calls

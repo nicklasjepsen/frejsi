@@ -1,4 +1,10 @@
-import { ConnectSourceRequest, HttpError, log, prisma } from "@frejsi/shared";
+import {
+  ConnectSourceRequest,
+  HttpError,
+  log,
+  prisma,
+  type ConnectedSourceSettings,
+} from "@frejsi/shared";
 
 import { json, logOutcome, parseBody, settingsRoute } from "@/components/settings/api-route";
 import { ConnectSourceBody } from "@/components/settings/contracts";
@@ -67,5 +73,11 @@ export const POST = settingsRoute<Params>(ROUTE, async (request, { spaceId }) =>
       : { type: "nightscout", secretRef: outcome.secretRef },
   );
   logOutcome("source.connected", ROUTE, "ok", { spaceId });
-  return json(settings);
+  // The last day's reading count travels with the settings: zero is what the form warns about
+  // (a follower's login, or sharing off); the function left it out when it could not read.
+  const connected: ConnectedSourceSettings = {
+    ...settings,
+    ...(outcome.recentReadings === undefined ? {} : { recentReadings: outcome.recentReadings }),
+  };
+  return json(connected);
 });

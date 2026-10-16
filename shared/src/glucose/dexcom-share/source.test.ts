@@ -248,12 +248,13 @@ describe("DexcomShareSource.probe", () => {
     );
   });
 
-  it("stores nothing: a probe does not keep the session for later fetches", async () => {
+  it("keeps the session: a fetch right after a probe does not log in again", async () => {
     const dexcom = fakeDexcom();
     const s = source(dexcom.fetch);
     await s.probe();
     await s.fetchSince(now);
-    expect(dexcom.count("login")).toBe(2);
+    expect(dexcom.count("authenticate")).toBe(1);
+    expect(dexcom.count("login")).toBe(1);
   });
 });
 
