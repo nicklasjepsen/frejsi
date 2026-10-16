@@ -31,6 +31,6 @@ Before every commit: ~/.local/bin/pnpm install --frozen-lockfile (pnpm install a
 Land it: git push -u origin $B; gh pr create --base main --milestone ${MS:-v0.2.0} --label area:$AREA --body-file <file> from .github/pull_request_template.md (Closes #$N; hard-rules checklist ticked honestly; tests; For the owner). End the body with: Built by Codex (gpt-6.1-sol), orchestrated from Claude Code. Poll gh pr checks <n> --json name,state every 15 s until ci is SUCCESS (fix failures). Wait until the Codex GitHub review comment no longer says running; reply to every thread with the fix commit or the reason and resolve it. Then gh pr merge <n> --rebase --delete-branch. Never --admin, never force-push: if GitHub refuses because main moved, rebase, push $B-r2, open a replacement PR, close the old one.
 Final message: PR URL, merged or not, what was built, tests, what was left out, owner questions.
 BRIEF
-cd $W && nohup codex exec -m gpt-6.1-sol -c model_reasoning_effort=high --dangerously-bypass-approvals-and-sandbox -C $W -o $S/final-$N.md "$(cat $S/brief-$N.md)" > $S/log-$N.txt 2>&1 &
+cd $W && nohup codex exec -m gpt-6.1-sol -c model_reasoning_effort=high --dangerously-bypass-approvals-and-sandbox -C $W -o $S/final-$N.md "$(cat $S/brief-$N.md)" < /dev/null > $S/log-$N.txt 2>&1 &
 echo "$N $!" >> $S/running
 echo "started #$N pid $!"
