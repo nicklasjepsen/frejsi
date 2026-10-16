@@ -11,7 +11,9 @@ export type Locale = z.infer<typeof Locale>;
 
 /** Per space. Targets are always in mmol; `glucoseUnit` only changes rendering (plan §3). */
 export const SpaceSettings = z
-  .object({
+  .strictObject({
+    aiEnabled: z.boolean(),
+    aiProvider: z.enum(["anthropic", "azure-openai", "ollama"]).optional(),
     name: z.string().min(1),
     glucoseUnit: GlucoseUnit,
     targetLow: z.number().min(0).max(40),

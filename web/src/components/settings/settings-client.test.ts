@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 import { ApiFailure, failureCode, settingsApi } from "./settings-client";
 
 const SETTINGS = {
+  aiEnabled: false,
   name: "Example space",
   timezone: "Europe/Copenhagen",
   glucoseUnit: "mgdl",

@@ -9,10 +9,13 @@ import {
 } from "@frejsi/shared";
 
 import { SourceView, definedOnly, type SpaceSettingsPatch } from "@/components/settings/contracts";
+import { configuredAiProviders } from "@/ai/provider";
 import { run, type AuthDeps } from "@/lib/auth/core";
 
 /** The Space columns the settings read; `targetLow/High` arrive as Prisma Decimals. */
 export interface SpaceSettingsRow {
+  aiEnabled?: boolean;
+  aiProvider?: string | null;
   name: string;
   timezone: string;
   glucoseUnit: string;
@@ -81,6 +84,8 @@ export async function latestSourceStatusSince(
 /** The shared contract from the row: never the `secretRef`, never the raw JSON (plan §4). */
 export function toSpaceSettings(row: SpaceSettingsRow): SpaceSettings {
   return SpaceSettings.parse({
+    aiEnabled: row.aiEnabled ?? false,
+    ...(row.aiProvider ? { aiProvider: row.aiProvider } : {}),
     name: row.name,
     timezone: row.timezone,
     glucoseUnit: row.glucoseUnit,
@@ -109,6 +114,13 @@ export function updateSpaceSettings(
     async (tx, emit) => {
       const current = await tx.space.findUnique({ where: { id: spaceId } });
       if (!current) throw new HttpError(404, "not-found");
+      const provider = patch.aiProvider ?? current.aiProvider;
+      if (
+        (patch.aiProvider !== undefined || patch.aiEnabled === true) &&
+        (!provider || !Object.hasOwn(configuredAiProviders(), provider))
+      ) {
+        throw new HttpError(400, "ai-not-configured");
+      }
       const low = patch.targetLow ?? Number(current.targetLow.toString());
       const high = patch.targetHigh ?? Number(current.targetHigh.toString());
       if (low >= high) throw new HttpError(400, "validation");
