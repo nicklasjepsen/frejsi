@@ -393,8 +393,7 @@ export async function updateFood(
     const food = await tx.food.update({
       where: { id, spaceId },
       data: {
-        ...(fields.name !== current.name &&
-        deps.sources.some((source) => source.kind === "remote" && source.id === current.origin)
+        ...(fields.name !== current.name && !["family", "manual", "ai"].includes(current.origin)
           ? { sourceName: current.sourceName ?? current.name }
           : {}),
         ...(contentChanged ? { verified: false, verifiedBy: null, verifiedAt: null } : {}),

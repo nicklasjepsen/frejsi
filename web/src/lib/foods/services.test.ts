@@ -567,3 +567,21 @@ it("addCandidate keeps its key-free signature and never obtains or calls AI", as
   expect(rig.events.map((event) => event.type)).toEqual(["food.created"]);
   expect(fake.calls).toEqual([]);
 });
+
+it("keeps a human rename's source provenance while the source plugin is disabled", async () => {
+  const rig = foodTestRig();
+  rig.seed({
+    id: "disabled-source",
+    origin: "remote-test",
+    sourceRef: "remote-test:pear",
+    name: "RAW PEAR",
+    sourceName: null,
+  });
+  rig.deps.sources = [];
+  await updateFood("s1", actor, "disabled-source", { name: "My pear" }, rig.deps);
+  expect(rig.rows.find((row) => row.id === "disabled-source")).toMatchObject({
+    name: "My pear",
+    sourceName: "RAW PEAR",
+    verified: false,
+  });
+});

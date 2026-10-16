@@ -108,7 +108,7 @@ registered source expose read operations only (`shared/src/glucose/read-only.tes
 
 ## Food enrichment
 
-`enrich-foods` runs every fifteen minutes (`0 */15 * * * *`). It normalises up to 50 remote
+`enrich-foods` runs every fifteen minutes (`0 */15 * * * *`). It normalises up to 50 unverified remote
 source names, cache first, then embeds up to 100 foods in batches. Existing portions and human
 verification are preserved; already verified names and portions stay unchanged. Inferred portions
 are added only to unverified rows. A matching space copy receives the cleaned name only while its name

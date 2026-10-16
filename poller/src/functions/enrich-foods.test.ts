@@ -169,3 +169,32 @@ it("bounds work at 50 names and 100 embeddings, leaving room for each space when
   expect(embedCalls.reduce((n, call) => n + call.request.texts.length, 0)).toBeLessThanOrEqual(100);
   expect(r.repo.embeddings.has("space")).toBe(true);
 });
+
+it("a verified copy never prevents an unverified copy from being normalised", async () => {
+  const r = rig();
+  r.repo.rows.splice(
+    0,
+    r.repo.rows.length,
+    row("a-verified", "s1", { verified: true, verifiedBy: "u1" }),
+    row("b-unverified", "s2"),
+  );
+  r.deps.spaces.push({
+    id: "s2",
+    aiProvider: "ollama",
+    aiEnabled: true,
+    timezone: "UTC",
+    locale: "en",
+  });
+  await runEnrichment(r.deps);
+  expect(r.repo.rows.find((food) => food.id === "a-verified")).toMatchObject({
+    name: "EXAMPLE LOAF 900G",
+    verified: true,
+    verifiedBy: "u1",
+  });
+  expect(r.repo.rows.find((food) => food.id === "b-unverified")).toMatchObject({
+    name: "Example loaf",
+    sourceName: "EXAMPLE LOAF 900G",
+    verified: false,
+  });
+  expect(r.space.calls.filter((call) => call.kind === "complete")).toHaveLength(1);
+});

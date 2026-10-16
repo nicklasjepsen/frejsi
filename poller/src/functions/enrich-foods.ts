@@ -97,11 +97,9 @@ export async function runEnrichment(deps: EnrichmentDeps): Promise<void> {
   const processed = new Set<string>();
   for (const row of rows) {
     const group = groups.find((group) => group.spaceId === row.spaceId);
-    if (!group || processed.has(row.sourceRef)) continue;
+    if (row.verified || !group || processed.has(row.sourceRef)) continue;
     processed.add(row.sourceRef);
-    const value = row.verified
-      ? null
-      : await normaliseFoodName(group.provider, row.name, group.locale);
+    const value = await normaliseFoodName(group.provider, row.name, group.locale);
     await deps.repo.setNormalisedName(row, value, spaceIds, deps.emit);
     normalised++;
   }
