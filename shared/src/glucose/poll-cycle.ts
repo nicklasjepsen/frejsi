@@ -73,10 +73,13 @@ export interface PollDb {
   };
 }
 
+/** A config the cycle polls: every variant but `manual`, which has no source to ask. */
+export type PolledSourceConfig = Exclude<GlucoseSourceConfig, { type: "manual" }>;
+
 /** Builds (or returns the cached) source for a space; it may throw when the credential is missing. */
 export type SourceFactory = (
   space: PollSpaceRow,
-  config: GlucoseSourceConfig,
+  config: PolledSourceConfig,
 ) => GlucoseSource | Promise<GlucoseSource>;
 
 export interface PollCycleDeps {
@@ -97,6 +100,8 @@ export interface PollCycleOptions {
 
 export type PollOutcomeCode =
   | "ok"
+  /** A manual space: the cycle saw it and did nothing (it has no source to ask). */
+  | "manual"
   | "config-invalid"
   | "source-unavailable"
   | "fetch-failed"
@@ -202,6 +207,16 @@ async function pollSpace(space: PollSpaceRow, deps: Resolved): Promise<SpaceOutc
 
   try {
     const config = parseConfig(space.glucoseSource);
+    if (config.type === "manual") {
+      // Nothing to fetch and nothing written: no factory, no counter, no status, no event.
+      return {
+        spaceId,
+        outcome: "ok",
+        code: "manual",
+        stored: 0,
+        status: space.sourceStatus as SourceStatus,
+      };
+    }
     let source: GlucoseSource;
     try {
       source = await deps.sources(space, config);

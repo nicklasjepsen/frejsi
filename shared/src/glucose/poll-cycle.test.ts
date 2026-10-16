@@ -7,6 +7,7 @@ import type { GlucoseSourceConfig, Reading, SourceStatus } from "../schemas/gluc
 import { DexcomShareSource } from "./dexcom-share/source";
 import { fakeDexcom } from "./dexcom-share/test-server";
 import { FakeGlucoseSource } from "./fake";
+import { NightscoutSource } from "./nightscout/source";
 import {
   runPollCycle,
   sinceFor,
@@ -217,6 +218,93 @@ describe("sinceFor", () => {
   });
 });
 
+describe("runPollCycle and a manual space", () => {
+  const manual = JSON.stringify({ type: "manual" } satisfies GlucoseSourceConfig);
+
+  it("records the manual outcome without a factory call, a status change or an event", async () => {
+    const factoryCalls: string[] = [];
+    const h = harness(
+      [
+        { id: "s1", glucoseSource: manual, sourceStatus: "not-configured", sourceFailures: 0 },
+        { id: "s2", lastReadingAt: now },
+      ],
+      (space) => {
+        factoryCalls.push(space.id);
+        return recordingSource([{ ts: "2026-10-15T10:25:00.000Z", mmol: 6.2, trend: "flat" }]);
+      },
+    );
+    const outcomes = await h.run();
+    expect(outcomes.find((o) => o.spaceId === "s1")).toMatchObject({
+      outcome: "ok",
+      code: "manual",
+      stored: 0,
+      status: "not-configured",
+    });
+    expect(factoryCalls).toEqual(["s2"]);
+    expect(h.spaces.get("s1")).toMatchObject({ sourceFailures: 0, sourceStatus: "not-configured" });
+    expect(h.events.filter((e) => e.spaceId === "s1")).toHaveLength(0);
+    expect(h.readings.size).toBe(1); // s2 polled as before
+    expect(outcomes.find((o) => o.spaceId === "s2")).toMatchObject({ outcome: "ok", code: "ok" });
+  });
+
+  it("never counts a manual space towards disconnected, however many cycles pass", async () => {
+    const h = harness([{ id: "s1", glucoseSource: manual, sourceStatus: "connected" }], () => {
+      throw new Error("must not be called");
+    });
+    for (let i = 0; i < 5; i += 1) await h.run();
+    expect(h.spaces.get("s1")).toMatchObject({ sourceFailures: 0, sourceStatus: "connected" });
+    expect(h.events).toHaveLength(0);
+  });
+});
+
+describe("runPollCycle and a Nightscout space", () => {
+  const config = JSON.stringify({ type: "nightscout", secretRef: "glucose-s1" });
+  const entries = JSON.stringify([
+    { type: "sgv", sgv: 110, date: Date.parse("2026-10-15T10:25:00Z"), direction: "Flat" },
+  ]);
+  const site = (status: number, body: string) => ({
+    fetch: () => Promise.resolve({ ok: status < 300, status, text: () => Promise.resolve(body) }),
+  });
+
+  it("stores the readings with source nightscout and emits one event each", async () => {
+    const nightscout = new NightscoutSource({
+      url: "https://example-ns.example.invalid",
+      token: "<fixture-token>",
+      now: () => now,
+      ...site(200, entries),
+    });
+    const h = harness(
+      [{ id: "s1", glucoseSource: config, lastReadingAt: new Date(now.getTime() - 10 * MINUTE) }],
+      () => nightscout,
+    );
+    const [outcome] = await h.run();
+    expect(outcome).toMatchObject({ outcome: "ok", stored: 1 });
+    expect([...h.readings.values()]).toEqual([
+      expect.objectContaining({ source: "nightscout", mmol: 6.1, trend: "flat" }),
+    ]);
+    expect(h.events.filter((e) => e.type === "reading")).toHaveLength(1);
+  });
+
+  it("goes disconnected after three consecutive 401s and logs fetch-failed:401", async () => {
+    const nightscout = new NightscoutSource({
+      url: "https://example-ns.example.invalid",
+      token: "<fixture-token>",
+      now: () => now,
+      ...site(401, '{"message":"UNAUTHORIZED"}'),
+    });
+    const h = harness([{ id: "s1", glucoseSource: config, lastReadingAt: now }], () => nightscout);
+    for (let cycle = 0; cycle < 3; cycle += 1) await h.run();
+    expect(h.spaces.get("s1")).toMatchObject({ sourceFailures: 3, sourceStatus: "disconnected" });
+    expect(statusOf(h.sink, "s1")).toEqual(["disconnected"]);
+    const codes = h.lines
+      .map((l) => JSON.parse(l) as { msg: string; code?: string })
+      .filter((l) => l.msg === "poll.space-failed")
+      .map((l) => l.code);
+    expect(codes).toEqual(["fetch-failed:401", "fetch-failed:401", "fetch-failed:401"]);
+    expect(h.lines.join("\n")).not.toMatch(/example-ns|fixture-token|UNAUTHORIZED/);
+  });
+});
+
 describe("runPollCycle windows", () => {
   it("asks the source for 30 minutes when the space has readings and a day when it has none", async () => {
     const withReadings = recordingSource();
@@ -242,7 +330,7 @@ describe("runPollCycle windows", () => {
       ],
       (_space, config) =>
         new DexcomShareSource({
-          region: config.region,
+          region: config.type === "dexcom-share" ? config.region : "eu",
           username: "publisher@example.invalid",
           password: "<fixture-password>",
           fetch: dexcom.fetch,
@@ -462,7 +550,7 @@ describe("runPollCycle failures", () => {
       (space, config) =>
         space.id === "s1"
           ? new DexcomShareSource({
-              region: config.region,
+              region: config.type === "dexcom-share" ? config.region : "eu",
               username: "publisher@example.invalid",
               password: "<fixture-password>",
               fetch: dexcom.fetch,

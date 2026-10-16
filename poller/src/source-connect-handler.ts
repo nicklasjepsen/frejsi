@@ -4,23 +4,25 @@ import {
   DexcomShareSource,
   glucoseSecretName,
   log as defaultLog,
+  NightscoutSource,
   serializeCredential,
+  serializeNightscoutCredential,
   type ApiError,
   type ConnectSourceResult,
-  type DexcomShareRegion,
   type GlucoseSource,
-  type GlucoseSourceType,
+  type PolledSourceType,
   type Logger,
   type ProbeResult,
   type Secrets,
 } from "@frejsi/shared";
 
-export interface ProbeRequest {
-  type: GlucoseSourceType;
-  region: DexcomShareRegion;
-  username: string;
-  password: string;
-}
+/** What a probe needs: the connect request without its `spaceId`, for the types that are polled. */
+export type ProbeRequest = DistributiveOmit<
+  Exclude<ConnectSourceRequest, { type: "manual" }>,
+  "spaceId"
+>;
+
+type DistributiveOmit<T, K extends PropertyKey> = T extends unknown ? Omit<T, K> : never;
 
 export interface SourceConnectDeps {
   secrets: Secrets;
@@ -30,13 +32,38 @@ export interface SourceConnectDeps {
 }
 
 /** One adapter per `GlucoseSourceType`; a type added without an adapter fails to compile here. */
-const ADAPTERS: Record<GlucoseSourceType, (request: ProbeRequest) => GlucoseSource> = {
+const ADAPTERS: {
+  [T in PolledSourceType]: (request: Extract<ProbeRequest, { type: T }>) => GlucoseSource;
+} = {
   "dexcom-share": (request) => new DexcomShareSource(request),
+  nightscout: (request) =>
+    new NightscoutSource({
+      url: request.url,
+      token: request.token,
+      apiSecret: request.apiSecret,
+    }),
 };
 
 /** The adapter the request's source type names. */
 export function probeSourceFor(request: ProbeRequest): GlucoseSource {
-  return ADAPTERS[request.type](request);
+  // TypeScript cannot correlate the adapter with the request through the lookup; the mapped type
+  // above is what makes a polled type without an adapter a compile error.
+  const adapter = ADAPTERS[request.type] as (request: ProbeRequest) => GlucoseSource;
+  return adapter(request);
+}
+
+/** The credential as it is stored under `glucose-<spaceId>`, per type. */
+function serializeSecret(request: ProbeRequest): string {
+  switch (request.type) {
+    case "dexcom-share":
+      return serializeCredential({ username: request.username, password: request.password });
+    case "nightscout":
+      return serializeNightscoutCredential({
+        url: request.url,
+        ...(request.token === undefined ? {} : { token: request.token }),
+        ...(request.apiSecret === undefined ? {} : { apiSecret: request.apiSecret }),
+      });
+  }
 }
 
 const defaultProbe = (request: ProbeRequest) => probeSourceFor(request).probe();
@@ -49,8 +76,8 @@ const validation = (): HttpResponseInit => {
 };
 
 /**
- * `POST /api/source-connect` (function key): the Settings route forwards the owner's Dexcom login,
- * this probes it and, when it works, writes it to Key Vault as `glucose-<spaceId>`. The credential
+ * `POST /api/source-connect` (function key): the Settings route forwards the owner's login,
+ * this probes it and, when it works, writes it to Key Vault as `glucose-<spaceId>` (a Dexcom login or a Nightscout address with its token or secret). The credential
  * is in the request body and the secret value, and nowhere else: not in the database, not in a log.
  */
 export function createSourceConnectHandler(deps: SourceConnectDeps) {
@@ -70,11 +97,17 @@ export function createSourceConnectHandler(deps: SourceConnectDeps) {
       log.warn("source-connect.rejected", { code: "validation" });
       return validation();
     }
-    const { spaceId, type, region, username, password } = parsed.data;
+    const { data } = parsed;
+    if (data.type === "manual") {
+      // Choosing Manuelt writes no credential; the Settings route handles it itself.
+      log.warn("source-connect.rejected", { code: "validation" });
+      return validation();
+    }
+    const { spaceId, ...probeRequest } = data;
 
     let outcome: ProbeResult;
     try {
-      outcome = await probe({ type, region, username, password });
+      outcome = await probe(probeRequest);
     } catch {
       outcome = "unreachable";
     }
@@ -85,7 +118,7 @@ export function createSourceConnectHandler(deps: SourceConnectDeps) {
     }
 
     const secretRef = glucoseSecretName(spaceId);
-    await deps.secrets.set(secretRef, serializeCredential({ username, password }));
+    await deps.secrets.set(secretRef, serializeSecret(probeRequest));
     log.info("source-connect.ok", { spaceId, code: "ok" });
     const result: ConnectSourceResult = { result: "ok", secretRef };
     return { status: 200, jsonBody: result };

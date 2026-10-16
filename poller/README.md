@@ -2,11 +2,13 @@
 
 The Azure Functions app (Node 22, v4 programming model) that brings glucose into Frejsi. It polls
 the configured source every five minutes, stores each new reading once and emits it as a `reading`
-event, and it holds the one endpoint that may see a Dexcom login: `source-connect`, which checks the
-credential and puts it in Key Vault. Spec §3, §3b and §7; plan task 4.
+event, and it holds the one endpoint that may see a source credential (a Dexcom login or a Nightscout
+address with its token or secret): `source-connect`, which checks the credential and puts it in Key
+Vault. Spec §3, §3b and §7; plan task 4.
 
-Nothing here knows Dexcom. The adapter and the cycle live in `@frejsi/shared`
-(`shared/src/glucose/dexcom-share/`, `shared/src/glucose/poll-cycle.ts`) so the seed and the CLI
+Nothing here knows a host. The adapters and the cycle live in `@frejsi/shared`
+(`shared/src/glucose/dexcom-share/`, `shared/src/glucose/nightscout/`,
+`shared/src/glucose/poll-cycle.ts`) so the seed and the CLI
 run the same code; this package wires them to the Functions host, Prisma, Key Vault and App
 Insights.
 
@@ -16,14 +18,28 @@ and every one goes through `sendShareRequest` (`shared/src/glucose/dexcom-share/
 which refuses any other path or method before a request is sent. The Share API would accept
 writes with the same publisher login (uploading readings, follower and alert changes); Frejsi never
 makes them (CLAUDE.md, hard rules), and a lint rule keeps `fetch` out of every other file under
-`shared/src/glucose/`.
+`shared/src/glucose/`. The Nightscout adapter reads the same way: two `GET` calls
+(`entries/sgv.json` and `verifyauth`) through `sendNightscoutRequest`, the credential in the
+`api-secret` header and never in the URL, redirects not followed
+([adapter notes](../shared/src/glucose/nightscout/README.md)).
+
+## Source types
+
+`createSourceFactory` (`src/sources.ts`) reads the secret under the space's `secretRef` and picks the
+adapter by the config's `type`: `dexcom-share` gets a `DexcomShareSource` (one per space for the life
+of the process), `nightscout` a `NightscoutSource` built from the stored address and token or secret.
+A secret that does not parse as the credential its type expects is `secret-invalid`, a missing one
+`secret-missing`; both count as a failure of that space. With `FAKE_GLUCOSE_SOURCE=1` every space gets
+`FakeGlucoseSource` and no secret is read, in the timer and in the CLI alike. A `manual` space (finger-prick
+readings typed into the app) is never polled: the cycle records outcome `manual` for it and touches
+nothing, so it cannot become `disconnected`.
 
 ## Functions
 
 | Name             | Trigger                                     | What it does                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
 | ---------------- | ------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `poll`           | timer `0 */5 * * * *`, 0–20 s random jitter | `runPollCycle` over every space with a configured source. A space with readings is asked for the last 30 minutes (back to its last reading after an outage, at most a day); a space with none for a day, so the chart does not start empty. Idempotent on `(spaceId, ts)`: the insert decides what is new (a unique violation means another cycle already stored it), so overlapping cycles never emit twice; one `reading` event per new row through `emit()`, and a row whose event could not be written is removed again so the next cycle stores and emits it together; a `reading.stored` custom event per new row for the 35-minute alert. Every Dexcom call has a 30 s deadline. One failing space never stops the others; the third consecutive failure sets `sourceStatus = disconnected` and emits `source.status`, the next success sets `connected` and emits again. |
-| `source-connect` | `POST /api/source-connect`, function key    | Parses `ConnectSourceRequest`, runs the adapter's `probe()`, and on `ok` writes the credential to Key Vault as `glucose-<spaceId>` and answers `{ result: "ok", secretRef }`. Otherwise `{ result: "bad-credentials" }` or `{ result: "unreachable" }`, both HTTP 200 (the result is the contract; the Settings route maps it to an `ApiError` code). A body that is not a `ConnectSourceRequest` is HTTP 400 `{ error: { code: "validation" } }`.                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| `poll`           | timer `0 */5 * * * *`, 0–20 s random jitter | `runPollCycle` over every space with a configured source. A space with readings is asked for the last 30 minutes (back to its last reading after an outage, at most a day); a space with none for a day, so the chart does not start empty. Idempotent on `(spaceId, ts)`: the insert decides what is new (a unique violation means another cycle already stored it), so overlapping cycles never emit twice; one `reading` event per new row through `emit()`, and a row whose event could not be written is removed again so the next cycle stores and emits it together; a `reading.stored` custom event per new row for the 35-minute alert. Every source call has a 30 s deadline. One failing space never stops the others; the third consecutive failure sets `sourceStatus = disconnected` and emits `source.status`, the next success sets `connected` and emits again. |
+| `source-connect` | `POST /api/source-connect`, function key    | Parses `ConnectSourceRequest` (a union on `type`: `dexcom-share` or `nightscout`; `manual` is HTTP 400 `validation`, it has no credential), runs the adapter's `probe()`, and on `ok` writes the credential to Key Vault as `glucose-<spaceId>` and answers `{ result: "ok", secretRef }`. Otherwise `{ result: "bad-credentials" }` or `{ result: "unreachable" }`, both HTTP 200 (the result is the contract; the Settings route maps it to an `ApiError` code). A body that is not a `ConnectSourceRequest` is HTTP 400 `{ error: { code: "validation" } }`.                                                                                                                                                                                                                                                                                                                  |
 
 The Dexcom session is kept per space for the life of the process (one login per process lifetime
 per space); a changed credential or region replaces the adapter instance. A credential the service
@@ -45,14 +61,14 @@ App Insights property (the shared telemetry initializer strips `username` and `p
 
 ## Settings
 
-| Variable                                | Used by  | Notes                                                           |
-| --------------------------------------- | -------- | --------------------------------------------------------------- |
-| `DATABASE_URL`                          | both     | Key Vault reference on the Function App                         |
-| `KEY_VAULT_URL`                         | both     | the vault that holds `glucose-<spaceId>`; managed identity      |
-| `WEB_PUBSUB_ENDPOINT`, `WEB_PUBSUB_HUB` | `poll`   | live push through `emit()`; unset means rows only, clients poll |
-| `APPLICATIONINSIGHTS_CONNECTION_STRING` | both     | optional; unset means no telemetry, never a failure             |
-| `APP_VERSION`                           | both     | the release tag, set by `infra/deploy.sh`                       |
-| `FAKE_GLUCOSE_SOURCE`                   | CLI only | `1` runs the cycle against `FakeGlucoseSource`                  |
+| Variable                                | Used by | Notes                                                           |
+| --------------------------------------- | ------- | --------------------------------------------------------------- |
+| `DATABASE_URL`                          | both    | Key Vault reference on the Function App                         |
+| `KEY_VAULT_URL`                         | both    | the vault that holds `glucose-<spaceId>`; managed identity      |
+| `WEB_PUBSUB_ENDPOINT`, `WEB_PUBSUB_HUB` | `poll`  | live push through `emit()`; unset means rows only, clients poll |
+| `APPLICATIONINSIGHTS_CONNECTION_STRING` | both    | optional; unset means no telemetry, never a failure             |
+| `APP_VERSION`                           | both    | the release tag, set by `infra/deploy.sh`                       |
+| `FAKE_GLUCOSE_SOURCE`                   | both    | `1` runs the cycle against `FakeGlucoseSource`                  |
 
 `local.settings.example.json` has the local shape; copy it to `local.settings.json` and fill in your
 own values. That file holds a connection string and is not in the repo's `.gitignore`: never stage
@@ -90,17 +106,17 @@ pnpm --filter ./poller poll --once [--space <id>]                 # one cycle fr
 FAKE_GLUCOSE_SOURCE=1 pnpm --filter ./poller poll --once          # against the fake source
 ```
 
-`poll --once` is the setup check against a real account (spec §3): it needs `DATABASE_URL` and,
+`poll --once` is the setup check against a real account, Dexcom Share or Nightscout (spec §3): it needs `DATABASE_URL` and,
 unless `FAKE_GLUCOSE_SOURCE=1`, `KEY_VAULT_URL` with the space's secret in place. It exits 1 when any
 space failed. Only `--once` exists; the timer runs in the Function App.
 
 ## Tests
 
 `pnpm --filter ./poller test`: the timer schedule and jitter bounds, the summary log, the
-`reading.stored` events, the source factory (one instance per space, new instance on a changed
-credential, `secret-missing` / `secret-invalid`), `source-connect` (probe, store, the three results,
+`reading.stored` events, the source factory (one Dexcom instance per space, new instance on a changed
+credential, the Nightscout dispatch, `secret-missing` / `secret-invalid`, the fake), `source-connect` (probe, store, the three results,
 400 on a bad body, nothing credential-shaped in the log), the CLI arguments and the build contract.
-The adapter is tested in `shared/` against `fixtures/dexcom-share/` (hand-written, no real account)
+The adapters are tested in `shared/` against `fixtures/dexcom-share/` and `fixtures/nightscout/` (hand-written, no real account)
 and the cycle against in-memory tables and `FakeGlucoseSource`. No test reaches the network. The
 read-only rule has its own tests there: every call in every fixture scenario hits an allow-listed
 path with its method, a write path is refused with no `fetch` call, and `GlucoseSource` and each

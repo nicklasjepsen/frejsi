@@ -2,7 +2,9 @@ import {
   createLogger,
   DexcomShareSource,
   glucoseSecretName,
+  NightscoutSource,
   parseCredential,
+  parseNightscoutCredential,
   type ProbeResult,
 } from "@frejsi/shared";
 import { MemorySecrets } from "@frejsi/shared/secrets/memory";
@@ -46,6 +48,83 @@ describe("probeSourceFor", () => {
       password: body.password,
     });
     expect(source).toBeInstanceOf(DexcomShareSource);
+  });
+});
+
+describe("probeSourceFor for nightscout", () => {
+  it("builds a NightscoutSource", () => {
+    expect(
+      probeSourceFor({ type: "nightscout", url: "https://example-ns.example.invalid", token: "t" }),
+    ).toBeInstanceOf(NightscoutSource);
+  });
+});
+
+describe("source-connect with nightscout", () => {
+  const nightscout = {
+    spaceId: "s1",
+    type: "nightscout",
+    url: "https://example-ns.example.invalid",
+    token: "<fixture-token>",
+  };
+
+  it("probes with the Nightscout request and stores the credential as glucose-<spaceId>", async () => {
+    const h = harness("ok");
+    expect(await h.call(nightscout)).toEqual({
+      status: 200,
+      jsonBody: { result: "ok", secretRef: glucoseSecretName("s1") },
+    });
+    expect(h.probes).toEqual([
+      { type: "nightscout", url: nightscout.url, token: nightscout.token },
+    ]);
+    expect(parseNightscoutCredential((await h.secrets.get("glucose-s1")) ?? "")).toEqual({
+      url: nightscout.url,
+      token: nightscout.token,
+    });
+  });
+
+  it("stores an API secret the same way and nothing when the probe fails", async () => {
+    const { token: _token, ...rest } = nightscout;
+    const ok = harness("ok");
+    await ok.call({ ...rest, apiSecret: "<fixture-secret>" });
+    expect(parseNightscoutCredential((await ok.secrets.get("glucose-s1")) ?? "")).toEqual({
+      url: nightscout.url,
+      apiSecret: "<fixture-secret>",
+    });
+    for (const outcome of ["bad-credentials", "unreachable"] as const) {
+      const h = harness(outcome);
+      expect(await h.call(nightscout)).toEqual({ status: 200, jsonBody: { result: outcome } });
+      await expect(h.secrets.get("glucose-s1")).resolves.toBeUndefined();
+    }
+  });
+
+  it("never writes the address or the credential to the log", async () => {
+    for (const outcome of ["ok", "bad-credentials", "unreachable", new Error("down")] as const) {
+      const h = harness(outcome);
+      await h.call(nightscout);
+      const output = h.lines.join("\n");
+      expect(output).not.toContain(nightscout.token);
+      expect(output).not.toContain("example-ns");
+      expect(output).toContain('"spaceId":"s1"');
+    }
+  });
+
+  it("rejects http, both secrets, neither and a manual request with 400 validation", async () => {
+    const h = harness("ok");
+    const { token: _token, ...rest } = nightscout;
+    const bad = [
+      { ...nightscout, url: "http://example-ns.example.invalid" },
+      { ...nightscout, apiSecret: "s" },
+      rest,
+      { spaceId: "s1", type: "manual" },
+    ];
+    for (const request of bad) {
+      expect(await h.call(request)).toMatchObject({
+        status: 400,
+        jsonBody: { error: { code: "validation" } },
+      });
+    }
+    expect(h.probes).toEqual([]);
+    await expect(h.secrets.get("glucose-s1")).resolves.toBeUndefined();
   });
 });
 
