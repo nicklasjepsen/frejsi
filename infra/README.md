@@ -16,32 +16,26 @@ infra/
   test/               node:test suite over the built ARM JSON, the workflows and deploy.sh against fake tools
 ```
 
-## Resources and cost
+## Resources
 
-| Resource | Tier | Purpose | DKK / month |
-|---|---|---|---|
-| Static Web App | Standard | hybrid Next.js (UI + API routes), custom domain, preview environments | ~62 |
-| Function App | Linux Consumption (Y1), Node 22 | the poller, every 5 minutes; well inside the free grant | ~0 |
-| Storage account | Standard LRS | the Function App's own storage (not photos) | <1 |
-| Azure SQL | Basic, 5 DTU, 2 GB | all data; always on, so the poller never has to wake it | ~34 |
-| Web PubSub | Free (F1) | live push, hub `frejsi`, 20 connections, 20k messages/day | 0 |
-| Key Vault | Standard, RBAC | `database-url`, `web-pubsub-connection-string`, `bootstrap-token`, `glucose-<spaceId>` | <1 |
-| Log Analytics + Application Insights | Pay-as-you-go, 1 GB/day cap, 30 days | telemetry and the one alert | 0 (under 5 GB free) |
-| Action group + scheduled query alert | — | "no reading for 35 minutes" to `ALERT_EMAIL` | 0 |
-| Photo storage account | Standard LRS | private originals + thumbnails, seven-day soft delete | ~1–3 |
-| **Total** | | | **~98–100** |
+| Resource | Tier | Purpose |
+|---|---|---|
+| Static Web App | Standard | hybrid Next.js (UI + API routes), custom domain, preview environments |
+| Function App | Linux Consumption (Y1), Node 22 | the poller, every 5 minutes |
+| Storage account | Standard LRS | the Function App's own storage (not photos) |
+| Azure SQL | Basic, 5 DTU, 2 GB | all data; always on, so the poller never has to wake it |
+| Web PubSub | Free (F1) | live push, hub `frejsi`, 20 connections, 20k messages/day |
+| Key Vault | Standard, RBAC | `database-url`, `web-pubsub-connection-string`, `bootstrap-token`, `glucose-<spaceId>` |
+| Log Analytics + Application Insights | Pay-as-you-go, 1 GB/day cap, 30 days | telemetry and the one alert |
+| Action group + scheduled query alert | none | "no reading for 35 minutes" to `ALERT_EMAIL` |
+| Photo storage account | Standard LRS | private originals + thumbnails, seven-day soft delete |
 
-Prices are West Europe list prices in October 2026 at about 6.9 DKK per USD; check the invoice after
-the first month. The spec's target (section 1) is 50–80 DKK/month. The Standard Static Web App is the
-lever: it is what the spec asks for, and it is also two thirds of the bill. On the Free plan (custom
-domain still included; no SLA, no managed backend scaling) the total is about 35 DKK/month. That is
-the owner's call; `modules/staticwebapp.bicep` changes one word.
+What it costs per month, and what the Free Static Web App plan would change, is in
+[docs/deploy-your-own.md](../docs/deploy-your-own.md#what-it-costs). With the repository variable
+`SQL_SERVER_ID` set, the database sits on an existing server outside the group instead (same tier, no
+server of its own); see "An existing SQL server" below.
 
-With the repository variable `SQL_SERVER_ID` set, the database sits on an existing server outside the
-group instead (same tier, same price, no server of its own); see "An existing SQL server" below.
-
-Photo storage uses a **dedicated Standard LRS account**, about **1–3 DKK/month** at family scale
-(v0.2.0 plan, decision 21), bringing the estimate to about 98–100 DKK/month. The private `photos`
+Photo storage uses a **dedicated Standard LRS account** (v0.2.0 plan, decision 21). The private `photos`
 container holds originals up to 1600 px and 320×320 JPEG thumbnails, re-encoded on the server
 without EXIF, GPS, XMP or ICC metadata. Public blob access is disabled, HTTPS/TLS 1.2 is required,
 and deleted blobs are retained for seven days. It never shares the Function App's account.
@@ -100,75 +94,30 @@ release (plan decision 10).
 
 ## What the owner does once
 
-In this order. Everything after step 5 is one tap or one DNS record.
+[docs/deploy-your-own.md](../docs/deploy-your-own.md) is the walkthrough, with the commands and the
+reasons, for a fork or for this installation. The same steps in order, with where each is explained:
 
-1. **Resource group.** `frejsi` in West Europe, in the Proxus subscription. Nothing else goes in it:
-   `deploy.sh` finds resources by type and expects exactly one of each.
-2. **App registration.** In Entra ID create an app registration (for example `frejsi-deploy`). No
-   client secret is needed, ever. Note its application (client) ID, the tenant ID and the
-   subscription ID.
-3. **Federated credentials** on that app registration, issuer `https://token.actions.githubusercontent.com`,
-   audience `api://AzureADTokenExchange`, one per environment: `production-infra`, `production`
-   and, only if you want PR previews, `preview` (then also set the repository variable
-   `PREVIEWS_ENABLED` to `true`, which turns on the cleanup job that runs when any PR closes; without
-   it that job is skipped, since no preview can exist). The subject is `<prefix>:environment:<name>`,
-   where `<prefix>` is what GitHub presents for this repository:
+1. **Resource group**, one per installation, nothing else in it (`deploy.sh` finds resources by type
+   and expects exactly one of each): [step 1](../docs/deploy-your-own.md#1-fork-and-name-things).
+2. **App registration** with no client secret, ever: [step 2](../docs/deploy-your-own.md#2-the-entra-app-registration-and-its-federated-credentials).
+3. **Federated credentials**, one per environment (`production-infra`, `production`, and `preview`
+   only for PR previews), with the subject prefix GitHub presents for the repository, read with
+   `gh api repos/<owner>/<repo>/actions/oidc/customization/sub --jq .sub_claim_prefix`: step 2.
+4. **Role assignments**: Owner on the resource group, and the subscription-scope read role for
+   Static Web Apps operations: [step 3](../docs/deploy-your-own.md#3-roles-for-the-pipeline).
+5. **Environments, repository variables and secrets**, including `ALERT_EMAIL`, `FOOD_SOURCES`,
+   `OFF_COUNTRY`, `DEFAULT_LOCALE` and `AZURE_RESOURCE_GROUP`:
+   [step 4](../docs/deploy-your-own.md#4-github-environments-variables-and-secrets).
+6. **First release** by `workflow_dispatch` with a milestone titled like the tag and the infra box
+   ticked: [step 5](../docs/deploy-your-own.md#5-the-first-release).
+7. **DNS for the custom domain**, then `CUSTOM_DOMAIN` and a redeploy of the same tag with the infra
+   box, before the first space: [step 6](../docs/deploy-your-own.md#6-the-custom-domain-before-the-bootstrap).
+8. **Key Vault read access for yourself** (Key Vault Secrets User on the vault):
+   [step 7](../docs/deploy-your-own.md#7-read-the-bootstrap-token-and-create-the-first-space).
+9. **Read `bootstrap-token` once** and bootstrap the first space (`docs/operations.md`). The token
+   rotates on every infra deploy; the route is dead once a space exists: step 7.
 
-   ```
-   gh api repos/<owner>/<repo>/actions/oidc/customization/sub --jq .sub_claim_prefix
-   ```
-
-   Newer repositories use immutable subjects with the owner and repository IDs, so for this
-   repository the subjects are:
-   - `repo:nicklasjepsen@2478876/frejsi@1419802630:environment:production-infra`
-   - `repo:nicklasjepsen@2478876/frejsi@1419802630:environment:production`
-   - `repo:nicklasjepsen@2478876/frejsi@1419802630:environment:preview` (only with previews on;
-     previews are off here for now, so this one does not exist yet)
-
-   If the command prints nothing, the repository uses the older form `repo:<owner>/<repo>`. A wrong
-   subject fails the login with `AADSTS700213: No matching federated identity record found`.
-4. **Role assignments** for the app registration's service principal on the resource group:
-   **Owner**, or Contributor plus User Access Administrator (the deployment creates role assignments
-   for the Function App's identity and for the deploy principal itself). Key Vault data-plane access is
-   granted by Bicep, not by hand. Also one read-only grant at **subscription** scope: a custom role
-   with the action `Microsoft.Web/locations/*/read`. ARM polls asynchronous Static Web Apps
-   operations (the custom domain) at
-   `/subscriptions/<id>/providers/Microsoft.Web/locations/<region>/staticSitesOperationStatuses/…`,
-   outside the resource group; without the grant the infra job hangs with `AuthorizationFailed` until
-   it times out (the exact action is not a registered operation, so only the wildcard can grant it).
-5. **Repository variables** (Settings → Secrets and variables → Actions → Variables):
-   `AZURE_CLIENT_ID`, `AZURE_TENANT_ID`, `AZURE_SUBSCRIPTION_ID`, and `SQL_SERVER_ID` only for an
-   existing SQL server (below). Leave `CUSTOM_DOMAIN` unset until step 7. **Repository secret**
-   `ALERT_EMAIL` (where the 35-minute alert goes): a secret and not a variable, because the run logs of
-   a public repository are public and variables are printed in them unmasked. The environments
-   `production-infra` (owner as required reviewer) and `production` exist already; `preview` is
-   created on first use of `preview.yml` if you want previews. The repository secret
-   `CI_SQL_SA_PASSWORD` (the full suite's SQL Server container) already exists;
-   `ANTHROPIC_API_KEY_EVALS` is not needed before v0.4.0.
-6. **First release.** When the milestone is tagged, `release.yml` stops at the `infra` job for your
-   approval: one tap. The deployment takes about ten minutes (the SQL server is the slow one). If the
-   `bootstrap-token` secret fails with a 403 on the very first run, that is role propagation; the job
-   retries once after a minute. The `deploy` job then creates the database user, the Key Vault secrets,
-   runs the migrations and deploys the poller and the web app. The smoke step reads
-   `https://<default hostname>/api/health`.
-7. **DNS for the custom domain.** From the Static Web App's overview copy the default hostname
-   (`xxxx.azurestaticapps.net`) and create a CNAME `frejsi.jepsen.ninja → <default hostname>` at the
-   DNS provider. If the provider cannot CNAME (apex domains), use the TXT record the portal's
-   "Custom domains" page shows instead. Then set the repository variable `CUSTOM_DOMAIN` to
-   `frejsi.jepsen.ninja` and redeploy the same tag with `workflow_dispatch` on `release.yml`, with
-   the **infra** box ticked (a changed variable is invisible to the file diff that otherwise decides
-   whether the infra job runs): the infra job adds the domain (CNAME validation needs the record to
-   exist first, which is why the domain is conditional on the variable) and `deploy.sh` sets
-   `APP_ORIGIN` to it. The certificate is issued and renewed by Static Web Apps.
-8. **Key Vault read access for yourself.** Give your own user Key Vault Secrets User on the vault
-   (`kv-frejsi-<suffix>`), or use the portal's Secrets page, for the next step.
-9. **Read `bootstrap-token` once** and bootstrap the first space (`docs/operations.md`, task 10):
-   `az keyvault secret show --vault-name kv-frejsi-<suffix> -n bootstrap-token --query value -o tsv`.
-   The route is dead once a space exists; the token rotates on every infra deploy and nobody needs it
-   again.
-
-Then the subject's Dexcom Share credential is entered in Settings on the site (issue for task 12),
-never anywhere else.
+Then the subject's glucose source is connected in Settings on the site, never anywhere else.
 
 ## An existing SQL server
 
@@ -205,30 +154,18 @@ The database must be named `frejsi` (or set `SQL_DATABASE` in the deploy job). C
 cost latency: with the web app in West Europe and the server in Sweden Central, every query adds about
 20–30 ms.
 
-## Deploy your own in 15 minutes
+## Deploy your own
 
-Frejsi is one person's data on one person's subscription. A fork gets its own copy like this:
+[docs/deploy-your-own.md](../docs/deploy-your-own.md) takes a fork from nothing to a running site:
+the Entra app and its federated credentials, the environments, the variables and secrets, the first
+release started by hand with `workflow_dispatch` (a fork has no milestones, so you create one titled
+like the tag), the honest timings, the custom domain before the first space, and the costs. If Azure
+refuses to create the SQL server in your region, see "An existing SQL server" above.
 
-1. Fork the repository. In your fork, keep `baseName` as it is or set it in `main.bicepparam`
-   (at most 7 characters; names stay globally unique through a suffix derived from the resource
-   group id).
-2. Do steps 1–5 above in your own Azure subscription and GitHub repository. Build the federated
-   credential subjects from your fork's own prefix, read with the command in step 3
-   (`<prefix>:environment:production-infra`, `…:production`, and `…:preview` only if you want PR
-   previews); a fork created today gets an immutable prefix with its own IDs, so never copy this
-   repository's subjects. Create the environments `production-infra` and `production` in the fork
-   (Settings → Environments), with yourself as required reviewer on `production-infra`; for previews
-   also `preview` and the repository variable `PREVIEWS_ENABLED=true`. Add the repository secret
-   `CI_SQL_SA_PASSWORD` (any strong password; it is only for the SQL Server container the release
-   suite starts).
-3. Create a milestone titled `v0.1.0` with no open issues and push the tag `v0.1.0`. Approve the
-   infra job when it asks. The site is at the Static Web App's default hostname.
-4. Optional: your own domain, as in step 7. Not optional: the repository secret `ALERT_EMAIL` must
-   be set; it is your address, not ours. If Azure refuses to create the SQL server in your region,
-   see "An existing SQL server".
-
-Nothing Danish is hard-coded: the UI ships in `da` and `en`, and the glucose and food sources are
-plugins. Docker Compose for non-Azure hosting is planned for a later version (spec section 9).
+Nothing Danish is hard-coded: the UI ships in `da` and `en`, `DEFAULT_LOCALE`, `FOOD_SOURCES` and
+`OFF_COUNTRY` are settings, and the glucose and food sources are plugins
+([docs/architecture.md](../docs/architecture.md)). Docker Compose for non-Azure hosting is planned
+for a later version (spec section 9).
 
 ## What `deploy.sh` does, in order
 
