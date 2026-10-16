@@ -1,6 +1,12 @@
 // The poller: a Function App on a Linux Consumption (Y1) plan, Node 22, with its own storage
 // account (spec section 1, plan section 7). Secrets reach it as Key Vault references resolved by
-// its system-assigned identity; nothing secret is in this file or in the deployment history.
+// its user-assigned identity; nothing secret is in this file or in the deployment history.
+//
+// The identity is user-assigned on purpose (v0.5.0 plan section 7): CREATE USER ... WITH SID needs the
+// identity's client id, which ARM exposes only for a user-assigned identity, and the database login
+// then needs no password and no tenant-level Graph grant. AZURE_CLIENT_ID makes DefaultAzureCredential
+// (Key Vault, Web PubSub, SQL) use it. The database connection is SQL_SERVER_FQDN + SQL_DATABASE; the
+// poller holds no database password. The web app keeps DATABASE_URL (infra/README.md).
 //
 // The package itself is deployed by infra/deploy.sh (zip, SCM_DO_BUILD_DURING_DEPLOYMENT=false,
 // APP_VERSION). The settings it writes survive a Bicep redeploy: functionapp/appsettings.bicep merges
@@ -21,6 +27,16 @@ param keyVaultUri string
 param webPubSubHostName string
 param webPubSubHub string
 param appInsightsConnectionString string
+@description('Fully qualified host name of the SQL server the poller connects to as its identity.')
+param sqlServerFqdn string
+@description('Name of the database the poller connects to.')
+param sqlDatabase string
+
+resource identity 'Microsoft.ManagedIdentity/userAssignedIdentities@2023-01-31' = {
+  name: 'id-${baseName}-${suffix}'
+  location: location
+  tags: tags
+}
 
 resource storage 'Microsoft.Storage/storageAccounts@2023-05-01' = {
   name: 'st${baseName}${suffix}'
@@ -61,7 +77,9 @@ var appSettings = {
   FUNCTIONS_WORKER_RUNTIME: 'node'
   SCM_DO_BUILD_DURING_DEPLOYMENT: 'false'
   APPLICATIONINSIGHTS_CONNECTION_STRING: appInsightsConnectionString
-  DATABASE_URL: '@Microsoft.KeyVault(SecretUri=${keyVaultUri}secrets/database-url/)'
+  AZURE_CLIENT_ID: identity.properties.clientId
+  SQL_SERVER_FQDN: sqlServerFqdn
+  SQL_DATABASE: sqlDatabase
   WEB_PUBSUB_ENDPOINT: 'https://${webPubSubHostName}'
   WEB_PUBSUB_HUB: webPubSubHub
   KEY_VAULT_URL: keyVaultUri
@@ -73,13 +91,16 @@ resource functionApp 'Microsoft.Web/sites@2024-04-01' = {
   tags: tags
   kind: 'functionapp,linux'
   identity: {
-    type: 'SystemAssigned'
+    type: 'UserAssigned'
+    userAssignedIdentities: {
+      '${identity.id}': {}
+    }
   }
   properties: {
     serverFarmId: plan.id
     reserved: true
     httpsOnly: true
-    keyVaultReferenceIdentity: 'SystemAssigned'
+    keyVaultReferenceIdentity: identity.id
     siteConfig: {
       linuxFxVersion: 'Node|22'
       ftpsState: 'Disabled'
@@ -104,5 +125,7 @@ module settings 'functionapp/appsettings.bicep' = {
 }
 
 output name string = functionApp.name
-output principalId string = functionApp.identity.principalId
+output identityName string = identity.name
+output principalId string = identity.properties.principalId
+output clientId string = identity.properties.clientId
 output defaultHostName string = functionApp.properties.defaultHostName
