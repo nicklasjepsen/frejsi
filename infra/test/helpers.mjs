@@ -109,7 +109,8 @@ export function* walkResources(template, scope = { template, paramValues: null, 
   for (const resource of list) {
     if (resource.type === 'Microsoft.Resources/deployments' && resource.properties?.template) {
       const paramValues = Object.fromEntries(
-        Object.entries(resource.properties.parameters ?? {}).map(([k, v]) => [k, v.value]),
+        // A parameter fed by a conditional expression is a bare string `[if(...)]`, not `{ value }`.
+        Object.entries(resource.properties.parameters ?? {}).map(([k, v]) => [k, typeof v === 'string' ? v : v.value]),
       );
       const nested = resource.properties.template;
       yield* walkResources(nested, { template: nested, paramValues, parent: scope }, `${modulePath}/${resource.name}`);

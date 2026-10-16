@@ -42,6 +42,8 @@ param tags object = {
 }
 
 var suffix = uniqueString(resourceGroup().id)
+var sqlServerFqdn = empty(sqlServerId) ? sql!.outputs.serverFqdn : '${last(split(sqlServerId, '/'))}${environment().suffixes.sqlServerHostname}'
+var sqlDatabaseName = empty(sqlServerId) ? sql!.outputs.databaseName : 'frejsi'
 
 module monitoring 'modules/monitoring.bicep' = {
   name: 'monitoring'
@@ -96,6 +98,8 @@ module functionApp 'modules/functionapp.bicep' = {
     webPubSubHostName: webPubSub.outputs.hostName
     webPubSubHub: webPubSub.outputs.hubName
     appInsightsConnectionString: monitoring.outputs.appInsightsConnectionString
+    sqlServerFqdn: sqlServerFqdn
+    sqlDatabase: sqlDatabaseName
   }
 }
 
@@ -131,8 +135,10 @@ module alerts 'modules/alerts.bicep' = {
 }
 
 output keyVaultName string = keyVault.outputs.vaultName
-output sqlServerFqdn string = empty(sqlServerId) ? sql!.outputs.serverFqdn : '${last(split(sqlServerId, '/'))}${environment().suffixes.sqlServerHostname}'
-output sqlDatabaseName string = empty(sqlServerId) ? sql!.outputs.databaseName : 'frejsi'
+output sqlServerFqdn string = sqlServerFqdn
+output sqlDatabaseName string = sqlDatabaseName
+output functionIdentityName string = functionApp.outputs.identityName
+output functionIdentityClientId string = functionApp.outputs.clientId
 output webPubSubName string = webPubSub.outputs.name
 output functionAppName string = functionApp.outputs.name
 output staticWebAppName string = staticWebApp.outputs.name

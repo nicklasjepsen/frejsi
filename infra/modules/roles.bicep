@@ -1,6 +1,8 @@
 // Role assignments for the Function App's managed identity (spec sections 3, 3b; plan section 7):
-//   Key Vault Secrets Officer  it writes glucose-<spaceId> from source-connect and reads database-url
+//   Key Vault Secrets Officer  it writes glucose-<spaceId> from source-connect and reads the secrets its
+//                              Key Vault references name
 //   Web PubSub Service Owner   it publishes readings without a key
+// Both go to the Function App's user-assigned identity (functionapp.bicep).
 // The deploy principal's Key Vault role lives in keyvault.bicep next to the secret that needs it.
 
 param keyVaultName string
