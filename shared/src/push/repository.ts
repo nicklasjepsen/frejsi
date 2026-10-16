@@ -1,6 +1,7 @@
 import { prisma } from "../db/client";
 import type { PrismaClient } from "@prisma/client";
 import { Portion } from "../schemas/food";
+import { localeOrDefault } from "../schemas/settings";
 import { z } from "zod";
 import type { PushRepository, PushRecipient } from "./sink";
 
@@ -39,7 +40,7 @@ export class PrismaPushRepository implements PushRepository {
       id: r.id,
       endpoint: r.endpoint,
       keys: { p256dh: r.p256dh, auth: r.auth },
-      locale: r.user.locale === "en" ? "en" : "da",
+      locale: localeOrDefault(r.user.locale),
     }));
   }
   async remove(id: string): Promise<void> {

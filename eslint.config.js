@@ -254,6 +254,25 @@ const aiBoundaryRule = {
   },
 };
 
+const danishLettersMessage =
+  "Code under shared/ and poller/ is English; Danish belongs in a message file or a documented data file (CLAUDE.md).";
+/** Reports a string or template chunk holding æ, ø or å. Same pattern as the web rule below. */
+const danishLettersRule = {
+  meta: { type: "problem", schema: [] },
+  create(context) {
+    const pattern = new RegExp(DANISH_LETTERS);
+    return {
+      Literal(node) {
+        if (typeof node.value === "string" && pattern.test(node.value))
+          context.report({ node, message: danishLettersMessage });
+      },
+      TemplateElement(node) {
+        if (pattern.test(node.value.raw)) context.report({ node, message: danishLettersMessage });
+      },
+    };
+  },
+};
+
 export const boundaries = [
   {
     name: "frejsi/boundaries/db",
@@ -540,6 +559,28 @@ export const boundaries = [
         },
       ],
     },
+  },
+  {
+    // Code in shared/ and poller/ is English too (v0.5.0 plan section 2). The exclusions are data that
+    // is Danish on purpose: the Frida dataset, the search fold table, the dosing word list, the AI
+    // prompts and the Danish column names of a Dexcom Clarity export. Tests and fixtures are exempt.
+    name: "frejsi/boundaries/english-in-shared-and-poller",
+    files: ["shared/src/**/*.ts", "poller/src/**/*.ts"],
+    ignores: [
+      "**/*.test.ts",
+      "shared/src/food/frida/data/**",
+      "shared/src/food/search.ts",
+      "shared/src/dosing-vocabulary.ts",
+      "shared/src/ai/guard.ts",
+      "shared/src/ai/**/prompt*.ts",
+      "shared/src/ai/insight/meal.ts",
+      "shared/src/ai/insight/week.ts",
+      "shared/src/glucose/import/clarity.ts",
+    ],
+    // A rule of its own, because a second `no-restricted-syntax` block would replace the boundary
+    // selectors that already apply to these files.
+    plugins: { "frejsi-english": { rules: { "danish-letters": danishLettersRule } } },
+    rules: { "frejsi-english/danish-letters": "error" },
   },
   {
     name: "frejsi/boundaries/english-in-web",

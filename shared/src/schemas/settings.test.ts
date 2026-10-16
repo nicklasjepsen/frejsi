@@ -1,6 +1,16 @@
 import { describe, expect, it } from "vitest";
 
-import { Accent, Locale, SpaceSettings, UserSettings } from "./settings";
+import { Accent, Locale, SpaceSettings, UserSettings, localeOrDefault } from "./settings";
+
+describe("localeOrDefault", () => {
+  it("keeps a known locale and falls back to the column's default for anything else", () => {
+    expect(localeOrDefault("en")).toBe("en");
+    expect(localeOrDefault("da")).toBe("da");
+    for (const unknown of ["de", "", null, undefined]) {
+      expect(localeOrDefault(unknown)).toBe("da");
+    }
+  });
+});
 
 describe("Accent and Locale", () => {
   it("use English identifiers; the Danish names are UI strings", () => {
