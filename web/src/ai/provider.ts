@@ -15,7 +15,7 @@ export interface AiProviderDeps {
   now?: () => Date;
 }
 
-function cap(value: string | undefined, fallback: number): number {
+export function aiCap(value: string | undefined, fallback: number): number {
   if (value === undefined || value === "") return fallback;
   const parsed = Number(value);
   if (!/^\d+$/.test(value) || !Number.isSafeInteger(parsed))
@@ -45,8 +45,15 @@ export async function aiForSpace(
     spaceId,
     userId: session.userId,
     timezone: space.timezone,
-    dailyCap: cap(env.AI_DAILY_CAP, 50),
-    embedDailyCap: cap(env.AI_EMBED_DAILY_CAP, 500),
+    dailyCap: aiCap(env.AI_DAILY_CAP, 50),
+    embedDailyCap: aiCap(env.AI_EMBED_DAILY_CAP, 500),
     ...(deps.now ? { now: deps.now } : {}),
   });
+}
+
+/** Configuration metadata and validation share the same registry as call paths. */
+export function configuredAiProviders(
+  env: Readonly<Record<string, string | undefined>> = process.env,
+) {
+  return aiProviders(env);
 }

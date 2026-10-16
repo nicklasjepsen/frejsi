@@ -21,9 +21,9 @@ export const GET = settingsRoute<Params>(ROUTE, async (_request, { spaceId }) =>
 
 /** Owners change the unit and the target range; the answer is the settings as they now are. */
 export const PATCH = settingsRoute<Params>(ROUTE, async (request, { spaceId }) => {
-  await requireRole(spaceId, "owner");
+  const { session } = await requireRole(spaceId, "owner");
   const patch = await parseBody(request, SpaceSettingsPatch);
   const settings = await updateSpaceSettings(spaceId, patch);
-  logOutcome("settings.space-updated", ROUTE, "ok", { spaceId });
+  logOutcome("settings.space-updated", ROUTE, "ok", { spaceId, userId: session.userId });
   return json(settings);
 });

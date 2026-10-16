@@ -72,6 +72,7 @@ const data: SettingsData = {
   timezone: "Europe/Copenhagen",
   role: "owner",
   space: {
+    aiEnabled: false,
     name: "Almas rum",
     timezone: "Europe/Copenhagen",
     glucoseUnit: "mmol",

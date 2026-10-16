@@ -75,6 +75,7 @@ describe("loadSettingsData (plan task 9)", () => {
     const data = await loadSettingsData(session("u-owner", "owner"), shell, db);
     expect(data.role).toBe("owner");
     expect(data.space).toEqual({
+      aiEnabled: false,
       name: "Example space",
       timezone: "Europe/Copenhagen",
       glucoseUnit: "mgdl",

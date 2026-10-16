@@ -13,6 +13,7 @@ describe("Accent and Locale", () => {
 
 describe("SpaceSettings", () => {
   const valid = {
+    aiEnabled: false,
     name: "Example space",
     glucoseUnit: "mmol",
     targetLow: 4,
@@ -28,6 +29,28 @@ describe("SpaceSettings", () => {
     expect(
       SpaceSettings.safeParse({ ...valid, sourceType: null, lastReadingAt: null }).success,
     ).toBe(true);
+  });
+
+  it("accepts opt-in and a provider but rejects unknown read-model keys", () => {
+    expect(SpaceSettings.parse({ ...valid, aiEnabled: true, aiProvider: "anthropic" })).toEqual({
+      ...valid,
+      aiEnabled: true,
+      aiProvider: "anthropic",
+    });
+    expect(SpaceSettings.safeParse({ ...valid, secret: "hidden" }).success).toBe(false);
+    expect(SpaceSettings.safeParse({ ...valid, aiProvider: "other" }).success).toBe(false);
+    expect(Object.keys(SpaceSettings.shape).sort()).toEqual([
+      "aiEnabled",
+      "aiProvider",
+      "glucoseUnit",
+      "lastReadingAt",
+      "name",
+      "sourceStatus",
+      "sourceType",
+      "targetHigh",
+      "targetLow",
+      "timezone",
+    ]);
   });
 
   it("rejects a target range that is not low < high", () => {

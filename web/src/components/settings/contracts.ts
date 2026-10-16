@@ -5,30 +5,17 @@ import {
   ConnectSourceRequest,
   DexcomShareRegion,
   GlucoseSourceType,
-  GlucoseUnit,
+  UpdateSpaceSettingsRequest,
   Locale,
   SourceStatus,
 } from "@frejsi/shared";
 import { z } from "zod";
 
-const oneDecimal = (value: number) => Math.abs(value * 10 - Math.round(value * 10)) < 1e-6;
-const target = z.number().min(0).max(40).refine(oneDecimal, { message: "one decimal" });
-
 const atLeastOne = (value: Record<string, unknown>) =>
   Object.values(value).some((v) => v !== undefined);
 
 /** Per space, owners only. Targets are always in mmol (plan §3); the client converts for mg/dL. */
-export const SpaceSettingsPatch = z
-  .strictObject({
-    glucoseUnit: GlucoseUnit.optional(),
-    targetLow: target.optional(),
-    targetHigh: target.optional(),
-  })
-  .refine(atLeastOne, { message: "nothing to change" })
-  .refine(
-    (p) => p.targetLow === undefined || p.targetHigh === undefined || p.targetLow < p.targetHigh,
-    { message: "targetLow must be below targetHigh", path: ["targetHigh"] },
-  );
+export const SpaceSettingsPatch = UpdateSpaceSettingsRequest;
 export type SpaceSettingsPatch = z.infer<typeof SpaceSettingsPatch>;
 
 /** Per user: one's own, or another member's when an owner sets them. */
