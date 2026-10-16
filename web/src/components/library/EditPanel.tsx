@@ -14,7 +14,7 @@ export function EditPanel({
 }: {
   spaceId: string;
   food?: FoodView;
-  onSaved: (food: FoodView, previous?: FoodView) => void;
+  onSaved: (food: FoodView, previous?: FoodView, sent?: "sent" | "failed") => void;
   onClose: () => void;
 }) {
   const t = useTranslations("library.form");

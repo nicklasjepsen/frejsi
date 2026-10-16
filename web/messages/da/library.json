@@ -88,7 +88,10 @@
     "invalidNumber": "Skriv tallet som fx 40 eller 40,5.",
     "source": "{source} · stregkode {barcode}…",
     "photoPreview": "Det valgte billede",
-    "loadFailed": "Fødevaren kunne ikke hentes lige nu."
+    "loadFailed": "Fødevaren kunne ikke hentes lige nu.",
+    "contribute": "Send rettelsen til {source}, så andre får gavn af den",
+    "contributeSent": "Sendt til {source} · tak",
+    "contributeFailed": "Kunne ikke sende til {source} – rettelsen er gemt her"
   },
   "estimate": {
     "title": "{name} (fra billede)",

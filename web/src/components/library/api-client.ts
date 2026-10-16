@@ -7,6 +7,7 @@
 // exports Prisma.
 import { ApiError, type ApiErrorCode } from "@frejsi/shared/schemas/api";
 import {
+  ContributionsView,
   FoodView,
   LookupResponse,
   type CreateFoodRequest,
@@ -150,6 +151,22 @@ export const libraryApi = {
   },
   remove: async (spaceId: string, foodId: string): Promise<void> => {
     await send(one(spaceId, foodId), { method: "DELETE" });
+  },
+  /** Which plugins can receive a correction on this deployment (ids only). */
+  contributions: async (spaceId: string): Promise<string[]> =>
+    (
+      await callJson(
+        `/api/spaces/${encodeURIComponent(spaceId)}/contributions`,
+        { method: "GET" },
+        ContributionsView,
+      )
+    ).available,
+  /** "Send rettelsen": only ever called from a ticked box, after the food itself was saved. */
+  sendCorrection: async (spaceId: string, foodId: string): Promise<void> => {
+    await send(`/api/spaces/${encodeURIComponent(spaceId)}/contributions`, {
+      method: "POST",
+      body: { foodId },
+    });
   },
   /** Called only when the form is saved, never on preview (plan §6). */
   putPhoto: async (spaceId: string, foodId: string, jpeg: Uint8Array): Promise<FoodView | null> => {

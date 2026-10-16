@@ -65,6 +65,8 @@ export interface FakeFoodsApi {
   foods: FoodView[];
   /** Methods+paths ("POST foods", "PUT foods/:id/photo") that answer 500 until cleared. */
   failing: Set<string>;
+  /** What `GET contributions` lists; empty by default, so nothing offers a send. */
+  available: string[];
   /** The recorded calls with this method whose path matches. */
   callsTo(method: string, pathPattern: RegExp): RecordedCall[];
 }
@@ -76,6 +78,7 @@ export function fakeFoodsApi(initial: FoodView[], spaceId = "s1"): FakeFoodsApi 
     calls: [],
     foods: initial.map((food) => ({ ...food })),
     failing: new Set(),
+    available: [],
     callsTo: (method, pattern) =>
       api.calls.filter((call) => call.method === method && pattern.test(call.path)),
     fetch: (input, init) =>
@@ -99,6 +102,13 @@ export function fakeFoodsApi(initial: FoodView[], spaceId = "s1"): FakeFoodsApi 
     const key = `${method} ${path.replace(/^foods\/(?!verify)[^/]+/, "foods/:id")}`;
     if (api.failing.has(key)) return error(500, "internal");
 
+    if (path === "contributions") {
+      if (method === "GET") return json(200, { available: api.available });
+      const sent = body as { foodId?: string } | undefined;
+      const target = api.foods.find((row) => row.id === sent?.foodId);
+      if (!target || !api.available.includes(target.origin)) return error(404, "not-found");
+      return json(200, { status: "ok" });
+    }
     if (path === "foods" && method === "GET") {
       const filter = url.searchParams.get("filter") ?? "all";
       const q = url.searchParams.get("q") ?? "";
