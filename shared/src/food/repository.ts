@@ -77,6 +77,7 @@ export class PrismaFoodRepository implements FoodRepository {
     remoteOrigins: string[],
     spaceIds: string[],
     limit: number,
+    includeCache = true,
   ): Promise<Food[]> {
     return (
       await this.db.food.findMany({
@@ -84,7 +85,7 @@ export class PrismaFoodRepository implements FoodRepository {
           origin: { in: remoteOrigins, notIn: ["ai", "family", "manual"] },
           sourceName: null,
           verified: false,
-          OR: [{ spaceId: null }, { spaceId: { in: spaceIds } }],
+          OR: [...(includeCache ? [{ spaceId: null }] : []), { spaceId: { in: spaceIds } }],
         },
         orderBy: [{ spaceId: "asc" }, { id: "asc" }],
         take: limit,

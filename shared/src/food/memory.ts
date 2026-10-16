@@ -23,6 +23,7 @@ export class MemoryFoodRepository implements FoodRepository {
     remoteOrigins: string[],
     spaceIds: string[],
     limit: number,
+    includeCache = true,
   ): Promise<Food[]> {
     return Promise.resolve(
       this.rows
@@ -32,7 +33,7 @@ export class MemoryFoodRepository implements FoodRepository {
             remoteOrigins.includes(row.origin) &&
             !["ai", "family", "manual"].includes(row.origin) &&
             row.sourceName == null &&
-            (row.spaceId === null || spaceIds.includes(row.spaceId)),
+            (row.spaceId === null ? includeCache : spaceIds.includes(row.spaceId)),
         )
         .sort(
           (a, b) =>

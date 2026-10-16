@@ -82,6 +82,7 @@ export interface EnrichmentRepository {
     remoteOrigins: string[],
     spaceIds: string[],
     limit: number,
+    includeCache?: boolean,
   ): Promise<Food[]>;
   setNormalisedName(
     row: Food,
