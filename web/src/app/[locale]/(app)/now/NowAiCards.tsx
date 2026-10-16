@@ -17,7 +17,7 @@ export function NowAiCards({ ai, locale }: { ai: NowAi; locale: AppLocale }) {
     <div className={styles.aiCards} data-testid="now-ai-cards">
       {ai.enabled && (
         <QuickLinkCard
-          href={localeHref(locale, "/history/week#opsummering")}
+          href={localeHref(locale, `/history/week?start=${ai.start}#opsummering`)}
           icon="◷"
           title={t("weekTitle")}
           subtitle={t(ai.ready ? "weekReady" : "weekPending")}

@@ -4,6 +4,7 @@ import type { Accent, Role } from "@frejsi/shared";
 import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
 
+import { SettingsLiveRefresh } from "@/components/settings/SettingsLiveRefresh";
 import { stripLocale, type AppLocale } from "@/lib/i18n/routing";
 
 import { PhoneHeader } from "./PhoneHeader";
@@ -45,6 +46,7 @@ export function AppShell({ locale, user, space, spaces, children }: AppShellProp
       data-accent={user.accent}
       data-testid="app-shell"
     >
+      {variant === "simple" && <SettingsLiveRefresh spaceId={space.id} />}
       <Sidebar
         locale={locale}
         variant={variant}

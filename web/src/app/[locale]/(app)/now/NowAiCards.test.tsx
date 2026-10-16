@@ -10,15 +10,21 @@ it.each(["da", "en"] as const)("renders translated ready and off states in %s", 
   const messages = getMessages(locale);
   const view = render(
     <I18nProvider locale={locale} messages={messages}>
-      <NowAiCards locale={locale} ai={{ enabled: true, provider: "anthropic", ready: true }} />
+      <NowAiCards
+        locale={locale}
+        ai={{ enabled: true, provider: "anthropic", ready: true, start: "2026-10-12" }}
+      />
     </I18nProvider>,
   );
   const link = screen.getByRole("link", { name: new RegExp(messages.now.weekTitle) });
-  expect(link).toHaveAttribute("href", `/${locale}/history/week#opsummering`);
+  expect(link).toHaveAttribute("href", `/${locale}/history/week?start=2026-10-12#opsummering`);
   expect(link).toHaveTextContent(messages.now.weekReady);
   view.rerender(
     <I18nProvider locale={locale} messages={messages}>
-      <NowAiCards locale={locale} ai={{ enabled: false, provider: null, ready: false }} />
+      <NowAiCards
+        locale={locale}
+        ai={{ enabled: false, provider: null, ready: false, start: "2026-10-12" }}
+      />
     </I18nProvider>,
   );
   expect(screen.queryByRole("link")).not.toBeInTheDocument();
