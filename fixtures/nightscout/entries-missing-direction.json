@@ -1,0 +1,35 @@
+[
+  {
+    "_id": "6f0000000000000000000032",
+    "device": "fictional-uploader",
+    "date": 1792059000000,
+    "dateString": "2026-10-15T10:10:00.000Z",
+    "sgv": 117,
+    "delta": 0,
+    "type": "sgv",
+    "utcOffset": 0,
+    "sysTime": "2026-10-15T10:10:00.000Z"
+  },
+  {
+    "_id": "6f0000000000000000000031",
+    "device": "fictional-uploader",
+    "date": 1792058700000,
+    "dateString": "2026-10-15T10:05:00.000Z",
+    "sgv": 108,
+    "delta": 0,
+    "type": "sgv",
+    "utcOffset": 0,
+    "sysTime": "2026-10-15T10:05:00.000Z"
+  },
+  {
+    "_id": "6f0000000000000000000030",
+    "device": "fictional-uploader",
+    "date": 1792058400000,
+    "dateString": "2026-10-15T10:00:00.000Z",
+    "sgv": 100,
+    "delta": 0,
+    "type": "sgv",
+    "utcOffset": 0,
+    "sysTime": "2026-10-15T10:00:00.000Z"
+  }
+]

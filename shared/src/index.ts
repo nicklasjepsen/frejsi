@@ -57,6 +57,14 @@ export {
   type FetchLike,
 } from "./glucose/dexcom-share/index";
 export {
+  NightscoutError,
+  NightscoutSource,
+  parseNightscoutCredential,
+  serializeNightscoutCredential,
+  type NightscoutFetch,
+  type NightscoutSourceOptions,
+} from "./glucose/nightscout/index";
+export {
   FAILURES_BEFORE_DISCONNECTED,
   FIRST_RUN_MINUTES,
   WINDOW_MINUTES,
@@ -66,6 +74,7 @@ export {
   type PollCycleOptions,
   type PollDb,
   type PollOutcomeCode,
+  type PolledSourceConfig,
   type PollSpaceRow,
   type SourceFactory,
   type SpaceOutcome,
