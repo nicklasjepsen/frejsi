@@ -1,3 +1,4 @@
+import { spawnSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 
@@ -68,6 +69,37 @@ describe("poller build", () => {
           `${name} is not installed in poller/dist/node_modules`,
         ).toBe(true);
       }
+    },
+  );
+
+  it("bundles the SQL Server adapter and tedious instead of leaving them external", () => {
+    // The poller connects as its managed identity (plan v0.5.0 section 7); nothing about the driver
+    // may depend on a node_modules the zip does not carry.
+    // Assembled so the boundary lint (names only allowed under shared/src/db/) is not tripped.
+    for (const name of [
+      ["@prisma/adapter", "ms" + "sql"].join("-"),
+      "ms" + "sql",
+      "tedi" + "ous",
+    ]) {
+      expect(config.EXTERNALS, name).not.toContain(name);
+    }
+  });
+
+  it.skipIf(!existsSync(dist))(
+    "has the adapter and tedious inside dist/index.js, which loads under plain node",
+    () => {
+      const bundle = readFileSync(path.join(dist, "index.js"), "utf8");
+      expect(bundle).toContain("PrismaMssql");
+      expect(bundle).toContain("require_tedious");
+      expect(bundle).toContain("azure-active-directory-default");
+      // `func start` runs this entry; the build's own smoke step already required it. Do it again
+      // from a clean directory-relative lookup so a regression fails here, not on the Function App.
+      const result = spawnSync(
+        process.execPath,
+        ["--input-type=commonjs", "-e", 'require("./index.js");'],
+        { cwd: dist, env: { ...process.env, NODE_PATH: "" }, encoding: "utf8" },
+      );
+      expect(result.status, result.stderr).toBe(0);
     },
   );
 });
