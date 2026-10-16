@@ -1,0 +1,54 @@
+{
+  "locale": "en",
+  "id": "meal-09",
+  "kind": "meal",
+  "input": {
+    "locale": "en",
+    "glucoseUnit": "mmol",
+    "meal": {
+      "title": "Mælk",
+      "totalCarbs": 42,
+      "slot": "lunch",
+      "localTime": "12:00"
+    },
+    "stats": {
+      "peak": {
+        "mmol": 9.6,
+        "minutesAfterMeal": 60
+      },
+      "inRange": {
+        "minutes": 150,
+        "coveredMinutes": 180,
+        "windowMinutes": 180,
+        "complete": true,
+        "belowMinutes": 0,
+        "aboveMinutes": 30
+      },
+      "leadMinutes": 12,
+      "readingCount": 36
+    },
+    "previous": [
+      {
+        "localDate": "2026-10-11",
+        "totalCarbs": 42,
+        "stats": {
+          "peak": {
+            "mmol": 13,
+            "minutesAfterMeal": 90
+          },
+          "inRange": {
+            "minutes": 150,
+            "coveredMinutes": 180,
+            "windowMinutes": 180,
+            "complete": true,
+            "belowMinutes": 0,
+            "aboveMinutes": 30
+          },
+          "leadMinutes": 0,
+          "readingCount": 36
+        }
+      }
+    ],
+    "leadLabel": "before"
+  }
+}

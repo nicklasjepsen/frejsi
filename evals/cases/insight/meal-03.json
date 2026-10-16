@@ -1,0 +1,50 @@
+{
+  "locale": "da",
+  "id": "meal-03",
+  "kind": "meal",
+  "input": {
+    "locale": "da",
+    "glucoseUnit": "mmol",
+    "meal": {
+      "title": "Pasta bolognese",
+      "totalCarbs": 42,
+      "slot": "lunch",
+      "localTime": "12:00"
+    },
+    "stats": {
+      "inRange": {
+        "minutes": 0,
+        "coveredMinutes": 0,
+        "windowMinutes": 180,
+        "complete": true,
+        "belowMinutes": 0,
+        "aboveMinutes": 0
+      },
+      "leadMinutes": 12,
+      "readingCount": 0
+    },
+    "previous": [
+      {
+        "localDate": "2026-10-11",
+        "totalCarbs": 42,
+        "stats": {
+          "peak": {
+            "mmol": 13,
+            "minutesAfterMeal": 90
+          },
+          "inRange": {
+            "minutes": 150,
+            "coveredMinutes": 180,
+            "windowMinutes": 180,
+            "complete": true,
+            "belowMinutes": 0,
+            "aboveMinutes": 30
+          },
+          "leadMinutes": 0,
+          "readingCount": 36
+        }
+      }
+    ],
+    "leadLabel": "before"
+  }
+}

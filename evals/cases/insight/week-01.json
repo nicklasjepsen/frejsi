@@ -1,0 +1,84 @@
+{
+  "locale": "da",
+  "id": "week-01",
+  "kind": "week",
+  "input": {
+    "locale": "da",
+    "glucoseUnit": "mmol",
+    "isoWeek": 42,
+    "weekStart": "2026-10-12",
+    "numbers": {
+      "inRangePercent": 75,
+      "previousWeekInRangePercent": 70,
+      "belowPercent": 2,
+      "lowEpisodes": {
+        "count": 2,
+        "atNight": 1
+      },
+      "carbsPerDay": 180,
+      "mealCount": 21,
+      "lead": {
+        "meanMinutes": 12,
+        "registered": 14,
+        "of": 21
+      }
+    },
+    "days": [
+      {
+        "localDate": "2026-10-12",
+        "mealCount": 3,
+        "totalCarbs": 180,
+        "inRangePercent": 75
+      },
+      {
+        "localDate": "2026-10-13",
+        "mealCount": 3,
+        "totalCarbs": 180,
+        "inRangePercent": 75
+      },
+      {
+        "localDate": "2026-10-14",
+        "mealCount": 3,
+        "totalCarbs": 180,
+        "inRangePercent": 75
+      },
+      {
+        "localDate": "2026-10-15",
+        "mealCount": 3,
+        "totalCarbs": 180,
+        "inRangePercent": 75
+      },
+      {
+        "localDate": "2026-10-16",
+        "mealCount": 3,
+        "totalCarbs": 180,
+        "inRangePercent": 75
+      },
+      {
+        "localDate": "2026-10-17",
+        "mealCount": 3,
+        "totalCarbs": 180,
+        "inRangePercent": 75
+      },
+      {
+        "localDate": "2026-10-18",
+        "mealCount": 3,
+        "totalCarbs": 180,
+        "inRangePercent": 75
+      }
+    ],
+    "meals": [
+      {
+        "localDate": "2026-10-12",
+        "localTime": "12:00",
+        "title": "Havregrød",
+        "totalCarbs": 24,
+        "peak": {
+          "mmol": 9.6,
+          "minutesAfterMeal": 60
+        },
+        "leadMinutes": 12
+      }
+    ]
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "locale": "da",
+  "id": "parse-30",
+  "kind": "parse",
+  "text": "en portion pasta bolognese og en banan",
+  "expected": [
+    {
+      "name": "Pasta bolognese",
+      "portion": "1 portion",
+      "carbs": 55
+    },
+    {
+      "name": "Banan",
+      "portion": "1 stk",
+      "carbs": 23
+    }
+  ],
+  "unmatched": []
+}

@@ -1,0 +1,19 @@
+{
+  "locale": "da",
+  "id": "parse-29",
+  "kind": "parse",
+  "text": "spageti med kødsovs og et æble",
+  "expected": [
+    {
+      "name": "Pasta bolognese",
+      "portion": "1 portion",
+      "carbs": 55
+    },
+    {
+      "name": "Æble",
+      "portion": "1 stk",
+      "carbs": 14
+    }
+  ],
+  "unmatched": []
+}

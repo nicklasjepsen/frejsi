@@ -1,0 +1,19 @@
+{
+  "locale": "da",
+  "id": "photo-05",
+  "kind": "photo",
+  "description": "Madpakke med banan. Fictional plate layout and target masses; replace targets with weighed or label-read values when the owner supplies an image.",
+  "photo": "pending",
+  "items": [
+    {
+      "name": "Min madpakke",
+      "grams": 180,
+      "carbs": 42
+    },
+    {
+      "name": "Banan",
+      "grams": 100,
+      "carbs": 23
+    }
+  ]
+}

@@ -1,0 +1,61 @@
+{
+  "locale": "da",
+  "id": "week-04",
+  "kind": "week",
+  "input": {
+    "locale": "da",
+    "glucoseUnit": "mmol",
+    "isoWeek": 42,
+    "weekStart": "2026-10-12",
+    "numbers": {
+      "lowEpisodes": {
+        "count": 0,
+        "atNight": 0
+      },
+      "carbsPerDay": 0,
+      "mealCount": 0,
+      "lead": {
+        "registered": 0,
+        "of": 0
+      }
+    },
+    "days": [
+      {
+        "localDate": "2026-10-12",
+        "mealCount": 0,
+        "totalCarbs": 0
+      },
+      {
+        "localDate": "2026-10-13",
+        "mealCount": 0,
+        "totalCarbs": 0
+      },
+      {
+        "localDate": "2026-10-14",
+        "mealCount": 0,
+        "totalCarbs": 0
+      },
+      {
+        "localDate": "2026-10-15",
+        "mealCount": 0,
+        "totalCarbs": 0
+      },
+      {
+        "localDate": "2026-10-16",
+        "mealCount": 0,
+        "totalCarbs": 0
+      },
+      {
+        "localDate": "2026-10-17",
+        "mealCount": 0,
+        "totalCarbs": 0
+      },
+      {
+        "localDate": "2026-10-18",
+        "mealCount": 0,
+        "totalCarbs": 0
+      }
+    ],
+    "meals": []
+  }
+}

@@ -10,13 +10,15 @@ export type AiProviderRegistry = Partial<Record<AiProviderId, AiProvider>>;
 /** Adapters are added here by their lane. An unconfigured deployment sends nothing. */
 export function aiProviders(
   env: Readonly<Record<string, string | undefined>>,
-  options: { fakeScript?: FakeAiScript } = {},
+  options: { fakeScript?: FakeAiScript; fetch?: typeof globalThis.fetch; timeout?: number } = {},
 ): AiProviderRegistry {
   if (env.FAKE_AI_PROVIDER !== "1") {
     const providers: AiProviderRegistry = {};
     if (env.ANTHROPIC_API_KEY)
       providers.anthropic = new AnthropicProvider({
         apiKey: env.ANTHROPIC_API_KEY,
+        fetch: options.fetch,
+        timeout: options.timeout,
         voyageApiKey: env.VOYAGE_API_KEY,
       });
     if (env.AZURE_OPENAI_ENDPOINT && env.AZURE_OPENAI_DEPLOYMENT_EVERYDAY)

@@ -1,0 +1,19 @@
+{
+  "locale": "da",
+  "id": "parse-02",
+  "kind": "parse",
+  "text": "en skål havregrød og et glas mælk",
+  "expected": [
+    {
+      "name": "Havregrød",
+      "portion": "1 skål",
+      "carbs": 24
+    },
+    {
+      "name": "Mælk",
+      "portion": "1 glas",
+      "carbs": 10
+    }
+  ],
+  "unmatched": []
+}

@@ -1,0 +1,19 @@
+{
+  "locale": "da",
+  "id": "parse-19",
+  "kind": "parse",
+  "text": "rugbrød med ost og en banan",
+  "expected": [
+    {
+      "name": "Rugbrød med ost",
+      "portion": "1 skive",
+      "carbs": 18
+    },
+    {
+      "name": "Banan",
+      "portion": "1 stk",
+      "carbs": 23
+    }
+  ],
+  "unmatched": []
+}

@@ -36,6 +36,18 @@ importers:
         specifier: 4.1.11
         version: 4.1.11(@opentelemetry/api@1.9.1)(@types/node@22.20.5)(jsdom@26.1.0)(vite@7.3.7(@types/node@22.20.5)(jiti@2.7.0)(tsx@4.23.15)(yaml@2.9.1))
 
+  evals:
+    dependencies:
+      '@frejsi/shared':
+        specifier: workspace:*
+        version: link:../shared
+      sharp:
+        specifier: 0.35.5
+        version: 0.35.5(@types/node@22.20.5)
+      zod:
+        specifier: 4.6.7
+        version: 4.6.7
+
   poller:
     dependencies:
       '@azure/functions':

@@ -1,0 +1,2211 @@
+{
+  "parse-01": [
+    {
+      "kind": "tool-calls",
+      "model": "fixture",
+      "calls": [
+        {
+          "id": "0",
+          "name": "lookup",
+          "input": {
+            "query": "Rugbrød med ost"
+          }
+        },
+        {
+          "id": "1",
+          "name": "lookup",
+          "input": {
+            "query": "Æble"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "json",
+      "model": "fixture",
+      "json": {
+        "items": [
+          {
+            "query": "Rugbrød med ost",
+            "match": {
+              "source": "library",
+              "food": {
+                "id": "fictional-food-5",
+                "name": "Rugbrød med ost",
+                "origin": "family",
+                "verified": false,
+                "favourite": false,
+                "createdAt": "2026-10-12T10:00:00.000Z",
+                "updatedAt": "2026-10-12T10:00:00.000Z",
+                "portions": [
+                  {
+                    "label": "1 skive",
+                    "carbs": 18
+                  },
+                  {
+                    "label": "2 skiver",
+                    "carbs": 36
+                  }
+                ]
+              },
+              "portionLabel": "2 skiver"
+            }
+          },
+          {
+            "query": "Æble",
+            "match": {
+              "source": "library",
+              "food": {
+                "id": "fictional-food-6",
+                "name": "Æble",
+                "origin": "family",
+                "verified": false,
+                "favourite": false,
+                "createdAt": "2026-10-12T10:00:00.000Z",
+                "updatedAt": "2026-10-12T10:00:00.000Z",
+                "portions": [
+                  {
+                    "label": "1 stk",
+                    "carbs": 14
+                  },
+                  {
+                    "label": "1 mellem",
+                    "carbs": 14
+                  },
+                  {
+                    "label": "½ mellem",
+                    "carbs": 7
+                  }
+                ]
+              },
+              "portionLabel": "1 stk"
+            }
+          }
+        ],
+        "unmatched": []
+      }
+    }
+  ],
+  "parse-02": [
+    {
+      "kind": "tool-calls",
+      "model": "fixture",
+      "calls": [
+        {
+          "id": "0",
+          "name": "lookup",
+          "input": {
+            "query": "Havregrød"
+          }
+        },
+        {
+          "id": "1",
+          "name": "lookup",
+          "input": {
+            "query": "Mælk"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "json",
+      "model": "fixture",
+      "json": {
+        "items": [
+          {
+            "query": "Havregrød",
+            "match": {
+              "source": "library",
+              "food": {
+                "id": "fictional-food-4",
+                "name": "Havregrød",
+                "origin": "family",
+                "verified": false,
+                "favourite": false,
+                "createdAt": "2026-10-12T10:00:00.000Z",
+                "updatedAt": "2026-10-12T10:00:00.000Z",
+                "portions": [
+                  {
+                    "label": "1 skål",
+                    "carbs": 24
+                  }
+                ]
+              },
+              "portionLabel": "1 skål"
+            }
+          },
+          {
+            "query": "Mælk",
+            "match": {
+              "source": "library",
+              "food": {
+                "id": "fictional-food-8",
+                "name": "Mælk",
+                "origin": "family",
+                "verified": false,
+                "favourite": false,
+                "createdAt": "2026-10-12T10:00:00.000Z",
+                "updatedAt": "2026-10-12T10:00:00.000Z",
+                "portions": [
+                  {
+                    "label": "1 glas",
+                    "carbs": 10
+                  }
+                ]
+              },
+              "portionLabel": "1 glas"
+            }
+          }
+        ],
+        "unmatched": []
+      }
+    }
+  ],
+  "parse-03": [
+    {
+      "kind": "tool-calls",
+      "model": "fixture",
+      "calls": [
+        {
+          "id": "0",
+          "name": "lookup",
+          "input": {
+            "query": "Pasta bolognese"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "json",
+      "model": "fixture",
+      "json": {
+        "items": [
+          {
+            "query": "Pasta bolognese",
+            "match": {
+              "source": "library",
+              "food": {
+                "id": "fictional-food-2",
+                "name": "Pasta bolognese",
+                "origin": "family",
+                "verified": false,
+                "favourite": false,
+                "createdAt": "2026-10-12T10:00:00.000Z",
+                "updatedAt": "2026-10-12T10:00:00.000Z",
+                "portions": [
+                  {
+                    "label": "1 portion",
+                    "carbs": 55
+                  }
+                ]
+              },
+              "portionLabel": "1 portion"
+            }
+          }
+        ],
+        "unmatched": []
+      }
+    }
+  ],
+  "parse-04": [
+    {
+      "kind": "tool-calls",
+      "model": "fixture",
+      "calls": [
+        {
+          "id": "0",
+          "name": "lookup",
+          "input": {
+            "query": "Rugbrød"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "json",
+      "model": "fixture",
+      "json": {
+        "items": [
+          {
+            "query": "Rugbrød",
+            "match": {
+              "source": "library",
+              "food": {
+                "id": "fictional-food-0",
+                "name": "Rugbrød",
+                "origin": "family",
+                "verified": false,
+                "favourite": false,
+                "createdAt": "2026-10-12T10:00:00.000Z",
+                "updatedAt": "2026-10-12T10:00:00.000Z",
+                "portions": [
+                  {
+                    "label": "1 skive",
+                    "carbs": 18,
+                    "grams": 45
+                  },
+                  {
+                    "label": "2 skiver",
+                    "carbs": 36,
+                    "grams": 90
+                  }
+                ],
+                "carbsPer100g": 40
+              },
+              "grams": 90.0
+            }
+          }
+        ],
+        "unmatched": []
+      }
+    }
+  ],
+  "parse-05": [
+    {
+      "kind": "tool-calls",
+      "model": "fixture",
+      "calls": [
+        {
+          "id": "0",
+          "name": "lookup",
+          "input": {
+            "query": "en sky af stjernestøv"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "json",
+      "model": "fixture",
+      "json": {
+        "items": [],
+        "unmatched": ["en sky af stjernestøv"]
+      }
+    }
+  ],
+  "parse-06": [
+    {
+      "kind": "tool-calls",
+      "model": "fixture",
+      "calls": [
+        {
+          "id": "0",
+          "name": "lookup",
+          "input": {
+            "query": "Æble"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "json",
+      "model": "fixture",
+      "json": {
+        "items": [
+          {
+            "query": "Æble",
+            "match": {
+              "source": "library",
+              "food": {
+                "id": "fictional-food-6",
+                "name": "Æble",
+                "origin": "family",
+                "verified": false,
+                "favourite": false,
+                "createdAt": "2026-10-12T10:00:00.000Z",
+                "updatedAt": "2026-10-12T10:00:00.000Z",
+                "portions": [
+                  {
+                    "label": "1 stk",
+                    "carbs": 14
+                  },
+                  {
+                    "label": "1 mellem",
+                    "carbs": 14
+                  },
+                  {
+                    "label": "½ mellem",
+                    "carbs": 7
+                  }
+                ]
+              },
+              "portionLabel": "1 stk"
+            }
+          }
+        ],
+        "unmatched": []
+      }
+    }
+  ],
+  "parse-07": [
+    {
+      "kind": "tool-calls",
+      "model": "fixture",
+      "calls": [
+        {
+          "id": "0",
+          "name": "lookup",
+          "input": {
+            "query": "Banan"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "json",
+      "model": "fixture",
+      "json": {
+        "items": [
+          {
+            "query": "Banan",
+            "match": {
+              "source": "library",
+              "food": {
+                "id": "fictional-food-7",
+                "name": "Banan",
+                "origin": "family",
+                "verified": false,
+                "favourite": false,
+                "createdAt": "2026-10-12T10:00:00.000Z",
+                "updatedAt": "2026-10-12T10:00:00.000Z",
+                "portions": [
+                  {
+                    "label": "1 stk",
+                    "carbs": 23
+                  }
+                ]
+              },
+              "portionLabel": "1 stk"
+            }
+          }
+        ],
+        "unmatched": []
+      }
+    }
+  ],
+  "parse-08": [
+    {
+      "kind": "tool-calls",
+      "model": "fixture",
+      "calls": [
+        {
+          "id": "0",
+          "name": "lookup",
+          "input": {
+            "query": "Min madpakke"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "json",
+      "model": "fixture",
+      "json": {
+        "items": [
+          {
+            "query": "Min madpakke",
+            "match": {
+              "source": "library",
+              "food": {
+                "id": "fictional-food-3",
+                "name": "Min madpakke",
+                "origin": "family",
+                "verified": false,
+                "favourite": false,
+                "createdAt": "2026-10-12T10:00:00.000Z",
+                "updatedAt": "2026-10-12T10:00:00.000Z",
+                "portions": [
+                  {
+                    "label": "1 madpakke",
+                    "carbs": 42
+                  }
+                ]
+              },
+              "portionLabel": "1 madpakke"
+            }
+          }
+        ],
+        "unmatched": []
+      }
+    }
+  ],
+  "parse-09": [
+    {
+      "kind": "tool-calls",
+      "model": "fixture",
+      "calls": [
+        {
+          "id": "0",
+          "name": "lookup",
+          "input": {
+            "query": "Kartoffel kogt"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "json",
+      "model": "fixture",
+      "json": {
+        "items": [
+          {
+            "query": "Kartoffel kogt",
+            "match": {
+              "source": "library",
+              "food": {
+                "id": "fictional-food-1",
+                "name": "Kartoffel kogt",
+                "origin": "family",
+                "verified": false,
+                "favourite": false,
+                "createdAt": "2026-10-12T10:00:00.000Z",
+                "updatedAt": "2026-10-12T10:00:00.000Z",
+                "portions": [
+                  {
+                    "label": "1 portion",
+                    "carbs": 17,
+                    "grams": 100
+                  }
+                ],
+                "carbsPer100g": 17
+              },
+              "portionLabel": "1 portion"
+            }
+          }
+        ],
+        "unmatched": []
+      }
+    }
+  ],
+  "parse-10": [
+    {
+      "kind": "tool-calls",
+      "model": "fixture",
+      "calls": [
+        {
+          "id": "0",
+          "name": "lookup",
+          "input": {
+            "query": "Mælk"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "json",
+      "model": "fixture",
+      "json": {
+        "items": [
+          {
+            "query": "Mælk",
+            "match": {
+              "source": "library",
+              "food": {
+                "id": "fictional-food-8",
+                "name": "Mælk",
+                "origin": "family",
+                "verified": false,
+                "favourite": false,
+                "createdAt": "2026-10-12T10:00:00.000Z",
+                "updatedAt": "2026-10-12T10:00:00.000Z",
+                "portions": [
+                  {
+                    "label": "1 glas",
+                    "carbs": 10
+                  }
+                ]
+              },
+              "portionLabel": "1 glas"
+            }
+          }
+        ],
+        "unmatched": []
+      }
+    }
+  ],
+  "parse-11": [
+    {
+      "kind": "tool-calls",
+      "model": "fixture",
+      "calls": [
+        {
+          "id": "0",
+          "name": "lookup",
+          "input": {
+            "query": "Rugbrød med ost"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "json",
+      "model": "fixture",
+      "json": {
+        "items": [
+          {
+            "query": "Rugbrød med ost",
+            "match": {
+              "source": "library",
+              "food": {
+                "id": "fictional-food-5",
+                "name": "Rugbrød med ost",
+                "origin": "family",
+                "verified": false,
+                "favourite": false,
+                "createdAt": "2026-10-12T10:00:00.000Z",
+                "updatedAt": "2026-10-12T10:00:00.000Z",
+                "portions": [
+                  {
+                    "label": "1 skive",
+                    "carbs": 18
+                  },
+                  {
+                    "label": "2 skiver",
+                    "carbs": 36
+                  }
+                ]
+              },
+              "portionLabel": "1 skive"
+            }
+          }
+        ],
+        "unmatched": []
+      }
+    }
+  ],
+  "parse-12": [
+    {
+      "kind": "tool-calls",
+      "model": "fixture",
+      "calls": [
+        {
+          "id": "0",
+          "name": "lookup",
+          "input": {
+            "query": "Havregrød"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "json",
+      "model": "fixture",
+      "json": {
+        "items": [
+          {
+            "query": "Havregrød",
+            "match": {
+              "source": "library",
+              "food": {
+                "id": "fictional-food-4",
+                "name": "Havregrød",
+                "origin": "family",
+                "verified": false,
+                "favourite": false,
+                "createdAt": "2026-10-12T10:00:00.000Z",
+                "updatedAt": "2026-10-12T10:00:00.000Z",
+                "portions": [
+                  {
+                    "label": "1 skål",
+                    "carbs": 24
+                  }
+                ]
+              },
+              "portionLabel": "1 skål"
+            }
+          }
+        ],
+        "unmatched": []
+      }
+    }
+  ],
+  "parse-13": [
+    {
+      "kind": "tool-calls",
+      "model": "fixture",
+      "calls": [
+        {
+          "id": "0",
+          "name": "lookup",
+          "input": {
+            "query": "Pasta bolognese"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "json",
+      "model": "fixture",
+      "json": {
+        "items": [
+          {
+            "query": "Pasta bolognese",
+            "match": {
+              "source": "library",
+              "food": {
+                "id": "fictional-food-2",
+                "name": "Pasta bolognese",
+                "origin": "family",
+                "verified": false,
+                "favourite": false,
+                "createdAt": "2026-10-12T10:00:00.000Z",
+                "updatedAt": "2026-10-12T10:00:00.000Z",
+                "portions": [
+                  {
+                    "label": "1 portion",
+                    "carbs": 55
+                  }
+                ]
+              },
+              "portionLabel": "1 portion"
+            }
+          }
+        ],
+        "unmatched": []
+      }
+    }
+  ],
+  "parse-14": [
+    {
+      "kind": "tool-calls",
+      "model": "fixture",
+      "calls": [
+        {
+          "id": "0",
+          "name": "lookup",
+          "input": {
+            "query": "Æble"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "json",
+      "model": "fixture",
+      "json": {
+        "items": [
+          {
+            "query": "Æble",
+            "match": {
+              "source": "library",
+              "food": {
+                "id": "fictional-food-6",
+                "name": "Æble",
+                "origin": "family",
+                "verified": false,
+                "favourite": false,
+                "createdAt": "2026-10-12T10:00:00.000Z",
+                "updatedAt": "2026-10-12T10:00:00.000Z",
+                "portions": [
+                  {
+                    "label": "1 stk",
+                    "carbs": 14
+                  },
+                  {
+                    "label": "1 mellem",
+                    "carbs": 14
+                  },
+                  {
+                    "label": "½ mellem",
+                    "carbs": 7
+                  }
+                ]
+              },
+              "portionLabel": "½ mellem"
+            }
+          }
+        ],
+        "unmatched": []
+      }
+    }
+  ],
+  "parse-15": [
+    {
+      "kind": "tool-calls",
+      "model": "fixture",
+      "calls": [
+        {
+          "id": "0",
+          "name": "lookup",
+          "input": {
+            "query": "Rugbrød"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "json",
+      "model": "fixture",
+      "json": {
+        "items": [
+          {
+            "query": "Rugbrød",
+            "match": {
+              "source": "library",
+              "food": {
+                "id": "fictional-food-0",
+                "name": "Rugbrød",
+                "origin": "family",
+                "verified": false,
+                "favourite": false,
+                "createdAt": "2026-10-12T10:00:00.000Z",
+                "updatedAt": "2026-10-12T10:00:00.000Z",
+                "portions": [
+                  {
+                    "label": "1 skive",
+                    "carbs": 18,
+                    "grams": 45
+                  },
+                  {
+                    "label": "2 skiver",
+                    "carbs": 36,
+                    "grams": 90
+                  }
+                ],
+                "carbsPer100g": 40
+              },
+              "grams": 45.0
+            }
+          }
+        ],
+        "unmatched": []
+      }
+    }
+  ],
+  "parse-16": [
+    {
+      "kind": "tool-calls",
+      "model": "fixture",
+      "calls": [
+        {
+          "id": "0",
+          "name": "lookup",
+          "input": {
+            "query": "Kartoffel kogt"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "json",
+      "model": "fixture",
+      "json": {
+        "items": [
+          {
+            "query": "Kartoffel kogt",
+            "match": {
+              "source": "library",
+              "food": {
+                "id": "fictional-food-1",
+                "name": "Kartoffel kogt",
+                "origin": "family",
+                "verified": false,
+                "favourite": false,
+                "createdAt": "2026-10-12T10:00:00.000Z",
+                "updatedAt": "2026-10-12T10:00:00.000Z",
+                "portions": [
+                  {
+                    "label": "1 portion",
+                    "carbs": 17,
+                    "grams": 100
+                  }
+                ],
+                "carbsPer100g": 17
+              },
+              "grams": 150.0
+            }
+          }
+        ],
+        "unmatched": []
+      }
+    }
+  ],
+  "parse-17": [
+    {
+      "kind": "tool-calls",
+      "model": "fixture",
+      "calls": [
+        {
+          "id": "0",
+          "name": "lookup",
+          "input": {
+            "query": "Banan"
+          }
+        },
+        {
+          "id": "1",
+          "name": "lookup",
+          "input": {
+            "query": "Mælk"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "json",
+      "model": "fixture",
+      "json": {
+        "items": [
+          {
+            "query": "Banan",
+            "match": {
+              "source": "library",
+              "food": {
+                "id": "fictional-food-7",
+                "name": "Banan",
+                "origin": "family",
+                "verified": false,
+                "favourite": false,
+                "createdAt": "2026-10-12T10:00:00.000Z",
+                "updatedAt": "2026-10-12T10:00:00.000Z",
+                "portions": [
+                  {
+                    "label": "1 stk",
+                    "carbs": 23
+                  }
+                ]
+              },
+              "portionLabel": "1 stk"
+            }
+          },
+          {
+            "query": "Mælk",
+            "match": {
+              "source": "library",
+              "food": {
+                "id": "fictional-food-8",
+                "name": "Mælk",
+                "origin": "family",
+                "verified": false,
+                "favourite": false,
+                "createdAt": "2026-10-12T10:00:00.000Z",
+                "updatedAt": "2026-10-12T10:00:00.000Z",
+                "portions": [
+                  {
+                    "label": "1 glas",
+                    "carbs": 10
+                  }
+                ]
+              },
+              "portionLabel": "1 glas"
+            }
+          }
+        ],
+        "unmatched": []
+      }
+    }
+  ],
+  "parse-18": [
+    {
+      "kind": "tool-calls",
+      "model": "fixture",
+      "calls": [
+        {
+          "id": "0",
+          "name": "lookup",
+          "input": {
+            "query": "Havregrød"
+          }
+        },
+        {
+          "id": "1",
+          "name": "lookup",
+          "input": {
+            "query": "Æble"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "json",
+      "model": "fixture",
+      "json": {
+        "items": [
+          {
+            "query": "Havregrød",
+            "match": {
+              "source": "library",
+              "food": {
+                "id": "fictional-food-4",
+                "name": "Havregrød",
+                "origin": "family",
+                "verified": false,
+                "favourite": false,
+                "createdAt": "2026-10-12T10:00:00.000Z",
+                "updatedAt": "2026-10-12T10:00:00.000Z",
+                "portions": [
+                  {
+                    "label": "1 skål",
+                    "carbs": 24
+                  }
+                ]
+              },
+              "portionLabel": "1 skål"
+            }
+          },
+          {
+            "query": "Æble",
+            "match": {
+              "source": "library",
+              "food": {
+                "id": "fictional-food-6",
+                "name": "Æble",
+                "origin": "family",
+                "verified": false,
+                "favourite": false,
+                "createdAt": "2026-10-12T10:00:00.000Z",
+                "updatedAt": "2026-10-12T10:00:00.000Z",
+                "portions": [
+                  {
+                    "label": "1 stk",
+                    "carbs": 14
+                  },
+                  {
+                    "label": "1 mellem",
+                    "carbs": 14
+                  },
+                  {
+                    "label": "½ mellem",
+                    "carbs": 7
+                  }
+                ]
+              },
+              "portionLabel": "1 stk"
+            }
+          }
+        ],
+        "unmatched": []
+      }
+    }
+  ],
+  "parse-19": [
+    {
+      "kind": "tool-calls",
+      "model": "fixture",
+      "calls": [
+        {
+          "id": "0",
+          "name": "lookup",
+          "input": {
+            "query": "Rugbrød med ost"
+          }
+        },
+        {
+          "id": "1",
+          "name": "lookup",
+          "input": {
+            "query": "Banan"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "json",
+      "model": "fixture",
+      "json": {
+        "items": [
+          {
+            "query": "Rugbrød med ost",
+            "match": {
+              "source": "library",
+              "food": {
+                "id": "fictional-food-5",
+                "name": "Rugbrød med ost",
+                "origin": "family",
+                "verified": false,
+                "favourite": false,
+                "createdAt": "2026-10-12T10:00:00.000Z",
+                "updatedAt": "2026-10-12T10:00:00.000Z",
+                "portions": [
+                  {
+                    "label": "1 skive",
+                    "carbs": 18
+                  },
+                  {
+                    "label": "2 skiver",
+                    "carbs": 36
+                  }
+                ]
+              },
+              "portionLabel": "1 skive"
+            }
+          },
+          {
+            "query": "Banan",
+            "match": {
+              "source": "library",
+              "food": {
+                "id": "fictional-food-7",
+                "name": "Banan",
+                "origin": "family",
+                "verified": false,
+                "favourite": false,
+                "createdAt": "2026-10-12T10:00:00.000Z",
+                "updatedAt": "2026-10-12T10:00:00.000Z",
+                "portions": [
+                  {
+                    "label": "1 stk",
+                    "carbs": 23
+                  }
+                ]
+              },
+              "portionLabel": "1 stk"
+            }
+          }
+        ],
+        "unmatched": []
+      }
+    }
+  ],
+  "parse-20": [
+    {
+      "kind": "tool-calls",
+      "model": "fixture",
+      "calls": [
+        {
+          "id": "0",
+          "name": "lookup",
+          "input": {
+            "query": "Min madpakke"
+          }
+        },
+        {
+          "id": "1",
+          "name": "lookup",
+          "input": {
+            "query": "Mælk"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "json",
+      "model": "fixture",
+      "json": {
+        "items": [
+          {
+            "query": "Min madpakke",
+            "match": {
+              "source": "library",
+              "food": {
+                "id": "fictional-food-3",
+                "name": "Min madpakke",
+                "origin": "family",
+                "verified": false,
+                "favourite": false,
+                "createdAt": "2026-10-12T10:00:00.000Z",
+                "updatedAt": "2026-10-12T10:00:00.000Z",
+                "portions": [
+                  {
+                    "label": "1 madpakke",
+                    "carbs": 42
+                  }
+                ]
+              },
+              "portionLabel": "1 madpakke"
+            }
+          },
+          {
+            "query": "Mælk",
+            "match": {
+              "source": "library",
+              "food": {
+                "id": "fictional-food-8",
+                "name": "Mælk",
+                "origin": "family",
+                "verified": false,
+                "favourite": false,
+                "createdAt": "2026-10-12T10:00:00.000Z",
+                "updatedAt": "2026-10-12T10:00:00.000Z",
+                "portions": [
+                  {
+                    "label": "1 glas",
+                    "carbs": 10
+                  }
+                ]
+              },
+              "portionLabel": "1 glas"
+            }
+          }
+        ],
+        "unmatched": []
+      }
+    }
+  ],
+  "parse-21": [
+    {
+      "kind": "tool-calls",
+      "model": "fixture",
+      "calls": [
+        {
+          "id": "0",
+          "name": "lookup",
+          "input": {
+            "query": "Æble"
+          }
+        },
+        {
+          "id": "1",
+          "name": "lookup",
+          "input": {
+            "query": "Banan"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "json",
+      "model": "fixture",
+      "json": {
+        "items": [
+          {
+            "query": "Æble",
+            "match": {
+              "source": "library",
+              "food": {
+                "id": "fictional-food-6",
+                "name": "Æble",
+                "origin": "family",
+                "verified": false,
+                "favourite": false,
+                "createdAt": "2026-10-12T10:00:00.000Z",
+                "updatedAt": "2026-10-12T10:00:00.000Z",
+                "portions": [
+                  {
+                    "label": "1 stk",
+                    "carbs": 14
+                  },
+                  {
+                    "label": "1 mellem",
+                    "carbs": 14
+                  },
+                  {
+                    "label": "½ mellem",
+                    "carbs": 7
+                  }
+                ]
+              },
+              "portionLabel": "1 stk"
+            }
+          },
+          {
+            "query": "Banan",
+            "match": {
+              "source": "library",
+              "food": {
+                "id": "fictional-food-7",
+                "name": "Banan",
+                "origin": "family",
+                "verified": false,
+                "favourite": false,
+                "createdAt": "2026-10-12T10:00:00.000Z",
+                "updatedAt": "2026-10-12T10:00:00.000Z",
+                "portions": [
+                  {
+                    "label": "1 stk",
+                    "carbs": 23
+                  }
+                ]
+              },
+              "portionLabel": "1 stk"
+            }
+          }
+        ],
+        "unmatched": []
+      }
+    }
+  ],
+  "parse-22": [
+    {
+      "kind": "tool-calls",
+      "model": "fixture",
+      "calls": [
+        {
+          "id": "0",
+          "name": "lookup",
+          "input": {
+            "query": "Rugbrød"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "json",
+      "model": "fixture",
+      "json": {
+        "items": [
+          {
+            "query": "Rugbrød",
+            "match": {
+              "source": "library",
+              "food": {
+                "id": "fictional-food-0",
+                "name": "Rugbrød",
+                "origin": "family",
+                "verified": false,
+                "favourite": false,
+                "createdAt": "2026-10-12T10:00:00.000Z",
+                "updatedAt": "2026-10-12T10:00:00.000Z",
+                "portions": [
+                  {
+                    "label": "1 skive",
+                    "carbs": 18,
+                    "grams": 45
+                  },
+                  {
+                    "label": "2 skiver",
+                    "carbs": 36,
+                    "grams": 90
+                  }
+                ],
+                "carbsPer100g": 40
+              },
+              "portionLabel": "2 skiver"
+            }
+          }
+        ],
+        "unmatched": []
+      }
+    }
+  ],
+  "parse-23": [
+    {
+      "kind": "tool-calls",
+      "model": "fixture",
+      "calls": [
+        {
+          "id": "0",
+          "name": "lookup",
+          "input": {
+            "query": "Kartoffel kogt"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "json",
+      "model": "fixture",
+      "json": {
+        "items": [
+          {
+            "query": "Kartoffel kogt",
+            "match": {
+              "source": "library",
+              "food": {
+                "id": "fictional-food-1",
+                "name": "Kartoffel kogt",
+                "origin": "family",
+                "verified": false,
+                "favourite": false,
+                "createdAt": "2026-10-12T10:00:00.000Z",
+                "updatedAt": "2026-10-12T10:00:00.000Z",
+                "portions": [
+                  {
+                    "label": "1 portion",
+                    "carbs": 17,
+                    "grams": 100
+                  }
+                ],
+                "carbsPer100g": 17
+              },
+              "grams": 100.0
+            }
+          }
+        ],
+        "unmatched": []
+      }
+    }
+  ],
+  "parse-24": [
+    {
+      "kind": "tool-calls",
+      "model": "fixture",
+      "calls": [
+        {
+          "id": "0",
+          "name": "lookup",
+          "input": {
+            "query": "Mælk"
+          }
+        },
+        {
+          "id": "1",
+          "name": "lookup",
+          "input": {
+            "query": "Æble"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "json",
+      "model": "fixture",
+      "json": {
+        "items": [
+          {
+            "query": "Mælk",
+            "match": {
+              "source": "library",
+              "food": {
+                "id": "fictional-food-8",
+                "name": "Mælk",
+                "origin": "family",
+                "verified": false,
+                "favourite": false,
+                "createdAt": "2026-10-12T10:00:00.000Z",
+                "updatedAt": "2026-10-12T10:00:00.000Z",
+                "portions": [
+                  {
+                    "label": "1 glas",
+                    "carbs": 10
+                  }
+                ]
+              },
+              "portionLabel": "1 glas"
+            }
+          },
+          {
+            "query": "Æble",
+            "match": {
+              "source": "library",
+              "food": {
+                "id": "fictional-food-6",
+                "name": "Æble",
+                "origin": "family",
+                "verified": false,
+                "favourite": false,
+                "createdAt": "2026-10-12T10:00:00.000Z",
+                "updatedAt": "2026-10-12T10:00:00.000Z",
+                "portions": [
+                  {
+                    "label": "1 stk",
+                    "carbs": 14
+                  },
+                  {
+                    "label": "1 mellem",
+                    "carbs": 14
+                  },
+                  {
+                    "label": "½ mellem",
+                    "carbs": 7
+                  }
+                ]
+              },
+              "portionLabel": "1 stk"
+            }
+          }
+        ],
+        "unmatched": []
+      }
+    }
+  ],
+  "parse-25": [
+    {
+      "kind": "tool-calls",
+      "model": "fixture",
+      "calls": [
+        {
+          "id": "0",
+          "name": "lookup",
+          "input": {
+            "query": "Min madpakke"
+          }
+        },
+        {
+          "id": "1",
+          "name": "lookup",
+          "input": {
+            "query": "Æble"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "json",
+      "model": "fixture",
+      "json": {
+        "items": [
+          {
+            "query": "Min madpakke",
+            "match": {
+              "source": "library",
+              "food": {
+                "id": "fictional-food-3",
+                "name": "Min madpakke",
+                "origin": "family",
+                "verified": false,
+                "favourite": false,
+                "createdAt": "2026-10-12T10:00:00.000Z",
+                "updatedAt": "2026-10-12T10:00:00.000Z",
+                "portions": [
+                  {
+                    "label": "1 madpakke",
+                    "carbs": 42
+                  }
+                ]
+              },
+              "portionLabel": "1 madpakke"
+            }
+          },
+          {
+            "query": "Æble",
+            "match": {
+              "source": "library",
+              "food": {
+                "id": "fictional-food-6",
+                "name": "Æble",
+                "origin": "family",
+                "verified": false,
+                "favourite": false,
+                "createdAt": "2026-10-12T10:00:00.000Z",
+                "updatedAt": "2026-10-12T10:00:00.000Z",
+                "portions": [
+                  {
+                    "label": "1 stk",
+                    "carbs": 14
+                  },
+                  {
+                    "label": "1 mellem",
+                    "carbs": 14
+                  },
+                  {
+                    "label": "½ mellem",
+                    "carbs": 7
+                  }
+                ]
+              },
+              "portionLabel": "1 stk"
+            }
+          }
+        ],
+        "unmatched": []
+      }
+    }
+  ],
+  "parse-26": [
+    {
+      "kind": "tool-calls",
+      "model": "fixture",
+      "calls": [
+        {
+          "id": "0",
+          "name": "lookup",
+          "input": {
+            "query": "Havregrød"
+          }
+        },
+        {
+          "id": "1",
+          "name": "lookup",
+          "input": {
+            "query": "Banan"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "json",
+      "model": "fixture",
+      "json": {
+        "items": [
+          {
+            "query": "Havregrød",
+            "match": {
+              "source": "library",
+              "food": {
+                "id": "fictional-food-4",
+                "name": "Havregrød",
+                "origin": "family",
+                "verified": false,
+                "favourite": false,
+                "createdAt": "2026-10-12T10:00:00.000Z",
+                "updatedAt": "2026-10-12T10:00:00.000Z",
+                "portions": [
+                  {
+                    "label": "1 skål",
+                    "carbs": 24
+                  }
+                ]
+              },
+              "portionLabel": "1 skål"
+            }
+          },
+          {
+            "query": "Banan",
+            "match": {
+              "source": "library",
+              "food": {
+                "id": "fictional-food-7",
+                "name": "Banan",
+                "origin": "family",
+                "verified": false,
+                "favourite": false,
+                "createdAt": "2026-10-12T10:00:00.000Z",
+                "updatedAt": "2026-10-12T10:00:00.000Z",
+                "portions": [
+                  {
+                    "label": "1 stk",
+                    "carbs": 23
+                  }
+                ]
+              },
+              "portionLabel": "1 stk"
+            }
+          }
+        ],
+        "unmatched": []
+      }
+    }
+  ],
+  "parse-27": [
+    {
+      "kind": "tool-calls",
+      "model": "fixture",
+      "calls": [
+        {
+          "id": "0",
+          "name": "lookup",
+          "input": {
+            "query": "Pasta bolognese"
+          }
+        },
+        {
+          "id": "1",
+          "name": "lookup",
+          "input": {
+            "query": "Mælk"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "json",
+      "model": "fixture",
+      "json": {
+        "items": [
+          {
+            "query": "Pasta bolognese",
+            "match": {
+              "source": "library",
+              "food": {
+                "id": "fictional-food-2",
+                "name": "Pasta bolognese",
+                "origin": "family",
+                "verified": false,
+                "favourite": false,
+                "createdAt": "2026-10-12T10:00:00.000Z",
+                "updatedAt": "2026-10-12T10:00:00.000Z",
+                "portions": [
+                  {
+                    "label": "1 portion",
+                    "carbs": 55
+                  }
+                ]
+              },
+              "portionLabel": "1 portion"
+            }
+          },
+          {
+            "query": "Mælk",
+            "match": {
+              "source": "library",
+              "food": {
+                "id": "fictional-food-8",
+                "name": "Mælk",
+                "origin": "family",
+                "verified": false,
+                "favourite": false,
+                "createdAt": "2026-10-12T10:00:00.000Z",
+                "updatedAt": "2026-10-12T10:00:00.000Z",
+                "portions": [
+                  {
+                    "label": "1 glas",
+                    "carbs": 10
+                  }
+                ]
+              },
+              "portionLabel": "1 glas"
+            }
+          }
+        ],
+        "unmatched": []
+      }
+    }
+  ],
+  "parse-28": [
+    {
+      "kind": "tool-calls",
+      "model": "fixture",
+      "calls": [
+        {
+          "id": "0",
+          "name": "lookup",
+          "input": {
+            "query": "Rugbrød med ost"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "json",
+      "model": "fixture",
+      "json": {
+        "items": [
+          {
+            "query": "Rugbrød med ost",
+            "match": {
+              "source": "library",
+              "food": {
+                "id": "fictional-food-5",
+                "name": "Rugbrød med ost",
+                "origin": "family",
+                "verified": false,
+                "favourite": false,
+                "createdAt": "2026-10-12T10:00:00.000Z",
+                "updatedAt": "2026-10-12T10:00:00.000Z",
+                "portions": [
+                  {
+                    "label": "1 skive",
+                    "carbs": 18
+                  },
+                  {
+                    "label": "2 skiver",
+                    "carbs": 36
+                  }
+                ]
+              },
+              "portionLabel": "1 skive"
+            }
+          }
+        ],
+        "unmatched": []
+      }
+    }
+  ],
+  "parse-29": [
+    {
+      "kind": "tool-calls",
+      "model": "fixture",
+      "calls": [
+        {
+          "id": "0",
+          "name": "lookup",
+          "input": {
+            "query": "Pasta bolognese"
+          }
+        },
+        {
+          "id": "1",
+          "name": "lookup",
+          "input": {
+            "query": "Æble"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "json",
+      "model": "fixture",
+      "json": {
+        "items": [
+          {
+            "query": "Pasta bolognese",
+            "match": {
+              "source": "library",
+              "food": {
+                "id": "fictional-food-2",
+                "name": "Pasta bolognese",
+                "origin": "family",
+                "verified": false,
+                "favourite": false,
+                "createdAt": "2026-10-12T10:00:00.000Z",
+                "updatedAt": "2026-10-12T10:00:00.000Z",
+                "portions": [
+                  {
+                    "label": "1 portion",
+                    "carbs": 55
+                  }
+                ]
+              },
+              "portionLabel": "1 portion"
+            }
+          },
+          {
+            "query": "Æble",
+            "match": {
+              "source": "library",
+              "food": {
+                "id": "fictional-food-6",
+                "name": "Æble",
+                "origin": "family",
+                "verified": false,
+                "favourite": false,
+                "createdAt": "2026-10-12T10:00:00.000Z",
+                "updatedAt": "2026-10-12T10:00:00.000Z",
+                "portions": [
+                  {
+                    "label": "1 stk",
+                    "carbs": 14
+                  },
+                  {
+                    "label": "1 mellem",
+                    "carbs": 14
+                  },
+                  {
+                    "label": "½ mellem",
+                    "carbs": 7
+                  }
+                ]
+              },
+              "portionLabel": "1 stk"
+            }
+          }
+        ],
+        "unmatched": []
+      }
+    }
+  ],
+  "parse-30": [
+    {
+      "kind": "tool-calls",
+      "model": "fixture",
+      "calls": [
+        {
+          "id": "0",
+          "name": "lookup",
+          "input": {
+            "query": "Pasta bolognese"
+          }
+        },
+        {
+          "id": "1",
+          "name": "lookup",
+          "input": {
+            "query": "Banan"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "json",
+      "model": "fixture",
+      "json": {
+        "items": [
+          {
+            "query": "Pasta bolognese",
+            "match": {
+              "source": "library",
+              "food": {
+                "id": "fictional-food-2",
+                "name": "Pasta bolognese",
+                "origin": "family",
+                "verified": false,
+                "favourite": false,
+                "createdAt": "2026-10-12T10:00:00.000Z",
+                "updatedAt": "2026-10-12T10:00:00.000Z",
+                "portions": [
+                  {
+                    "label": "1 portion",
+                    "carbs": 55
+                  }
+                ]
+              },
+              "portionLabel": "1 portion"
+            }
+          },
+          {
+            "query": "Banan",
+            "match": {
+              "source": "library",
+              "food": {
+                "id": "fictional-food-7",
+                "name": "Banan",
+                "origin": "family",
+                "verified": false,
+                "favourite": false,
+                "createdAt": "2026-10-12T10:00:00.000Z",
+                "updatedAt": "2026-10-12T10:00:00.000Z",
+                "portions": [
+                  {
+                    "label": "1 stk",
+                    "carbs": 23
+                  }
+                ]
+              },
+              "portionLabel": "1 stk"
+            }
+          }
+        ],
+        "unmatched": []
+      }
+    }
+  ],
+  "normalise-01": [
+    {
+      "kind": "json",
+      "model": "fixture",
+      "json": {
+        "name": "Rugbrød, Skovkorn",
+        "portions": []
+      }
+    }
+  ],
+  "normalise-02": [
+    {
+      "kind": "json",
+      "model": "fixture",
+      "json": {
+        "name": "Havregryn, Enghavre",
+        "portions": []
+      }
+    }
+  ],
+  "normalise-03": [
+    {
+      "kind": "json",
+      "model": "fixture",
+      "json": {
+        "name": "Mælk, Fjordglas",
+        "portions": []
+      }
+    }
+  ],
+  "normalise-04": [
+    {
+      "kind": "json",
+      "model": "fixture",
+      "json": {
+        "name": "Pasta penne, Bakkemark",
+        "portions": []
+      }
+    }
+  ],
+  "normalise-05": [
+    {
+      "kind": "json",
+      "model": "fixture",
+      "json": {
+        "name": "Knækbrød, Skovkorn",
+        "portions": []
+      }
+    }
+  ],
+  "normalise-06": [
+    {
+      "kind": "json",
+      "model": "fixture",
+      "json": {
+        "name": "Grød, Enghavre",
+        "portions": []
+      }
+    }
+  ],
+  "normalise-07": [
+    {
+      "kind": "json",
+      "model": "fixture",
+      "json": {
+        "name": "Yoghurt naturel, Fjordglas",
+        "portions": []
+      }
+    }
+  ],
+  "normalise-08": [
+    {
+      "kind": "json",
+      "model": "fixture",
+      "json": {
+        "name": "Ris, Bakkemark",
+        "portions": []
+      }
+    }
+  ],
+  "normalise-09": [
+    {
+      "kind": "json",
+      "model": "fixture",
+      "json": {
+        "name": "Fuldkornsboller, Skovkorn",
+        "portions": []
+      }
+    }
+  ],
+  "normalise-10": [
+    {
+      "kind": "json",
+      "model": "fixture",
+      "json": {
+        "name": "Frugtmüsli, Enghavre",
+        "portions": []
+      }
+    }
+  ],
+  "meal-01": [
+    {
+      "kind": "json",
+      "model": "fixture",
+      "json": {
+        "text": "Toppen var 9,6 efter 60 minutter. Forspringet før måltidet var 12 minutter."
+      }
+    }
+  ],
+  "meal-02": [
+    {
+      "kind": "json",
+      "model": "fixture",
+      "json": {
+        "text": "Toppen var 11,2 efter 60 minutter. Forspringet før måltidet var 12 minutter."
+      }
+    }
+  ],
+  "meal-03": [
+    {
+      "kind": "json",
+      "model": "fixture",
+      "json": {
+        "text": "Der er ingen målinger i måltidets tidsrum."
+      }
+    }
+  ],
+  "meal-04": [
+    {
+      "kind": "json",
+      "model": "fixture",
+      "json": {
+        "text": "Toppen var 11,2 efter 60 minutter. Forspringet før måltidet var 12 minutter."
+      }
+    }
+  ],
+  "meal-05": [
+    {
+      "kind": "json",
+      "model": "fixture",
+      "json": {
+        "text": "Der er dækning i 120 minutter af måltidets tidsrum."
+      }
+    }
+  ],
+  "meal-06": [
+    {
+      "kind": "json",
+      "model": "fixture",
+      "json": {
+        "text": "Toppen var 11,2 efter 60 minutter. Forspringet før måltidet var 12 minutter."
+      }
+    }
+  ],
+  "meal-07": [
+    {
+      "kind": "json",
+      "model": "fixture",
+      "json": {
+        "text": "Toppen var 9,6 efter 60 minutter i dette måltid."
+      }
+    }
+  ],
+  "meal-08": [
+    {
+      "kind": "json",
+      "model": "fixture",
+      "json": {
+        "text": "Toppen var 11,2 efter 60 minutter. Forspringet før måltidet var 12 minutter."
+      }
+    }
+  ],
+  "meal-09": [
+    {
+      "kind": "json",
+      "model": "fixture",
+      "json": {
+        "text": "The peak was 9.6 after 60 minutes. The recorded lead was 12 minutes."
+      }
+    }
+  ],
+  "meal-10": [
+    {
+      "kind": "json",
+      "model": "fixture",
+      "json": {
+        "text": "Måltidet indeholder 42 gram kulhydrat. Toppen kom efter 60 minutter."
+      }
+    }
+  ],
+  "week-01": [
+    {
+      "kind": "json",
+      "model": "fixture",
+      "json": {
+        "summary": "Ugen indeholder 21 måltider. Forspringet før måltidet var i gennemsnit 12 minutter.",
+        "questions": ["Hvilke mønstre ses efter måltiderne i ugen?"]
+      }
+    }
+  ],
+  "week-02": [
+    {
+      "kind": "json",
+      "model": "fixture",
+      "json": {
+        "summary": "Ugen indeholder 14 måltider og 160 gram kulhydrat pr. dag.",
+        "questions": ["Hvilke mønstre ses i ugens måltider?"]
+      }
+    }
+  ],
+  "week-03": [
+    {
+      "kind": "json",
+      "model": "fixture",
+      "json": {
+        "summary": "This week contains 21 meals and 2 recorded low episodes.",
+        "questions": ["What patterns appeared around the recorded meals?"]
+      }
+    }
+  ],
+  "week-04": [
+    {
+      "kind": "json",
+      "model": "fixture",
+      "json": {
+        "summary": "Der er ingen registrerede måltider i denne uge.",
+        "questions": ["Hvilke oplysninger mangler i denne uge?"]
+      }
+    }
+  ],
+  "week-05": [
+    {
+      "kind": "json",
+      "model": "fixture",
+      "json": {
+        "summary": "Ugen indeholder 21 måltider. Forspringet var i gennemsnit -5 minutter.",
+        "questions": ["Hvordan fordeler ugens registrerede måltider sig?"]
+      }
+    }
+  ],
+  "photo-01": [
+    {
+      "kind": "json",
+      "model": "fixture",
+      "json": {
+        "items": [
+          {
+            "name": "Rugbrød med ost",
+            "grams": 90,
+            "carbs": 36,
+            "confidence": "medium",
+            "approx": true
+          },
+          {
+            "name": "Æble",
+            "grams": 120,
+            "carbs": 14,
+            "confidence": "medium",
+            "approx": true
+          }
+        ],
+        "totalCarbs": 50,
+        "dishName": "Rugbrød med ost og æble",
+        "approx": true
+      }
+    }
+  ],
+  "photo-02": [
+    {
+      "kind": "json",
+      "model": "fixture",
+      "json": {
+        "items": [
+          {
+            "name": "Havregrød",
+            "grams": 200,
+            "carbs": 24,
+            "confidence": "medium",
+            "approx": true
+          },
+          {
+            "name": "Mælk",
+            "grams": 200,
+            "carbs": 10,
+            "confidence": "medium",
+            "approx": true
+          }
+        ],
+        "totalCarbs": 34,
+        "dishName": "Havregrød og mælk",
+        "approx": true
+      }
+    }
+  ],
+  "photo-03": [
+    {
+      "kind": "json",
+      "model": "fixture",
+      "json": {
+        "items": [
+          {
+            "name": "Pasta bolognese",
+            "grams": 300,
+            "carbs": 55,
+            "confidence": "medium",
+            "approx": true
+          }
+        ],
+        "totalCarbs": 55,
+        "dishName": "Pasta bolognese",
+        "approx": true
+      }
+    }
+  ],
+  "photo-04": [
+    {
+      "kind": "json",
+      "model": "fixture",
+      "json": {
+        "items": [
+          {
+            "name": "Kartoffel kogt",
+            "grams": 150,
+            "carbs": 26,
+            "confidence": "medium",
+            "approx": true
+          },
+          {
+            "name": "Grønt",
+            "grams": 100,
+            "carbs": 5,
+            "confidence": "medium",
+            "approx": true
+          }
+        ],
+        "totalCarbs": 31,
+        "dishName": "Kartofler og grønt",
+        "approx": true
+      }
+    }
+  ],
+  "photo-05": [
+    {
+      "kind": "json",
+      "model": "fixture",
+      "json": {
+        "items": [
+          {
+            "name": "Min madpakke",
+            "grams": 180,
+            "carbs": 42,
+            "confidence": "medium",
+            "approx": true
+          },
+          {
+            "name": "Banan",
+            "grams": 100,
+            "carbs": 23,
+            "confidence": "medium",
+            "approx": true
+          }
+        ],
+        "totalCarbs": 65,
+        "dishName": "Madpakke med banan",
+        "approx": true
+      }
+    }
+  ]
+}
