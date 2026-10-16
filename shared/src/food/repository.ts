@@ -83,6 +83,7 @@ export class PrismaFoodRepository implements FoodRepository {
         where: {
           origin: { in: remoteOrigins, notIn: ["ai", "family", "manual"] },
           sourceName: null,
+          verified: false,
           OR: [{ spaceId: null }, { spaceId: { in: spaceIds } }],
         },
         orderBy: [{ spaceId: "asc" }, { id: "asc" }],

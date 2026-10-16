@@ -23,6 +23,7 @@ const emit: EmitFn = (spaceId, type, payload) =>
   );
 it("limits candidate batches, selects cache before enabled spaces, and excludes typed/AI origins", async () => {
   const repo = new MemoryFoodRepository([
+    food("a-verified", { verified: true }),
     food("space"),
     food("cache", { spaceId: null }),
     food("disabled", { spaceId: "off" }),

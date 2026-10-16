@@ -39,7 +39,7 @@ export const CacheFoodInput = FoodCandidate.safeExtend({
 });
 export type CacheFoodInput = z.infer<typeof CacheFoodInput>;
 
-/** The only write available to lookup is a shared-cache write, never a space write. */
+/** A query vector and its model identity; never mixed with another provider's vectors. */
 export interface SearchEmbedding {
   vector: number[];
   model: string;
