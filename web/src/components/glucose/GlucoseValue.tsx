@@ -63,7 +63,10 @@ export function GlucoseValue({
   }
 
   const ageText = ageTextOf(reading.ts, now);
-  const trendWord = t(`trend.${reading.trend}`);
+  // A reading with no direction (a finger-prick, or a sensor that cannot tell) shows neither an
+  // arrow nor a trend word (v0.1.0 design gap 4): the number and its age are the whole answer.
+  const hasTrend = reading.trend !== "not-computable";
+  const trendWord = hasTrend ? t(`trend.${reading.trend}`) : null;
   const unitText = t(`unit.${unit}`);
   const line = [showUnit ? unitText : null, ageText, layout === "line" ? trendWord : null]
     .filter((part): part is string => part !== null)
@@ -79,12 +82,16 @@ export function GlucoseValue({
         <span className={`${styles.number} tabular`} data-testid="glucose-number">
           {formatGlucose(reading.mmol, unit, locale)}
         </span>
-        <TrendArrow trend={reading.trend} size={ARROW_SIZE[size]} circled={size === "simple"} />
+        {hasTrend && (
+          <TrendArrow trend={reading.trend} size={ARROW_SIZE[size]} circled={size === "simple"} />
+        )}
       </div>
       <p className={styles.meta} data-testid="glucose-age">
         {line}
       </p>
-      {layout === "split" && <p className={styles.meta}>{capitalize(trendWord, locale)}</p>}
+      {layout === "split" && trendWord !== null && (
+        <p className={styles.meta}>{capitalize(trendWord, locale)}</p>
+      )}
     </div>
   );
 }

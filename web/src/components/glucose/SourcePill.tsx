@@ -38,16 +38,20 @@ export function SourcePill({
   if (status === "disconnected") return null;
 
   let text: string;
-  if (status === "not-configured" || !sourceType) {
+  // A manual space is never polled, so its status is never "connected" in the sensor's sense:
+  // it is configured from the moment it is chosen.
+  if (!sourceType || (status === "not-configured" && sourceType !== "manual")) {
     text = t("none");
   } else {
     const source = names(`${sourceType}.name`);
-    if (variant === "pill") text = t("connected", { source });
+    // "Manuelt" alone: "forbundet" describes a connection nobody makes (plan §5).
+    if (variant === "pill") text = sourceType === "manual" ? source : t("connected", { source });
     else if (latest)
       text = t("lastReading", { source, time: formatClock(new Date(latest.ts), timeZone) });
     else text = t("noReading", { source });
   }
-  const muted = status === "not-configured" || !sourceType || isStale(latest, now);
+  const muted =
+    (status === "not-configured" && sourceType !== "manual") || !sourceType || isStale(latest, now);
 
   return (
     <div className={styles.source} data-variant={variant} role="status">

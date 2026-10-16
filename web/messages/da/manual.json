@@ -1,0 +1,12 @@
+{
+  "button": "Indtast måling",
+  "title": "Indtast måling",
+  "value": "Måling i {unit}",
+  "now": "Nu",
+  "time": "Tidspunkt",
+  "save": "Gem måling",
+  "cancel": "Fortryd",
+  "invalidValue": "Tallet ser ikke rigtigt ud – tjek enheden",
+  "invalidTime": "Tidspunktet skal være inden for det sidste døgn",
+  "failed": "Målingen blev ikke gemt. Prøv igen om lidt."
+}

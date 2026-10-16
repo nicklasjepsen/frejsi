@@ -107,7 +107,9 @@ describe("GET /[locale]/invite/[token] · the landing (Invitation-Telefon, Invit
     ).toHaveLength(2);
     expect(screen.getByText("Frejsi", { selector: "[data-testid=wordmark]" })).toBeInTheDocument();
     // Kind reassurance, the inviter named as the one to ask again.
-    expect(container.textContent).toContain("Ny telefon senere? Så beder du Jonas eller en anden ejer om et nyt link.");
+    expect(container.textContent).toContain(
+      "Ny telefon senere? Så beder du Jonas eller en anden ejer om et nyt link.",
+    );
     expect(container.textContent).toContain("Ingen adgangskode.");
     // The design's one footer line (docs/design/README.md "footers"), the same as the shell's,
     // and nothing about the token in the DOM.
@@ -133,7 +135,9 @@ describe("GET /[locale]/invite/[token] · the landing (Invitation-Telefon, Invit
       ),
     ).toBeInTheDocument();
     expect(
-      screen.getByText("Vil du også bruge telefonen? Bed Jonas om et »tilføj enhed«-link bagefter."),
+      screen.getByText(
+        "Vil du også bruge telefonen? Bed Jonas om et »tilføj enhed«-link bagefter.",
+      ),
     ).toBeInTheDocument();
   });
 
@@ -149,9 +153,9 @@ describe("GET /[locale]/invite/[token] · the landing (Invitation-Telefon, Invit
     expect(
       screen.getAllByText("The link is valid for 1 more day and can be used only once."),
     ).toHaveLength(2);
-    expect(await generateMetadata({ params: Promise.resolve({ locale: "en", token: TOKEN }) })).toEqual(
-      { title: "Invitation" },
-    );
+    expect(
+      await generateMetadata({ params: Promise.resolve({ locale: "en", token: TOKEN }) }),
+    ).toEqual({ title: "Invitation" });
   });
 
   it("explains an owner and a viewer in the design's words (Personer-Desktop role cards)", async () => {
@@ -318,23 +322,26 @@ describe("a dead link (expired, used, revoked) · design gap 23", () => {
     ["invite-expired", `Linket er udløbet. Et invitationslink gælder i ${ttlDays} dage.`],
     ["invite-used", "Linket er allerede brugt. Et invitationslink kan kun bruges én gang."],
     ["invite-revoked", "Linket er trukket tilbage af den, der sendte det."],
-  ] as const)("%s shows a kind page naming who can send a new one and reveals nothing of the space", async (code, body) => {
-    mocks.error = new HttpError(410, code);
-    const { container } = await open();
-    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent(
-      "Det her link virker ikke længere",
-    );
-    expect(screen.getByText(body)).toBeInTheDocument();
-    expect(container.textContent).toContain(
-      "Den, der sendte dig linket – eller en anden ejer af rummet – kan sende dig et nyt.",
-    );
-    expect(screen.getByRole("link", { name: "Log ind" })).toHaveAttribute("href", "/da/welcome");
-    expect(container.textContent).not.toContain("Alma");
-    expect(container.textContent).not.toContain("Jonas");
-    expect(container.textContent).not.toContain("Søren");
-    expect(screen.queryByRole("button")).toBeNull();
-    expect(container.textContent).toContain("Frejsi · åben kildekode · regner aldrig insulin");
-  });
+  ] as const)(
+    "%s shows a kind page naming who can send a new one and reveals nothing of the space",
+    async (code, body) => {
+      mocks.error = new HttpError(410, code);
+      const { container } = await open();
+      expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent(
+        "Det her link virker ikke længere",
+      );
+      expect(screen.getByText(body)).toBeInTheDocument();
+      expect(container.textContent).toContain(
+        "Den, der sendte dig linket – eller en anden ejer af rummet – kan sende dig et nyt.",
+      );
+      expect(screen.getByRole("link", { name: "Log ind" })).toHaveAttribute("href", "/da/welcome");
+      expect(container.textContent).not.toContain("Alma");
+      expect(container.textContent).not.toContain("Jonas");
+      expect(container.textContent).not.toContain("Søren");
+      expect(screen.queryByRole("button")).toBeNull();
+      expect(container.textContent).toContain("Frejsi · åben kildekode · regner aldrig insulin");
+    },
+  );
 
   it("the expired line counts the days the auth core gives a link, in English too", async () => {
     mocks.error = new HttpError(410, "invite-expired");
@@ -357,8 +364,7 @@ describe("a dead link (expired, used, revoked) · design gap 23", () => {
 });
 
 describe("layout and theme (§6: 360 px and 1280 px, default accent, dark mode)", () => {
-  const css = (file: string) =>
-    readFileSync(path.resolve(import.meta.dirname, "..", file), "utf8");
+  const css = (file: string) => readFileSync(path.resolve(import.meta.dirname, "..", file), "utf8");
 
   it("switches from the phone layout to the desktop layout at 1280 px, as the shell does", () => {
     const sheet = css("public.module.css");

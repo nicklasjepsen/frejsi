@@ -107,4 +107,46 @@ describe("SourcePill", () => {
     expect(screen.getByRole("status")).toHaveTextContent("No glucose source chosen yet");
     expect(screen.getByTestId("source-dot")).toHaveAttribute("data-muted", "true");
   });
+  it("says 'Manuelt' in the pill and 'Manuelt · sidste måling 15:10' on the line, never 'forbundet'", () => {
+    for (const status of ["connected", "not-configured"] as const) {
+      const pill = wrap(
+        <SourcePill
+          status={status}
+          sourceType="manual"
+          latest={latest(3)}
+          now={T0}
+          timeZone="Europe/Copenhagen"
+          variant="pill"
+        />,
+      );
+      expect(screen.getByRole("status")).toHaveTextContent(/^Manuelt$/);
+      pill.unmount();
+      const line = wrap(
+        <SourcePill
+          status={status}
+          sourceType="manual"
+          latest={latest(3)}
+          now={T0}
+          timeZone="Europe/Copenhagen"
+          variant="line"
+        />,
+      );
+      expect(screen.getByRole("status")).toHaveTextContent("Manuelt · sidste måling 15:10");
+      line.unmount();
+    }
+  });
+
+  it("mutes the dot when the last finger-prick is older than 15 minutes", () => {
+    wrap(
+      <SourcePill
+        status="connected"
+        sourceType="manual"
+        latest={latest(40)}
+        now={T0}
+        timeZone="Europe/Copenhagen"
+        variant="pill"
+      />,
+    );
+    expect(screen.getByTestId("source-dot")).toHaveAttribute("data-muted", "true");
+  });
 });

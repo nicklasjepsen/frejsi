@@ -163,6 +163,14 @@ export class LiveFeed {
 
   getState = (): LiveFeedState => this.state;
 
+  /**
+   * A reading this client just stored itself (a finger-prick): shown at once, keyed by `ts` like
+   * a pushed one, so the `reading` event that follows replaces it and the count does not grow.
+   */
+  addReading = (reading: Reading): void => {
+    this.putReading(reading);
+  };
+
   subscribe = (listener: () => void): (() => void) => {
     this.listeners.add(listener);
     return () => {
@@ -542,17 +550,22 @@ export class LiveFeed {
     this.applyCommon(envelope, gen);
   }
 
+  /** Readings are keyed by `ts`: the same `ts` again replaces the held entry (plan §5). */
+  private putReading(reading: Reading): void {
+    const others = this.state.readings.filter((r) => r.ts !== reading.ts);
+    const readings = this.prune([...others, reading].sort((a, b) => a.ts.localeCompare(b.ts)));
+    // A replaced newest reading must not keep its old value as `latest`.
+    const latest =
+      this.state.latest?.ts === reading.ts ? reading : newest(reading, this.state.latest);
+    this.set({ readings, latest });
+  }
+
   /** What the feed itself does with an event: readings, the source status, window reloads. */
   private applyCommon(envelope: EventEnvelope, gen: number): void {
     switch (envelope.type) {
-      case "reading": {
-        const others = this.state.readings.filter((r) => r.ts !== envelope.payload.ts);
-        const readings = this.prune(
-          [...others, envelope.payload].sort((a, b) => a.ts.localeCompare(b.ts)),
-        );
-        this.set({ readings, latest: newest(envelope.payload, this.state.latest) });
+      case "reading":
+        this.putReading(envelope.payload);
         return;
-      }
       case "source.status":
         this.set({ sourceStatus: envelope.payload.status, sourceSince: envelope.payload.since });
         return;

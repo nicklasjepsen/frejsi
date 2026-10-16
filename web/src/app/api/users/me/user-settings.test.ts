@@ -12,7 +12,9 @@ function setup() {
   const { sink, events } = recordingSink();
   fake.rows("space").push({ id: "s1", name: "Example space", timezone: "Europe/Copenhagen" });
   fake.rows("space").push({ id: "s2", name: "Other space", timezone: "Europe/Copenhagen" });
-  fake.rows("user").push({ id: "u1", name: "Example Person", simpleMode: false, accent: "olive", locale: "da" });
+  fake
+    .rows("user")
+    .push({ id: "u1", name: "Example Person", simpleMode: false, accent: "olive", locale: "da" });
   fake.rows("membership").push({ userId: "u1", spaceId: "s1", role: "carer", createdAt: T0 });
   fake.rows("membership").push({ userId: "u1", spaceId: "s2", role: "viewer", createdAt: T0 });
   return { fake, sink, events, deps: { db: fake.db, sink, now: () => T0 } };

@@ -2,6 +2,8 @@
 
 import { useEffect, useMemo, useSyncExternalStore } from "react";
 
+import type { Reading } from "@frejsi/shared/schemas/index";
+
 import {
   LiveFeed,
   type FeedEventHandler,
@@ -27,6 +29,8 @@ const SERVER_SNAPSHOT: LiveFeedState = {
 export type LiveFeedView = LiveFeedState & {
   /** Calls `handler` for every later event of `type`; returns the unsubscribe. */
   subscribe: <T extends FeedEventType>(type: T, handler: FeedEventHandler<T>) => () => void;
+  /** Shows a reading this client stored itself, until its event arrives and replaces it. */
+  addReading: (reading: Reading) => void;
 };
 
 /**
@@ -61,5 +65,8 @@ export function useLiveFeed(
     };
   }, [feed]);
   const state = useSyncExternalStore(feed.subscribe, feed.getState, () => SERVER_SNAPSHOT);
-  return useMemo(() => ({ ...state, subscribe: feed.onEvent }), [state, feed]);
+  return useMemo(
+    () => ({ ...state, subscribe: feed.onEvent, addReading: feed.addReading }),
+    [state, feed],
+  );
 }

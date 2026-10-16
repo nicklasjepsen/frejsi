@@ -79,7 +79,11 @@ describe("PATCH /api/users/me", () => {
   it("lets a person set their own language, view and colour, and emits member.updated to each of their spaces", async () => {
     const res = await send(
       PATCH,
-      request("/api/users/me", { method: "PATCH", body: { locale: "en", accent: "sea", simpleMode: true }, as: "carer" }),
+      request("/api/users/me", {
+        method: "PATCH",
+        body: { locale: "en", accent: "sea", simpleMode: true },
+        as: "carer",
+      }),
     );
     expect(res.status).toBe(200);
     expect(await res.json()).toEqual({ locale: "en", simpleMode: true, accent: "sea" });
@@ -97,10 +101,16 @@ describe("PATCH /api/users/me", () => {
   it("lets a viewer set only language and colour: simpleMode is 403 and writes nothing", async () => {
     const ok = await send(
       PATCH,
-      request("/api/users/me", { method: "PATCH", body: { locale: "en", accent: "garnet" }, as: "viewer" }),
+      request("/api/users/me", {
+        method: "PATCH",
+        body: { locale: "en", accent: "garnet" },
+        as: "viewer",
+      }),
     );
     expect(ok.status).toBe(200);
-    expect(events).toEqual([{ spaceId: "s1", type: "member.updated", payload: { userId: USERS.viewer } }]);
+    expect(events).toEqual([
+      { spaceId: "s1", type: "member.updated", payload: { userId: USERS.viewer } },
+    ]);
 
     const refused = await send(
       PATCH,
@@ -108,21 +118,49 @@ describe("PATCH /api/users/me", () => {
     );
     expect(refused.status).toBe(403);
     expect(await refused.json()).toMatchObject({ error: { code: "forbidden" } });
-    expect(fake.rows("user").find((u) => u.id === USERS.viewer)).toMatchObject({ simpleMode: false });
+    expect(fake.rows("user").find((u) => u.id === USERS.viewer)).toMatchObject({
+      simpleMode: false,
+    });
     expect(events).toHaveLength(1);
   });
 
   it("is 400 validation for an empty or unknown patch and 403 without a session", async () => {
-    expect((await send(PATCH, request("/api/users/me", { method: "PATCH", body: {}, as: "owner" }))).status).toBe(400);
-    expect((await send(PATCH, request("/api/users/me", { method: "PATCH", body: { name: "x" }, as: "owner" }))).status).toBe(400);
-    expect((await send(PATCH, request("/api/users/me", { method: "PATCH", body: "nope", as: "owner" }))).status).toBe(400);
-    expect((await send(PATCH, request("/api/users/me", { method: "PATCH", body: { accent: "plum" }, as: null }))).status).toBe(403);
+    expect(
+      (await send(PATCH, request("/api/users/me", { method: "PATCH", body: {}, as: "owner" })))
+        .status,
+    ).toBe(400);
+    expect(
+      (
+        await send(
+          PATCH,
+          request("/api/users/me", { method: "PATCH", body: { name: "x" }, as: "owner" }),
+        )
+      ).status,
+    ).toBe(400);
+    expect(
+      (await send(PATCH, request("/api/users/me", { method: "PATCH", body: "nope", as: "owner" })))
+        .status,
+    ).toBe(400);
+    expect(
+      (
+        await send(
+          PATCH,
+          request("/api/users/me", { method: "PATCH", body: { accent: "plum" }, as: null }),
+        )
+      ).status,
+    ).toBe(403);
     expect(events).toEqual([]);
   });
 
   it("logs the route, the userId and a code only; never a name", async () => {
-    await send(PATCH, request("/api/users/me", { method: "PATCH", body: { accent: "plum" }, as: "owner" }));
-    await send(PATCH, request("/api/users/me", { method: "PATCH", body: { simpleMode: true }, as: "viewer" }));
+    await send(
+      PATCH,
+      request("/api/users/me", { method: "PATCH", body: { accent: "plum" }, as: "owner" }),
+    );
+    await send(
+      PATCH,
+      request("/api/users/me", { method: "PATCH", body: { simpleMode: true }, as: "viewer" }),
+    );
     expect(logLines.length).toBeGreaterThan(0);
     for (const line of logLines) {
       const parsed = JSON.parse(line) as Record<string, unknown>;

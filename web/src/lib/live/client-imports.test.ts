@@ -32,6 +32,7 @@ describe("client modules and the shared barrel", () => {
         "src/components/glucose",
         "src/app/[locale]/(app)/now",
         "src/components/day",
+        "src/components/manual",
         "src/app/[locale]/(app)/today",
       ],
       [
