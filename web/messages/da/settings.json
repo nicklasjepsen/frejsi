@@ -49,7 +49,26 @@
     "cancel": "Annullér"
   },
   "ai": {
-    "lead": "Søgning, stemme, billeder og observationer"
+    "lead": "Søgning, stemme, billeder og observationer",
+    "desktopLead": "Søgning der forstår mad, stemme- og billedlogning, observationer og spørgsmål til klinikken",
+    "off": "fra",
+    "provider": "Udbyder",
+    "providers": {
+      "anthropic": "Anthropic",
+      "azure-openai": "Azure OpenAI (egen EU-lejer)",
+      "ollama": "Ollama (lokalt)"
+    },
+    "unconfigured": "ikke sat op her",
+    "noEmbed": "søgning uden AI",
+    "notConfigured": "AI er ikke sat op her endnu.",
+    "phoneNotice": "AI ser aldrig rå målinger – kun tal som “top 9,6 efter 1 time”. Billeder og tekst sendes kun, når nogen trykker. Stemmen genkendes af din browser, ikke af Frejsi. Højst {cap} kald om dagen.",
+    "readingsLead": "Rå målinger sendes aldrig.",
+    "readingsNotice": "Modellen får kun tal som “top 9,6 efter 1 time”.",
+    "actionLead": "Billeder og tekst",
+    "actionNotice": "sendes kun, når nogen aktivt trykker. Stemmen genkendes af din browser, ikke af Frejsi.",
+    "capLead": "Højst {cap} kald om dagen",
+    "capNotice": "i dette rum. I dag: {n}.",
+    "close": "Luk"
   },
   "unit": {
     "label": "Enhed",
@@ -116,5 +135,12 @@
     "again": "Du kan roligt importere den samme fil igen – intet kommer med to gange.",
     "mealNote": "Fra Dexcom-appen",
     "carbItem": "Kulhydrater fra Dexcom-appen"
+  },
+  "push": {
+    "phone": "Giv besked her, når {subject} spørger",
+    "desktop": "Giv besked på denne computer, når {subject} spørger",
+    "denied": "Beskeder er slået fra i din browser",
+    "unsupported": "Beskeder er ikke tilgængelige i denne browser",
+    "failed": "Beskeder kunne ikke gemmes. Prøv igen."
   }
 }

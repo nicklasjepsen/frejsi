@@ -541,3 +541,63 @@
     display: none;
   }
 }
+
+.aiPhoneNotice {
+  padding: 0 0 14px;
+  color: var(--text-muted);
+  font-size: 12px;
+  line-height: 1.45;
+}
+.aiDesktop {
+  flex-direction: column;
+  gap: 12px;
+  padding-bottom: 20px;
+}
+.aiDesktop strong {
+  color: var(--text);
+  font-weight: 700;
+}
+.providerChips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.providerOption {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-width: 100%;
+}
+.providerChips .providerChip {
+  min-height: 44px;
+  white-space: normal;
+}
+.providerCaption {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+.providerSheet {
+  margin: auto auto 0;
+  width: 100%;
+  max-width: 480px;
+  max-height: 90dvh;
+  overflow: auto;
+  padding: 24px;
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-card) var(--radius-card) 0 0;
+  background: var(--surface);
+  color: var(--text);
+}
+.providerSheet[open] {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+.providerSheet::backdrop {
+  background: rgb(0 0 0 / 35%);
+}
+@media (min-width: 1280px) {
+  .providerChips .providerChip {
+    min-height: 36px;
+  }
+}

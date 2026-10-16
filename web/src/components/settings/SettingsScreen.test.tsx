@@ -151,13 +151,13 @@ describe("SettingsScreen · the source (Indstillinger-Telefon, Indstillinger-Des
     expect(screen.getByTestId("source-card")).toHaveTextContent(/sidste måling 14\.? okt\.? 15:13/);
   });
 
-  it("renders Nightscout, Manuelt, the AI section and data export as 'Kommer i en senere version' rows and the phone footer", () => {
+  it("renders Nightscout, Manuelt, data export as 'Kommer i en senere version' rows and the phone footer", () => {
     mount(connected);
     expect(screen.getAllByText("Kommer i en senere version").length).toBeGreaterThanOrEqual(4);
     expect(screen.getAllByText("Nightscout").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Manuelt").length).toBeGreaterThan(0);
     expect(screen.getByRole("heading", { name: "AI-hjælp" })).toBeInTheDocument();
-    expect(screen.queryByRole("switch", { name: /AI/ })).toBeNull();
+    expect(screen.getByRole("switch", { name: "AI-hjælp" })).toBeDisabled();
     expect(screen.getByText("Frejsi · åben kildekode · regner aldrig insulin")).toBeInTheDocument();
   });
 
@@ -434,6 +434,7 @@ describe("SettingsScreen · language, simpleMode and colour (per person)", () =>
       people: [viewer],
     });
     expect(screen.queryByTestId("source-section")).toBeNull();
+    expect(screen.queryByTestId("ai-section")).toBeNull();
     expect(screen.queryByRole("radio", { name: "mg/dL" })).toBeNull();
     expect(screen.queryByLabelText("Nedre grænse")).toBeNull();
     expect(screen.queryByRole("switch")).toBeNull();
@@ -466,4 +467,14 @@ describe("SettingsScreen · data (import, #154)", () => {
     mount({ ...connected, role: "carer", me: grandma, people: [grandma] });
     expect(screen.queryByTestId("import-row")).toBeNull();
   });
+});
+
+it("switches AI off through the API, immediately re-renders the phone suffix and preserves import", async () => {
+  const {api, calls} = fakeApi();
+  mount({...connected, space: {...space, aiEnabled: true, aiProvider: "anthropic"}}, "da", api);
+  expect(screen.getByTestId("ai-row")).toHaveTextContent("· Anthropic");
+  fireEvent.click(screen.getByRole("switch", {name: "AI-hjælp"}));
+  await waitFor(() => expect(screen.getByTestId("ai-row")).toHaveTextContent("· fra"));
+  expect(calls).toEqual([{url: "/api/spaces/s1/settings", method: "PATCH", body: {aiEnabled: false}}]);
+  expect(screen.getByTestId("import-row")).toHaveAttribute("href", "/da/settings/import");
 });

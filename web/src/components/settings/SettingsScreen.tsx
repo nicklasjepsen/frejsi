@@ -2,6 +2,8 @@
 
 // Values come from the pure modules by path, never from the shared index: a client bundle must not
 // pull in the Prisma client or App Insights that the index exports (plan §2; see routing.ts).
+import type { AiUsage } from "@frejsi/shared/schemas/ai";
+import { AiSection } from "./AiSection";
 import type { ApiErrorCode, SpaceSettings } from "@frejsi/shared";
 import { mgdlToMmol, mmolToMgdl } from "@frejsi/shared/glucose/units";
 import { GlucoseUnit } from "@frejsi/shared/schemas/glucose";
@@ -33,6 +35,7 @@ export interface SettingsScreenProps {
   /** The server's clock, ISO, for "sidste måling i dag"; the same on the server and after hydration. */
   now: string;
   api?: SettingsApi;
+  usage?: AiUsage | null;
 }
 
 const cx = (...names: (string | false | undefined)[]) => names.filter(Boolean).join(" ");
@@ -43,7 +46,13 @@ const cx = (...names: (string | false | undefined)[]) => names.filter(Boolean).j
  * gives owners and carers; what a person may change is decided by the routes, and the controls
  * only mirror that so nobody is offered a switch that would be refused.
  */
-export function SettingsScreen({ locale, data, now, api = settingsApi() }: SettingsScreenProps) {
+export function SettingsScreen({
+  locale,
+  data,
+  now,
+  api = settingsApi(),
+  usage = null,
+}: SettingsScreenProps) {
   const t = useTranslations("settings");
   const sources = useTranslations("source");
   const accents = useTranslations("accent");
@@ -184,9 +193,11 @@ export function SettingsScreen({ locale, data, now, api = settingsApi() }: Setti
               {t("sections.source")}
             </a>
           )}
-          <a className={styles.navItem} href="#ai">
-            {t("sections.ai")}
-          </a>
+          {space && data.role !== "viewer" && (
+            <a className={styles.navItem} href="#ai">
+              {t("sections.ai")}
+            </a>
+          )}
           <a className={styles.navItem} href="#unit-language">
             {t("sections.unitAndLanguage")}
           </a>
@@ -259,12 +270,22 @@ export function SettingsScreen({ locale, data, now, api = settingsApi() }: Setti
             </section>
           )}
 
-          <section id="ai" className={styles.section}>
-            <h2 className={styles.sectionTitle}>{t("sections.ai")}</h2>
-            <Card className={styles.list}>
-              <Row title={t("ai.lead")} sub={t("comingLater")} />
-            </Card>
-          </section>
+          {space && data.role !== "viewer" && (
+            <AiSection
+              spaceId={data.spaceId}
+              subject={data.subjectName}
+              enabled={space.aiEnabled}
+              provider={space.aiProvider}
+              usage={usage}
+              owner={isOwner}
+              busy={busy}
+              onChange={(patch) =>
+                void attempt(async () => {
+                  setSpace(await api.patchSpace(data.spaceId, patch));
+                })
+              }
+            />
+          )}
 
           <section id="unit-language" className={styles.section}>
             <h2 className={styles.sectionTitle}>{t("sections.unitAndLanguage")}</h2>

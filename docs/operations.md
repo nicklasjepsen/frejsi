@@ -376,10 +376,10 @@ under all three provider identifiers for local development and tests. It has no 
 its default script repeats fictional meal, photo, normalisation and insight outputs and supplies
 1024-dimensional fixture vectors. These exercise the flows, not language or image accuracy. Tests
 can inject `aiProviders(env, { fakeScript })` with an answer queue or responder; an exhausted queue
-or an unknown output schema returns `ai-unavailable`. Actual adapters,
-provider keys, settings routes, service prompts, UI and push delivery are separate
-integration work. The unresolved provider and wording defaults are tracked in issue #72; they do
-not enable AI by themselves.
+or an unknown output schema returns `ai-unavailable`. Settings exposes runtime provider
+capabilities and usage; browser push delivery is described below. Production provider keys and
+the unresolved vendor and wording defaults are tracked in issue #72; they do not enable AI
+by themselves.
 
 `aiForSpace(spaceId, session)` is the web factory. It authorizes owners/carers, rejects spaces
 with AI disabled or without a configured adapter, and returns a `CappedAiProvider` backed by
@@ -405,8 +405,8 @@ called, retrying transaction conflicts up to four times. Failed and capped attem
 and count toward the day's attempt total; the usage count can therefore exceed the configured
 limit, while provider invocations cannot. A crash after reservation still consumes that attempt.
 There is no prompt, transcript, image, endpoint, token count or output in a call row. Space data
-writes by the following lanes still go through `emit()`; the new notifications carry identifiers
-only, never insight text or glucose.
+writes still go through `emit()`; the live AI event envelopes carry identifiers only, never
+insight text or glucose. Browser notification contents are described below.
 
 ## Browser push for photo questions
 
