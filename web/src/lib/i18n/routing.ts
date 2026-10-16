@@ -5,7 +5,26 @@
  */
 export const LOCALES = ["da", "en"] as const;
 export type AppLocale = (typeof LOCALES)[number];
-export const DEFAULT_LOCALE: AppLocale = "da";
+
+/**
+ * The documented fallback when `DEFAULT_LOCALE` is unset or not one of ours: the product is
+ * Danish-first. A deployment changes the default with the `DEFAULT_LOCALE` repository variable
+ * (infra/README.md), never by editing this.
+ */
+export const FALLBACK_LOCALE: AppLocale = "da";
+
+/**
+ * The locale for a visitor with no signal of their own, and for a new user: the deployment's
+ * `DEFAULT_LOCALE` when it names one of ours, else the fallback. Read at call time from the server's
+ * environment (the middleware's runtime included), so changing the setting needs no rebuild; client
+ * code gets its locale from the provider instead, where `process.env` has no such variable.
+ */
+export function defaultLocale(
+  env: Readonly<Record<string, string | undefined>> = process.env,
+): AppLocale {
+  const configured = env.DEFAULT_LOCALE?.trim();
+  return isLocale(configured) ? configured : FALLBACK_LOCALE;
+}
 
 /** The cookie that remembers the locale a visitor last used, so `/` goes there next time. */
 export const LOCALE_COOKIE = "frejsi_locale";
@@ -16,9 +35,9 @@ export function isLocale(value: unknown): value is AppLocale {
   return typeof value === "string" && (LOCALES as readonly string[]).includes(value);
 }
 
-/** The locale, or `da` for anything that is not one. */
+/** The locale, or the deployment's default for anything that is not one. */
 export function resolveLocale(value: string | null | undefined): AppLocale {
-  return isLocale(value) ? value : DEFAULT_LOCALE;
+  return isLocale(value) ? value : defaultLocale();
 }
 
 /**

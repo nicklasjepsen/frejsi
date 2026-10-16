@@ -15,6 +15,8 @@ import {
   type RegistrationResponseJSON,
 } from "@simplewebauthn/server";
 
+import { defaultLocale } from "@/lib/i18n/routing";
+
 import { consumeChallenge, createChallenge } from "./challenges";
 import {
   appOrigin,
@@ -179,7 +181,9 @@ export async function finishRegistration(
         if (!membership) throw new HttpError(404, "not-found");
         role = membership.role as Role;
       } else {
-        await tx.user.create({ data: { id: userId, name: invite.name } });
+        await tx.user.create({
+          data: { id: userId, name: invite.name, locale: defaultLocale() },
+        });
         await addMember({ spaceId: invite.spaceId, userId, role }, txDeps);
       }
       const passkey = await tx.passkey.create({

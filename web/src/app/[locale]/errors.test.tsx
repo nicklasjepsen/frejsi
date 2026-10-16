@@ -53,6 +53,15 @@ describe("error pages (plan §9)", () => {
     expect(screen.getByRole("link", { name: "Til forsiden" })).toHaveAttribute("href", "/da");
   });
 
+  it("error.tsx and not-found.tsx take the locale from the provider when the path has none, not from a literal", () => {
+    navigation.pathname = "/";
+    mount(<LocaleError error={new Error(SECRET)} reset={vi.fn()} />, "en");
+    expect(screen.getByRole("link", { name: "To the front page" })).toHaveAttribute("href", "/en");
+    cleanup();
+    mount(<LocaleNotFound />, "en");
+    expect(screen.getByRole("link", { name: "To the front page" })).toHaveAttribute("href", "/en");
+  });
+
   it("global-error.tsx works without a provider, picks the locale from the URL and shows nothing technical", () => {
     window.history.pushState({}, "", "/en/now");
     const reset = vi.fn();
@@ -63,5 +72,17 @@ describe("error pages (plan §9)", () => {
     fireEvent.click(screen.getByRole("button", { name: "Try again" }));
     expect(reset).toHaveBeenCalled();
     window.history.pushState({}, "", "/");
+  });
+
+  it("global-error.tsx without a locale in the URL uses the page's own language, which the root layout set from DEFAULT_LOCALE", () => {
+    window.history.pushState({}, "", "/");
+    document.documentElement.lang = "en";
+    const { container } = render(<GlobalError error={new Error(SECRET)} reset={vi.fn()} />);
+    expect(container.textContent).toContain("Something went wrong");
+    cleanup();
+    // Nothing usable anywhere: the documented fallback.
+    document.documentElement.lang = "";
+    const fallback = render(<GlobalError error={new Error(SECRET)} reset={vi.fn()} />);
+    expect(fallback.container.textContent).toContain("Noget gik galt");
   });
 });

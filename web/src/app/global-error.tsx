@@ -3,7 +3,7 @@
 import da from "../../messages/da";
 import en from "../../messages/en";
 
-import { stripLocale } from "@/lib/i18n/routing";
+import { FALLBACK_LOCALE, isLocale, stripLocale } from "@/lib/i18n/routing";
 
 /**
  * The last resort when the root layout itself fails: no provider, no fonts, so the copy is read
@@ -11,12 +11,17 @@ import { stripLocale } from "@/lib/i18n/routing";
  * is reported to App Insights by the server side (plan §9).
  */
 export default function GlobalError({ reset }: { error: Error; reset: () => void }) {
-  const locale =
+  // The URL's locale; else the language the root layout put on the page (the middleware chose it
+  // from the cookie, the browser or DEFAULT_LOCALE, which a client component cannot read itself);
+  // else the documented fallback.
+  const fromUrl =
     typeof window === "undefined" ? null : stripLocale(window.location.pathname).locale;
+  const fromPage = typeof document === "undefined" ? "" : document.documentElement.lang;
+  const locale = fromUrl ?? (isLocale(fromPage) ? fromPage : FALLBACK_LOCALE);
   const messages = locale === "en" ? en : da;
   const copy = messages.errors.page;
   return (
-    <html lang={locale ?? "da"}>
+    <html lang={locale}>
       <body
         style={{
           margin: 0,

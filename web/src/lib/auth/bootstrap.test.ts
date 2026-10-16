@@ -1,5 +1,5 @@
 // @vitest-environment node
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { bootstrapSpace, BootstrapRequest, tokenMatches } from "./bootstrap";
 import { hashToken } from "./invites";
@@ -91,6 +91,20 @@ describe("bootstrapSpace", () => {
         },
       },
     ]);
+  });
+
+  it("gives the owner the deployment's default locale", async () => {
+    const da = world();
+    await bootstrapSpace({ token: TOKEN, body }, da.deps);
+    expect(da.fake.rows("user")[0]).toMatchObject({ locale: "da" });
+    vi.stubEnv("DEFAULT_LOCALE", "en");
+    try {
+      const en = world();
+      await bootstrapSpace({ token: TOKEN, body }, en.deps);
+      expect(en.fake.rows("user")[0]).toMatchObject({ locale: "en" });
+    } finally {
+      vi.unstubAllEnvs();
+    }
   });
 
   it("answers 404 once any space exists, before looking at the token", async () => {
