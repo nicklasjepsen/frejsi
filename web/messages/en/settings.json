@@ -49,7 +49,26 @@
     "cancel": "Cancel"
   },
   "ai": {
-    "lead": "Search, voice, photos and observations"
+    "lead": "Search, voice, photos and observations",
+    "desktopLead": "Search that understands food, voice and photo logging, observations and questions for the clinic",
+    "off": "off",
+    "provider": "Provider",
+    "providers": {
+      "anthropic": "Anthropic",
+      "azure-openai": "Azure OpenAI (own EU tenant)",
+      "ollama": "Ollama (local)"
+    },
+    "unconfigured": "not set up here",
+    "noEmbed": "search without AI",
+    "notConfigured": "AI is not set up here yet.",
+    "phoneNotice": "AI never sees raw readings – only statistics such as “peak 9.6 after 1 hour”. Photos and text are sent only on a tap. Your browser recognises your voice, rather than Frejsi. At most {cap} calls a day.",
+    "readingsLead": "Raw readings are never sent.",
+    "readingsNotice": "The model only receives statistics such as “peak 9.6 after 1 hour”.",
+    "actionLead": "Photos and text",
+    "actionNotice": "are sent only on an explicit tap. Your browser recognises your voice, rather than Frejsi.",
+    "capLead": "At most {cap} calls a day",
+    "capNotice": "in this space. Today: {n}.",
+    "close": "Close"
   },
   "unit": {
     "label": "Unit",
@@ -116,5 +135,12 @@
     "again": "You can safely import the same file again – nothing comes in twice.",
     "mealNote": "From the Dexcom app",
     "carbItem": "Carbs from the Dexcom app"
+  },
+  "push": {
+    "phone": "Notify me here when {subject} asks",
+    "desktop": "Notify me on this computer when {subject} asks",
+    "denied": "Notifications are turned off in your browser",
+    "unsupported": "Notifications are unavailable in this browser",
+    "failed": "Notifications could not be saved. Try again."
   }
 }
