@@ -1,3 +1,4 @@
+import { LookupResponse } from "../schemas/food";
 import { HttpError } from "../schemas/api";
 import type {
   AiProvider,
@@ -24,6 +25,49 @@ export function defaultFakeAnswer(call: RecordedAiCall): Answer {
       vectors: call.request.texts.map(() => [1, ...Array<number>(1023).fill(0)]),
     };
   const item = { name: "Example pasta", carbs: 30, grams: 100, confidence: "medium", approx: true };
+  if (
+    call.kind === "complete" &&
+    call.request.use === "parse" &&
+    call.request.tools?.some((tool) => tool.name === "lookup")
+  ) {
+    const previous = call.request.messages
+      .flatMap((message) => message.content)
+      .findLast(
+        (content) => content.type === "tool-result" && content.toolCallId === "fixture-lookup",
+      );
+    if (previous?.type !== "tool-result")
+      return {
+        kind: "tool-calls",
+        model: "fixture",
+        calls: [{ id: "fixture-lookup", name: "lookup", input: { query: "Example pasta" } }],
+      };
+    const response = LookupResponse.safeParse(previous.result);
+    const found = response.success ? response.data.results[0] : undefined;
+    const portion = found?.food.portions[0];
+    if (found && !portion && found.food.carbsPer100g == null)
+      return { kind: "json", model: "fixture", json: { items: [], unmatched: ["Example pasta"] } };
+    return {
+      kind: "json",
+      model: "fixture",
+      json: {
+        items: [
+          {
+            query: "Example pasta",
+            ...(found
+              ? {
+                  match: {
+                    source: found.source,
+                    food: found.food,
+                    ...(portion ? { portionLabel: portion.label } : { grams: 100 }),
+                  },
+                }
+              : { estimate: item }),
+          },
+        ],
+        unmatched: [],
+      },
+    };
+  }
   const samples: unknown[] = [
     { items: [{ query: "Example pasta", estimate: item }], unmatched: [] },
     { items: [item], totalCarbs: 30, dishName: "Example dish", approx: true },

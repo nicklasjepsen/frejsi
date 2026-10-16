@@ -2,7 +2,7 @@ import { Food } from "../../schemas/food";
 import { lookup } from "../../food/lookup";
 import { MemoryFoodRepository } from "../../food/memory";
 import { describe, expect, it } from "vitest";
-import { FakeAiProvider } from "../fake";
+import { FakeAiProvider, defaultFakeAnswer } from "../fake";
 import { CappedAiProvider } from "../capped";
 import { MemoryAiCallRepository } from "../calls";
 import { parseMeal } from "./parse";
@@ -62,7 +62,10 @@ describe("parse meal", () => {
       ],
       unmatched: ["bread"],
     };
-    const fake = new FakeAiProvider([tools, { ...answer, json: meal }]);
+    const fake = new FakeAiProvider([
+      { ...tools, calls: [...tools.calls, { id: "2", name: "lookup", input: { query: "bread" } }] },
+      { ...answer, json: meal },
+    ]);
     expect(
       (await parseMeal(fake, "apple and bread", "en", () => Promise.reject(Error("private")))).meal,
     ).toEqual(meal);
@@ -197,4 +200,60 @@ it("still rejects changed nutrition on a food the tool actually returned", async
       Promise.resolve({ results: [result], sources: {}, manual: {} }),
     ),
   ).rejects.toMatchObject({ code: "ai-rejected" });
+});
+
+it("rejects estimates without a lookup and when lookup found a food", async () => {
+  const estimated = {
+    ...answer,
+    json: {
+      items: [
+        { query: "apple", estimate: { name: "Apple", carbs: 12, confidence: "low", approx: true } },
+      ],
+      unmatched: [],
+    },
+  };
+  for (const script of [[estimated], [tools, estimated]]) {
+    await expect(
+      parseMeal(new FakeAiProvider(script), "apple", "en", () =>
+        Promise.resolve({ results: [result], sources: {}, manual: {} }),
+      ),
+    ).rejects.toMatchObject({ code: "ai-rejected" });
+  }
+});
+it("accepts estimates only after an empty lookup for that same query", async () => {
+  const estimated = {
+    ...answer,
+    json: {
+      items: [
+        { query: "apple", estimate: { name: "Apple", carbs: 12, confidence: "low", approx: true } },
+      ],
+      unmatched: [],
+    },
+  };
+  expect(
+    (
+      await parseMeal(new FakeAiProvider([tools, estimated]), "apple", "en", () =>
+        Promise.resolve({ results: [], sources: {}, manual: {} }),
+      )
+    ).meal,
+  ).toEqual(estimated.json);
+  const unrelated = { ...tools, calls: [{ id: "1", name: "lookup", input: { query: "bread" } }] };
+  await expect(
+    parseMeal(new FakeAiProvider([unrelated, estimated]), "apple", "en", () =>
+      Promise.resolve({ results: [], sources: {}, manual: {} }),
+    ),
+  ).rejects.toMatchObject({ code: "ai-rejected" });
+});
+
+it("keeps the default fake usable through the same lookup gate", async () => {
+  const fake = new FakeAiProvider(defaultFakeAnswer);
+  const result = await parseMeal(fake, "Example pasta", "en", () =>
+    Promise.resolve({ results: [], sources: {}, manual: {} }),
+  );
+  expect(result.count).toBe(1);
+  expect(result.meal.items[0]).toMatchObject({
+    query: "Example pasta",
+    estimate: { approx: true },
+  });
+  expect(fake.calls).toHaveLength(2);
 });

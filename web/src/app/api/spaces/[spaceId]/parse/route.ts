@@ -29,3 +29,14 @@ export const POST = spaceRoute("parse.post", async (request, spaceId) => {
     throw safe;
   }
 });
+
+/** Uses only the opt-in bit; the full usage endpoint belongs to the AI settings lane. */
+export const GET = spaceRoute("parse.availability", async (request, spaceId) => {
+  const { session } = await requireSpaceRole(
+    request,
+    spaceId,
+    ["owner", "carer"],
+    parseSessionDb(),
+  );
+  return json({ enabled: !session.simpleMode && (await parseDeps().enabled(spaceId)) });
+});
