@@ -72,7 +72,10 @@ export async function addManualReading(
   deps: ReadingDeps = readingDeps(),
 ): Promise<Reading> {
   const now = deps.now();
+  // To the minute, like the sheet's time field: typing the displayed time again lands on the same
+  // `(spaceId, ts)` and replaces the value instead of adding a second reading beside the typo.
   const ts = new Date(input.ts ?? now.toISOString());
+  ts.setUTCSeconds(0, 0);
   const age = now.getTime() - ts.getTime();
   if (age > MANUAL_WINDOW_MS || -age > MANUAL_FUTURE_MS) {
     throw new HttpError(400, "reading-out-of-window");

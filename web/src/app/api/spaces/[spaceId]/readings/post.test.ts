@@ -88,6 +88,24 @@ describe("POST /api/spaces/:id/readings", () => {
     expect(tracked).toEqual([["reading.stored", { spaceId: "s1" }]]);
   });
 
+  it("stores 'now' to the minute, so typing the displayed time again replaces it", async () => {
+    configureReadings({
+      db: fake.db,
+      sink: fake.sink,
+      now: () => new Date("2026-10-15T13:13:42.500Z"),
+      track: () => undefined,
+    });
+    const first = await post("sess-carer-1", { value: 6.2, unit: "mmol" });
+    expect(await first.json()).toMatchObject({ ts: "2026-10-15T13:13:00.000Z" });
+    const again = await post("sess-carer-1", {
+      value: 6.6,
+      unit: "mmol",
+      ts: "2026-10-15T13:13:00.000Z",
+    });
+    expect(again.status).toBe(200);
+    expect(live.readings.map((r) => r.mmol)).toEqual([6.6]);
+  });
+
   it("works for an owner and converts mg/dL to the stored mmol", async () => {
     const res = await post("sess-owner-1", { value: 112, unit: "mgdl" });
     expect(await res.json()).toMatchObject({ mmol: 6.2 });
