@@ -1,0 +1,20 @@
+{
+  "model": "fixture-chat",
+  "done": true,
+  "message": {
+    "role": "assistant",
+    "content": "",
+    "tool_calls": [
+      {
+        "id": "call_1",
+        "type": "function",
+        "function": {
+          "name": "lookup",
+          "arguments": {
+            "query": "apple"
+          }
+        }
+      }
+    ]
+  }
+}

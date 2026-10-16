@@ -1,0 +1,8 @@
+{
+  "model": "fixture-chat",
+  "done": true,
+  "message": {
+    "role": "assistant",
+    "content": "{\"name\":\"Apple\"}"
+  }
+}
