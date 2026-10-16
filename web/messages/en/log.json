@@ -50,7 +50,13 @@
     "title": "Scan a barcode",
     "aim": "Hold the barcode inside the frame",
     "typeBarcode": "Type the barcode",
-    "denied": "The camera cannot be used right now. Type the barcode instead.",
+    "failed": {
+      "denied": "The app is not allowed to use the camera right now. Allow it in the phone's settings, or type the barcode instead.",
+      "noCamera": "No usable camera was found. Type the barcode instead.",
+      "busy": "The camera could not start. Another app may be using it. Try again, or type the barcode instead.",
+      "reader": "The scanner could not start. Type the barcode instead."
+    },
+    "failedDetail": "Technical detail: {detail}",
     "typedLabel": "Barcode",
     "invalid": "Check the barcode and try again."
   },

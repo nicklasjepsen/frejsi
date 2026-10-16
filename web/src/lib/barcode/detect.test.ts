@@ -9,7 +9,13 @@ vi.mock("zxing-wasm/reader", () => ({
   readBarcodes: zxing.read,
 }));
 
-import { ZXING_WASM_PATH, asTypedBarcode, createBarcodeReader } from "./detect";
+import {
+  ZXING_WASM_PATH,
+  asTypedBarcode,
+  createBarcodeReader,
+  describeCameraError,
+  frameGrabber,
+} from "./detect";
 
 // GS1 restricted-circulation numbers (20…–29…): no real product.
 const EAN13 = "2000000000015";
@@ -19,6 +25,7 @@ const frame = { width: 4, height: 4 } as unknown as ImageData;
 
 afterEach(() => {
   vi.unstubAllGlobals();
+  vi.restoreAllMocks();
   zxing.prepare.mockReset();
   zxing.read.mockReset();
 });
@@ -94,5 +101,69 @@ describe("createBarcodeReader", () => {
     const reader = await createBarcodeReader({ grabFrame: () => null });
     expect(await reader.detect({} as HTMLVideoElement)).toBeNull();
     expect(zxing.read).not.toHaveBeenCalled();
+  });
+
+  it("hands over to zxing when a BarcodeDetector exists but throws on detect", async () => {
+    // Chrome without its detection service, or a stubbed API: getSupportedFormats answers,
+    // detect never does. Before, every frame was swallowed and the scanner sat there forever.
+    const detect = vi.fn().mockRejectedValue(new DOMException("unavailable", "NotSupportedError"));
+    class Stub {
+      static getSupportedFormats = () => Promise.resolve(["ean_13"]);
+      detect = detect;
+    }
+    vi.stubGlobal("BarcodeDetector", Stub);
+    zxing.read.mockResolvedValue([{ text: EAN13, isValid: true }]);
+    const reader = await createBarcodeReader({ grabFrame: () => frame });
+    expect(reader.kind).toBe("native");
+    const video = {} as HTMLVideoElement;
+    expect(await reader.detect(video)).toBe(EAN13);
+    expect(reader.kind).toBe("zxing");
+    expect(zxing.prepare).toHaveBeenCalledTimes(1);
+    expect(await reader.detect(video)).toBe(EAN13);
+    expect(detect).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("frameGrabber", () => {
+  it("draws every frame on one canvas sized to the video, never a canvas per frame", () => {
+    const drawImage = vi.fn();
+    const getImageData = vi.fn(() => frame);
+    const context = { drawImage, getImageData } as unknown as CanvasRenderingContext2D;
+    const getContext = vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue(context);
+    const created = vi.spyOn(document, "createElement");
+    const grab = frameGrabber();
+    const video = { videoWidth: 0, videoHeight: 0 } as HTMLVideoElement;
+    expect(grab(video)).toBeNull();
+    expect(created).not.toHaveBeenCalled();
+    Object.assign(video, { videoWidth: 640, videoHeight: 480 });
+    expect(grab(video)).toBe(frame);
+    expect(grab(video)).toBe(frame);
+    expect(created).toHaveBeenCalledTimes(1);
+    expect(getContext).toHaveBeenCalledTimes(1);
+    expect(drawImage).toHaveBeenCalledTimes(2);
+    expect(drawImage).toHaveBeenLastCalledWith(video, 0, 0, 640, 480);
+    const canvas = created.mock.results[0]?.value as HTMLCanvasElement;
+    expect([canvas.width, canvas.height]).toEqual([640, 480]);
+    Object.assign(video, { videoWidth: 1280, videoHeight: 720 });
+    grab(video);
+    expect([canvas.width, canvas.height]).toEqual([1280, 720]);
+    expect(created).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("describeCameraError", () => {
+  it("sorts getUserMedia errors by what the person can do, keeping the browser's own text", () => {
+    expect(describeCameraError(new DOMException("Permission denied", "NotAllowedError"))).toEqual({
+      reason: "denied",
+      detail: "NotAllowedError: Permission denied",
+    });
+    expect(describeCameraError(new DOMException("", "SecurityError")).reason).toBe("denied");
+    expect(describeCameraError(new DOMException("in use", "NotReadableError"))).toEqual({
+      reason: "busy",
+      detail: "NotReadableError: in use",
+    });
+    expect(describeCameraError(new DOMException("none", "NotFoundError")).reason).toBe("noCamera");
+    expect(describeCameraError(new TypeError("bad constraints")).reason).toBe("noCamera");
+    expect(describeCameraError("odd")).toEqual({ reason: "noCamera", detail: "odd" });
   });
 });

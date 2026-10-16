@@ -11,9 +11,18 @@ const NATIVE_FORMATS = ["ean_13", "ean_8", "upc_a"] as const;
 const ZXING_FORMATS = ["EAN13", "EAN8", "UPCA"] as const;
 
 export interface BarcodeReader {
+  /** The reader in use; flips to "zxing" when a native detector exists but cannot detect. */
   kind: "native" | "zxing";
   /** The first valid, normalised barcode in the current video frame, or null. */
   detect(video: HTMLVideoElement): Promise<string | null>;
+}
+
+/** Why the scanner could not run; shown to the person with the typed-barcode field. */
+export type ScanFailureReason = "denied" | "noCamera" | "busy" | "reader";
+export interface ScanFailure {
+  reason: ScanFailureReason;
+  /** The browser's own error name and message, so a report from a phone says what failed. */
+  detail: string;
 }
 
 interface NativeDetector {
@@ -32,6 +41,46 @@ export interface ReaderOptions {
 /** A typed or USB-scanned value is a barcode when it has 8, 12 or 13 digits and a valid checksum. */
 export function asTypedBarcode(value: string): string | null {
   return normaliseBarcode(value.trim());
+}
+
+/**
+ * `name` and `message` of whatever was thrown. Duck-typed: a `DOMException` is not an `Error`
+ * in every runtime (jsdom, older WebKit), and the name is what tells the cases apart.
+ */
+function errorParts(error: unknown): { name: string; message: string } {
+  if (typeof error === "object" && error !== null) {
+    const { name, message } = error as { name?: unknown; message?: unknown };
+    return {
+      name: typeof name === "string" ? name : "",
+      message: typeof message === "string" ? message : Object.prototype.toString.call(error),
+    };
+  }
+  return { name: "", message: String(error) };
+}
+
+/** "NotAllowedError: Permission denied": the browser's own words, for the person's report. */
+export function errorText(error: unknown): string {
+  const { name, message } = errorParts(error);
+  return name && message ? `${name}: ${message}` : name || message;
+}
+
+/** Sorts a `getUserMedia` rejection into what the person can do about it. */
+export function describeCameraError(error: unknown): ScanFailure {
+  const { name } = errorParts(error);
+  const detail = errorText(error);
+  switch (name) {
+    case "NotAllowedError":
+    case "PermissionDeniedError":
+    case "SecurityError":
+      return { reason: "denied", detail };
+    case "NotReadableError":
+    case "TrackStartError":
+    case "AbortError":
+      return { reason: "busy", detail };
+    default:
+      // NotFoundError, OverconstrainedError, TypeError and anything else: no usable camera.
+      return { reason: "noCamera", detail };
+  }
 }
 
 function firstValid(values: Iterable<string>): string | null {
@@ -63,17 +112,30 @@ async function nativeReader(): Promise<BarcodeReader | null> {
   };
 }
 
-function canvasFrame(video: HTMLVideoElement): ImageData | null {
-  const width = video.videoWidth;
-  const height = video.videoHeight;
-  if (!width || !height) return null;
-  const canvas = document.createElement("canvas");
-  canvas.width = width;
-  canvas.height = height;
-  const context = canvas.getContext("2d", { willReadFrequently: true });
-  if (!context) return null;
-  context.drawImage(video, 0, 0, width, height);
-  return context.getImageData(0, 0, width, height);
+/**
+ * One canvas for the whole scan, sized to the video's intrinsic frame. A fresh canvas per frame
+ * (four a second at 1080p) runs into iOS Safari's canvas memory limit, after which `getContext`
+ * returns null or the page is reloaded: the scanner would then look like it does nothing.
+ */
+export function frameGrabber(): (video: HTMLVideoElement) => ImageData | null {
+  let canvas: HTMLCanvasElement | null = null;
+  let context: CanvasRenderingContext2D | null = null;
+  return (video) => {
+    const width = video.videoWidth;
+    const height = video.videoHeight;
+    if (!width || !height) return null;
+    if (!canvas) {
+      canvas = document.createElement("canvas");
+      context = canvas.getContext("2d", { willReadFrequently: true });
+    }
+    if (!context) return null;
+    if (canvas.width !== width || canvas.height !== height) {
+      canvas.width = width;
+      canvas.height = height;
+    }
+    context.drawImage(video, 0, 0, width, height);
+    return context.getImageData(0, 0, width, height);
+  };
 }
 
 async function zxingReader(grabFrame: (video: HTMLVideoElement) => ImageData | null) {
@@ -100,6 +162,29 @@ async function zxingReader(grabFrame: (video: HTMLVideoElement) => ImageData | n
   return reader;
 }
 
+/**
+ * The native detector when the browser has one for EAN-13, else zxing. A native detector that
+ * exists but throws on `detect` (Chrome without its detection service, a stubbed API) hands over to
+ * zxing from that frame on instead of failing silently forever.
+ */
 export async function createBarcodeReader(options: ReaderOptions = {}): Promise<BarcodeReader> {
-  return (await nativeReader()) ?? zxingReader(options.grabFrame ?? canvasFrame);
+  const grabFrame = options.grabFrame ?? frameGrabber();
+  const native = await nativeReader();
+  if (!native) return zxingReader(grabFrame);
+  let fallback: Promise<BarcodeReader> | null = null;
+  const reader: BarcodeReader = {
+    kind: "native",
+    async detect(video) {
+      if (!fallback) {
+        try {
+          return await native.detect(video);
+        } catch {
+          fallback = zxingReader(grabFrame);
+          reader.kind = "zxing";
+        }
+      }
+      return (await fallback).detect(video);
+    },
+  };
+  return reader;
 }

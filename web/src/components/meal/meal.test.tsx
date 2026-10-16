@@ -260,8 +260,12 @@ describe("ManualFoodForm", () => {
 
 describe("BarcodeScanner", () => {
   beforeAll(() => {
-    // jsdom has no media playback.
+    // jsdom has no media playback: play resolves and the video reports a frame to read.
     HTMLMediaElement.prototype.play = () => Promise.resolve();
+    Object.defineProperty(HTMLMediaElement.prototype, "readyState", {
+      configurable: true,
+      get: () => 2,
+    });
   });
   const stream = () => {
     const stop = vi.fn();
@@ -279,7 +283,7 @@ describe("BarcodeScanner", () => {
         onDetected={detected}
         onClose={vi.fn()}
         onTypeBarcode={vi.fn()}
-        onDenied={vi.fn()}
+        onFailed={vi.fn()}
         createReader={() => Promise.resolve({ kind: "native", detect })}
         intervalMs={1}
       />,
@@ -311,7 +315,7 @@ describe("BarcodeScanner", () => {
         onDetected={detected}
         onClose={vi.fn()}
         onTypeBarcode={vi.fn()}
-        onDenied={vi.fn()}
+        onFailed={vi.fn()}
         intervalMs={1}
       />,
     );
@@ -320,22 +324,92 @@ describe("BarcodeScanner", () => {
     });
   });
 
-  it("reports a denied camera so the typed-barcode field can take over", async () => {
+  it("reports why the camera was refused so the typed-barcode field can take over", async () => {
     stubMedia({
-      getUserMedia: () => Promise.reject(new DOMException("denied", "NotAllowedError")),
+      getUserMedia: () => Promise.reject(new DOMException("Permission denied", "NotAllowedError")),
     });
-    const denied = vi.fn();
+    const failed = vi.fn();
     mount(
       <BarcodeScanner
         onDetected={vi.fn()}
         onClose={vi.fn()}
         onTypeBarcode={vi.fn()}
-        onDenied={denied}
+        onFailed={failed}
       />,
     );
     await waitFor(() => {
-      expect(denied).toHaveBeenCalledOnce();
+      expect(failed).toHaveBeenCalledOnce();
     });
+    expect(failed).toHaveBeenCalledWith({
+      reason: "denied",
+      detail: "NotAllowedError: Permission denied",
+    });
+  });
+
+  it("reports a browser with no camera access at all instead of doing nothing", async () => {
+    // No stubMedia: jsdom, like an insecure context or an old WebView, has no mediaDevices.
+    const failed = vi.fn();
+    mount(
+      <BarcodeScanner
+        onDetected={vi.fn()}
+        onClose={vi.fn()}
+        onTypeBarcode={vi.fn()}
+        onFailed={failed}
+      />,
+    );
+    await waitFor(() => {
+      expect(failed).toHaveBeenCalledOnce();
+    });
+    expect(failed).toHaveBeenCalledWith({
+      reason: "noCamera",
+      detail: expect.stringContaining("mediaDevices") as string,
+    });
+  });
+
+  it("stops the camera and says so when the reader cannot start", async () => {
+    const camera = stream();
+    stubMedia({ getUserMedia: () => Promise.resolve(camera.stream) });
+    const failed = vi.fn();
+    mount(
+      <BarcodeScanner
+        onDetected={vi.fn()}
+        onClose={vi.fn()}
+        onTypeBarcode={vi.fn()}
+        onFailed={failed}
+        createReader={() => Promise.reject(new Error("zxing_reader.wasm: 404"))}
+      />,
+    );
+    await waitFor(() => {
+      expect(failed).toHaveBeenCalledOnce();
+    });
+    expect(failed).toHaveBeenCalledWith({
+      reason: "reader",
+      detail: "Error: zxing_reader.wasm: 404",
+    });
+    expect(camera.stop).toHaveBeenCalled();
+  });
+
+  it("gives up after repeated detection errors instead of looping silently", async () => {
+    const camera = stream();
+    stubMedia({ getUserMedia: () => Promise.resolve(camera.stream) });
+    const detect = vi.fn().mockRejectedValue(new Error("out of memory"));
+    const failed = vi.fn();
+    mount(
+      <BarcodeScanner
+        onDetected={vi.fn()}
+        onClose={vi.fn()}
+        onTypeBarcode={vi.fn()}
+        onFailed={failed}
+        createReader={() => Promise.resolve({ kind: "zxing", detect })}
+        intervalMs={1}
+      />,
+    );
+    await waitFor(() => {
+      expect(failed).toHaveBeenCalledOnce();
+    });
+    expect(detect).toHaveBeenCalledTimes(3);
+    expect(failed).toHaveBeenCalledWith({ reason: "reader", detail: "Error: out of memory" });
+    expect(camera.stop).toHaveBeenCalled();
   });
 
   it("stops the camera when closed", async () => {
@@ -347,7 +421,7 @@ describe("BarcodeScanner", () => {
         onDetected={vi.fn()}
         onClose={close}
         onTypeBarcode={vi.fn()}
-        onDenied={vi.fn()}
+        onFailed={vi.fn()}
         createReader={() => Promise.resolve({ kind: "zxing", detect: () => Promise.resolve(null) })}
         intervalMs={5}
       />,
