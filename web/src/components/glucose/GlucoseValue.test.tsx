@@ -54,6 +54,25 @@ describe("GlucoseValue (plan §9, hard rule: never a value without its age)", ()
     expect(noTs).toBeDefined();
   });
 
+  it("shows a reading with no direction as the number and its age, with no arrow and no trend word", () => {
+    for (const layout of ["line", "split"] as const) {
+      wrap(
+        <GlucoseValue
+          reading={reading(minutesAgo(3), 6.2, "not-computable")}
+          unit="mmol"
+          now={T0}
+          size="phone"
+          layout={layout}
+        />,
+      );
+      expect(screen.getByTestId("glucose-number")).toHaveTextContent("6,2");
+      expect(screen.getByTestId("glucose-age")).toHaveTextContent("mmol/L · for 3 min. siden");
+      expect(screen.queryByRole("img")).toBeNull();
+      expect(document.body.textContent).not.toContain("retning ukendt");
+      cleanup();
+    }
+  });
+
   it("renders the number, the arrow with the trend word, and the age in one line (Main)", () => {
     wrap(<GlucoseValue reading={reading(minutesAgo(3))} unit="mmol" now={T0} size="phone" />);
     expect(screen.getByTestId("glucose-number")).toHaveTextContent("6,2");

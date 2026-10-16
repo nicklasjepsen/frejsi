@@ -76,7 +76,8 @@ export function InviteLanding({
       if (error.kind === "unsupported") return only(root("passkey.unsupported"));
       // An add-device link opened on a device that already signs in as this user: trying again
       // would throw the same way, so say what to do instead, and put the sign-in right there.
-      if (error.kind === "already-registered") return { text: t("alreadyRegistered"), signIn: true };
+      if (error.kind === "already-registered")
+        return { text: t("alreadyRegistered"), signIn: true };
       if (error.code && INVITE_CODES.has(error.code)) return only(root(`errors.api.${error.code}`));
     }
     // The invitation's own general line: here a new link is the way out if it keeps failing.
@@ -137,8 +138,7 @@ export function InviteLanding({
       <div className={pub.hero}>
         <Avatar name={view.spaceName} size={72} />
         <h1 className={pub.title}>
-          {t("greeting", { name: view.name })}{" "}
-          <br />
+          {t("greeting", { name: view.name })} <br />
           {view.forExistingUser
             ? t("greetingDevice", { space: view.spaceName })
             : t("greetingSpace", { space: view.spaceName })}

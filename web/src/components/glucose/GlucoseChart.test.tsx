@@ -72,4 +72,45 @@ describe("GlucoseChart", () => {
     expect(container.querySelector("circle")).toBeNull();
     expect(screen.getByRole("img").textContent).toContain("06:00");
   });
+  describe.each(["sparkline", "day"] as const)("a finger-prick series on the %s", (variant) => {
+    const draw = (readings: Reading[]) =>
+      render(
+        <I18nProvider locale="da" messages={getMessages("da")}>
+          <GlucoseChart
+            readings={readings}
+            from={new Date(T0.getTime() - 6 * 60 * 60_000)}
+            to={T0}
+            targetLow={4}
+            targetHigh={10}
+            unit="mmol"
+            timeZone="Europe/Copenhagen"
+            variant={variant}
+            label="Glukose"
+          />
+        </I18nProvider>,
+      );
+
+    it("draws three finger-pricks hours apart as three dots and no line between them", () => {
+      draw([
+        reading(minutesAgo(300), 5.4),
+        reading(minutesAgo(150), 7.9),
+        reading(minutesAgo(20), 6.2),
+      ]);
+      expect(screen.getAllByTestId("lone-point")).toHaveLength(3);
+      expect(screen.queryByTestId("curve")).toBeNull();
+    });
+
+    it("draws a 5-minute sensor series as one line and a lone reading beside it as a dot", () => {
+      const sensor = [40, 35, 30, 25, 20].map((m) => reading(minutesAgo(m), 6 + m / 100));
+      draw([reading(minutesAgo(200), 8.8), ...sensor]);
+      expect(screen.getAllByTestId("curve")).toHaveLength(1);
+      expect(screen.getAllByTestId("lone-point")).toHaveLength(1);
+    });
+
+    it("joins two readings that are within 15 minutes of each other", () => {
+      draw([reading(minutesAgo(60), 6), reading(minutesAgo(45), 6.4)]);
+      expect(screen.getAllByTestId("curve")).toHaveLength(1);
+      expect(screen.queryByTestId("lone-point")).toBeNull();
+    });
+  });
 });

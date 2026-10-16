@@ -64,6 +64,13 @@ every new row, so it measures the whole chain: Dexcom Share, the poller, the dat
 gives a gap of about 30 minutes, which is why the limit is 35. The alert resolves itself with the
 next stored reading.
 
+A space whose source is **Manuelt** has no poller: its readings are finger-pricks typed in on Nu
+(`POST /api/spaces/:id/readings`, owners and carers, never a simpleMode session). The route sends the
+same `reading.stored` event, so on a deployment whose only space is Manuelt this alert fires whenever
+nobody has measured for 35 minutes. That is true, not a fault; it resolves with the next typed value.
+Typing a value at a time that already holds a manual reading replaces it, which is how a typo is
+corrected; a time that holds a sensor reading is refused (`reading-exists`).
+
 Check in this order and stop at the first thing that is wrong:
 
 1. **The sensor and the Dexcom app.** If the Dexcom app shows no values either (a sensor change, the

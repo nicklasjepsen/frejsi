@@ -139,14 +139,20 @@ it("resets the selected filter and foods on query-only navigation", async () => 
   );
   const view = render(await open("unverified"));
   const phone = () => within(screen.getByTestId("library-phone"));
-  await waitFor(() => { expect(phone().getAllByTestId("food-row")).toHaveLength(3); });
+  await waitFor(() => {
+    expect(phone().getAllByTestId("food-row")).toHaveLength(3);
+  });
 
   view.rerender(await open());
-  await waitFor(() => { expect(phone().getAllByTestId("food-row")).toHaveLength(5); });
+  await waitFor(() => {
+    expect(phone().getAllByTestId("food-row")).toHaveLength(5);
+  });
   expect(phone().getByRole("button", { name: "Alle" })).toHaveAttribute("aria-pressed", "true");
 
   view.rerender(await open("off"));
-  await waitFor(() => { expect(phone().getAllByTestId("food-row")).toHaveLength(1); });
+  await waitFor(() => {
+    expect(phone().getAllByTestId("food-row")).toHaveLength(1);
+  });
   expect(phone().getByRole("button", { name: "Fra Open Food Facts" })).toHaveAttribute(
     "aria-pressed",
     "true",

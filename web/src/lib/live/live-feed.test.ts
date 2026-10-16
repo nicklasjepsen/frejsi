@@ -206,6 +206,23 @@ describe("LiveFeed (plan §5)", () => {
     expect(feed.getState().readings.map((r) => r.mmol)).toEqual([7.4, 5.2]);
   });
 
+  it("shows a reading the client stored itself at once, and the event that follows replaces it", async () => {
+    const ts = minutesAgo(1);
+    const { server, fetch } = fakeServer({ readings: [], lastSeq: 5 });
+    const { feed } = start(fetch);
+    await flush();
+    sockets[0]?.open();
+    await flush();
+
+    feed.addReading(reading(ts, 6.2, "not-computable"));
+    expect(feed.getState().latest).toEqual(reading(ts, 6.2, "not-computable"));
+    expect(feed.getState().readings).toHaveLength(1);
+
+    sockets[0]?.receive(server.append(reading(ts, 6.2, "not-computable")));
+    expect(feed.getState().readings).toHaveLength(1);
+    expect(feed.getState().lastSeq).toBe(6);
+  });
+
   it("polls every 30 s while the socket is down, re-negotiates and catches up on reconnect, then stops polling", async () => {
     const { server, fetch, calls } = fakeServer({ readings: [], lastSeq: 1 });
     const { feed } = start(fetch);

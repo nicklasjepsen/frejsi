@@ -59,7 +59,10 @@ describe("computeHealth (plan decision 22)", () => {
 
   it("reports db error and ok false, with readings none, when Prisma cannot query, and logs why without the message", async () => {
     const lines: string[] = [];
-    const logger = createLogger((line) => lines.push(line), () => NOW);
+    const logger = createLogger(
+      (line) => lines.push(line),
+      () => NOW,
+    );
     const health = await computeHealth({
       db: fakeDb({ fails: true }),
       now: () => NOW,

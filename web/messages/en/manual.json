@@ -1,0 +1,12 @@
+{
+  "button": "Enter reading",
+  "title": "Enter reading",
+  "value": "Reading in {unit}",
+  "now": "Now",
+  "time": "Time",
+  "save": "Save reading",
+  "cancel": "Cancel",
+  "invalidValue": "That number does not look right – check the meter's unit",
+  "invalidTime": "The time must be within the last day",
+  "failed": "The reading was not saved. Try again in a moment."
+}

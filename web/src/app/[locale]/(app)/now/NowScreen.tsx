@@ -1,5 +1,6 @@
 "use client";
 
+import type { Role } from "@frejsi/shared/schemas/index";
 import { mealStats } from "@frejsi/shared/stats";
 import { useTranslations } from "next-intl";
 import Link from "next/link";
@@ -19,6 +20,7 @@ import {
   useNow,
   useAgeText,
 } from "@/components/glucose";
+import { ManualReadingButton, ManualReadingSheet, useManualReading } from "@/components/manual";
 import { HeaderSlot } from "@/components/shell/HeaderSlot";
 import { SourceStatusBanner } from "@/components/shell/SourceStatusBanner";
 import { Button } from "@/components/ui/Button";
@@ -49,13 +51,21 @@ export interface NowScreenProps {
   simpleMode: boolean;
   /** The space's zone from the shell, until the feed's window carries it. */
   timeZone: string;
+  /** The member's role; a viewer has no entry point (the API refuses the write anyway). */
+  role?: Role;
 }
 
 /**
  * Nu on phone, desktop and simpleMode. The feed owns live readings; day and history metadata
  * refresh through that same feed's meal events. Viewers use their separate today route.
  */
-export function NowScreen({ spaceId, locale, simpleMode, timeZone }: NowScreenProps) {
+export function NowScreen({
+  spaceId,
+  locale,
+  simpleMode,
+  timeZone,
+  role = "owner",
+}: NowScreenProps) {
   const t = useTranslations("now");
   const g = useTranslations("glucose");
   const chart = useTranslations("chart");
@@ -65,6 +75,7 @@ export function NowScreen({ spaceId, locale, simpleMode, timeZone }: NowScreenPr
   const router = useRouter();
   const feed = useLiveFeed(spaceId, { hours: WINDOW_HOURS });
   const now = useNow();
+  const manual = useManualReading();
   const zone = feed.space?.timezone ?? timeZone;
   // Never before the feed's window: on the night daylight saving ends, yesterday's 06:00 can lie
   // up to 25 hours back, and that first hour would be drawn empty.
@@ -103,6 +114,9 @@ export function NowScreen({ spaceId, locale, simpleMode, timeZone }: NowScreenPr
   const unit = feed.space?.glucoseUnit ?? "mmol";
   const targetLow = feed.space?.targetLow ?? 4;
   const targetHigh = feed.space?.targetHigh ?? 10;
+  // Finger-pricks are typed in only where the source is Manuelt, by an owner or a carer, and never
+  // in simpleMode (plan decision 7); the route refuses the others whatever this says.
+  const canEnter = !simpleMode && role !== "viewer" && feed.space?.sourceType === "manual";
   const bounds = {
     low: formatBound(targetLow, unit, locale),
     high: formatBound(targetHigh, unit, locale),
@@ -200,6 +214,11 @@ export function NowScreen({ spaceId, locale, simpleMode, timeZone }: NowScreenPr
         <section className={styles.phone} data-testid="now-phone">
           <p className={styles.label}>{t("title")}</p>
           <GlucoseValue reading={latest} unit={unit} now={now} size="phone" />
+          {canEnter && (
+            <div className={styles.manualAction}>
+              <ManualReadingButton size="phone" onClick={manual.show} />
+            </div>
+          )}
           <Card className={styles.chartCard}>
             <div className={styles.chartHead}>
               <span className={styles.chartTitle}>{g("last3h")}</span>
@@ -243,6 +262,7 @@ export function NowScreen({ spaceId, locale, simpleMode, timeZone }: NowScreenPr
                   timeZone={zone}
                   variant="line"
                 />
+                {canEnter && <ManualReadingButton size="desktop" onClick={manual.show} />}
               </div>
             </Card>
             <Card className={styles.dayCard}>
@@ -336,6 +356,16 @@ export function NowScreen({ spaceId, locale, simpleMode, timeZone }: NowScreenPr
             {meals("logMeal")}
           </Button>
         </div>
+        {canEnter && manual.open && (
+          <ManualReadingSheet
+            spaceId={spaceId}
+            unit={unit}
+            timeZone={zone}
+            now={now}
+            onStored={feed.addReading}
+            onClose={manual.hide}
+          />
+        )}
       </div>
     </>
   );
