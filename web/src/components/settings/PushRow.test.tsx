@@ -88,3 +88,15 @@ it("keeps the saved on state visible when disabling fails", async () => {
   expect(await screen.findByRole("status")).toHaveTextContent("Beskeder kunne ikke gemmes");
   expect(toggle).toHaveAttribute("aria-checked", "true");
 });
+it("allows another tap after the permission prompt is dismissed", async () => {
+  const s = mount("default");
+  const toggle = screen.getByRole("switch");
+  await waitFor(() => expect(toggle).not.toBeDisabled());
+  fireEvent.click(toggle);
+  await waitFor(() => expect(toggle).not.toBeDisabled());
+  expect(toggle).toHaveAttribute("aria-checked", "false");
+  expect(screen.queryByRole("status")).toBeNull();
+  fireEvent.click(toggle);
+  await waitFor(() => { expect(s.requestPermission).toHaveBeenCalledTimes(2); });
+  expect(s.calls).toEqual([]);
+});
