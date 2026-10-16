@@ -142,6 +142,7 @@ Under Settings, Secrets and variables, Actions:
 | variable | `DEFAULT_LOCALE` | `da` or `en`: the language a visitor with no preference gets (unset means `da`) |
 | variable | `FOOD_SOURCES` | the food plugins to switch on, for example `off` or `off,frida` |
 | variable | `OFF_COUNTRY` | a two-letter country code Open Food Facts should prefer; unset means the whole world |
+| variable | `OFF_CONTRIBUTE_HOST` | optional, only with the Open Food Facts account of [step 9](#9-optional-ai-help-and-sending-corrections-to-open-food-facts): the host corrections go to; unset is production, `world.openfoodfacts.net` is the staging host to try first |
 | variable | `CUSTOM_DOMAIN` | leave unset until [step 6](#6-the-custom-domain-before-the-bootstrap) |
 | variable | `SQL_SERVER_ID` | only for [an existing SQL server](../infra/README.md#an-existing-sql-server) |
 | variable | `PREVIEWS_ENABLED` | only with the `preview` environment: `true` |
@@ -284,14 +285,16 @@ source is Manuelt it therefore fires whenever nobody has measured for 35 minutes
 fault: it resolves itself with the next typed value. You can disable the rule in the portal, but a
 later infra deploy may switch it back on. See [the 35-minute alert](operations.md#the-35-minute-alert).
 
-## 9. Optional: AI help
+## 9. Optional: AI help, and sending corrections to Open Food Facts
 
 AI help is off until you give the deployment a provider's settings and a space opts in. The settings
 are Key Vault secrets that `deploy.sh` copies into the app's settings only when they exist; a release
 without them succeeds. The names and the example command are in
 [infra/README.md](../infra/README.md#optional-ai-adapters-v040). Sending a family's correction to
 Open Food Facts is also optional: it needs the Key Vault secrets `off-contribute-user` and
-`off-contribute-password`, and without them no screen offers it.
+`off-contribute-password` (an Open Food Facts account; try it on the staging host first, with
+`OFF_CONTRIBUTE_HOST`), and without them no screen offers it. The commands are in
+[infra/README.md](../infra/README.md#optional-off-secrets-and-the-country-variables).
 
 ## When something goes wrong
 
