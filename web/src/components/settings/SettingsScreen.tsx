@@ -149,6 +149,9 @@ export function SettingsScreen({
       };
     })
     .filter((row) => row.showSwitch || row.showLanguage);
+  // A viewer's card holds only the Farve row: it stands under its own heading, not an empty
+  // "Simpel visning" one.
+  const hasPersonRows = personRows.length > 0;
 
   return (
     <div className={styles.page} data-testid="settings" aria-busy={busy}>
@@ -188,9 +191,11 @@ export function SettingsScreen({
           <a className={styles.navItem} href="#unit-language">
             {t("sections.unitAndLanguage")}
           </a>
-          <a className={styles.navItem} href="#simple-mode">
-            {t("sections.simpleMode")}
-          </a>
+          {hasPersonRows && (
+            <a className={styles.navItem} href="#simple-mode">
+              {t("sections.simpleMode")}
+            </a>
+          )}
           <a className={styles.navItem} href={settingsHref("/colour")}>
             {t("sections.colour")}
           </a>
@@ -288,11 +293,15 @@ export function SettingsScreen({
             </Card>
           </section>
 
-          <section id="simple-mode" className={styles.section}>
-            <h2 className={styles.sectionTitle}>{t("sections.simpleMode")}</h2>
-            <p className={styles.lead}>
-              {isOwner ? t("simpleMode.leadDesktop") : t("simpleMode.lead")}
-            </p>
+          <section id={hasPersonRows ? "simple-mode" : "colour"} className={styles.section}>
+            <h2 className={styles.sectionTitle}>
+              {hasPersonRows ? t("sections.simpleMode") : t("sections.colour")}
+            </h2>
+            {hasPersonRows && (
+              <p className={styles.lead}>
+                {isOwner ? t("simpleMode.leadDesktop") : t("simpleMode.lead")}
+              </p>
+            )}
             <Card className={styles.list}>
               {personRows.map(({ person, isMe, showSwitch, showLanguage }) => {
                 const name = isMe ? t("simpleMode.you", { name: person.name }) : person.name;

@@ -99,7 +99,7 @@ export function AiSection({
                 disabled={!owner || busy}
                 onClick={() => picker.current?.showModal()}
               >
-                {t("ai.provider")}
+                {t("ai.change")}
               </Button>
             }
           />

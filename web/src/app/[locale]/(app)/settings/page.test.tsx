@@ -210,6 +210,46 @@ describe("settings pages (plan task 9)", () => {
   });
 });
 
+describe("settings pages · simpleMode", () => {
+  it("sends a simpleMode member to Nu from Settings and from every sub-page, loading nothing", async () => {
+    mocks.session = {
+      ...session,
+      simpleMode: true,
+      memberships: [{ spaceId: "s1", role: "carer" }],
+    };
+    mocks.shell = shellFor("carer");
+    mocks.data = viewerData;
+    await expect(SettingsPage({ params })).rejects.toThrow("NEXT_REDIRECT:/da/now");
+    await expect(ColourPage({ params })).rejects.toThrow("NEXT_REDIRECT:/da/now");
+    await expect(ImportPage({ params })).rejects.toThrow("NEXT_REDIRECT:/da/now");
+    await expect(SourcePage({ params })).rejects.toThrow("NEXT_REDIRECT:/da/now");
+    await expect(
+      ConnectSourcePage({ params, searchParams: Promise.resolve({ type: "nightscout" }) }),
+    ).rejects.toThrow("NEXT_REDIRECT:/da/now");
+    expect(mocks.loadCalls).toEqual([]);
+  });
+
+  it("sends a simpleMode owner to Nu too: the simple shell has no settings", async () => {
+    mocks.session = {
+      ...session,
+      simpleMode: true,
+      memberships: [{ spaceId: "s1", role: "owner" }],
+    };
+    mocks.shell = shellFor("owner");
+    await expect(SettingsPage({ params })).rejects.toThrow("NEXT_REDIRECT:/da/now");
+    await expect(ImportPage({ params })).rejects.toThrow("NEXT_REDIRECT:/da/now");
+    expect(mocks.loadCalls).toEqual([]);
+  });
+
+  it("keeps Settings for a viewer with simpleMode set: the viewer shell has a Mere tab", async () => {
+    mocks.session = { ...session, simpleMode: true };
+    mocks.shell = shellFor("viewer");
+    mocks.data = viewerData;
+    mount(await SettingsPage({ params }));
+    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("Indstillinger");
+  });
+});
+
 describe("ImportPage (#154)", () => {
   it("renders nothing without a session, sends a carer back to Settings and gives an owner the form", async () => {
     mocks.session = null;

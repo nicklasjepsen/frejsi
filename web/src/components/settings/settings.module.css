@@ -70,8 +70,11 @@
   padding: 0 16px;
 }
 
+/* A wide control (the three theme segments) goes under the text on a narrow phone rather than
+   squeezing it to one word per line: the text keeps 160 px before the control wraps. */
 .row {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
@@ -89,14 +92,11 @@
   text-decoration: none;
 }
 
-.rowLink:hover {
-  color: var(--text);
-}
-
 .rowText {
   display: flex;
   flex-direction: column;
   gap: 2px;
+  flex: 1 1 160px;
   min-width: 0;
 }
 
@@ -114,6 +114,7 @@
   display: flex;
   align-items: center;
   flex-shrink: 0;
+  margin-left: auto;
 }
 
 .rowAction {
@@ -147,6 +148,11 @@
   font-weight: 700;
 }
 
+/* The language control under a name hugs its two segments instead of stretching across the row. */
+.personText .segmented {
+  align-self: flex-start;
+}
+
 /* Segmented control: sunken track, cream selected segment (design: `SegmentedControl`). */
 .segmented {
   display: inline-flex;
@@ -155,8 +161,9 @@
   background: var(--surface-sunken);
 }
 
+/* Touch height on the phone (--touch-min); the compact 34 px of the artboards from 1280 px. */
 .segment {
-  min-height: 34px;
+  min-height: var(--touch-min);
   padding: 0 14px;
   border: 0;
   border-radius: var(--radius-pill);
@@ -179,12 +186,13 @@
 }
 
 .segmented[data-size="small"] .segment {
-  min-height: 28px;
-  padding: 0 10px;
-  font-size: 12px;
+  min-height: var(--touch-min);
+  padding: 0 12px;
+  font-size: 13px;
 }
 
-/* Switch 52×32, knob 26 (design: `Switch`). */
+/* Switch 52×32, knob 26 (design: `Switch`). It keeps its drawn size; the hit area grows to the
+   touch minimum around it. */
 .switch {
   position: relative;
   width: 52px;
@@ -195,6 +203,12 @@
   background: var(--switch-off);
   cursor: pointer;
   padding: 0;
+}
+
+.switch::after {
+  content: "";
+  position: absolute;
+  inset: -6px;
 }
 
 .switch[aria-checked="true"] {
@@ -312,7 +326,7 @@
 }
 
 .input {
-  min-height: 42px;
+  min-height: var(--touch-min);
   padding: 0 12px;
   border-radius: var(--radius-button-small);
   border: 1px solid var(--hairline-strong);
@@ -324,7 +338,6 @@
 
 .rangeInput {
   width: 72px;
-  min-height: 36px;
   text-align: center;
   font-variant-numeric: tabular-nums;
 }
@@ -373,7 +386,7 @@
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  min-height: 40px;
+  min-height: var(--touch-min);
   padding: 0 14px 0 6px;
   border-radius: var(--radius-pill);
   border: 1px solid var(--hairline-strong);
@@ -464,6 +477,47 @@
   background: var(--accent-base);
 }
 
+/* A viewer's preview: their own three tabs (I dag · Tidligere dage · Mere) on the surface, the
+   active one in the accent, as the viewer shell draws them. A picture, not navigation. */
+.previewTabs {
+  display: flex;
+  justify-content: space-around;
+  align-items: flex-end;
+  gap: 8px;
+  width: 100%;
+  padding: 10px 4px;
+  border-radius: var(--radius-card-small);
+  background: var(--surface);
+  border: 1px solid var(--hairline);
+}
+
+.previewTab {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  font-size: 12px;
+  color: var(--text-muted);
+  text-align: center;
+}
+
+.previewTab[data-active="true"] {
+  color: var(--accent-strong);
+  font-weight: 700;
+}
+
+.previewTabIcon {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 2px solid currentColor;
+}
+
+.previewTab[data-active="true"] .previewTabIcon {
+  background: var(--accent-tint);
+}
+
 /* The connect form. */
 .form {
   display: flex;
@@ -480,7 +534,68 @@
 .radio {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 10px;
+  min-height: var(--touch-min);
+}
+
+/* A native checkbox in the accent, large enough to tap (the import's "Opret måltider"). */
+.checkbox {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  margin: 0;
+  accent-color: var(--accent-base);
+}
+
+/* The import's file picker: the native input is kept for the browser's dialog but read by a screen
+   reader only; the label is drawn as the secondary button and the chosen name sits beside it. */
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.filePicker {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+
+.fileButton {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--touch-min);
+  padding: 0 18px;
+  border-radius: var(--radius-button-medium);
+  border: 1px solid var(--hairline-strong);
+  background: var(--surface);
+  color: var(--text);
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.fileButton:focus-within {
+  outline: 2px solid var(--accent-base);
+  outline-offset: 2px;
+}
+
+.fileButton[data-disabled="true"] {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.fileName {
+  min-width: 0;
+  font-size: 14px;
+  color: var(--text);
+  overflow-wrap: anywhere;
 }
 
 .actions {
@@ -523,11 +638,6 @@
     font-size: 15px;
   }
 
-  .navItem:hover {
-    background: var(--surface-selected);
-    color: var(--text);
-  }
-
   .sections {
     flex: 1;
     gap: 32px;
@@ -548,6 +658,47 @@
 
   .backSpacer {
     display: none;
+  }
+
+  .segment {
+    min-height: 34px;
+  }
+
+  .segmented[data-size="small"] .segment {
+    min-height: 28px;
+    padding: 0 10px;
+    font-size: 12px;
+  }
+
+  .chip {
+    min-height: 40px;
+  }
+
+  .input {
+    min-height: 42px;
+  }
+
+  .rangeInput {
+    min-height: 36px;
+  }
+}
+
+/* Hover only where there is a pointer that hovers: on a touch screen the state would stick after
+   a tap. */
+@media (hover: hover) {
+  .rowLink:hover {
+    color: var(--text);
+  }
+
+  .fileButton:hover {
+    background: var(--surface-selected);
+  }
+
+  @media (min-width: 1280px) {
+    .navItem:hover {
+      background: var(--surface-selected);
+      color: var(--text);
+    }
   }
 }
 

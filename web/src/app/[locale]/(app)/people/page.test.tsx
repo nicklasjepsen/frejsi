@@ -36,6 +36,9 @@ vi.mock("@/components/people/load-people", () => ({
 vi.mock("next/navigation", () => ({
   usePathname: () => "/da/people",
   useRouter: () => ({ push: vi.fn(), replace: vi.fn(), prefetch: vi.fn() }),
+  redirect: (href: string) => {
+    throw new Error(`NEXT_REDIRECT:${href}`);
+  },
 }));
 
 import PeoplePage from "./page";
@@ -62,15 +65,28 @@ const view: PeopleView = {
   invites: [],
 };
 
+// Alma in the normal shell; with simpleMode on she has no Mere tab and the page sends her to Nu.
 const alma: SessionContext = {
   userId: "u2",
   name: "Alma",
-  simpleMode: true,
+  simpleMode: false,
   accent: "plum",
   theme: "system",
   locale: "da",
   memberships: [{ spaceId: "s1", role: "carer" }],
 };
+
+const shellFor = (role: "owner" | "carer" | "viewer") => ({
+  space: {
+    id: "s1",
+    name: "Almas rum",
+    role,
+    timezone: "Europe/Copenhagen",
+    subjectName: "Alma",
+    ownerName: "Jonas",
+  },
+  spaces: [],
+});
 
 const params = Promise.resolve({ locale: "da" });
 
@@ -91,17 +107,7 @@ describe("/[locale]/people (plan task 7)", () => {
 
   it("loads the chosen space's people and renders the screen for the session's role", async () => {
     mocks.session = alma;
-    mocks.shell = {
-      space: {
-        id: "s1",
-        name: "Almas rum",
-        role: "carer",
-        timezone: "Europe/Copenhagen",
-        subjectName: "Alma",
-        ownerName: "Jonas",
-      },
-      spaces: [],
-    };
+    mocks.shell = shellFor("carer");
     const tree = await PeoplePage({ params });
     render(
       <I18nProvider locale="da" messages={getMessages("da")}>
@@ -115,5 +121,22 @@ describe("/[locale]/people (plan task 7)", () => {
     expect(within(almaRow).getByText("(dig)")).toBeInTheDocument();
     // A carer reads; the owner-only panel is not drawn.
     expect(screen.queryByTestId("invite-panel")).toBeNull();
+  });
+
+  it("sends a simpleMode member to Nu without loading the list: nothing administrative in the simple shell", async () => {
+    mocks.session = { ...alma, simpleMode: true };
+    mocks.shell = shellFor("carer");
+    await expect(PeoplePage({ params })).rejects.toThrow("NEXT_REDIRECT:/da/now");
+    mocks.session = { ...alma, simpleMode: true, memberships: [{ spaceId: "s1", role: "owner" }] };
+    mocks.shell = shellFor("owner");
+    await expect(PeoplePage({ params })).rejects.toThrow("NEXT_REDIRECT:/da/now");
+    expect(mocks.loadCalls).toEqual([]);
+  });
+
+  it("keeps the list for a viewer with simpleMode set: the viewer shell has a Mere tab", async () => {
+    mocks.session = { ...alma, simpleMode: true, memberships: [{ spaceId: "s1", role: "viewer" }] };
+    mocks.shell = shellFor("viewer");
+    expect(await PeoplePage({ params })).not.toBeNull();
+    expect(mocks.loadCalls).toEqual(["s1"]);
   });
 });

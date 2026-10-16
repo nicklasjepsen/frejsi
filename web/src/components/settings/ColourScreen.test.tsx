@@ -258,15 +258,19 @@ describe("ColourScreen (Farve-Indstilling)", () => {
     ).toBeInTheDocument();
   });
 
-  it("never mounts the reading for a viewer: the band and the button only", () => {
+  it("never mounts the reading for a viewer: their own tab bar in the band, no logging button", () => {
     mount({ ...data, role: "viewer", space: null, source: null, me: viewer, people: [viewer] });
     expect(live.calls).toEqual([]);
     expect(screen.queryByTestId("glucose-number")).toBeNull();
     expect(screen.queryByTestId("glucose-age")).toBeNull();
     const preview = screen.getByTestId("colour-preview");
-    expect(within(preview).getByRole("button", { name: "Jeg spiser nu" })).toBeInTheDocument();
+    expect(within(preview).queryByRole("button", { name: "Jeg spiser nu" })).toBeNull();
+    const tabs = within(preview).getByTestId("preview-tabs");
+    expect(tabs).toHaveTextContent("I dag");
+    expect(tabs).toHaveTextContent("Tidligere dage");
+    expect(tabs).toHaveTextContent("Mere");
     expect(preview.textContent).not.toMatch(/\d/);
-    expect(preview.textContent).not.toMatch(/forbundet|måling/);
+    expect(preview.textContent).not.toMatch(/forbundet|måling|Nu|Måltid/);
   });
 
   it("shows the API's message by code when the write is refused and keeps the old colour", async () => {

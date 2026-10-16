@@ -167,6 +167,19 @@ describe("PeopleScreen · the list (Personer-Telefon, Personer-Desktop)", () => 
     );
   });
 
+  it("goes back to Mere with the shared arrow header, like every other sub-page", () => {
+    mount();
+    const back = screen.getByRole("link", { name: "Tilbage til Mere" });
+    expect(back).toHaveAttribute("href", "/da/settings");
+    // The arrow alone: the name is for assistive tech, not drawn as a text link.
+    expect(back).not.toHaveAttribute("data-label");
+    expect(back.textContent).toBe("");
+    expect(screen.getByTestId("people-header")).toContainElement(back);
+    expect(screen.getByTestId("people-header")).toContainElement(
+      screen.getByRole("heading", { level: 1 }),
+    );
+  });
+
   it("is a table with the columns Person, Rolle, Visning, Enheder and Sidst set", () => {
     mount();
     expect(

@@ -3,13 +3,15 @@ import { redirect } from "next/navigation";
 
 import { ConnectSourceForm } from "@/components/settings/ConnectSourceForm";
 import { loadSettingsData } from "@/components/settings/load-settings";
+import { shellVariant } from "@/components/shell/nav";
 import { getShell, getShellSession } from "@/components/shell/shell-session";
 import { localeHref, resolveLocale } from "@/lib/i18n/routing";
 
 /**
  * "Skift login" / "Forbind": the connect form for the source in `?type=`, owners only. Anyone else
  * is sent back to Settings, and so is a type with no login (`manual`) or one that does not exist;
- * the route behind the form refuses non-owners too.
+ * the route behind the form refuses non-owners too. A simpleMode member goes to Nu first, as
+ * from Settings itself.
  */
 export default async function ConnectSourcePage({
   params,
@@ -22,6 +24,8 @@ export default async function ConnectSourcePage({
   const session = await getShellSession();
   const shell = await getShell();
   if (!session || !shell) return null;
+  if (shellVariant(shell.space.role, session.simpleMode) === "simple")
+    redirect(localeHref(locale, "/now"));
   if (shell.space.role !== "owner") redirect(localeHref(locale, "/settings"));
   const requested = GlucoseSourceType.safeParse((await searchParams).type);
   if (!requested.success || requested.data === "manual")

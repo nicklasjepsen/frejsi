@@ -11,5 +11,12 @@ export default async function TodayPage({ params }: { params: Promise<{ locale: 
   const locale = resolveLocale((await params).locale);
   const shell = await getShell();
   if (!shell) return null;
-  return <TodayScreen key={shell.space.id} spaceId={shell.space.id} locale={locale} />;
+  return (
+    <TodayScreen
+      key={shell.space.id}
+      spaceId={shell.space.id}
+      locale={locale}
+      role={shell.space.role}
+    />
+  );
 }

@@ -96,7 +96,8 @@ it("opens the phone picker and chooses a configured provider", () => {
     this.removeAttribute("open");
   };
   const change = mount();
-  fireEvent.click(screen.getByRole("button", { name: "Udbyder" }));
+  expect(screen.queryByRole("button", { name: "Udbyder" })).toBeNull();
+  fireEvent.click(screen.getByRole("button", { name: "Skift" }));
   const dialog = screen.getByRole("dialog", { name: "Udbyder" });
   fireEvent.click(within(dialog).getByRole("button", { name: "Ollama (lokalt)" }));
   expect(change).toHaveBeenCalledWith({ aiProvider: "ollama" });

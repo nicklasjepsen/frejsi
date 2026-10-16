@@ -151,7 +151,7 @@ it("redirects a viewer to their meal-only day, with their own history navigation
         }}
         spaces={[]}
       >
-        <TodayScreen spaceId="s1" locale="da" />
+        <TodayScreen spaceId="s1" locale="da" role="viewer" />
       </AppShell>
     </I18nProvider>,
   );

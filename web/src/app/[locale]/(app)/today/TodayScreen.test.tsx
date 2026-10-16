@@ -3,6 +3,7 @@ import "@testing-library/jest-dom/vitest";
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import path from "node:path";
 
+import type { Role } from "@frejsi/shared";
 import type { DayView } from "@frejsi/shared/schemas/meal";
 import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
@@ -140,10 +141,16 @@ afterEach(() => {
 
 const flush = () => act(() => vi.advanceTimersByTimeAsync(0));
 
-async function mount(locale: "da" | "en" = "da") {
+async function mount(locale: "da" | "en" = "da", role: Role = "viewer") {
   render(
     <NextIntlClientProvider locale={locale} messages={locale === "da" ? da : en}>
-      <TodayScreen spaceId="s1" locale={locale} fetch={net.fetch} socketFactory={factory} />
+      <TodayScreen
+        spaceId="s1"
+        locale={locale}
+        role={role}
+        fetch={net.fetch}
+        socketFactory={factory}
+      />
     </NextIntlClientProvider>,
   );
   await flush();
@@ -363,6 +370,23 @@ describe("I dag (Historik-Viewer)", () => {
       "Som »ser med« kan du se dagens måltider og kulhydrater. Blodsukker vises ikke her.",
     );
   });
+
+  it.each(["owner", "carer"] as const)(
+    "shows a %s the day without the viewer notice and never asks for the members",
+    async (role) => {
+      await mount("da", role);
+      expect(screen.getByTestId("day-total")).toHaveTextContent("102");
+      expect(screen.queryByTestId("today-notice")).toBeNull();
+      expect(document.body.textContent).not.toMatch(/ser med/);
+      expect(net.calls.some((c) => c.endsWith("/members"))).toBe(false);
+      server.dayStatus = 500;
+      act(() => {
+        fireEvent.focus(window);
+      });
+      await flush();
+      expect(screen.queryByTestId("today-notice")).toBeNull();
+    },
+  );
 
   it("speaks English", async () => {
     await mount("en");

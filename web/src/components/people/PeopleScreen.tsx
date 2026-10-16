@@ -366,16 +366,20 @@ export function PeopleScreen({
 
   return (
     <div className={styles.page} data-testid="people">
-      <div className={styles.phoneOnly}>
-        <BackButton href={localeHref(locale, "/settings")} label={t("back")} showLabel />
-      </div>
-      <header className={styles.head}>
-        <div>
+      <header className={styles.head} data-testid="people-header">
+        {/* The phone's sub-page header (design: `PageHeader`): the arrow back to Mere, the centred
+            title, a spacer that keeps it centred. On desktop Personer is a sidebar item, so the
+            arrow and the spacer go and the title sits left. */}
+        <div className={styles.pageHeader}>
+          <div className={styles.phoneOnly}>
+            <BackButton href={localeHref(locale, "/settings")} label={t("back")} />
+          </div>
           <h1 className={styles.title}>{t("titleIn", { space: spaceName })}</h1>
-          <p className={styles.summary} data-testid="people-summary">
-            {summary}
-          </p>
+          <span className={`${styles.backSpacer} ${styles.phoneOnly}`} aria-hidden="true" />
         </div>
+        <p className={styles.summary} data-testid="people-summary">
+          {summary}
+        </p>
         {canManage && (
           <div className={styles.phoneOnly}>
             <Button

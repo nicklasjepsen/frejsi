@@ -95,6 +95,23 @@ describe("ImportScreen (#154)", () => {
     });
   });
 
+  it("hides the native file input behind a labelled button and names the chosen file", () => {
+    const { api } = fakeApi(() => Response.json(RESULT));
+    mount(api);
+    const input = screen.getByLabelText("Fil fra Dexcom Clarity");
+    expect(input).toHaveAttribute("type", "file");
+    expect(input.className).toMatch(/srOnly/);
+    expect(screen.getByText("Vælg fil")).toBeInTheDocument();
+    expect(screen.getByTestId("file-name")).toHaveTextContent("Ingen fil valgt endnu");
+    choose();
+    expect(screen.getByTestId("file-name")).toHaveTextContent("clarity.csv");
+    expect(screen.getByRole("checkbox", { name: /Opret måltider/ })).toBeChecked();
+    cleanup();
+    mount(api, "en");
+    expect(screen.getByText("Choose a file")).toBeInTheDocument();
+    expect(screen.getByTestId("file-name")).toHaveTextContent("No file chosen yet");
+  });
+
   it("shows the counts it was answered and refreshes, never a row of the file", async () => {
     const { api } = fakeApi(() => Response.json(RESULT));
     const { container } = mount(api);

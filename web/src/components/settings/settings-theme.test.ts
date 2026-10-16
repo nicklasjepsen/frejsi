@@ -18,6 +18,7 @@ it("uses the shared theme variables for the AI row, picker and push switch at bo
       "--card-shadow",
       "--hairline",
       "--hairline-strong",
+      "--radius-button-medium",
       "--radius-button-small",
       "--radius-card",
       "--radius-card-small",
@@ -29,6 +30,7 @@ it("uses the shared theme variables for the AI row, picker and push switch at bo
       "--switch-off",
       "--text",
       "--text-muted",
+      "--touch-min",
     ]
   `);
   expect(css).toContain("@media (min-width: 1280px)");

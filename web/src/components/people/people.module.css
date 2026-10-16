@@ -33,12 +33,30 @@
   gap: 14px;
 }
 
+/* Sub-page header on the phone (design: `PageHeader`): the 48 px BackButton, the centred title and
+   a spacer of the same width, so the title stays centred. */
+.pageHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.backSpacer {
+  flex-shrink: 0;
+  width: 48px;
+  height: 48px;
+}
+
 .title {
+  flex: 1;
+  min-width: 0;
   font-size: 24px;
+  text-align: center;
 }
 
 .summary {
-  margin-top: 4px;
+  margin: 0;
   color: var(--text-muted);
   font-size: 14px;
 }
@@ -89,8 +107,11 @@
   padding-right: 16px;
 }
 
+/* A pending invitation: on the phone the row wraps, so the name and the dates keep their width
+   and "Send igen" / "Træk tilbage" take a line of their own under the text. */
 .inviteRow {
   cursor: default;
+  flex-wrap: wrap;
 }
 
 .row:focus-visible {
@@ -106,8 +127,13 @@
 
 .inviteRow .actions {
   display: flex;
-  margin-left: auto;
+  flex-basis: 100%;
   flex-shrink: 0;
+  padding-left: 56px;
+}
+
+.inviteRow .actions:empty {
+  display: none;
 }
 
 .personCell {
@@ -172,9 +198,10 @@
   flex-wrap: wrap;
 }
 
-/* The pill buttons on People: "Fjern" (destructive text), "Send igen", "Ja, fjern", "Fortryd". */
+/* The pill buttons on People: "Fjern" (destructive text), "Send igen", "Ja, fjern", "Fortryd".
+   Touch height on the phone, compact from 1280 px. */
 .pillButton {
-  min-height: 34px;
+  min-height: var(--touch-min);
   padding: 0 14px;
   border-radius: var(--radius-pill);
   border: 1px solid var(--hairline-strong);
@@ -183,10 +210,6 @@
   font-size: 14px;
   font-weight: 700;
   cursor: pointer;
-}
-
-.pillButton:hover {
-  background: var(--surface-selected);
 }
 
 .pillButton[data-destructive="true"] {
@@ -377,8 +400,16 @@
   cursor: pointer;
 }
 
-.closeButton:hover {
-  background: var(--surface-selected);
+/* Hover only where there is a pointer that hovers: on a touch screen the state would stick after
+   a tap. */
+@media (hover: hover) {
+  .pillButton:hover {
+    background: var(--surface-selected);
+  }
+
+  .closeButton:hover {
+    background: var(--surface-selected);
+  }
 }
 
 .form {
@@ -399,7 +430,7 @@
 }
 
 .input {
-  min-height: 42px;
+  min-height: var(--touch-min);
   padding: 0 12px;
   border-radius: var(--radius-button-small);
   border: 1px solid var(--hairline-strong);
@@ -482,6 +513,11 @@
 
   .title {
     font-size: 30px;
+    text-align: left;
+  }
+
+  .pillButton {
+    min-height: 34px;
   }
 
   .layout {
@@ -528,7 +564,8 @@
   }
 
   .inviteRow .actions {
-    margin-left: 0;
+    flex-basis: auto;
+    padding-left: 0;
   }
 
   .personCell {

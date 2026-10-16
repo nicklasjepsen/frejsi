@@ -1,5 +1,6 @@
 "use client";
 
+import type { Role } from "@frejsi/shared";
 import { DayView } from "@frejsi/shared/schemas/meal";
 import { useTranslations } from "next-intl";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -17,6 +18,8 @@ import styles from "./today.module.css";
 export interface TodayScreenProps {
   spaceId: string;
   locale: AppLocale;
+  /** The member's role: the "ser med" notice and the members read behind it are for a viewer only. */
+  role: Role;
   /** Tests only: the network and the socket. */
   fetch?: typeof fetch;
   socketFactory?: SocketFactory;
@@ -33,9 +36,11 @@ type DayState =
   | { status: "ready"; day: DayView };
 
 /**
- * I dag (Historik-Viewer): the space's meals and carbs today, for every role. It reads `day` and
- * `members` and listens to the live feed without readings, so the only routes it calls are `day`,
- * `members`, `negotiate` and `events`; nothing of glucose is fetched or drawn (plan §7, task 8).
+ * I dag (Historik-Viewer): the space's meals and carbs today, for every role. It reads `day` (and
+ * `members`, for a viewer's notice) and listens to the live feed without readings, so the only
+ * routes it calls are `day`, `members`, `negotiate` and `events`; nothing of glucose is fetched or
+ * drawn (plan §7, task 8). The notice explains the viewer's view to the viewer; an owner or carer
+ * who opens the page is not told what they can see as »ser med«.
  * The day is fetched again on every `meal.*` and `space.updated` event (the timezone may have
  * changed), when the feed has its cursor, on focus, after a failed read and when the space's day
  * turns at midnight; the latter two are checked every 30 seconds.
@@ -43,6 +48,7 @@ type DayState =
 export function TodayScreen({
   spaceId,
   locale,
+  role,
   fetch: fetchImpl,
   socketFactory,
 }: TodayScreenProps) {
@@ -149,7 +155,9 @@ export function TodayScreen({
     };
   }, [loadDay]);
 
+  const isViewer = role === "viewer";
   useEffect(() => {
+    if (!isViewer) return;
     const cancelled = { current: false };
     void (async () => {
       try {
@@ -165,12 +173,15 @@ export function TodayScreen({
     return () => {
       cancelled.current = true;
     };
-  }, [request]);
+  }, [request, isViewer]);
 
-  const notice =
-    owners.length > 0
-      ? t("notice", { owners: formatAskList(owners, locale) })
-      : t("noticeNoOwners");
+  const notice = isViewer ? (
+    <Notice tone="sunken" data-testid="today-notice">
+      {owners.length > 0
+        ? t("notice", { owners: formatAskList(owners, locale) })
+        : t("noticeNoOwners")}
+    </Notice>
+  ) : null;
 
   // The feed is refused too when the member was removed or the space is gone.
   const refusal =
@@ -199,7 +210,7 @@ export function TodayScreen({
         <Notice tone="sunken" role="alert">
           {t("loadFailed")}
         </Notice>
-        <Notice tone="sunken">{notice}</Notice>
+        {notice}
       </div>
     );
   }
@@ -220,9 +231,7 @@ export function TodayScreen({
         )}
       </header>
       <DayList meals={day.meals} timeZone={day.timezone} />
-      <Notice tone="sunken" data-testid="today-notice">
-        {notice}
-      </Notice>
+      {notice}
     </div>
   );
 }

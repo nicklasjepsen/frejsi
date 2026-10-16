@@ -23,7 +23,7 @@ describe("/[locale]/today", () => {
       mocks.shell = { space: { id: "s1", role, timezone: "Europe/Copenhagen" } };
       const tree = (await TodayPage({ params })) as ReactElement<TodayScreenProps>;
       expect(tree.type).toBe(TodayScreen);
-      expect(tree.props).toEqual({ spaceId: "s1", locale: "da" });
+      expect(tree.props).toEqual({ spaceId: "s1", locale: "da", role });
     },
   );
 

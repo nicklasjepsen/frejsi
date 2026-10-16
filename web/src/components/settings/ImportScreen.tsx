@@ -5,7 +5,7 @@
 import type { ApiErrorCode, GlucoseImportResult } from "@frejsi/shared";
 import { useFormatter, useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
-import { useState, type ChangeEvent, type FormEvent } from "react";
+import { useId, useState, type ChangeEvent, type FormEvent } from "react";
 
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
@@ -27,7 +27,9 @@ export interface ImportScreenProps {
 /**
  * Importér (#154; no artboard, design gap): one file picker, the meals switch and a result card.
  * The file is read in the browser and posted as text; the server answers with counts, which is
- * all this screen ever shows of it. The format name comes from the message for the format.
+ * all this screen ever shows of it. The format name comes from the message for the format. The
+ * native file input stays in the DOM for the browser's own picker but is drawn as a button in
+ * the person's language, with the chosen file's name beside it.
  */
 export function ImportScreen({
   locale,
@@ -49,6 +51,7 @@ export function ImportScreen({
 
   const back = localeHref(locale, "/settings");
   const formatName = t("format.clarity");
+  const fileLabelId = useId();
 
   function pick(event: ChangeEvent<HTMLInputElement>) {
     setFile(event.target.files?.[0] ?? null);
@@ -87,19 +90,29 @@ export function ImportScreen({
       <Card>
         <form className={styles.form} onSubmit={(e) => void submit(e)} aria-busy={busy}>
           <p className={styles.lead}>{t("lead", { format: formatName })}</p>
-          <label className={styles.field}>
-            {t("file", { format: formatName })}
-            <input
-              className={styles.input}
-              name="file"
-              type="file"
-              accept=".csv,text/csv"
-              onChange={pick}
-              disabled={busy}
-            />
-          </label>
+          <div className={styles.field}>
+            <span id={fileLabelId}>{t("file", { format: formatName })}</span>
+            <div className={styles.filePicker}>
+              <label className={styles.fileButton} data-disabled={busy || undefined}>
+                <input
+                  className={styles.srOnly}
+                  name="file"
+                  type="file"
+                  accept=".csv,text/csv"
+                  aria-labelledby={fileLabelId}
+                  onChange={pick}
+                  disabled={busy}
+                />
+                {t("chooseFile")}
+              </label>
+              <span className={styles.fileName} data-testid="file-name">
+                {file ? file.name : t("noFile")}
+              </span>
+            </div>
+          </div>
           <label className={styles.radio}>
             <input
+              className={styles.checkbox}
               type="checkbox"
               name="createMeals"
               checked={createMeals}

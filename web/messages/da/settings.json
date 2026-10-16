@@ -76,6 +76,7 @@
     "desktopLead": "Søgning der forstår mad, stemme- og billedlogning, observationer og spørgsmål til klinikken",
     "off": "fra",
     "provider": "Udbyder",
+    "change": "Skift",
     "providers": {
       "anthropic": "Anthropic",
       "azure-openai": "Azure OpenAI (egen EU-lejer)",
@@ -153,6 +154,8 @@
     "title": "Importér fra {format}",
     "lead": "Eksportér fra {format} (Eksport → CSV) og vælg filen her. Målingerne og kulhydraterne fra Dexcom-appen kommer med. Alt andet i filen springes over og gemmes ikke.",
     "file": "Fil fra {format}",
+    "chooseFile": "Vælg fil",
+    "noFile": "Ingen fil valgt endnu",
     "createMeals": "Opret måltider af kulhydraterne i filen",
     "createMealsHint": "Hvert måltid får én linje med kulhydraterne, som de blev tastet i Dexcom-appen. De er ikke tjekket – ret dem, når I kan.",
     "timezone": "Tiderne i filen læses som {timezone}.",

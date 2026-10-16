@@ -37,11 +37,13 @@ export interface ColourScreenProps {
  * seen at once; the shell follows on the refresh. The same screen holds light or dark: one's own
  * choice switches the whole document before the save answers (and back if it is refused); for
  * another member it is only stored, and their devices follow at their next sign-in or page. A
- * viewer's preview never mounts a glucose reading (plan task 9, §2).
+ * viewer's preview never mounts a glucose reading (plan task 9, §2): it shows the viewer shell's
+ * own tab bar in the colour instead, and no "Jeg spiser nu", which a viewer never has.
  */
 export function ColourScreen({ locale, data, api = settingsApi() }: ColourScreenProps) {
   const t = useTranslations("settings");
   const accents = useTranslations("accent");
+  const nav = useTranslations("nav");
   const errors = useTranslations("errors.api");
   const router = useRouter();
 
@@ -164,13 +166,24 @@ export function ColourScreen({ locale, data, api = settingsApi() }: ColourScreen
       <Card className={styles.preview} data-accent={selected.accent} data-testid="colour-preview">
         <p className={styles.previewTitle}>{t("colour.previewFor", { name: selected.name })}</p>
         <div className={styles.previewBand}>
-          {canSeeGlucose && (
+          {canSeeGlucose ? (
             <PreviewReading spaceId={data.spaceId} unit={data.space?.glucoseUnit ?? "mmol"} />
+          ) : (
+            <div className={styles.previewTabs} data-testid="preview-tabs">
+              {(["today", "earlierDays", "more"] as const).map((item, index) => (
+                <span key={item} className={styles.previewTab} data-active={index === 0}>
+                  <span className={styles.previewTabIcon} aria-hidden="true" />
+                  {nav(item)}
+                </span>
+              ))}
+            </div>
           )}
         </div>
-        <Button size="phone" disabled>
-          {t("colour.eatingNow")}
-        </Button>
+        {canSeeGlucose && (
+          <Button size="phone" disabled>
+            {t("colour.eatingNow")}
+          </Button>
+        )}
       </Card>
 
       <Notice>{isMe ? t("colour.noteSelf") : t("colour.note", { name: selected.name })}</Notice>

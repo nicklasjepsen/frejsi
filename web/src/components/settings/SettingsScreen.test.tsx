@@ -550,6 +550,10 @@ describe("SettingsScreen · language, simpleMode and colour (per person)", () =>
     expect(screen.getByRole("radiogroup", { name: "Sprog" })).toBeInTheDocument();
     expect(screen.getByTestId("colour-row")).toHaveTextContent("Hav");
     expect(screen.getByTestId("colour-row")).not.toHaveTextContent("Mørk");
+    // No switch means no "Simpel visning" section: the Farve row stands under its own heading.
+    expect(screen.queryByRole("heading", { name: "Simpel visning" })).toBeNull();
+    expect(screen.queryByText(/Stor, billedbaseret/)).toBeNull();
+    expect(screen.getByRole("heading", { name: "Farve" })).toBeInTheDocument();
     expect(container.textContent).not.toMatch(/mmol|mg\/dL|Dexcom|Glukosekilde/);
   });
 

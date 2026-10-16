@@ -76,6 +76,7 @@
     "desktopLead": "Search that understands food, voice and photo logging, observations and questions for the clinic",
     "off": "off",
     "provider": "Provider",
+    "change": "Change",
     "providers": {
       "anthropic": "Anthropic",
       "azure-openai": "Azure OpenAI (own EU tenant)",
@@ -153,6 +154,8 @@
     "title": "Import from {format}",
     "lead": "Export from {format} (Export → CSV) and choose the file here. The readings and the carbs from the Dexcom app come along. Everything else in the file is skipped and not kept.",
     "file": "File from {format}",
+    "chooseFile": "Choose a file",
+    "noFile": "No file chosen yet",
     "createMeals": "Create meals from the carbs in the file",
     "createMealsHint": "Each meal gets one line with the carbs as they were entered in the Dexcom app. They are not checked – correct them when you can.",
     "timezone": "The times in the file are read as {timezone}.",
