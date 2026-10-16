@@ -4,7 +4,7 @@
 
 Frejsi is a web app — on your phone for the moment you're eating, on your desktop for the evening you want to understand the week — that answers two questions fast: _how many carbs is this?_ and _what did that meal do to my glucose?_ A space brings one person's food library, meals and glucose together, with access for the people they invite.
 
-> **Status: v0.5.0 is tagged and deploying; v0.4.1 is live at [frejsi.jepsen.ninja](https://frejsi.jepsen.ninja).**
+> **Status: v0.5.0 is live at [frejsi.jepsen.ninja](https://frejsi.jepsen.ninja).**
 
 The v0.1.0 foundation (passkeys, roles and live glucose), v0.2.0 food lookup and meal logging, v0.3.0 meal curves and history, the v0.3.1 Dexcom Clarity import and the v0.4.1 AI features are implemented and deployed. The AI features remain off until a provider is configured and a space opts in. Parts of v0.5.0 (Nightscout and manual glucose sources, Open Food Facts corrections, the poller's managed identity and the country settings) are merged and ship with its tag. Merging does not deploy: a version tag runs the release pipeline, and a [GitHub release](https://github.com/nicklasjepsen/frejsi/releases) is published only after deployment and smoke checks succeed. An existing tag alone does not mean deployment succeeded. Frejsi is free software (AGPL-3.0) and built to be run by anyone: your country, your language and your glucose source are settings, not code.
 
