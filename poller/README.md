@@ -84,7 +84,7 @@ pnpm --filter ./poller build
 `esbuild.config.mjs` writes a self-contained `dist/` that `func start` runs and `infra/deploy.sh`
 zips as is (plan decision 30: Kudu cannot resolve pnpm workspace links):
 
-- `dist/index.js`: one bundle. The entry imports both function modules, so they share a single
+- `dist/index.js`: one bundle. The entry imports all function modules, so they share a single
   copy of `@frejsi/shared` (the telemetry started at the entry is the one `poll` tracks through).
 - `dist/host.json`, `dist/package.json` (`main`, and the externals as its only dependencies).
 - `dist/node_modules/`: the externals, installed flat with pnpm from the store (no scripts), plus
@@ -101,7 +101,7 @@ the build itself ends with a smoke `require` of each from `dist/` with no `NODE_
 ## Run locally
 
 ```
-pnpm --filter ./poller build && pnpm --filter ./poller start      # func start, both functions
+pnpm --filter ./poller build && pnpm --filter ./poller start      # func start, all functions
 pnpm --filter ./poller poll --once [--space <id>]                 # one cycle from this machine
 FAKE_GLUCOSE_SOURCE=1 pnpm --filter ./poller poll --once          # against the fake source
 ```
@@ -121,3 +121,30 @@ and the cycle against in-memory tables and `FakeGlucoseSource`. No test reaches 
 read-only rule has its own tests there: every call in every fixture scenario hits an allow-listed
 path with its method, a write path is refused with no `fetch` call, and `GlucoseSource` and each
 registered source expose read operations only (`shared/src/glucose/read-only.test.ts`).
+
+## Food enrichment
+
+`enrich-foods` runs every fifteen minutes (`0 */15 * * * *`). It normalises up to 50 remote
+source names, cache first, then embeds up to 100 foods in batches. Existing portions and human
+verification are preserved; already verified names and portions stay unchanged. Inferred portions
+are added only to unverified rows. A matching space copy receives the cleaned name only while its name
+still equals the source's original; each space change emits `food.updated`. Failed or capped
+normalisation keeps the original and marks it finished. AI and typed foods are never normalised.
+
+Space rows use their enabled space's provider and local-day caps (`AI_DAILY_CAP`, default 50;
+`AI_EMBED_DAILY_CAP`, default 500). AI-off spaces are skipped, including name propagation. Cache
+rows use `AI_CACHE_EMBED_PROVIDER`, or the first configured embedding adapter, with the UTC-day
+`AI_EMBED_BACKFILL_DAILY_CAP` (default 2000). The 100-row embedding budget is shared between groups. Without an embedding adapter the timer logs `ai-not-configured` once and exits without
+querying the database. Logs contain counts and codes, never food names or model inputs.
+
+Search sends its text to the capped provider on submit only. Keyword matches stay first within
+each tier (library, cache, sources); semantic matches need cosine distance at most 0.35 and the
+same embedding identity. A space using another provider searches the cache by keyword only.
+Renaming a food clears its vector, so it stays available by keyword until the next backfill.
+
+The provider interface returns its model only after embedding. The search lane therefore stores
+`provider:revision:model` in `embeddingModel`: the revision hashes the provider's embedding
+configuration and the release tag (`APP_VERSION` in the poller, `NEXT_PUBLIC_APP_VERSION` in web).
+A changed release re-embeds eligible rows within the same caps, including changes to an adapter's
+default model. Both apps must run the same release/configuration; mismatches fall back to keyword
+matches until their identities agree. An unchanged run makes no provider call.

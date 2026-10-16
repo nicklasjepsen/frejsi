@@ -24,10 +24,27 @@ export function useFoodText() {
     /** "1 skive 45 g": the weight when the portion has one, else its carbs (Bibliotek-Telefon). */
     const portion = (p: Portion) =>
       say("line.portion", { label: p.label, amount: number.format(p.grams ?? p.carbs) });
-    const portions = (food: Pick<FoodView, "portions">) =>
-      food.portions.slice(0, LINE_PORTIONS).map(portion).join(" · ");
+    const portions = (food: Pick<FoodView, "portions" | "origin" | "verified">) =>
+      food.origin === "ai" && !food.verified && food.portions[0]?.grams != null
+        ? say("estimate.portion", { amount: number.format(food.portions[0].grams) })
+        : food.portions.slice(0, LINE_PORTIONS).map(portion).join(" · ");
 
     return {
+      asked: (food: FoodView) => {
+        const created = new Date(food.createdAt);
+        const today = created.toDateString() === new Date().toDateString();
+        return say("estimate.askedDesktop", {
+          child: food.createdBy?.name ?? say("estimate.someone"),
+          date: today
+            ? say("estimate.today")
+            : new Intl.DateTimeFormat(locale, { day: "numeric", month: "short" }).format(created),
+          time: new Intl.DateTimeFormat(locale, { hour: "2-digit", minute: "2-digit" }).format(
+            created,
+          ),
+        });
+      },
+      title: (food: FoodView) =>
+        food.origin === "ai" ? say("estimate.title", { name: food.name }) : food.name,
       number: (value: number) => number.format(value),
       /** The filter chip: "Fra Open Food Facts", or "Fra {origin}" for a plugin without copy. */
       originFilter: (origin: string) =>
@@ -43,6 +60,14 @@ export function useFoodText() {
        * portion, which the simple picker shows).
        */
       line: (food: FoodView) => {
+        if (food.origin === "ai" && !food.verified)
+          return say("estimate.asked", {
+            amount: number.format(food.portions[0]?.carbs ?? food.carbsPer100g ?? 0),
+            child: food.createdBy?.name ?? say("estimate.someone"),
+            time: new Intl.DateTimeFormat(locale, { hour: "2-digit", minute: "2-digit" }).format(
+              new Date(food.createdAt),
+            ),
+          });
         const parts: string[] = [];
         if (has(`line.origin.${food.origin}`)) parts.push(say(`line.origin.${food.origin}`));
         if (food.carbsPer100g != null)
