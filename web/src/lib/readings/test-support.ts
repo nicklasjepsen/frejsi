@@ -19,6 +19,8 @@ export class ReadingsFake {
   readonly writes: string[] = [];
   readonly published: { group: string; envelope: EventEnvelope }[] = [];
   failEvent = false;
+  /** Runs between the service reading the space and its guarded write: a source switch that commits there. */
+  beforeGuard: (() => void) | null = null;
 
   constructor(readonly live: FakeLiveDb) {}
 
@@ -57,13 +59,20 @@ export class ReadingsFake {
           return Promise.resolve({ lastSeq: space.lastSeq });
         },
         updateMany: (args: {
-          where: { id: string; OR: [unknown, { lastReadingAt: { lt: Date } }] };
-          data: { lastReadingAt: Date };
+          where: { id: string; glucoseSource?: string | null; OR?: unknown[] };
+          data: { lastReadingAt?: Date; glucoseSource?: string | null };
         }) => {
-          this.writes.push("space.lastReadingAt");
           const space = live.spaces.find((s) => s.id === args.where.id);
+          if (args.data.glucoseSource !== undefined) {
+            this.beforeGuard?.();
+            return Promise.resolve({
+              count: space?.glucoseSource === args.where.glucoseSource ? 1 : 0,
+            });
+          }
+          this.writes.push("space.lastReadingAt");
           const current = space?.lastReadingAt as Date | null | undefined;
-          if (space && (!current || current < args.where.OR[1].lastReadingAt.lt)) {
+          const lt = (args.where.OR?.[1] as { lastReadingAt: { lt: Date } }).lastReadingAt.lt;
+          if (space && args.data.lastReadingAt && (!current || current < lt)) {
             space.lastReadingAt = args.data.lastReadingAt;
             return Promise.resolve({ count: 1 });
           }

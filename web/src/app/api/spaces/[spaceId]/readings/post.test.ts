@@ -155,6 +155,20 @@ describe("POST /api/spaces/:id/readings", () => {
     expect(live.events).toEqual([]);
   });
 
+  it("refuses when the owner switched to a sensor between the check and the write", async () => {
+    fake.beforeGuard = () => {
+      const space = live.spaces.find((s) => s.id === "s1");
+      if (space) {
+        space.glucoseSource = JSON.stringify({ type: "nightscout", secretRef: "g" });
+      }
+    };
+    const res = await post("sess-carer-1", { value: 6, unit: "mmol" });
+    expect([res.status, await error(res)]).toEqual([409, "source-not-manual"]);
+    expect(live.readings).toEqual([]);
+    expect(fake.published).toEqual([]);
+    expect(tracked).toEqual([]);
+  });
+
   it("moves lastReadingAt forward only", async () => {
     await post("sess-carer-1", { value: 6, unit: "mmol" });
     await post("sess-carer-1", { value: 6.5, unit: "mmol", ts: minutesAgo(120) });

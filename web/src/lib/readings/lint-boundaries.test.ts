@@ -16,7 +16,7 @@ const writers = new Set([
   "deleteMany",
 ]);
 function violations(file: string, code: string): string[] {
-  if (file.startsWith("web/src/lib/readings/") || /\.test\.tsx?$/.test(file)) return [];
+  if (file === "web/src/lib/readings/service.ts" || /\.test\.tsx?$/.test(file)) return [];
   const found: string[] = [];
   const tree = ts.createSourceFile(file, code, ts.ScriptTarget.Latest, true);
   function visit(node: ts.Node) {
@@ -44,7 +44,8 @@ describe("reading write boundary", () => {
   it("rejects reading writes outside addManualReading and checks the actual production tree", () => {
     const code = "db.reading.create({}); tx.reading.deleteMany({});";
     expect(violations("web/src/app/api/route.ts", code)).toHaveLength(2);
-    expect(violations("web/src/lib/readings/repository.ts", code)).toEqual([]);
+    expect(violations("web/src/lib/readings/service.ts", code)).toEqual([]);
+    expect(violations("web/src/lib/readings/repository.ts", code)).toHaveLength(2);
     expect(violations("web/scripts/seed.ts", code)).toHaveLength(2);
     expect(
       ["web/src", "web/scripts"]
