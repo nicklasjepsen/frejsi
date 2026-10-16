@@ -1,3 +1,5 @@
+import { loadAiUsage } from "@/app/api/spaces/[spaceId]/ai/usage";
+import { SettingsLiveRefresh } from "@/components/settings/SettingsLiveRefresh";
 import { SettingsScreen } from "@/components/settings/SettingsScreen";
 import { loadSettingsData } from "@/components/settings/load-settings";
 import { getShell, getShellSession } from "@/components/shell/shell-session";
@@ -14,5 +16,11 @@ export default async function SettingsPage({ params }: { params: Promise<{ local
   const shell = await getShell();
   if (!session || !shell) return null;
   const data = await loadSettingsData(session, shell.space);
-  return <SettingsScreen locale={locale} data={data} now={new Date().toISOString()} />;
+  const usage = data.role === "viewer" ? null : await loadAiUsage(data.spaceId);
+  return (
+    <>
+      {data.role !== "viewer" && <SettingsLiveRefresh spaceId={data.spaceId} />}
+      <SettingsScreen locale={locale} data={data} usage={usage} now={new Date().toISOString()} />
+    </>
+  );
 }
