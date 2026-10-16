@@ -7,6 +7,7 @@ import { log, startTelemetry } from "@frejsi/shared";
 // and there is one Prisma client. app.setup() may run after registration; only startup is final.
 import "./functions/poll";
 import "./functions/source-connect";
+import "./functions/weekly-insight";
 
 app.setup({ enableHttpStream: false });
 
