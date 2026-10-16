@@ -81,6 +81,8 @@ describe("loadShellData", () => {
       timezone: "Europe/Copenhagen",
       subjectName: "s1 rum",
       ownerName: "Mette",
+      aiEnabled: false,
+      aiProvider: null,
     });
     expect(data?.spaces).toEqual([
       { id: "s1", name: "s1 rum", role: "owner" },
@@ -100,4 +102,16 @@ describe("loadShellData", () => {
     const { db } = fakeDb([row("s1", "god", "2026-01-01")]);
     await expect(loadShellData(session, undefined, db)).rejects.toThrow();
   });
+});
+
+it("loads AI navigation metadata for carers and omits it from the viewer shell", async () => {
+  const enabled = row("s1", "carer", "2026-01-01", { aiEnabled: true, aiProvider: "anthropic" });
+  expect((await loadShellData(session, undefined, fakeDb([enabled]).db))?.space).toMatchObject({
+    aiEnabled: true,
+    aiProvider: "anthropic",
+  });
+  const viewer = { ...enabled, role: "viewer" };
+  const space = (await loadShellData(session, undefined, fakeDb([viewer]).db))?.space;
+  expect(space).not.toHaveProperty("aiEnabled");
+  expect(space).not.toHaveProperty("aiProvider");
 });

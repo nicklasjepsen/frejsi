@@ -14,9 +14,11 @@ export interface NowFoods {
   myFood: FoodView[];
   /** Everyone else: how many foods wait for a tick ("Fødevarer der ikke er tjekket"). */
   unverified: number;
+  askedBy?: string | undefined;
 }
 
 const FOOD_EVENTS: FeedEventType[] = [
+  "estimate.asked",
   "food.created",
   "food.updated",
   "food.verified",
@@ -46,7 +48,12 @@ export function useNowFoods(
         next = { myFood: await loadPickerFoods(spaceId), unverified: 0 };
       } else {
         const list = await libraryApi.list(spaceId, { filter: "unverified", q: "" });
-        next = { myFood: [], unverified: list.counts?.unverified ?? list.foods.length };
+        next = {
+          myFood: [],
+          unverified: list.counts?.unverified ?? list.foods.length,
+          askedBy: list.foods.find((food) => food.origin === "ai" && !food.verified)?.createdBy
+            ?.name,
+        };
       }
     } catch {
       // Nothing to show: the card and the tiles are extras on Nu.

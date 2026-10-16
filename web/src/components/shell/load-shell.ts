@@ -10,6 +10,8 @@ export interface ShellSpace {
   subjectName: string;
   /** The first owner by createdAt, for "Simpel visning · slået til af {owner}". */
   ownerName: string | null;
+  aiEnabled?: boolean;
+  aiProvider?: string | null;
 }
 
 export interface ShellData {
@@ -26,6 +28,8 @@ export interface ShellMembershipRow {
     id: string;
     name: string;
     timezone: string;
+    aiEnabled?: boolean;
+    aiProvider?: string | null;
     subjectUser: { name: string } | null;
     memberships: { user: { name: string } }[];
   };
@@ -62,6 +66,8 @@ export async function loadShellData(
           id: true,
           name: true,
           timezone: true,
+          aiEnabled: true,
+          aiProvider: true,
           subjectUser: { select: { name: true } },
           memberships: {
             where: { role: "owner" },
@@ -83,6 +89,12 @@ export async function loadShellData(
       timezone: current.space.timezone,
       subjectName: current.space.subjectUser?.name ?? current.space.name,
       ownerName: current.space.memberships[0]?.user.name ?? null,
+      ...(current.role !== "viewer"
+        ? {
+            aiEnabled: current.space.aiEnabled ?? false,
+            aiProvider: current.space.aiProvider ?? null,
+          }
+        : {}),
     },
     spaces: rows.map((row) => ({
       id: row.space.id,

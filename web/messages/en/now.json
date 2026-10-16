@@ -4,5 +4,14 @@
   "eatingNow": "I'm eating now",
   "lastMeal": "Last meal",
   "lastMealSoon": "Soon you can see the last meal here.",
-  "glucoseCard": "Glucose"
+  "glucoseCard": "Glucose",
+  "askAdult": "Ask an adult",
+  "askedPhoto": "{child} asked about a photo · Review and verify",
+  "weekTitle": "Weekly summary",
+  "weekPending": "Ready Sunday evening",
+  "weekReady": "Ready",
+  "aiHelp": "AI help",
+  "aiOn": "On · {provider}",
+  "aiOff": "Off",
+  "status": "Status"
 }

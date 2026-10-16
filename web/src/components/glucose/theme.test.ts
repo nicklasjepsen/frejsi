@@ -44,6 +44,7 @@ describe("glucose styles use tokens only (Nu-Moerk, Farve-Nu-*)", () => {
         "--accent-band",
         "--accent-band-opacity",
         "--accent-base",
+        "--accent-strong",
         "--accent-tint",
         "--font-body-stack",
         "--gridline",

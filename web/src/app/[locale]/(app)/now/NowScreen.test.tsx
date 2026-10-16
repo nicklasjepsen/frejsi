@@ -101,6 +101,8 @@ function mount(props: Partial<NowScreenProps> = {}, locale: AppLocale = "da") {
 let api: FakeApi;
 let historyMeals: DayHistoryMeal[] | null;
 let previousMeals: DayHistoryMeal[];
+let aiEnabled = true;
+let weekReady = false;
 const emptyStats = {
   inRange: {
     minutes: 0,
@@ -122,11 +124,29 @@ beforeEach(() => {
   api.date = "2026-10-14";
   historyMeals = null;
   previousMeals = [];
+  aiEnabled = true;
+  weekReady = false;
   vi.stubGlobal("fetch", async (input: RequestInfo | URL, init?: RequestInit) => {
     const url = new URL(
       typeof input === "string" ? input : input instanceof URL ? input.href : input.url,
       "https://frejsi.example",
     );
+    if (url.pathname.endsWith("/ai"))
+      return Response.json({
+        enabled: aiEnabled,
+        provider: "anthropic",
+        providers: [],
+        callsToday: 0,
+        dailyCap: 50,
+        embedCallsToday: 0,
+        embedDailyCap: 500,
+      });
+    if (url.pathname.endsWith("/history/week/insight"))
+      return Response.json({
+        state: weekReady ? "ready" : "pending",
+        questionsEdited: false,
+        rejectedCount: 0,
+      });
     if (url.pathname.endsWith("/history/day")) {
       api.calls.push({
         method: init?.method ?? "GET",
@@ -646,4 +666,58 @@ describe("Nu · meal history on the day curve", () => {
     );
     expect(desktop.getByTestId("end-dot").getAttribute("cy")).not.toBe(before);
   });
+});
+
+it("opens ask from the simple secondary action only while AI is on", async () => {
+  const view = mount({ simpleMode: true, aiEnabled: true });
+  expect(await screen.findByRole("link", { name: "Spørg en voksen" })).toHaveAttribute(
+    "href",
+    "/da/ask",
+  );
+  view.rerender(
+    <I18nProvider locale="da" messages={getMessages("da")}>
+      <NowScreen {...base} simpleMode aiEnabled={false} />
+    </I18nProvider>,
+  );
+  await waitFor(() =>
+    expect(screen.queryByRole("link", { name: "Spørg en voksen" })).not.toBeInTheDocument(),
+  );
+});
+it("refreshes the asked-food cards and the stored week state from live events", async () => {
+  mount({ aiEnabled: true });
+  expect(await screen.findByText("Klar søndag aften")).toBeInTheDocument();
+  expect(screen.getByText("Til · Anthropic")).toBeInTheDocument();
+  api.foods.push({
+    ...food("asked", "Pasta med kødsovs", { verified: false }),
+    origin: "ai",
+    createdBy: { id: "alma", name: "Alma" },
+  });
+  act(() => {
+    live.emit("estimate.asked");
+  });
+  await waitFor(() => {
+    expect(screen.getAllByText("Alma spurgte om et billede · Gennemgå og godkend")).toHaveLength(2);
+  });
+  const asked = api.foods.find((f) => f.id === "asked");
+  if (!asked) throw new Error("missing asked food fixture");
+  asked.verified = true;
+  act(() => {
+    live.emit("food.verified");
+  });
+  await waitFor(() =>
+    expect(
+      screen.queryByText("Alma spurgte om et billede · Gennemgå og godkend"),
+    ).not.toBeInTheDocument(),
+  );
+  weekReady = true;
+  act(() => {
+    live.emit("insight.created");
+  });
+  expect(await screen.findByText("Klar")).toBeInTheDocument();
+  aiEnabled = false;
+  act(() => {
+    live.emit("space.updated");
+  });
+  await waitFor(() => expect(screen.queryByText("Ugens opsummering")).not.toBeInTheDocument());
+  expect(screen.getByText("Fra")).toBeInTheDocument();
 });

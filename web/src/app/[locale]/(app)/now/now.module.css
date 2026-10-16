@@ -113,6 +113,9 @@
 .simpleMeal {
   width: 100%;
   margin-top: 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
 }
 
 /* "Min mad" (Nu-Simpel-Desktop): a 4-up grid of photo tiles; the phone keeps it to Min mad. */
@@ -150,6 +153,9 @@
 .simpleActions {
   width: 100%;
   margin-top: 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
 }
 
 @media (min-width: 1280px) {
@@ -160,7 +166,8 @@
 
   .phone,
   .lastMeal,
-  .logAction {
+  .logAction,
+  .phoneReview {
     display: none;
   }
 
@@ -274,4 +281,43 @@
 .chartCaption {
   font-size: 12px;
   color: var(--text-muted);
+}
+
+.aiStatus {
+  padding: 14px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 14px;
+}
+.aiStatus > strong {
+  font-size: 15px;
+}
+.aiStatusRow {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  color: var(--text-muted);
+}
+.aiStatusRow > span:last-child {
+  color: var(--text);
+}
+
+.aiCards {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.aiCards a > span:first-child {
+  background: var(--accent-tint);
+  color: var(--accent-strong);
+}
+.simpleActions > a[data-variant="secondary"] {
+  min-height: 64px;
+}
+@media (min-width: 1280px) {
+  .simpleActions > a[data-variant="secondary"] {
+    min-height: 72px;
+  }
 }

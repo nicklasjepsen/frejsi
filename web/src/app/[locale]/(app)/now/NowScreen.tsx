@@ -33,6 +33,8 @@ import { useLiveFeed } from "@/lib/live/useLiveFeed";
 import styles from "./now.module.css";
 import { NowMealsTable } from "./NowMealsTable";
 import { useNowHistory } from "./useNowHistory";
+import { useNowAi } from "./useNowAi";
+import { NowAiCards } from "./NowAiCards";
 import { NowSearch } from "./NowSearch";
 import { useNowFoods } from "./useNowFoods";
 
@@ -53,6 +55,8 @@ export interface NowScreenProps {
   timeZone: string;
   /** The member's role; a viewer has no entry point (the API refuses the write anyway). */
   role?: Role;
+  aiEnabled?: boolean;
+  aiProvider?: string | null;
 }
 
 /**
@@ -65,6 +69,8 @@ export function NowScreen({
   simpleMode,
   timeZone,
   role = "owner",
+  aiEnabled = false,
+  aiProvider = null,
 }: NowScreenProps) {
   const t = useTranslations("now");
   const g = useTranslations("glucose");
@@ -75,6 +81,17 @@ export function NowScreen({
   const router = useRouter();
   const feed = useLiveFeed(spaceId, { hours: WINDOW_HOURS });
   const now = useNow();
+  const ai = useNowAi(
+    spaceId,
+    aiEnabled,
+    aiProvider,
+    role,
+    simpleMode,
+    feed.subscribe,
+    feed.loaded,
+    now,
+    timeZone,
+  );
   const manual = useManualReading();
   const zone = feed.space?.timezone ?? timeZone;
   // Never before the feed's window: on the night daylight saving ends, yesterday's 06:00 can lie
@@ -154,6 +171,11 @@ export function NowScreen({
           <Button size="simple" href={localeHref(locale, "/eat")}>
             {t("eatingNow")}
           </Button>
+          {ai.enabled && (
+            <Button size="simple" variant="secondary" href={localeHref(locale, "/ask")}>
+              {t("askAdult")}
+            </Button>
+          )}
         </div>
         {foods.myFood.length > 0 && (
           <section className={styles.myFood} data-testid="my-food">
@@ -322,19 +344,23 @@ export function NowScreen({
                 />
               )}
             </div>
-            {foods.unverified > 0 && (
-              <aside
-                className={styles.sideColumn}
-                aria-label={meals("unverifiedLabel", { count: foods.unverified })}
-              >
-                <QuickLinkCard
-                  href={localeHref(locale, "/library?filter=unverified")}
-                  icon={foods.unverified}
-                  title={meals("unverifiedTitle")}
-                  subtitle={meals("unverifiedSubtitle")}
-                />
-              </aside>
-            )}
+            <div className={styles.sideColumn}>
+              {foods.unverified > 0 && (
+                <aside aria-label={meals("unverifiedLabel", { count: foods.unverified })}>
+                  <QuickLinkCard
+                    href={localeHref(locale, "/library?filter=unverified")}
+                    icon={foods.unverified}
+                    title={meals("unverifiedTitle")}
+                    subtitle={
+                      ai.enabled && foods.askedBy
+                        ? t("askedPhoto", { child: foods.askedBy })
+                        : meals("unverifiedSubtitle")
+                    }
+                  />
+                </aside>
+              )}
+              <NowAiCards ai={ai} locale={locale} />
+            </div>
           </div>
         </section>
 
@@ -351,6 +377,16 @@ export function NowScreen({
             ))}
         </section>
 
+        {ai.enabled && foods.askedBy && (
+          <div className={styles.phoneReview}>
+            <QuickLinkCard
+              href={localeHref(locale, "/library?filter=unverified")}
+              icon={foods.unverified}
+              title={meals("unverifiedTitle")}
+              subtitle={t("askedPhoto", { child: foods.askedBy })}
+            />
+          </div>
+        )}
         <div className={styles.logAction}>
           <Button size="phone" href={localeHref(locale, "/log")}>
             {meals("logMeal")}

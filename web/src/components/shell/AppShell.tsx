@@ -15,7 +15,14 @@ import styles from "./shell.module.css";
 export interface AppShellProps {
   locale: AppLocale;
   user: { name: string; accent: Accent; simpleMode: boolean };
-  space: { id: string; name: string; role: Role; subjectName: string; ownerName: string | null };
+  space: {
+    id: string;
+    name: string;
+    role: Role;
+    subjectName: string;
+    ownerName: string | null;
+    aiEnabled?: boolean;
+  };
   spaces: { id: string; name: string; role: Role }[];
   children?: ReactNode;
 }
@@ -58,7 +65,14 @@ export function AppShell({ locale, user, space, spaces, children }: AppShellProp
         )}
         <main>{children}</main>
       </div>
-      {!chromeless && <PhoneTabs locale={locale} variant={variant} path={path} />}
+      {!chromeless && (
+        <PhoneTabs
+          locale={locale}
+          variant={variant}
+          path={path}
+          aiEnabled={space.aiEnabled ?? false}
+        />
+      )}
     </div>
   );
 }
