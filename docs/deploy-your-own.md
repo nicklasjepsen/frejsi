@@ -353,8 +353,11 @@ before it saves one.
 passkey needs https on any name but `localhost`), set `APP_ORIGIN` in `docker/.env` to the real
 `https://` hostname, and run `docker compose -f docker/compose.yaml up -d` before you bootstrap. An
 owner who registers on `localhost` cannot sign in on another name later. Photos are read by the
-browser straight from port 10000 of the same host: if the app is not on `localhost`, also set
-`BLOB_PUBLIC_ENDPOINT` to an address a browser can reach (for the same host name, port 10000).
+browser straight from port 10000 of the same host, over plain http, which a page served over https
+may not load. On `localhost` that is fine. Behind a TLS proxy, give Azurite its own https name there
+(a second hostname, or a path, that forwards to port 10000 of the `azurite` service) and set
+`BLOB_PUBLIC_ENDPOINT` to it, ending in `/frejsi`, before you add photos; the signed link stays
+valid because it does not cover the host name. Without that, everything but photos works.
 
 **What is different from Azure.**
 
