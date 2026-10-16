@@ -88,7 +88,10 @@
     "invalidNumber": "Enter the number like 40 or 40.5.",
     "source": "{source} · barcode {barcode}…",
     "photoPreview": "The chosen photo",
-    "loadFailed": "The food could not be loaded right now."
+    "loadFailed": "The food could not be loaded right now.",
+    "contribute": "Send the fix to {source} so others benefit",
+    "contributeSent": "Sent to {source} · thank you",
+    "contributeFailed": "Could not send to {source} – the fix is saved here"
   },
   "estimate": {
     "title": "{name} (from photo)",

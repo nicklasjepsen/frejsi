@@ -71,7 +71,14 @@ export function FoodEditScreen({
         </div>
       )}
       {status === "ready" && (
-        <FoodForm spaceId={spaceId} {...(food ? { food } : {})} onSaved={back} />
+        <FoodForm
+          spaceId={spaceId}
+          {...(food ? { food } : {})}
+          // A ticked send ends with a message the carer has to be able to read: stay on the page.
+          onSaved={(_saved, _previous, sent) => {
+            if (!sent) back();
+          }}
+        />
       )}
     </section>
   );

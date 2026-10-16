@@ -12,7 +12,7 @@ import { useEffect, useId, useRef, useState, type FormEvent } from "react";
 import { FoodPhoto, PhotoPicker } from "@/components/food";
 import { Badge, Button, NumberInput, TextInput } from "@/components/ui";
 
-import { libraryApi } from "./api-client";
+import { libraryApi, OWN_ORIGINS } from "./api-client";
 import { useFoodText } from "./format";
 import styles from "./library.module.css";
 
@@ -58,7 +58,8 @@ export interface FoodFormProps {
   spaceId: string;
   /** The food being edited; absent for "Ny fødevare". */
   food?: FoodView;
-  onSaved: (food: FoodView, previous?: FoodView) => void;
+  /** `sent` is set only when the box was ticked: how the send ended (the food is saved either way). */
+  onSaved: (food: FoodView, previous?: FoodView, sent?: "sent" | "failed") => void;
 }
 
 /**
@@ -91,6 +92,28 @@ export function FoodForm({ spaceId, food, onSaved }: FoodFormProps) {
   // creating a second one.
   const [saved, setSaved] = useState<FoodView | undefined>(food);
   const submitter = useRef<"save" | "verify">("save");
+  // "Send rettelsen" (spec §4): never remembered, never automatic. Unticked on every open and
+  // again after every save; the plugin ids come from the route, no plugin is named here.
+  const [available, setAvailable] = useState<string[]>([]);
+  const [send, setSend] = useState(false);
+  const [sendOutcome, setSendOutcome] = useState<"sent" | "failed" | null>(null);
+  const origin = (saved ?? food)?.origin;
+  useEffect(() => {
+    if (!origin || OWN_ORIGINS.has(origin)) return;
+    let live = true;
+    libraryApi
+      .contributions(spaceId)
+      .then((ids) => {
+        if (live) setAvailable(ids);
+      })
+      .catch(() => {
+        if (live) setAvailable([]);
+      });
+    return () => {
+      live = false;
+    };
+  }, [spaceId, origin]);
+  const canSend = origin !== undefined && !OWN_ORIGINS.has(origin) && available.includes(origin);
 
   useEffect(() => {
     if (!photo || typeof URL.createObjectURL !== "function") return;
@@ -149,6 +172,7 @@ export function FoodForm({ spaceId, food, onSaved }: FoodFormProps) {
     }
     setSaving(true);
     setProblem(null);
+    setSendOutcome(null);
     try {
       let result: FoodView;
       if (!saved) {
@@ -179,7 +203,20 @@ export function FoodForm({ spaceId, food, onSaved }: FoodFormProps) {
         setPhoto(null);
         setSaved(result);
       }
-      onSaved(result, food);
+      // The food is saved. Only now, and only for a ticked box, the correction goes out; a failed
+      // send never undoes the save.
+      let outcome: "sent" | "failed" | undefined;
+      if (send && canSend) {
+        try {
+          await libraryApi.sendCorrection(spaceId, result.id);
+          outcome = "sent";
+        } catch {
+          outcome = "failed";
+        }
+        setSendOutcome(outcome);
+      }
+      setSend(false);
+      onSaved(result, food, outcome);
     } catch {
       setProblem("saveFailed");
     } finally {
@@ -322,6 +359,29 @@ export function FoodForm({ spaceId, food, onSaved }: FoodFormProps) {
         />
         {t("favourite")}
       </label>
+      {canSend && origin && (
+        <label className={styles.toggle}>
+          <input
+            type="checkbox"
+            checked={send}
+            onChange={(event) => {
+              setSend(event.target.checked);
+            }}
+          />
+          {t("contribute", { source: text.sourceName(origin) })}
+        </label>
+      )}
+      {sendOutcome && (
+        <p
+          aria-live="polite"
+          data-testid="contribution-outcome"
+          className={sendOutcome === "failed" ? styles.problem : styles.muted}
+        >
+          {t(sendOutcome === "sent" ? "contributeSent" : "contributeFailed", {
+            source: text.sourceName(origin ?? ""),
+          })}
+        </p>
+      )}
       {problem && (
         <p role="alert" className={styles.problem}>
           {t(problem)}

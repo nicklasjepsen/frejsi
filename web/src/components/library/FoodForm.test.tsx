@@ -115,7 +115,8 @@ describe("FoodForm (the edit panel's fields)", () => {
       "blob:preview",
     );
     expect(api.calls.filter((call) => call.path.endsWith("/photo"))).toEqual([]);
-    expect(api.calls).toEqual([]);
+    // The only call so far is the harmless question which corrections the deployment can take.
+    expect(api.calls.filter((call) => call.path !== "contributions")).toEqual([]);
     fireEvent.click(screen.getByRole("button", { name: "Gem" }));
     await waitFor(() => {
       expect(onSaved).toHaveBeenCalled();
@@ -194,7 +195,7 @@ describe("FoodForm (the edit panel's fields)", () => {
     fireEvent.change(screen.getByLabelText("Kulhydrat pr. 100 g"), { target: { value: "140" } });
     fireEvent.click(screen.getByRole("button", { name: "Gem" }));
     expect(screen.getByRole("alert")).toHaveTextContent("Skriv tallet som fx 40 eller 40,5.");
-    expect(api.calls).toEqual([]);
+    expect(api.calls.filter((call) => call.path !== "contributions")).toEqual([]);
   });
 
   it("keeps a fractional portion weight as it is", async () => {
@@ -217,6 +218,166 @@ describe("FoodForm (the edit panel's fields)", () => {
     expect(screen.getByText("Tjekket")).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Gem og godkend" })).toBeNull();
     expect(screen.getByRole("button", { name: "Gem" })).toBeInTheDocument();
+  });
+});
+
+describe("FoodForm: Send rettelsen til Open Food Facts (spec §4, always behind the question)", () => {
+  const box = () =>
+    screen.queryByRole("checkbox", {
+      name: "Send rettelsen til Open Food Facts, så andre får gavn af den",
+    });
+  const contributionCalls = () => api.calls.filter((call) => call.path === "contributions");
+  const posts = () => api.callsTo("POST", /^contributions$/);
+  const saved = async (onSaved: ReturnType<typeof vi.fn>) => {
+    await waitFor(() => {
+      expect(onSaved).toHaveBeenCalled();
+    });
+  };
+
+  it("shows the box for an off food only when GET contributions lists off, unchecked", async () => {
+    api.available = ["off"];
+    mount({ food: food("f-rye") });
+    expect(
+      await screen.findByRole("checkbox", { name: /Send rettelsen til Open Food Facts/ }),
+    ).not.toBeChecked();
+    expect(contributionCalls().map((call) => call.method)).toEqual(["GET"]);
+  });
+
+  it("hides the box when nothing is available, and for family, manual and frida foods", async () => {
+    mount({ food: food("f-rye") });
+    await waitFor(() => {
+      expect(contributionCalls()).toHaveLength(1);
+    });
+    expect(box()).toBeNull();
+    cleanup();
+    api.available = ["off"];
+    for (const id of ["f-pasta", "f-porridge", "f-potato"]) {
+      mount({ food: food(id) });
+      await waitFor(() => {
+        expect(screen.getByLabelText("Navn")).toBeInTheDocument();
+      });
+      await new Promise((resolve) => setTimeout(resolve, 10));
+      expect(box()).toBeNull();
+      cleanup();
+    }
+    expect(posts()).toEqual([]);
+  });
+
+  it("names no plugin: an origin the route lists gets the box, labelled by its id", async () => {
+    api.available = ["x"];
+    mount({ food: { ...food("f-rye"), origin: "x" } });
+    expect(
+      await screen.findByRole("checkbox", {
+        name: "Send rettelsen til x, så andre får gavn af den",
+      }),
+    ).toBeInTheDocument();
+  });
+
+  it.each([
+    ["Gem", false],
+    ["Gem og godkend", true],
+  ])(
+    "saves first, then sends once, when the box is ticked and %s is pressed",
+    async (label, verify) => {
+      api.available = ["off"];
+      const onSaved = vi.fn();
+      mount({ food: food("f-rye"), onSaved });
+      fireEvent.click(await screen.findByRole("checkbox", { name: /Send rettelsen/ }));
+      fireEvent.change(screen.getByLabelText("Kulhydrat pr. 100 g"), { target: { value: "41" } });
+      fireEvent.click(screen.getByRole("button", { name: label }));
+      await saved(onSaved);
+      expect(writes().map((call) => `${call.method} ${call.path}`)).toEqual([
+        "PATCH foods/f-rye",
+        ...(verify ? ["POST foods/verify"] : []),
+        "POST contributions",
+      ]);
+      expect(posts()[0]?.body).toEqual({ foodId: "f-rye" });
+      expect(await screen.findByTestId("contribution-outcome")).toHaveTextContent(
+        "Sendt til Open Food Facts · tak",
+      );
+      expect(onSaved.mock.calls[0]?.[2]).toBe("sent");
+      // Not remembered: the next save asks again.
+      expect(screen.getByRole("checkbox", { name: /Send rettelsen/ })).not.toBeChecked();
+    },
+  );
+
+  it("never sends from an unticked save", async () => {
+    api.available = ["off"];
+    const onSaved = vi.fn();
+    mount({ food: food("f-rye"), onSaved });
+    await screen.findByRole("checkbox", { name: /Send rettelsen/ });
+    fireEvent.click(screen.getByRole("button", { name: "Gem" }));
+    await saved(onSaved);
+    fireEvent.click(screen.getByRole("button", { name: "Gem og godkend" }));
+    await waitFor(() => {
+      expect(onSaved).toHaveBeenCalledTimes(2);
+    });
+    expect(posts()).toEqual([]);
+    expect(screen.queryByTestId("contribution-outcome")).toBeNull();
+  });
+
+  it("does not remember a ticked box across saves", async () => {
+    api.available = ["off"];
+    const onSaved = vi.fn();
+    mount({ food: food("f-rye"), onSaved });
+    fireEvent.click(await screen.findByRole("checkbox", { name: /Send rettelsen/ }));
+    fireEvent.click(screen.getByRole("button", { name: "Gem" }));
+    await saved(onSaved);
+    fireEvent.click(screen.getByRole("button", { name: "Gem" }));
+    await waitFor(() => {
+      expect(onSaved).toHaveBeenCalledTimes(2);
+    });
+    expect(posts()).toHaveLength(1);
+    // A fresh open starts unticked as well.
+    cleanup();
+    mount({ food: food("f-rye") });
+    expect(await screen.findByRole("checkbox", { name: /Send rettelsen/ })).not.toBeChecked();
+  });
+
+  it("says the fix is saved here when the send fails, with the saved food intact", async () => {
+    api.available = ["off"];
+    api.failing.add("POST contributions");
+    const onSaved = vi.fn();
+    mount({ food: food("f-rye"), onSaved });
+    fireEvent.click(await screen.findByRole("checkbox", { name: /Send rettelsen/ }));
+    fireEvent.change(screen.getByLabelText("Kulhydrat pr. 100 g"), { target: { value: "42" } });
+    fireEvent.click(screen.getByRole("button", { name: "Gem" }));
+    await saved(onSaved);
+    expect(await screen.findByTestId("contribution-outcome")).toHaveTextContent(
+      "Kunne ikke sende til Open Food Facts – rettelsen er gemt her",
+    );
+    expect(onSaved.mock.calls[0]?.[0]).toMatchObject({ id: "f-rye", carbsPer100g: 42 });
+    expect(api.foods.find((row) => row.id === "f-rye")?.carbsPer100g).toBe(42);
+    expect(screen.getByLabelText("Kulhydrat pr. 100 g")).toHaveValue("42");
+    expect(onSaved.mock.calls[0]?.[2]).toBe("failed");
+  });
+
+  it("does not offer the send for an unsaved new food", async () => {
+    api.available = ["off"];
+    mount({});
+    await new Promise((resolve) => setTimeout(resolve, 10));
+    expect(box()).toBeNull();
+    expect(api.calls).toEqual([]);
+  });
+
+  it("the phone page stays open to show the result of a send, and goes back otherwise", async () => {
+    api.available = ["off"];
+    render(
+      <I18nProvider locale="da" messages={getMessages("da")}>
+        <FoodEditScreen spaceId="s1" locale="da" foodId="f-rye" />
+      </I18nProvider>,
+    );
+    fireEvent.click(await screen.findByRole("checkbox", { name: /Send rettelsen/ }));
+    fireEvent.click(screen.getByRole("button", { name: "Gem" }));
+    expect(await screen.findByTestId("contribution-outcome")).toHaveTextContent(
+      "Sendt til Open Food Facts",
+    );
+    expect(navigation.push).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("button", { name: "Gem" }));
+    await waitFor(() => {
+      expect(navigation.push).toHaveBeenCalledWith("/da/library");
+    });
+    expect(posts()).toHaveLength(1);
   });
 });
 

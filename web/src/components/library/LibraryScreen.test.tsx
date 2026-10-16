@@ -272,12 +272,14 @@ describe("Bibliotek on desktop (Bibliotek-Desktop)", () => {
     await waitFor(() => {
       expect(within(at(rows, 0)).getByText("Tjekket")).toBeInTheDocument();
     });
-    expect(api.calls.map((call) => `${call.method} ${call.path}`)).toEqual([
+    const foodCalls = api.calls.filter((call) => call.path !== "contributions");
+    expect(foodCalls.map((call) => `${call.method} ${call.path}`)).toEqual([
       "GET foods",
       "PATCH foods/f-rye",
       "POST foods/verify",
     ]);
-    expect(api.calls[1]?.body).not.toHaveProperty("verified");
+    expect(api.callsTo("POST", /^contributions$/)).toEqual([]);
+    expect(foodCalls[1]?.body).not.toHaveProperty("verified");
     const after = within(desktop().getByTestId("edit-panel"));
     expect(after.getByText("Tjekket")).toBeInTheDocument();
     expect(after.queryByRole("button", { name: "Gem og godkend" })).toBeNull();
