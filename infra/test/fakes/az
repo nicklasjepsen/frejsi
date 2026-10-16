@@ -45,6 +45,7 @@ case "$cmd" in
       database-url) echo 'sqlserver://sql-frejsi-abc.database.windows.net:1433;database=frejsi;user=frejsi_app;password=FAKEDBPASSWORD;encrypt=true' ;;
       web-pubsub-connection-string) echo 'Endpoint=https://wps-frejsi-abc.webpubsub.azure.com;AccessKey=FAKEWPSKEY;Version=1.0;' ;;
       bootstrap-token) echo FAKEBOOTSTRAPTOKEN ;;
+      anthropic-api-key|voyage-api-key|azure-openai-*|ollama-*|ai-cache-embed-provider) echo "FICTIONAL_AI_$(arg -n)" ;;
       *) echo "fake az: unknown secret $(arg -n)" >&2; exit 3 ;;
     esac ;;
   "keyvault secret set") cp "$(arg --file)" "$FAKE_LOG_DIR/secret-$(arg -n)" ;;
@@ -68,6 +69,11 @@ case "$cmd" in
       *) echo "fake az: unknown resource show query $query" >&2; exit 3 ;;
     esac ;;
   "functionapp config appsettings")
+    if [ "${4:-}" = set ] && [[ "$(arg --settings)" == @* ]]; then
+      file="$(arg --settings)"
+      cp "${file#@}" "$FAKE_LOG_DIR/function-ai-settings.json"
+      stat -c '%a' "${file#@}" > "$FAKE_LOG_DIR/function-ai-settings-mode"
+    fi
     if [ "${4:-}" = list ]; then echo 'https://stfrejsiabc.blob.core.windows.net/function-releases/poller.zip?sv=FAKESAS'; fi ;;
   "functionapp deployment source") test -s "$(arg --src)" || { echo "fake az: zip missing" >&2; exit 3; } ;;
   "functionapp function keys")

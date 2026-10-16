@@ -227,6 +227,18 @@ export DATABASE_URL
 pnpm --filter ./shared exec prisma migrate deploy
 unset DATABASE_URL
 
+# --- AI vector storage: keep newer database compatibility levels -------------------------------
+( umask 077; cat > "$WORK/ai-compatibility.sql" <<'EOSQL'
+IF (SELECT compatibility_level FROM sys.databases WHERE name = DB_NAME()) < 170
+BEGIN
+  DECLARE @sql nvarchar(max) = N'ALTER DATABASE ' + QUOTENAME(DB_NAME()) + N' SET COMPATIBILITY_LEVEL = 170';
+  EXEC sp_executesql @sql;
+END;
+EOSQL
+)
+sqlcmd -S "$SQL_FQDN" -d "$SQL_DATABASE" --authentication-method ActiveDirectoryDefault -b -i "$WORK/ai-compatibility.sql"
+# --- End AI vector storage --------------------------------------------------------------------
+
 log "Closing SQL firewall rule $FIREWALL_RULE"
 az sql server firewall-rule delete --subscription "$SQL_SUBSCRIPTION" -g "$SQL_RG" --server "$SQL_SERVER" -n "$FIREWALL_RULE" >/dev/null
 FIREWALL_RULE=""
@@ -304,6 +316,36 @@ fi
          APP_ORIGIN: $appOrigin,
          NEXT_PUBLIC_APP_VERSION: $version }
        + (if $blobConnection == "" then {} else {BLOB_CONNECTION_STRING: ($blobConnection | rtrimstr("\n"))} end)) }' > "$SWA_SETTINGS_FILE" )
+# --- Optional AI settings: only the owner creates these secrets; absent means inactive ---------
+AI_SETTING_NAMES=(ANTHROPIC_API_KEY VOYAGE_API_KEY AZURE_OPENAI_ENDPOINT AZURE_OPENAI_API_KEY
+  AZURE_OPENAI_DEPLOYMENT_SMALL AZURE_OPENAI_DEPLOYMENT_EVERYDAY AZURE_OPENAI_DEPLOYMENT_INSIGHT
+  AZURE_OPENAI_DEPLOYMENT_EMBED OLLAMA_URL OLLAMA_MODEL_SMALL OLLAMA_MODEL_EVERYDAY
+  OLLAMA_MODEL_INSIGHT OLLAMA_MODEL_EMBED AI_CACHE_EMBED_PROVIDER)
+( umask 077; printf '{}' > "$WORK/ai-web.json"; printf '{}' > "$WORK/ai-function.json" )
+AI_SETTING_COUNT=0
+for AI_SETTING in "${AI_SETTING_NAMES[@]}"; do
+  AI_SECRET="${AI_SETTING,,}"
+  AI_SECRET="${AI_SECRET//_/-}"
+  if ! secret_exists "$AI_SECRET"; then
+    log "Skipping optional AI setting $AI_SETTING: Key Vault secret $AI_SECRET is absent"
+    continue
+  fi
+  secret_to_file "$AI_SECRET" "$WORK/ai-value"
+  ( umask 077
+    jq --arg name "$AI_SETTING" --rawfile value "$WORK/ai-value" '. + {($name): $value}' "$WORK/ai-web.json" > "$WORK/ai-next.json"
+    mv "$WORK/ai-next.json" "$WORK/ai-web.json"
+    jq --arg name "$AI_SETTING" --arg ref "@Microsoft.KeyVault(SecretUri=https://$KEY_VAULT.vault.azure.net/secrets/$AI_SECRET/)" \
+      '. + {($name): $ref}' "$WORK/ai-function.json" > "$WORK/ai-next.json"
+    mv "$WORK/ai-next.json" "$WORK/ai-function.json"
+  )
+  AI_SETTING_COUNT=$((AI_SETTING_COUNT + 1))
+done
+if [ "$AI_SETTING_COUNT" -gt 0 ]; then
+  ( umask 077; jq --slurpfile ai "$WORK/ai-web.json" '.properties += $ai[0]' "$SWA_SETTINGS_FILE" > "$WORK/ai-swa.json" )
+  mv "$WORK/ai-swa.json" "$SWA_SETTINGS_FILE"
+  az functionapp config appsettings set -g "$RG" -n "$FUNCTION_APP" --settings "@$WORK/ai-function.json" >/dev/null
+fi
+# --- End optional AI settings -----------------------------------------------------------------
 az rest --method put --url "https://management.azure.com${SWA_ID}/config/appsettings?api-version=2024-04-01" \
   --body "@$SWA_SETTINGS_FILE" --output none
 
