@@ -1,16 +1,22 @@
 "use client";
 import { useTranslations } from "next-intl";
 
+import { MicIcon } from "../say/MicButton";
 import styles from "./meal.module.css";
 
-/**
- * Log-Telefon's entry tiles. The drawn "Sig det" tile is v0.4.0 and is left out, not drawn
- * disabled (decision 30), so the row is 2-up: Scan · Vælg.
- */
-export function EntryTiles({ onScan, onPick }: { onScan: () => void; onPick: () => void }) {
+/** The Say tile is available only when this space has enabled AI. */
+export function EntryTiles({
+  onScan,
+  onPick,
+  onSay,
+}: {
+  onScan: () => void;
+  onPick: () => void;
+  onSay?: (() => void) | undefined;
+}) {
   const t = useTranslations("log.entry");
   return (
-    <div className={styles.entryTiles}>
+    <div className={styles.entryTiles} data-say={onSay ? "true" : undefined}>
       <button type="button" className={styles.entryTile} onClick={onScan}>
         <svg width="30" height="30" viewBox="0 0 24 24" fill="none" aria-hidden="true">
           <path
@@ -22,6 +28,12 @@ export function EntryTiles({ onScan, onPick }: { onScan: () => void; onPick: () 
         </svg>
         <span>{t("scan")}</span>
       </button>
+      {onSay && (
+        <button type="button" className={styles.entryTile} onClick={onSay}>
+          <MicIcon />
+          <span>{t("say")}</span>
+        </button>
+      )}
       <button type="button" className={styles.entryTile} onClick={onPick}>
         <svg width="30" height="30" viewBox="0 0 24 24" fill="none" aria-hidden="true">
           <path

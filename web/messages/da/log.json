@@ -3,7 +3,8 @@
   "desktopSubtitle": "{date} · {time}",
   "entry": {
     "scan": "Scan",
-    "pick": "Vælg"
+    "pick": "Vælg",
+    "say": "Sig det"
   },
   "search": {
     "phoneLabel": "Skriv hvad der spises",

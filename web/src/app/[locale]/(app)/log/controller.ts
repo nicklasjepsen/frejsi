@@ -8,6 +8,10 @@ import type {
   LookupResponse,
   LookupResult,
 } from "@frejsi/shared/schemas/food";
+import type { ParsedItem } from "@frejsi/shared/schemas/ai";
+import { aiUsage } from "@/components/say/api";
+import { appendParsedItems, prepareParsedItems } from "@/components/say/draft";
+import { useLiveFeed } from "@/lib/live/useLiveFeed";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 
@@ -42,6 +46,7 @@ export const TYPE_DEBOUNCE_MS = 250;
 
 export interface LogControllerOptions {
   spaceId: string;
+  simpleMode?: boolean;
   locale: AppLocale;
   initialQuery?: string | undefined;
   initialBarcode?: string | undefined;
@@ -77,12 +82,43 @@ export function useOnline(): boolean {
 
 export function useLogController({
   spaceId,
+  simpleMode = false,
   locale,
   initialQuery,
   initialBarcode,
   onAdded,
 }: LogControllerOptions) {
   const router = useRouter();
+  const { subscribe } = useLiveFeed(spaceId, { readings: false });
+  const [sayEnabled, setSayEnabled] = useState(false);
+  const [sayOpen, setSayOpen] = useState(false);
+  useEffect(() => {
+    setSayEnabled(false);
+    setSayOpen(false);
+    if (simpleMode) return;
+    let live = true;
+    let generation = 0;
+    const refresh = () => {
+      const requested = ++generation;
+      void aiUsage(spaceId)
+        .then((usage) => {
+          if (!live || requested !== generation) return;
+          setSayEnabled(usage.enabled);
+          if (!usage.enabled) setSayOpen(false);
+        })
+        .catch(() => {
+          if (!live || requested !== generation) return;
+          setSayEnabled(false);
+          setSayOpen(false);
+        });
+    };
+    const unsubscribe = subscribe("space.updated", refresh);
+    refresh();
+    return () => {
+      live = false;
+      unsubscribe();
+    };
+  }, [spaceId, simpleMode, subscribe]);
   const [query, setQuery] = useState(initialQuery ?? "");
   /** The latest answer and the query (or barcode) it answers; a stale answer is never shown. */
   const [answered, setAnswered] = useState<{ key: string; response: LookupResponse } | null>(null);
@@ -297,6 +333,24 @@ export function useLogController({
   }, [draft, goNow, photo, saving, spaceId]);
 
   return {
+    sayEnabled: sayEnabled && !simpleMode,
+    sayOpen: sayOpen && sayEnabled && !simpleMode,
+    openSay: () => {
+      setSayOpen(true);
+    },
+    closeSay: () => {
+      setSayOpen(false);
+    },
+    addParsed: async (items: ParsedItem[]) => {
+      const prepared = await prepareParsedItems(items, (candidate) =>
+        pickCandidate(spaceId, candidate),
+      );
+      setDraft((draft) => appendParsedItems(draft, prepared));
+      setActiveKey(null);
+      setSayOpen(false);
+      setSaveFailed(false);
+      onAddedRef.current?.();
+    },
     query,
     /** Typing starts a new search: a manual form left open on desktop closes. */
     setQuery: (value: string) => {
