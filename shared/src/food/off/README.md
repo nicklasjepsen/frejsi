@@ -75,6 +75,10 @@ writes nothing to `Food` and imports no Prisma client or repository.
   `comment=Correction from Frejsi`. The carbohydrate fields are left out when no
   value was corrected. No `product_name` is ever sent; nor a photo or a person.
   The `User-Agent` is the same as the read side's.
+- Known limit: OFF applies `nutrition_data_per` to every nutrient of the product. For
+  a product stored per serving, resending only carbohydrates per 100 g can change how
+  its other nutrients read. The plan fixes `100g` (decision 9, and the acceptance test
+  asserts it); a later change could read the product first and keep its basis.
 - Result: `{ status: 1 }` is `ok`; `{ status: 0 }` whose `status_verbose` names a
   user, login or password is `bad-credentials`; any other `status: 0` is
   `rejected`; HTTP 429 or the local bucket is `rate-limited`; a network error, any
