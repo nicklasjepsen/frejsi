@@ -40,7 +40,8 @@ permissions:
 
 env:
   TAG: ${{ github.event.inputs.tag || github.ref_name }}
-  AZURE_RESOURCE_GROUP: frejsi
+  # A fork may name its resource group; production keeps `frejsi` (infra/README.md).
+  AZURE_RESOURCE_GROUP: ${{ vars.AZURE_RESOURCE_GROUP || 'frejsi' }}
   SQLCMD_VERSION: v1.8.2
 
 jobs:
@@ -243,6 +244,10 @@ jobs:
           AZURE_SUBSCRIPTION_ID: ${{ vars.AZURE_SUBSCRIPTION_ID }}
           CUSTOM_DOMAIN: ${{ vars.CUSTOM_DOMAIN }}
           SQL_SERVER_ID: ${{ vars.SQL_SERVER_ID }}
+          # Optional country settings; deploy.sh writes each to the web app only when it is set.
+          DEFAULT_LOCALE: ${{ vars.DEFAULT_LOCALE }}
+          FOOD_SOURCES: ${{ vars.FOOD_SOURCES }}
+          OFF_COUNTRY: ${{ vars.OFF_COUNTRY }}
           APP_VERSION: ${{ env.TAG }}
           ALERT_EMAIL: ${{ secrets.ALERT_EMAIL }}
         run: bash infra/deploy.sh

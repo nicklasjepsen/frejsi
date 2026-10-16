@@ -33,7 +33,8 @@ permissions:
   contents: read
 
 env:
-  AZURE_RESOURCE_GROUP: frejsi
+  # A fork may name its resource group; production keeps `frejsi` (infra/README.md).
+  AZURE_RESOURCE_GROUP: ${{ vars.AZURE_RESOURCE_GROUP || 'frejsi' }}
   ENVIRONMENT_NAME: pr${{ github.event.pull_request.number }}
 
 jobs:
