@@ -35,6 +35,7 @@ case "$cmd" in
       Microsoft.Web/sites) echo frejsi-poller-abc ;;
       Microsoft.Web/staticSites) echo frejsi-abc ;;
       Microsoft.Insights/components) echo appi-frejsi ;;
+      Microsoft.ManagedIdentity/userAssignedIdentities) printf '%s\n' "${FAKE_IDENTITY_NAME-id-frejsi-abc}" ;;
       Microsoft.Storage/storageAccounts) printf '%s' "${FAKE_PHOTOS_ACCOUNT:-}" ;;
       *) echo "fake az: unknown resource type $(arg --resource-type)" >&2; exit 3 ;;
     esac ;;
@@ -47,10 +48,16 @@ case "$cmd" in
       bootstrap-token) echo FAKEBOOTSTRAPTOKEN ;;
       vapid-private-key) printf '%s\n' "${FAKE_VAPID_PRIVATE:-FICTIONAL_VAPID_PRIVATE}" ;;
       vapid-public-key) echo FICTIONAL_VAPID_PUBLIC ;;
+      off-contribute-user) echo FICTIONAL_OFF_USER ;;
+      off-contribute-password) echo FICTIONAL_OFF_PASSWORD ;;
       anthropic-api-key|voyage-api-key|azure-openai-*|ollama-*|ai-cache-embed-provider) echo "FICTIONAL_AI_$(arg -n)" ;;
       *) echo "fake az: unknown secret $(arg -n)" >&2; exit 3 ;;
     esac ;;
   "keyvault secret set") cp "$(arg --file)" "$FAKE_LOG_DIR/secret-$(arg -n)" ;;
+  "identity show "*)
+    # The client (application) id of the Function App's user-assigned identity: a fictional GUID.
+    [ "$(arg -n)" = "id-frejsi-abc" ] || { echo "fake az: unknown identity $(arg -n)" >&2; exit 3; }
+    printf '%s\n' "${FAKE_IDENTITY_CLIENT_ID-0a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c4d}" ;;
   "sql server show") echo "$(arg -n).database.windows.net" ;;
   "sql server firewall-rule") : ;;
   "rest --method post") echo 'Endpoint=https://wps-frejsi-abc.webpubsub.azure.com;AccessKey=FAKEWPSKEY;Version=1.0;' ;;
@@ -77,6 +84,7 @@ case "$cmd" in
       stat -c '%a' "${file#@}" > "$FAKE_LOG_DIR/function-ai-settings-mode"
     fi
     if [ "${4:-}" = list ]; then
+      if [ "${FAKE_NO_RUN_FROM_PACKAGE:-}" = 1 ] && [[ "$query" == *WEBSITE_RUN_FROM_PACKAGE* ]]; then echo; exit 0; fi
       if [ "$query" = '[].name' ]; then
         for name in ${FAKE_FUNCTION_SETTING_NAMES:-}; do echo "$name"; done
       else
