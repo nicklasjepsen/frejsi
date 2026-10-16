@@ -51,7 +51,15 @@ function foodOf(row: FoodRow): Food {
     updatedAt: row.updatedAt.toISOString(),
   });
 }
-async function viewOf(row: FoodRow, deps: ResolvedFoods): Promise<FoodView> {
+interface Creator {
+  id: string;
+  name: string;
+}
+async function viewOf(
+  row: FoodRow,
+  deps: ResolvedFoods,
+  creators?: ReadonlyMap<string, Creator>,
+): Promise<FoodView> {
   const food = foodOf(row);
   const photo =
     food.photoKey && deps.photos
@@ -61,10 +69,12 @@ async function viewOf(row: FoodRow, deps: ResolvedFoods): Promise<FoodView> {
         }
       : undefined;
   const creator = food.createdBy
-    ? await deps.db.user.findUnique({
-        where: { id: food.createdBy },
-        select: { id: true, name: true },
-      })
+    ? creators
+      ? (creators.get(food.createdBy) ?? null)
+      : await deps.db.user.findUnique({
+          where: { id: food.createdBy },
+          select: { id: true, name: true },
+        })
     : null;
   return FoodView.parse({
     id: food.id,
@@ -82,6 +92,14 @@ async function viewOf(row: FoodRow, deps: ResolvedFoods): Promise<FoodView> {
     createdBy: creator ?? undefined,
     photo,
   });
+}
+async function viewsOf(rows: FoodRow[], deps: ResolvedFoods): Promise<FoodView[]> {
+  const ids = [...new Set(rows.flatMap((row) => (row.createdBy ? [row.createdBy] : [])))];
+  const users = ids.length
+    ? await deps.db.user.findMany({ where: { id: { in: ids } }, select: { id: true, name: true } })
+    : [];
+  const creators = new Map(users.map((user) => [user.id, user]));
+  return Promise.all(rows.map((row) => viewOf(row, deps, creators)));
 }
 async function owned(
   db: FoodTx,
@@ -161,7 +179,7 @@ export async function listFoods(
   );
   if (filter === "recent")
     filtered.sort((a, b) => recentIds.indexOf(a.id) - recentIds.indexOf(b.id));
-  return { foods: await Promise.all(filtered.map((row) => viewOf(row, deps))), counts };
+  return { foods: await viewsOf(filtered, deps), counts };
 }
 export async function getFood(
   spaceId: string,
@@ -311,7 +329,7 @@ export async function verifyFoods(
     }
     return result;
   });
-  return Promise.all(rows.map((row) => viewOf(row, deps)));
+  return viewsOf(rows, deps);
 }
 export async function updateFood(
   spaceId: string,

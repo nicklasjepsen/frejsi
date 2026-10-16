@@ -511,3 +511,29 @@ it("returns original provenance on reads and edits, including a different creato
   expect(legacy.createdAt).toBe(T0.toISOString());
   expect(legacy.createdBy).toBeUndefined();
 });
+
+it("batches creator provenance for a 100-food library and verification responses", async () => {
+  rig.users.push({ id: "u2", name: "Example maker" });
+  for (let i = 0; i < 100; i++)
+    rig.seed({ id: `batch-${i}`, createdBy: i % 2 ? "u2" : actor.userId });
+  const db = rig.deps.db;
+  if (!db) throw new Error("Missing database double");
+  const single = vi.spyOn(db.user, "findUnique");
+  const batch = vi.spyOn(db.user, "findMany");
+  const { foods } = await listFoods("s1", actor, {}, rig.deps);
+  expect(foods).toHaveLength(100);
+  for (const food of foods) {
+    const i = Number(food.id.split("-")[1]);
+    expect(food.createdBy).toEqual(
+      i % 2 ? { id: "u2", name: "Example maker" } : { id: actor.userId, name: actor.name },
+    );
+  }
+  expect(single).not.toHaveBeenCalled();
+  expect(batch).toHaveBeenCalledTimes(1);
+  expect(await verifyFoods("s1", actor, ["batch-0", "batch-1"], rig.deps)).toMatchObject([
+    { verified: true, createdBy: { id: actor.userId, name: actor.name } },
+    { verified: true, createdBy: { id: "u2", name: "Example maker" } },
+  ]);
+  expect(single).not.toHaveBeenCalled();
+  expect(batch).toHaveBeenCalledTimes(2);
+});

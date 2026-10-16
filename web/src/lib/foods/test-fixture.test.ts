@@ -102,6 +102,8 @@ export function foodTestRig() {
   const find = (args: { where?: Row }) => rig.rows.filter((row) => matches(row, args.where));
   const tx = {
     user: {
+      findMany: ({ where }: { where: { id: { in: string[] } } }) =>
+        Promise.resolve(rig.users.filter((user) => where.id.in.includes(user.id))),
       findUnique: ({ where }: { where: { id: string } }) =>
         Promise.resolve(rig.users.find((user) => user.id === where.id) ?? null),
     },
