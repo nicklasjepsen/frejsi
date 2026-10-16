@@ -412,6 +412,7 @@ describe("save as own dish", () => {
     verified: false,
     portions: [{ label: "1 portion", carbs: 50 }],
     favourite: false,
+    createdAt: MEAL_TS,
     updatedAt: MEAL_TS,
   };
   it("creates an unchecked family food once and links to the unchecked library", async () => {

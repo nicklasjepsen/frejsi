@@ -43,6 +43,7 @@ const own: FoodView = {
   origin: "family",
   verified: true,
   favourite: true,
+  createdAt: "2026-10-14T10:00:00.000Z",
   updatedAt: "2026-10-14T10:00:00.000Z",
 };
 const response: LookupResponse = {

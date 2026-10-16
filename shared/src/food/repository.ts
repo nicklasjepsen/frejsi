@@ -6,7 +6,7 @@ import { Food, FoodCandidate, Portion } from "../schemas/food";
 import { foldForSearch } from "./search";
 import { CacheFoodInput, type FoodRepository, type LibraryOptions } from "./types";
 
-function fromRow(row: FoodRow): Food {
+function fromRow(row: FoodRow & { creator?: { id: string; name: string } | null }): Food {
   return Food.parse({
     ...row,
     carbsPer100g: row.carbsPer100g?.toNumber() ?? undefined,
@@ -40,7 +40,9 @@ const cacheWhere = (excluded: string[]): Prisma.FoodWhereInput => ({
 
 export interface FoodDb {
   food: {
-    findMany(args: Prisma.FoodFindManyArgs): Promise<FoodRow[]>;
+    findMany(
+      args: Prisma.FoodFindManyArgs,
+    ): Promise<(FoodRow & { creator?: { id: string; name: string } | null })[]>;
     findFirst(args: Prisma.FoodFindFirstArgs): Promise<FoodRow | null>;
     create(args: Prisma.FoodCreateArgs): Promise<FoodRow>;
     update(args: Prisma.FoodUpdateArgs): Promise<FoodRow>;
@@ -55,6 +57,7 @@ export class PrismaFoodRepository implements FoodRepository {
     return (
       await this.db.food.findMany({
         where: { ...textWhere(q), spaceId, ...(options.verifiedOnly ? { verified: true } : {}) },
+        include: { creator: { select: { id: true, name: true } } },
         orderBy: libraryOrder,
         take: 20,
       })
@@ -68,6 +71,7 @@ export class PrismaFoodRepository implements FoodRepository {
     return (
       await this.db.food.findMany({
         where: { spaceId, barcode, ...(options.verifiedOnly ? { verified: true } : {}) },
+        include: { creator: { select: { id: true, name: true } } },
         orderBy: libraryOrder,
         take: 20,
       })

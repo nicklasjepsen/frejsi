@@ -29,6 +29,7 @@ const bread: FoodView = {
   origin: "off",
   verified: false,
   favourite: false,
+  createdAt: "2026-10-14T10:00:00.000Z",
   updatedAt: "2026-10-14T10:00:00.000Z",
 };
 const lunchbox: FoodView = {
@@ -38,6 +39,7 @@ const lunchbox: FoodView = {
   origin: "family",
   verified: true,
   favourite: true,
+  createdAt: "2026-10-14T10:00:00.000Z",
   updatedAt: "2026-10-14T10:00:00.000Z",
 };
 const apple: FoodView = { ...bread, id: "f-apple", name: "Fictional apple", portions: [] };

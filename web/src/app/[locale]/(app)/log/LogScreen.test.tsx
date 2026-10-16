@@ -30,6 +30,7 @@ const food = (over: Partial<FoodView> & { id: string; name: string }): FoodView 
   origin: "family",
   verified: true,
   favourite: false,
+  createdAt: "2026-10-14T08:00:00.000Z",
   updatedAt: "2026-10-14T08:00:00.000Z",
   ...over,
 });

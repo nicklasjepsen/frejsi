@@ -38,7 +38,13 @@ describe("food writes", () => {
     "creates %s food unverified with its own sourceRef and one event",
     async (from, origin) => {
       const food = await create(from);
-      expect(food).toMatchObject({ ...fields, origin, verified: false });
+      expect(food).toMatchObject({
+        ...fields,
+        origin,
+        verified: false,
+        createdAt: T0.toISOString(),
+        createdBy: { id: actor.userId, name: actor.name },
+      });
       expect(rig.rows[0]).toMatchObject({
         spaceId: "s1",
         sourceRef: `${origin}:${food.id}`,
@@ -102,6 +108,7 @@ describe("food writes", () => {
       origin: candidate.origin,
       sourceRef: candidate.sourceRef,
       name: "Canonical pear",
+      sourceName: "ORIGINAL CANONICAL PEAR",
       nameSearch: "canonical pear",
       carbsPer100g: 17,
     });
@@ -112,7 +119,14 @@ describe("food writes", () => {
       { ...candidate, name: "Forged pear", carbsPer100g: 99 },
       rig.deps,
     );
-    expect(food).toMatchObject({ name: "Canonical pear", carbsPer100g: 17, verified: false });
+    expect(food).toMatchObject({
+      name: "Canonical pear",
+      carbsPer100g: 17,
+      verified: false,
+      sourceName: "ORIGINAL CANONICAL PEAR",
+      createdAt: T0.toISOString(),
+      createdBy: { id: actor.userId, name: actor.name },
+    });
     expect(rig.rows.find((row) => row.spaceId === null)).toMatchObject({
       name: "Canonical pear",
       carbsPer100g: 17,
@@ -476,4 +490,24 @@ it("logs only ids, counts and codes even when publish fails", async () => {
   await create();
   expect(lines.length).toBeGreaterThan(0);
   expect(lines.join("\n")).not.toMatch(/Cloud pear|2000000000015|nameSearch|portions|photos/);
+});
+
+it("returns original provenance on reads and edits, including a different creator", async () => {
+  rig.users.push({ id: "u2", name: "Example maker" });
+  const createdAt = new Date("2026-10-13T09:00:00Z");
+  rig.seed({ id: "original", createdBy: "u2", createdAt, sourceName: "ORIGINAL PEAR" });
+  const provenance = {
+    createdAt: createdAt.toISOString(),
+    sourceName: "ORIGINAL PEAR",
+    createdBy: { id: "u2", name: "Example maker" },
+  };
+  expect(await getFood("s1", actor, "original", rig.deps)).toMatchObject(provenance);
+  expect((await listFoods("s1", actor, {}, rig.deps)).foods[0]).toMatchObject(provenance);
+  expect(
+    await updateFood("s1", actor, "original", { name: "Edited pear" }, rig.deps),
+  ).toMatchObject(provenance);
+  rig.seed({ id: "legacy", createdBy: null });
+  const legacy = await getFood("s1", actor, "legacy", rig.deps);
+  expect(legacy.createdAt).toBe(T0.toISOString());
+  expect(legacy.createdBy).toBeUndefined();
 });

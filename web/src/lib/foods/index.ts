@@ -60,6 +60,12 @@ async function viewOf(row: FoodRow, deps: ResolvedFoods): Promise<FoodView> {
           originalUrl: await deps.photos.readUrl(food.photoKey, "original"),
         }
       : undefined;
+  const creator = food.createdBy
+    ? await deps.db.user.findUnique({
+        where: { id: food.createdBy },
+        select: { id: true, name: true },
+      })
+    : null;
   return FoodView.parse({
     id: food.id,
     name: food.name,
@@ -71,6 +77,9 @@ async function viewOf(row: FoodRow, deps: ResolvedFoods): Promise<FoodView> {
     verifiedBy: food.verifiedBy,
     favourite: food.favourite,
     updatedAt: food.updatedAt,
+    createdAt: food.createdAt,
+    sourceName: food.sourceName ?? undefined,
+    createdBy: creator ?? undefined,
     photo,
   });
 }
@@ -264,6 +273,7 @@ export async function addCandidate(
     const food = await tx.food.create({
       data: {
         ...candidate,
+        sourceName: cached?.sourceName ?? null,
         spaceId,
         nameSearch: foldForSearch(candidate.name),
         carbsPer100g: candidate.carbsPer100g ?? null,

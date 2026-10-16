@@ -8,6 +8,7 @@ const base = {
   portions: [],
   verified: false,
   favourite: false,
+  createdAt: "2026-10-14T08:00:00Z",
   updatedAt: "2026-10-15T08:00:00Z",
 };
 it("accepts additive food provenance without exposing glucose", () => {
@@ -19,6 +20,8 @@ it("accepts additive food provenance without exposing glucose", () => {
   };
   expect(FoodView.parse(enriched)).toEqual(enriched);
   expect(FoodView.parse(base)).toEqual(base);
+  const { createdAt: _createdAt, ...missingTimestamp } = base;
+  expect(FoodView.safeParse(missingTimestamp).success).toBe(false);
   expect(FoodView.safeParse({ ...enriched, createdBy: "u1" }).success).toBe(false);
   expect(FoodView.safeParse({ ...enriched, createdAt: "yesterday" }).success).toBe(false);
   expect(

@@ -49,6 +49,7 @@ function matches(row: Row | undefined, where: Row = {}): boolean {
 export function foodTestRig() {
   const rig = {
     rows: [] as Row[],
+    users: [{ id: actor.userId, name: actor.name }],
     items: [] as Row[],
     events: [] as EventEnvelope[],
     published: [] as EventEnvelope[],
@@ -70,6 +71,8 @@ export function foodTestRig() {
         portions: "[]",
         barcode: null,
         photoKey: null,
+        sourceName: null,
+        embeddingModel: null,
         origin: "family",
         sourceRef: randomUUID(),
         verified: false,
@@ -98,6 +101,10 @@ export function foodTestRig() {
   });
   const find = (args: { where?: Row }) => rig.rows.filter((row) => matches(row, args.where));
   const tx = {
+    user: {
+      findUnique: ({ where }: { where: { id: string } }) =>
+        Promise.resolve(rig.users.find((user) => user.id === where.id) ?? null),
+    },
     food: {
       findFirst: (args: { where: Row }) => {
         const row = find(args)[0];

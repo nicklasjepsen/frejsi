@@ -29,6 +29,7 @@ const view = {
   origin: "manual",
   verified: false,
   favourite: false,
+  createdAt: ts,
   updatedAt: ts,
 };
 const row = {
