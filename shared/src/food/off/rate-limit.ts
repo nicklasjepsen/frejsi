@@ -21,6 +21,8 @@ export class OffRateLimits {
   readonly search = new Bucket(10);
   // OFF now publishes 15 product reads/minute/IP, tighter than the original plan's 100.
   readonly product = new Bucket(15);
+  /** Writes are rarer and heavier than reads; ten a minute per process. */
+  readonly write = new Bucket(10);
 }
 /** Registry factories create per-request sources; all use these process-wide budgets. */
 export const processLimits = new OffRateLimits();

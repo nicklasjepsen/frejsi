@@ -29,6 +29,7 @@ export const samplePayloads: { [T in EventType]: EventPayload<T> } = {
   "estimate.asked": { foodId: "f1", byUserId: "u1" },
   "push.subscribed": { userId: "u1", spaceId: "s1" },
   "push.unsubscribed": { userId: "u1", spaceId: "s1" },
+  "food.contributed": { foodId: "f1", source: "off" },
 };
 
 describe("EventEnvelope", () => {
@@ -57,6 +58,7 @@ describe("EventEnvelope", () => {
       "estimate.asked",
       "push.subscribed",
       "push.unsubscribed",
+      "food.contributed",
     ]);
     expect(Object.keys(EventPayloads).sort()).toEqual([...EventType.options].sort());
   });
@@ -148,4 +150,20 @@ it("keeps AI event payloads viewer-safe and narrows each envelope", () => {
       ).toBe(false);
     }
   }
+describe("food.contributed", () => {
+  it("narrows to { foodId, source } and carries no glucose key", () => {
+    const parsed = EventEnvelope.parse({
+      spaceId: "s1",
+      seq: 3,
+      ts,
+      type: "food.contributed",
+      payload: { foodId: "f1", source: "off" },
+    });
+    if (parsed.type !== "food.contributed") throw new Error("expected food.contributed");
+    expect(Object.keys(parsed.payload).sort()).toEqual(["foodId", "source"]);
+    expect(
+      EventPayloads["food.contributed"].safeParse({ foodId: "f1", source: "off", mmol: 6 }).success,
+    ).toBe(false);
+    expect(EventPayloads["food.contributed"].safeParse({ foodId: "f1" }).success).toBe(false);
+  });
 });

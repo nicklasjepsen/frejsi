@@ -29,6 +29,7 @@ export const EventType = z.enum([
   "estimate.asked",
   "push.subscribed",
   "push.unsubscribed",
+  "food.contributed",
 ]);
 export type EventType = z.infer<typeof EventType>;
 
@@ -49,6 +50,11 @@ export const FoodIdPayload = z.strictObject({ foodId: z.string().min(1) });
 export const FoodVerifiedPayload = z.strictObject({
   foodId: z.string().min(1),
   verifiedBy: z.string().min(1),
+});
+/** A correction was sent to the source it came from. Ids only: no values, no name, no glucose. */
+export const FoodContributedPayload = z.strictObject({
+  foodId: z.string().min(1),
+  source: FoodOrigin,
 });
 export const MealCreatedPayload = z.strictObject({
   mealId: z.string().min(1),
@@ -107,6 +113,7 @@ export const EventPayloads = {
   "estimate.asked": EstimateAskedPayload,
   "push.subscribed": PushSubscriptionPayload,
   "push.unsubscribed": PushSubscriptionPayload,
+  "food.contributed": FoodContributedPayload,
 } as const satisfies Record<EventType, z.ZodType>;
 
 export type EventPayload<T extends EventType> = z.infer<(typeof EventPayloads)[T]>;
@@ -145,6 +152,7 @@ export const EventEnvelope = z.discriminatedUnion("type", [
   envelope("estimate.asked"),
   envelope("push.subscribed"),
   envelope("push.unsubscribed"),
+  envelope("food.contributed"),
 ]);
 export type EventEnvelope = z.infer<typeof EventEnvelope>;
 export type EventEnvelopeOf<T extends EventType> = Extract<EventEnvelope, { type: T }>;

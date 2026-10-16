@@ -2,6 +2,7 @@
 export * from "./api";
 export * from "./auth";
 export * from "./events";
+export * from "./food";
 export * from "./glucose";
 export * from "./health";
 export * from "./settings";

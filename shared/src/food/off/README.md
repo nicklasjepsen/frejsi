@@ -53,3 +53,49 @@ runs in CI and rejects vendor hosts elsewhere in application source.
 For a new remote plugin, implement `FoodSource`, inject its transport, keep the
 vendor mapping inside its directory, add fixtures and append a registry factory.
 Registration never implicitly enables a plugin.
+
+## Contributing a correction (`OffContributor`)
+
+`OffContributor` is the `FoodContributor` for OFF: it sends a human-approved
+correction of the carbohydrates per 100 g and the serving size back to Open Food
+Facts. **It is never automatic.** The only caller of `.contribute(` is the
+contributions service in `web/src/lib/contributions/`, behind an unticked
+checkbox in the edit form, for a food whose `origin` is `off`. A boundary test
+(`lint-boundaries.test.ts`) fails if anything else in `shared/` calls it. It
+writes nothing to `Food` and imports no Prisma client or repository.
+
+- Endpoint: `POST https://<host>/cgi/product_jqm2.pl`, `application/x-www-form-urlencoded`.
+  The host is the constructor option `host`, default `world.openfoodfacts.org`;
+  `registry.ts` passes `OFF_CONTRIBUTE_HOST` through when set. The host and the
+  path are literals only in this folder.
+- Fields: `code` (barcode), `user_id`, `password` (the deployment's OFF account),
+  `app_name=Frejsi`, `app_version`, `app_uuid=<appRef>` (a pseudonym, never a user
+  or space id), `nutrition_data_per=100g`, `nutriment_carbohydrates`,
+  `nutriment_carbohydrates_unit=g`, `serving_size=<grams> g` when given, and
+  `comment=Correction from Frejsi`. The carbohydrate fields are left out when no
+  value was corrected. No `product_name` is ever sent; nor a photo or a person.
+  The `User-Agent` is the same as the read side's.
+- Result: `{ status: 1 }` is `ok`; `{ status: 0 }` whose `status_verbose` names a
+  user, login or password is `bad-credentials`; any other `status: 0` is
+  `rejected`; HTTP 429 or the local bucket is `rate-limited`; a network error, any
+  other HTTP failure, an unreadable body or the 10 s timeout is `error`. The
+  caller's `AbortSignal` reaches `fetch`.
+- Rate limit: ten writes a minute per process (`OffRateLimits.write`); the 11th
+  returns `rate-limited` without a call.
+- Staging for a first try: set `OFF_CONTRIBUTE_HOST=world.openfoodfacts.net`
+  with an account made on that host. The staging host sits behind HTTP basic
+  authentication `off` / `off`, which the contributor adds to the request
+  itself. Staging data is wiped now and then; use it before pointing at production.
+- Secrets: the account is `OFF_CONTRIBUTE_USER` / `OFF_CONTRIBUTE_PASSWORD`, read
+  once in `registry.ts` and given to the constructor. Neither the password nor the
+  barcode reaches a log line, an error message or a thrown value: every failure
+  is a status. A deployment with no account has no contributor
+  (`foodContributors({})` is empty), so no screen offers the checkbox.
+- Dev and e2e: `FAKE_FOOD_CONTRIBUTOR=1` registers `FakeFoodContributor` under
+  `off`; it answers from a script and records every correction. It may be imported
+  only from tests, `seed.ts`, `cli.ts` and `registry.ts`.
+
+For a new contributor (say `usda`), implement `FoodContributor`, keep the vendor
+endpoint inside its own directory, inject `fetch`, add write fixtures and
+register it in `foodContributors(env)`; configuration enables it, never code.
+Fixtures: `fixtures/open-food-facts/write-*.json`. No test writes to OFF.
