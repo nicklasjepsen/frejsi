@@ -8,17 +8,21 @@
 #   2. creates the secrets that exist only once: the application's contained database user and its
 #      password, and the Web PubSub connection string, written to Key Vault if absent (never rotated
 #      here)
-#   3. opens a temporary SQL firewall rule for this runner, runs `prisma migrate deploy`, closes it
-#   4. deploys poller/dist as a zip (SCM_DO_BUILD_DURING_DEPLOYMENT=false, APP_VERSION) and checks
-#      the app runs from the package
-#   5. writes the Static Web App's settings (plan section 7) from Key Vault and Bicep outputs
+#   3. opens a temporary SQL firewall rule for this runner, runs `prisma migrate deploy`, creates the
+#      poller identity's contained database user (by SID, read and write only), raises the
+#      compatibility level, closes the rule
+#   4. deploys poller/dist as a zip (SCM_DO_BUILD_DURING_DEPLOYMENT=false, APP_VERSION), checks
+#      the app runs from the package and only then removes the retired DATABASE_URL setting
+#   5. writes the Static Web App's settings (plan section 7) from Key Vault, Bicep outputs and the
+#      optional OFF secrets and country variables
 #   6. uploads the standalone Next.js build to the Static Web App
 #   7. registers the hub's `connect` event handler at the web app's /api/pubsub (issue #95)
 #
 # Required environment: AZURE_SUBSCRIPTION_ID, AZURE_RESOURCE_GROUP, APP_VERSION (the tag), ALERT_EMAIL.
 # Optional: CUSTOM_DOMAIN (sets APP_ORIGIN; otherwise the default hostname), GITHUB_OUTPUT,
 # PHOTOS_STORAGE_ACCOUNT (dedicated photo account; creates blob-connection-string once),
-# SQL_SERVER_ID (resource ID of an existing SQL server holding the database; infra/README.md).
+# SQL_SERVER_ID (resource ID of an existing SQL server holding the database; infra/README.md),
+# DEFAULT_LOCALE, FOOD_SOURCES, OFF_COUNTRY (written to the web app's settings only when set).
 # Tools: az (logged in), sqlcmd (go-sqlcmd), pnpm (workspace installed), docker, curl, zip, openssl, jq.
 #
 # Nothing secret is ever printed. Secrets travel through files with mode 600 or environment
@@ -44,6 +48,9 @@ SQL_SERVER_ID="${SQL_SERVER_ID:-}"
 if [ -n "$SQL_SERVER_ID" ] && ! [[ "${SQL_SERVER_ID,,}" =~ ^/subscriptions/[^/]+/resourcegroups/[^/]+/providers/microsoft\.sql/servers/[^/]+$ ]]; then
   echo "::error::SQL_SERVER_ID must be a SQL server resource ID (/subscriptions/.../resourceGroups/.../providers/Microsoft.Sql/servers/...)" >&2; exit 1
 fi
+DEFAULT_LOCALE="${DEFAULT_LOCALE:-}"
+FOOD_SOURCES="${FOOD_SOURCES:-}"
+OFF_COUNTRY="${OFF_COUNTRY:-}"
 WEB_PUBSUB_HUB="${WEB_PUBSUB_HUB:-frejsi}"
 SQL_DATABASE="${SQL_DATABASE:-frejsi}"
 SQL_APP_USER="${SQL_APP_USER:-frejsi_app}"
@@ -107,6 +114,12 @@ else
 fi
 WEB_PUBSUB="$(one_resource Microsoft.SignalRService/webPubSub)"
 FUNCTION_APP="$(one_resource Microsoft.Web/sites)"
+# The poller's user-assigned identity (infra/modules/functionapp.bicep): its name is the contained
+# database user's name.
+POLLER_IDENTITY="$(one_resource Microsoft.ManagedIdentity/userAssignedIdentities)"
+if ! [[ "$POLLER_IDENTITY" =~ ^[A-Za-z0-9_-]+$ ]]; then
+  echo "::error::unexpected identity name; refusing to put it in SQL" >&2; exit 1
+fi
 STATIC_WEB_APP="$(one_resource Microsoft.Web/staticSites)"
 APP_INSIGHTS="$(one_resource Microsoft.Insights/components)"
 SQL_FQDN="$(az sql server show --subscription "$SQL_SUBSCRIPTION" -g "$SQL_RG" -n "$SQL_SERVER" --query fullyQualifiedDomainName -o tsv)"
@@ -149,7 +162,9 @@ if secret_exists database-url; then
 else
   # A contained user (a password in the database, no server login): the deploy principal needs
   # db_owner in this one database and nothing in master, so the same path works on a dedicated
-  # server, where it is the Entra admin, and on a shared one, where it is not.
+  # server, where it is the Entra admin, and on a shared one, where it is not. The user reads,
+  # writes and runs DDL (the migrations) but is not db_owner; an existing login is left as it is
+  # (infra/README.md says how to tighten it by hand).
   log "Creating the database user $SQL_APP_USER in $SQL_DATABASE and storing database-url"
   PASSWORD="$(new_password)"
   SQL_FILE="$WORK/create-user.sql"
@@ -158,7 +173,9 @@ IF NOT EXISTS (SELECT 1 FROM sys.database_principals WHERE name = N'$SQL_APP_USE
   CREATE USER [$SQL_APP_USER] WITH PASSWORD = N'$PASSWORD';
 ELSE
   ALTER USER [$SQL_APP_USER] WITH PASSWORD = N'$PASSWORD';
-ALTER ROLE db_owner ADD MEMBER [$SQL_APP_USER];
+ALTER ROLE db_datareader ADD MEMBER [$SQL_APP_USER];
+ALTER ROLE db_datawriter ADD MEMBER [$SQL_APP_USER];
+ALTER ROLE db_ddladmin ADD MEMBER [$SQL_APP_USER];
 EOSQL
   )
   # The runner must reach the server for this too; the rule is opened once, below, before use.
@@ -217,6 +234,7 @@ az sql server firewall-rule create --subscription "$SQL_SUBSCRIPTION" -g "$SQL_R
 
 if [ "${NEED_FIREWALL_FOR_USER:-0}" = 1 ]; then
   sqlcmd -S "$SQL_FQDN" -d "$SQL_DATABASE" --authentication-method ActiveDirectoryDefault -b -i "$SQL_FILE"
+  rm -f "$SQL_FILE"
   secret_write_from_file database-url "$DATABASE_URL_FILE"
   log "Database user created and database-url stored"
 fi
@@ -228,6 +246,29 @@ export DATABASE_URL
 pnpm --filter ./shared exec prisma migrate deploy
 unset DATABASE_URL
 
+# --- The poller's identity: a contained user by SID, read and write only -----------------------------
+# CREATE USER ... FROM EXTERNAL PROVIDER would need the SQL server to read Microsoft Graph; a SID
+# built from the identity's client id needs nothing but this connection (plan v0.5.0 section 7).
+# Assignment, not a substitution inside an argument: a failed `az` must stop the script here.
+POLLER_CLIENT_ID="$(az identity show -g "$RG" -n "$POLLER_IDENTITY" --query clientId -o tsv)"
+if ! [[ "$POLLER_CLIENT_ID" =~ ^[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}$ ]]; then
+  echo "::error::identity $POLLER_IDENTITY has no usable client id" >&2; exit 1
+fi
+log "Creating the database user $POLLER_IDENTITY for the poller's identity"
+( umask 077; cat > "$WORK/poller-identity.sql" <<EOSQL
+IF EXISTS (SELECT 1 FROM sys.database_principals WHERE name = N'$POLLER_IDENTITY'
+           AND sid <> CONVERT(varbinary(16), CAST('$POLLER_CLIENT_ID' AS uniqueidentifier)))
+  DROP USER [$POLLER_IDENTITY];
+IF NOT EXISTS (SELECT 1 FROM sys.database_principals WHERE name = N'$POLLER_IDENTITY')
+  CREATE USER [$POLLER_IDENTITY] WITH SID = CONVERT(varbinary(16), CAST('$POLLER_CLIENT_ID' AS uniqueidentifier)), TYPE = E;
+ALTER ROLE db_datareader ADD MEMBER [$POLLER_IDENTITY];
+ALTER ROLE db_datawriter ADD MEMBER [$POLLER_IDENTITY];
+EOSQL
+)
+sqlcmd -S "$SQL_FQDN" -d "$SQL_DATABASE" --authentication-method ActiveDirectoryDefault -b -i "$WORK/poller-identity.sql"
+rm -f "$WORK/poller-identity.sql"
+# --- End the poller's identity ----------------------------------------------------------------
+
 # --- AI vector storage: keep newer database compatibility levels -------------------------------
 ( umask 077; cat > "$WORK/ai-compatibility.sql" <<'EOSQL'
 IF (SELECT compatibility_level FROM sys.databases WHERE name = DB_NAME()) < 170
@@ -238,6 +279,7 @@ END;
 EOSQL
 )
 sqlcmd -S "$SQL_FQDN" -d "$SQL_DATABASE" --authentication-method ActiveDirectoryDefault -b -i "$WORK/ai-compatibility.sql"
+rm -f "$WORK/ai-compatibility.sql"
 # --- End AI vector storage --------------------------------------------------------------------
 
 log "Closing SQL firewall rule $FIREWALL_RULE"
@@ -259,6 +301,16 @@ if [ -z "$RUN_FROM_PACKAGE" ]; then
   exit 1
 fi
 log "Poller runs from package"
+
+# The bundle that understands SQL_SERVER_FQDN is the one running now, so the retired DATABASE_URL
+# can go. It lives here and not in Bicep: appsettings.bicep merges live settings with union(), which
+# keeps what a deploy no longer names, and that is also what lets a rollback restore it. Listed first
+# so an absent setting (a new installation) is a no-op rather than a call.
+LIVE_FUNCTION_SETTINGS="$(az functionapp config appsettings list -g "$RG" -n "$FUNCTION_APP" --query '[].name' -o tsv)"
+if printf '%s\n' "$LIVE_FUNCTION_SETTINGS" | grep -qx DATABASE_URL; then
+  log "Removing DATABASE_URL from $FUNCTION_APP; the poller connects as its identity"
+  az functionapp config appsettings delete -g "$RG" -n "$FUNCTION_APP" --setting-names DATABASE_URL >/dev/null
+fi
 
 # The source-connect function key appears once the host has indexed the new package.
 FUNCTION_HOST="$(az functionapp show -g "$RG" -n "$FUNCTION_APP" --query defaultHostName -o tsv)"
@@ -397,6 +449,34 @@ if [ "$AI_SETTING_COUNT" -gt 0 ]; then
   az functionapp config appsettings set -g "$RG" -n "$FUNCTION_APP" --settings "@$WORK/ai-function.json" >/dev/null
 fi
 # --- End optional AI settings -----------------------------------------------------------------
+
+# --- Optional OFF contribution account and the country settings (web app only) -------------------
+# The account is the owner's: both Key Vault secrets exist, or the feature is off and the checkbox
+# is absent. The three country settings travel from repository variables, set or not at all.
+for OFF_SETTING in OFF_CONTRIBUTE_USER OFF_CONTRIBUTE_PASSWORD; do
+  OFF_SECRET="${OFF_SETTING,,}"
+  OFF_SECRET="${OFF_SECRET//_/-}"
+  if ! secret_exists "$OFF_SECRET"; then
+    log "Skipping optional OFF setting $OFF_SETTING: Key Vault secret $OFF_SECRET is absent"
+    continue
+  fi
+  secret_to_file "$OFF_SECRET" "$WORK/off-value"
+  ( umask 077
+    jq --arg name "$OFF_SETTING" --rawfile value "$WORK/off-value" \
+      '.properties += {($name): ($value | rtrimstr("\n"))}' "$SWA_SETTINGS_FILE" > "$WORK/off-swa.json"
+    mv "$WORK/off-swa.json" "$SWA_SETTINGS_FILE"
+  )
+done
+for COUNTRY_SETTING in DEFAULT_LOCALE FOOD_SOURCES OFF_COUNTRY; do
+  COUNTRY_VALUE="${!COUNTRY_SETTING}"
+  [ -n "$COUNTRY_VALUE" ] || continue
+  ( umask 077
+    jq --arg name "$COUNTRY_SETTING" --arg value "$COUNTRY_VALUE" '.properties += {($name): $value}' \
+      "$SWA_SETTINGS_FILE" > "$WORK/country-swa.json"
+    mv "$WORK/country-swa.json" "$SWA_SETTINGS_FILE"
+  )
+done
+# --- End OFF and country settings -------------------------------------------------------------
 az rest --method put --url "https://management.azure.com${SWA_ID}/config/appsettings?api-version=2024-04-01" \
   --body "@$SWA_SETTINGS_FILE" --output none
 

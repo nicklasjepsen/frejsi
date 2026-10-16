@@ -11,7 +11,7 @@ import { infraDir } from './helpers.mjs';
 const fakesDir = path.join(infraDir, 'test/fakes');
 const deploySh = path.join(infraDir, 'deploy.sh');
 
-const SECRET_MARKERS = ['FAKEDBPASSWORD', 'FAKEWPSKEY', 'FAKEBOOTSTRAPTOKEN', 'FAKEFUNCTIONKEY', 'FAKESWATOKEN', 'FAKESAS'];
+const SECRET_MARKERS = ['FICTIONAL_OFF_PASSWORD', 'FICTIONAL_OFF_USER', 'FAKEDBPASSWORD', 'FAKEWPSKEY', 'FAKEBOOTSTRAPTOKEN', 'FAKEFUNCTIONKEY', 'FAKESWATOKEN', 'FAKESAS'];
 
 function runDeploy({ env = {}, omit = [], rootServer = true } = {}) {
   const dir = mkdtempSync(path.join(os.tmpdir(), 'frejsi-deploy-'));
@@ -53,6 +53,24 @@ function runDeploy({ env = {}, omit = [], rootServer = true } = {}) {
   };
 }
 
+/** Every sqlcmd run, in order: the SQL it was given, the file mode it saw and whether the file is gone now. */
+function sqlRuns(r) {
+  const out = [];
+  for (let n = 1; existsSync(path.join(r.logDir, `sqlcmd-${n}.sql`)); n++) {
+    const file = readFileSync(path.join(r.logDir, `sqlcmd-${n}.path`), 'utf8').trim();
+    out.push({
+      n,
+      sql: readFileSync(path.join(r.logDir, `sqlcmd-${n}.sql`), 'utf8'),
+      mode: readFileSync(path.join(r.logDir, `sqlcmd-${n}.mode`), 'utf8').trim(),
+      file,
+      removed: !existsSync(file),
+    });
+  }
+  return out;
+}
+const identitySql = (r) => sqlRuns(r).find((q) => /TYPE = E/.test(q.sql));
+const existingSecrets = 'database-url web-pubsub-connection-string bootstrap-token vapid-private-key vapid-public-key';
+
 test('fails on the first missing variable before touching Azure', () => {
   const r = runDeploy({ omit: ['APP_VERSION'] });
   assert.notEqual(r.status, 0);
@@ -77,10 +95,14 @@ test('first release: creates the database user and the Web PubSub secret once, m
   // line. Nothing runs in master: the deploy principal needs db_owner in this one database only.
   const sqlFiles = readFileSync(path.join(r.logDir, 'sqlcmd-1.sql'), 'utf8');
   assert.match(sqlFiles, /CREATE USER \[frejsi_app\] WITH PASSWORD/);
-  assert.match(sqlFiles, /ALTER ROLE db_owner ADD MEMBER \[frejsi_app\]/);
+  // Reads, writes and DDL for the migrations; never db_owner (plan v0.5.0 section 7).
+  for (const role of ['db_datareader', 'db_datawriter', 'db_ddladmin']) {
+    assert.match(sqlFiles, new RegExp(`ALTER ROLE ${role} ADD MEMBER \\[frejsi_app\\]`));
+  }
+  assert.doesNotMatch(sqlFiles, /db_owner/);
   assert.doesNotMatch(sqlFiles, /LOGIN/, 'no server login');
   const sqlcmds = r.calls.filter((c) => c.startsWith('sqlcmd'));
-  assert.equal(sqlcmds.length, 2, sqlcmds.join('\n'));
+  assert.equal(sqlcmds.length, 3, sqlcmds.join('\n'));
   assert.match(sqlcmds[0], /-d frejsi /);
   assert.doesNotMatch(calls, /sqlcmd .*-d master/);
   const password = sqlFiles.match(/PASSWORD = N?'([^']+)'/)[1];
@@ -150,7 +172,7 @@ test('an existing SQL server (SQL_SERVER_ID): its own subscription and group for
   assert.match(r.calls.find((c) => /sql server show/.test(c)), target);
   assert.match(r.calls.find((c) => /sql server firewall-rule create/.test(c)), target);
   assert.match(r.calls.find((c) => /sql server firewall-rule delete/.test(c)), target);
-  assert.match(r.calls.find((c) => c.startsWith('sqlcmd')), /-S shared-sql\.database\.windows\.net -d frejsi /);
+  for (const c of r.calls.filter((x) => x.startsWith('sqlcmd'))) assert.match(c, /-S shared-sql\.database\.windows\.net -d frejsi /);
   assert.match(readFileSync(path.join(r.logDir, 'secret-database-url'), 'utf8'), /^sqlserver:\/\/shared-sql\.database\.windows\.net:1433;database=frejsi;user=frejsi_app;/);
 });
 
@@ -174,8 +196,9 @@ test('never echoes a secret', () => {
 test('later releases: existing secrets are reused, no user is created', () => {
   const r = runDeploy({ env: { FAKE_EXISTING_SECRETS: 'database-url web-pubsub-connection-string bootstrap-token vapid-private-key vapid-public-key' } });
   assert.equal(r.status, 0, r.output);
-  assert.equal(r.calls.filter((c) => c.startsWith('sqlcmd')).length, 1);
-  assert.doesNotMatch(readFileSync(path.join(r.logDir, 'sqlcmd-1.sql'), 'utf8'), /CREATE USER|ALTER USER/);
+  // The identity's contained user and the compatibility level: no application user is created.
+  assert.equal(r.calls.filter((c) => c.startsWith('sqlcmd')).length, 2);
+  assert.ok(sqlRuns(r).every((q) => !/frejsi_app|PASSWORD/.test(q.sql)), 'the application user was touched');
   assert.equal(r.calls.filter((c) => /keyvault secret set/.test(c)).length, 0);
   assert.match(readFileSync(path.join(r.logDir, 'pnpm-database-url'), 'utf8'), /password=FAKEDBPASSWORD/);
 });
@@ -298,12 +321,12 @@ test('an unreadable or empty optional AI secret stops the deploy before replacin
 test('raises SQL compatibility to 170 only when lower, after migration and before firewall closure', () => {
   const r = runDeploy({ env: { FAKE_EXISTING_SECRETS: baseSecrets } });
   assert.equal(r.status, 0, r.output);
-  const sql = readFileSync(path.join(r.logDir, 'sqlcmd-1.sql'), 'utf8');
+  const sql = sqlRuns(r).find((q) => /compatibility_level/.test(q.sql)).sql;
   assert.match(sql, /compatibility_level.*< 170/s);
   assert.match(sql, /COMPATIBILITY_LEVEL = 170/);
   assert.match(sql, /QUOTENAME\(DB_NAME\(\)\)/);
   const migrate = r.calls.findIndex((c) => /^pnpm .*migrate deploy/.test(c));
-  const compatibility = r.calls.findIndex((c) => /^sqlcmd /.test(c));
+  const compatibility = r.calls.findLastIndex((c) => /^sqlcmd /.test(c));
   const close = r.calls.findIndex((c) => /firewall-rule delete/.test(c));
   assert.ok(migrate < compatibility && compatibility < close);
   assert.match(r.calls[compatibility], /-b/);
@@ -353,5 +376,141 @@ test('VAPID: a missing private half or unreadable key fails before replacing app
     const r = runDeploy({env});
     assert.notEqual(r.status, 0);
     assert.equal(existsSync(path.join(r.logDir, 'swa-appsettings.json')), false);
+  }
+});
+
+const clientId = '0a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c4d';
+
+test('creates the identity\'s contained user by SID as the Entra admin, between the migration and the firewall closure', () => {
+  const r = runDeploy({ env: { FAKE_EXISTING_SECRETS: existingSecrets } });
+  assert.equal(r.status, 0, r.output);
+  const q = identitySql(r);
+  assert.ok(q, 'no SQL creating a TYPE = E user');
+  // Idempotent, named after the identity, SID from its client id (no Microsoft Graph lookup).
+  assert.match(q.sql, /IF NOT EXISTS \(SELECT 1 FROM sys\.database_principals WHERE name = N'id-frejsi-abc'/);
+  assert.match(q.sql, new RegExp(`CREATE USER \\[id-frejsi-abc\\] WITH SID = CONVERT\\(varbinary\\(16\\), CAST\\('${clientId}' AS uniqueidentifier\\)\\), TYPE = E`));
+  assert.doesNotMatch(q.sql, /FROM EXTERNAL PROVIDER/);
+  // Read and write rows only: the poller never runs DDL.
+  assert.match(q.sql, /ALTER ROLE db_datareader ADD MEMBER \[id-frejsi-abc\]/);
+  assert.match(q.sql, /ALTER ROLE db_datawriter ADD MEMBER \[id-frejsi-abc\]/);
+  assert.doesNotMatch(q.sql, /db_owner|db_ddladmin|db_datareader.*DROP/s);
+  // Order: client id read, firewall open, migration, user, firewall closed.
+  const idx = (re) => r.calls.findIndex((c) => re.test(c));
+  const show = idx(/^az identity show .*-n id-frejsi-abc .*clientId/);
+  const open = idx(/firewall-rule create/);
+  const migrate = idx(/^pnpm .*migrate deploy/);
+  const user = r.calls.findIndex((c, i) => /^sqlcmd /.test(c) && i > migrate);
+  const close = idx(/firewall-rule delete/);
+  assert.ok(show >= 0 && open >= 0 && migrate > open && user > migrate && close > user, r.calls.join('\n'));
+  assert.match(r.calls[user], /--authentication-method ActiveDirectoryDefault/);
+  assert.match(r.calls[user], /-b/);
+});
+
+test('the identity\'s SQL travels in a mode-600 file that is gone afterwards', () => {
+  const r = runDeploy({ env: { FAKE_EXISTING_SECRETS: existingSecrets } });
+  assert.equal(r.status, 0, r.output);
+  const runs = sqlRuns(r);
+  assert.ok(runs.length >= 2);
+  for (const q of runs) {
+    assert.equal(q.mode, '600', q.file);
+    assert.ok(q.removed, `${q.file} was left behind`);
+  }
+});
+
+test('a missing or malformed client id stops the deploy before any SQL is run for the identity', () => {
+  for (const bad of ['', 'not-a-guid', "0a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c4d'; DROP USER x; --"]) {
+    const r = runDeploy({ env: { FAKE_EXISTING_SECRETS: existingSecrets, FAKE_IDENTITY_CLIENT_ID: bad } });
+    assert.notEqual(r.status, 0, `accepted ${JSON.stringify(bad)}`);
+    assert.match(r.stderr, /client id/i);
+    assert.equal(identitySql(r), undefined);
+    assert.ok(r.calls.some((c) => /firewall-rule delete/.test(c)), 'the firewall rule must still be closed');
+    assert.ok(!r.calls.some((c) => /config-zip/.test(c)), 'nothing deployed');
+  }
+});
+
+test('exactly one user-assigned identity is expected in the group', () => {
+  const r = runDeploy({ env: { FAKE_EXISTING_SECRETS: existingSecrets, FAKE_IDENTITY_NAME: '' } });
+  assert.notEqual(r.status, 0);
+  assert.match(r.stderr, /Microsoft\.ManagedIdentity\/userAssignedIdentities/);
+});
+
+test('DATABASE_URL leaves the Function App only after WEBSITE_RUN_FROM_PACKAGE is verified', () => {
+  const r = runDeploy({ env: { FAKE_EXISTING_SECRETS: existingSecrets, FAKE_FUNCTION_SETTING_NAMES: 'APP_VERSION DATABASE_URL WEBSITE_RUN_FROM_PACKAGE' } });
+  assert.equal(r.status, 0, r.output);
+  const deletes = r.calls.filter((c) => /functionapp config appsettings delete .*DATABASE_URL/.test(c));
+  assert.equal(deletes.length, 1, r.calls.join('\n'));
+  assert.match(deletes[0], /--setting-names DATABASE_URL/);
+  assert.ok(!/(APP_VERSION|WEBSITE_RUN_FROM_PACKAGE)/.test(deletes[0]), 'only DATABASE_URL');
+  const zip = r.calls.findIndex((c) => /config-zip/.test(c));
+  const verified = r.calls.findIndex((c, i) => i > zip && /appsettings list .*WEBSITE_RUN_FROM_PACKAGE/.test(c));
+  const del = r.calls.indexOf(deletes[0]);
+  const user = r.calls.findIndex((c) => /^sqlcmd .*/.test(c) && r.calls.indexOf(c) > r.calls.findIndex((x) => /migrate deploy/.test(x)));
+  assert.ok(zip >= 0 && verified > zip && del > verified && del > user, r.calls.join('\n'));
+});
+
+test('a fresh fork has no DATABASE_URL setting to delete; that is a no-op, not an error', () => {
+  const r = runDeploy({ env: { FAKE_EXISTING_SECRETS: existingSecrets, FAKE_FUNCTION_SETTING_NAMES: 'APP_VERSION' } });
+  assert.equal(r.status, 0, r.output);
+  assert.ok(!r.calls.some((c) => /appsettings delete .*DATABASE_URL/.test(c)));
+});
+
+test('DATABASE_URL is kept when the package is not running', () => {
+  // No WEBSITE_RUN_FROM_PACKAGE after the zip deploy fails the release before the old setting goes.
+  const r = runDeploy({ env: { FAKE_EXISTING_SECRETS: existingSecrets, FAKE_FUNCTION_SETTING_NAMES: 'DATABASE_URL', FAKE_NO_RUN_FROM_PACKAGE: '1' } });
+  assert.notEqual(r.status, 0);
+  assert.match(r.stderr, /WEBSITE_RUN_FROM_PACKAGE/);
+  assert.ok(!r.calls.some((c) => /appsettings delete/.test(c)));
+});
+
+test('each OFF secret reaches the web settings only when it exists; otherwise a one-line notice', () => {
+  const absent = runDeploy({ env: { FAKE_EXISTING_SECRETS: existingSecrets } });
+  assert.equal(absent.status, 0, absent.output);
+  const swaAbsent = JSON.parse(readFileSync(path.join(absent.logDir, 'swa-appsettings.json'), 'utf8')).properties;
+  for (const name of ['OFF_CONTRIBUTE_USER', 'OFF_CONTRIBUTE_PASSWORD']) {
+    assert.ok(!Object.hasOwn(swaAbsent, name));
+    assert.match(absent.output, new RegExp(`Skipping optional OFF setting ${name}: Key Vault secret off-contribute-(user|password) is absent`));
+  }
+  const present = runDeploy({ env: { FAKE_EXISTING_SECRETS: `${existingSecrets} off-contribute-user off-contribute-password` } });
+  assert.equal(present.status, 0, present.output);
+  const swa = JSON.parse(readFileSync(path.join(present.logDir, 'swa-appsettings.json'), 'utf8')).properties;
+  assert.equal(swa.OFF_CONTRIBUTE_USER, 'FICTIONAL_OFF_USER');
+  assert.equal(swa.OFF_CONTRIBUTE_PASSWORD, 'FICTIONAL_OFF_PASSWORD');
+  assert.doesNotMatch(present.output, /Skipping optional OFF/);
+  // Neither value on any command line or in the log.
+  for (const marker of ['FICTIONAL_OFF_USER', 'FICTIONAL_OFF_PASSWORD']) {
+    assert.ok(!present.output.includes(marker), `${marker} in output`);
+    assert.ok(!present.calls.join('\n').includes(marker), `${marker} in argv`);
+  }
+  // Only one of the two: that one is written, the other skipped.
+  const half = runDeploy({ env: { FAKE_EXISTING_SECRETS: `${existingSecrets} off-contribute-user` } });
+  const swaHalf = JSON.parse(readFileSync(path.join(half.logDir, 'swa-appsettings.json'), 'utf8')).properties;
+  assert.equal(swaHalf.OFF_CONTRIBUTE_USER, 'FICTIONAL_OFF_USER');
+  assert.ok(!Object.hasOwn(swaHalf, 'OFF_CONTRIBUTE_PASSWORD'));
+});
+
+test('DEFAULT_LOCALE, FOOD_SOURCES and OFF_COUNTRY reach the web settings only when set', () => {
+  const unset = runDeploy({ env: { FAKE_EXISTING_SECRETS: existingSecrets, DEFAULT_LOCALE: '', FOOD_SOURCES: '' } });
+  assert.equal(unset.status, 0, unset.output);
+  const swaUnset = JSON.parse(readFileSync(path.join(unset.logDir, 'swa-appsettings.json'), 'utf8')).properties;
+  for (const name of ['DEFAULT_LOCALE', 'FOOD_SOURCES', 'OFF_COUNTRY']) assert.ok(!Object.hasOwn(swaUnset, name), name);
+  const set = runDeploy({ env: { FAKE_EXISTING_SECRETS: existingSecrets, DEFAULT_LOCALE: 'en', FOOD_SOURCES: 'off,frida', OFF_COUNTRY: 'gb' } });
+  assert.equal(set.status, 0, set.output);
+  const swa = JSON.parse(readFileSync(path.join(set.logDir, 'swa-appsettings.json'), 'utf8')).properties;
+  assert.equal(swa.DEFAULT_LOCALE, 'en');
+  assert.equal(swa.FOOD_SOURCES, 'off,frida');
+  assert.equal(swa.OFF_COUNTRY, 'gb');
+  // Only the one that is set.
+  const one = runDeploy({ env: { FAKE_EXISTING_SECRETS: existingSecrets, DEFAULT_LOCALE: 'en' } });
+  const swaOne = JSON.parse(readFileSync(path.join(one.logDir, 'swa-appsettings.json'), 'utf8')).properties;
+  assert.equal(swaOne.DEFAULT_LOCALE, 'en');
+  assert.ok(!Object.hasOwn(swaOne, 'FOOD_SOURCES') && !Object.hasOwn(swaOne, 'OFF_COUNTRY'));
+});
+
+test('prints nothing secret across the whole run, identity included', () => {
+  const r = runDeploy({ env: { FAKE_EXISTING_SECRETS: `${existingSecrets} off-contribute-user off-contribute-password`, FAKE_FUNCTION_SETTING_NAMES: 'DATABASE_URL' } });
+  assert.equal(r.status, 0, r.output);
+  for (const marker of SECRET_MARKERS) {
+    assert.ok(!r.output.includes(marker), `${marker} leaked`);
+    assert.ok(!r.calls.join('\n').includes(marker), `${marker} on a command line`);
   }
 });
