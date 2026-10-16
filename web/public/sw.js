@@ -65,3 +65,33 @@ self.addEventListener("fetch", (event) => {
     );
   }
 });
+
+function notificationUrl(value) {
+  if (typeof value !== "string") return null;
+  try {
+    const url = new URL(value, self.location.origin);
+    return url.origin === self.location.origin && /^\/(da|en)\/library\/[^/]+$/.test(url.pathname) ? url : null;
+  } catch { return null; }
+}
+self.addEventListener("push", (event) => {
+  let payload;
+  try { payload = event.data?.json(); } catch { return; }
+  if (!payload || typeof payload.title !== "string" || typeof payload.body !== "string" || !notificationUrl(payload.data?.url)) return;
+  event.waitUntil(self.registration.showNotification(payload.title, {
+    body: payload.body, data: {url: payload.data.url}, icon: "/icons/icon-192.png",
+  }));
+});
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  const url = notificationUrl(event.notification.data?.url);
+  if (!url) return;
+  event.waitUntil((async () => {
+    const windows = await self.clients.matchAll({type: "window", includeUncontrolled: true});
+    const client = windows.find((w) => new URL(w.url).origin === url.origin);
+    if (client) {
+      const destination = await client.navigate(url.href);
+      if (destination) await destination.focus();
+      else await self.clients.openWindow(url.href);
+    } else await self.clients.openWindow(url.href);
+  })());
+});

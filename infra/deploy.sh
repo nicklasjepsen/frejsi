@@ -15,7 +15,7 @@
 #   6. uploads the standalone Next.js build to the Static Web App
 #   7. registers the hub's `connect` event handler at the web app's /api/pubsub (issue #95)
 #
-# Required environment: AZURE_SUBSCRIPTION_ID, AZURE_RESOURCE_GROUP, APP_VERSION (the tag).
+# Required environment: AZURE_SUBSCRIPTION_ID, AZURE_RESOURCE_GROUP, APP_VERSION (the tag), ALERT_EMAIL.
 # Optional: CUSTOM_DOMAIN (sets APP_ORIGIN; otherwise the default hostname), GITHUB_OUTPUT,
 # PHOTOS_STORAGE_ACCOUNT (dedicated photo account; creates blob-connection-string once),
 # SQL_SERVER_ID (resource ID of an existing SQL server holding the database; infra/README.md).
@@ -34,6 +34,7 @@ set -euo pipefail
 : "${AZURE_SUBSCRIPTION_ID:?AZURE_SUBSCRIPTION_ID is required}"
 : "${AZURE_RESOURCE_GROUP:?AZURE_RESOURCE_GROUP is required}"
 : "${APP_VERSION:?APP_VERSION is required (the release tag)}"
+: "${ALERT_EMAIL:?ALERT_EMAIL is required for the push contact}"
 CUSTOM_DOMAIN="${CUSTOM_DOMAIN:-}"
 PHOTOS_STORAGE_ACCOUNT="${PHOTOS_STORAGE_ACCOUNT:-}"
 if [ -n "$PHOTOS_STORAGE_ACCOUNT" ] && ! [[ "$PHOTOS_STORAGE_ACCOUNT" =~ ^[a-z0-9]{3,24}$ ]]; then
@@ -50,7 +51,7 @@ POLLER_DIST="${POLLER_DIST:-poller/dist}"
 WEB_DIR="${WEB_DIR:-web}"
 RETRY_SLEEP="${DEPLOY_RETRY_SLEEP:-15}"
 
-for tool in az sqlcmd pnpm docker curl zip openssl mktemp jq; do
+for tool in az sqlcmd pnpm docker curl zip openssl mktemp jq node; do
   command -v "$tool" >/dev/null 2>&1 || { echo "::error::$tool is not installed on this runner" >&2; exit 1; }
 done
 test -d "$POLLER_DIST" || { echo "::error::$POLLER_DIST is missing; was the build artifact downloaded?" >&2; exit 1; }
@@ -316,6 +317,47 @@ fi
          APP_ORIGIN: $appOrigin,
          NEXT_PUBLIC_APP_VERSION: $version }
        + (if $blobConnection == "" then {} else {BLOB_CONNECTION_STRING: ($blobConnection | rtrimstr("\n"))} end)) }' > "$SWA_SETTINGS_FILE" )
+# --- Push contact and once-only VAPID pair (files only; never stdout or argv) ------------------
+if secret_exists vapid-public-key && ! secret_exists vapid-private-key; then
+  echo "::error::VAPID private key is missing; restore the original pair" >&2; exit 1
+fi
+if secret_exists vapid-private-key; then
+  secret_to_file vapid-private-key "$WORK/vapid-private"
+else
+  ( umask 077
+    node - "$WORK/vapid-private" <<'NODE'
+const {createECDH} = require('node:crypto');
+const {writeFileSync} = require('node:fs');
+const key = createECDH('prime256v1');
+key.generateKeys();
+writeFileSync(process.argv[2], key.getPrivateKey().toString('base64url'), {mode: 0o600});
+NODE
+  )
+  secret_write_from_file vapid-private-key "$WORK/vapid-private"
+fi
+if secret_exists vapid-public-key; then
+  secret_to_file vapid-public-key "$WORK/vapid-public"
+else
+  # Derive from the private half, including after a previous deploy stopped between the writes.
+  ( umask 077
+    node - "$WORK/vapid-private" "$WORK/vapid-public" <<'NODE'
+const {createECDH} = require('node:crypto');
+const {readFileSync, writeFileSync} = require('node:fs');
+const key = createECDH('prime256v1');
+key.setPrivateKey(Buffer.from(readFileSync(process.argv[2], 'utf8'), 'base64url'));
+writeFileSync(process.argv[3], key.getPublicKey().toString('base64url'), {mode: 0o600});
+NODE
+  )
+  secret_write_from_file vapid-public-key "$WORK/vapid-public"
+fi
+( umask 077
+  printf 'mailto:%s' "$ALERT_EMAIL" > "$WORK/vapid-subject"
+  jq --rawfile private "$WORK/vapid-private" --rawfile public "$WORK/vapid-public" --rawfile subject "$WORK/vapid-subject" \
+    '.properties += {VAPID_PRIVATE_KEY: $private, VAPID_PUBLIC_KEY: $public, VAPID_SUBJECT: $subject}' \
+    "$SWA_SETTINGS_FILE" > "$WORK/swa-push.json"
+  mv "$WORK/swa-push.json" "$SWA_SETTINGS_FILE"
+)
+
 # --- Optional AI settings: only the owner creates these secrets; absent means inactive ---------
 AI_SETTING_NAMES=(ANTHROPIC_API_KEY VOYAGE_API_KEY AZURE_OPENAI_ENDPOINT AZURE_OPENAI_API_KEY
   AZURE_OPENAI_DEPLOYMENT_SMALL AZURE_OPENAI_DEPLOYMENT_EVERYDAY AZURE_OPENAI_DEPLOYMENT_INSIGHT
