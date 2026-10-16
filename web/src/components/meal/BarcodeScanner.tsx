@@ -2,36 +2,48 @@
 import { useTranslations } from "next-intl";
 import { useEffect, useRef } from "react";
 
-import { createBarcodeReader, type BarcodeReader } from "@/lib/barcode/detect";
+import {
+  createBarcodeReader,
+  describeCameraError,
+  errorText,
+  type BarcodeReader,
+  type ScanFailure,
+} from "@/lib/barcode/detect";
 
 import styles from "./meal.module.css";
+
+/** A video element has a frame to draw once its readyState reaches HAVE_CURRENT_DATA. */
+const HAVE_CURRENT_DATA = 2;
+/** Detection errors in a row before the scanner gives up and says why. */
+const MAX_DETECT_FAILURES = 3;
 
 /**
  * The full-screen rear-camera view (design gap 8): the video, a frame to aim with, a 44 px close
  * and "Skriv stregkoden". Frames are read every `intervalMs` until a barcode with a valid checksum
- * is found; the camera is stopped before `onDetected`. A denied or missing camera calls `onDenied`
- * so the screen can show the typed-barcode field instead.
+ * is found; the camera is stopped before `onDetected`. A denied, missing or busy camera, or a
+ * reader that cannot start, calls `onFailed` with the reason and the browser's own error text, so
+ * the screen can show the typed-barcode field and say what went wrong.
  */
 export function BarcodeScanner({
   onDetected,
   onClose,
   onTypeBarcode,
-  onDenied,
+  onFailed,
   createReader = createBarcodeReader,
   intervalMs = 250,
 }: {
   onDetected: (barcode: string) => void;
   onClose: () => void;
   onTypeBarcode: () => void;
-  onDenied: () => void;
+  onFailed: (failure: ScanFailure) => void;
   createReader?: () => Promise<BarcodeReader>;
   intervalMs?: number;
 }) {
   const t = useTranslations("log.scanner");
   const kit = useTranslations("foodKit");
   const video = useRef<HTMLVideoElement>(null);
-  const callbacks = useRef({ onDetected, onDenied });
-  callbacks.current = { onDetected, onDenied };
+  const callbacks = useRef({ onDetected, onFailed });
+  callbacks.current = { onDetected, onFailed };
 
   useEffect(() => {
     // Mutated from callbacks, so kept in an object rather than narrowed locals.
@@ -49,16 +61,28 @@ export function BarcodeScanner({
         track.stop();
       });
     };
+    const fail = (failure: ScanFailure) => {
+      const wasStopped = isStopped();
+      stop();
+      if (!wasStopped) callbacks.current.onFailed(failure);
+    };
     void (async () => {
+      const media = (navigator as Partial<Navigator>).mediaDevices;
+      if (!media) {
+        const secure = (globalThis as { isSecureContext?: boolean }).isSecureContext;
+        fail({
+          reason: "noCamera",
+          detail: secure === false ? "insecure context" : "navigator.mediaDevices is unavailable",
+        });
+        return;
+      }
       try {
-        const media = (navigator as Partial<Navigator>).mediaDevices;
-        if (!media) throw new Error("no camera");
         run.stream = await media.getUserMedia({
           video: { facingMode: { ideal: "environment" } },
           audio: false,
         });
-      } catch {
-        if (!isStopped()) callbacks.current.onDenied();
+      } catch (error) {
+        fail(describeCameraError(error));
         return;
       }
       if (isStopped()) {
@@ -77,15 +101,29 @@ export function BarcodeScanner({
       let reader: BarcodeReader;
       try {
         reader = await createReader();
-      } catch {
-        const wasStopped = isStopped();
-        stop();
-        if (!wasStopped) callbacks.current.onDenied();
+      } catch (error) {
+        fail({ reason: "reader", detail: errorText(error) });
         return;
       }
+      let failures = 0;
       const tick = async () => {
         if (isStopped() || !video.current) return;
-        const code = await reader.detect(video.current).catch(() => null);
+        if (video.current.readyState < HAVE_CURRENT_DATA) {
+          // No frame yet (iOS takes a moment after play()): nothing to read, nothing wrong.
+          run.timer = setTimeout(() => void tick(), intervalMs);
+          return;
+        }
+        let code: string | null = null;
+        try {
+          code = await reader.detect(video.current);
+          failures = 0;
+        } catch (error) {
+          failures += 1;
+          if (failures >= MAX_DETECT_FAILURES) {
+            fail({ reason: "reader", detail: errorText(error) });
+            return;
+          }
+        }
         if (isStopped()) return;
         if (code) {
           stop();
@@ -101,7 +139,14 @@ export function BarcodeScanner({
 
   return (
     <div className={styles.scanner} role="dialog" aria-modal="true" aria-label={t("title")}>
-      <video ref={video} className={styles.scannerVideo} playsInline muted aria-hidden="true" />
+      <video
+        ref={video}
+        className={styles.scannerVideo}
+        autoPlay
+        playsInline
+        muted
+        aria-hidden="true"
+      />
       <div className={styles.scannerFrame} aria-hidden="true" />
       <button
         type="button"

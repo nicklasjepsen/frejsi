@@ -127,6 +127,10 @@ const lookups = () => fake.calls.filter((c) => c.path.includes("/lookup")).map((
 
 beforeAll(() => {
   HTMLMediaElement.prototype.play = () => Promise.resolve();
+  Object.defineProperty(HTMLMediaElement.prototype, "readyState", {
+    configurable: true,
+    get: () => 2,
+  });
 });
 beforeEach(() => {
   vi.useFakeTimers({ toFake: ["Date"] });
@@ -349,7 +353,7 @@ describe("scanning", () => {
   it("falls back to the typed field when the camera is denied, and validates the checksum first", async () => {
     api();
     stubMedia({
-      getUserMedia: () => Promise.reject(new DOMException("denied", "NotAllowedError")),
+      getUserMedia: () => Promise.reject(new DOMException("Permission denied", "NotAllowedError")),
     });
     fake.on(
       "GET /api/spaces/s1/lookup",
@@ -357,9 +361,12 @@ describe("scanning", () => {
     );
     mount();
     fireEvent.click(screen.getByRole("button", { name: "Scan" }));
-    expect(
-      await screen.findByText("Kameraet kan ikke bruges lige nu. Skriv stregkoden i stedet."),
-    ).toBeVisible();
+    const notice = await screen.findByRole("status");
+    expect(notice).toHaveTextContent(
+      "Appen må ikke bruge kameraet lige nu. Giv lov under telefonens indstillinger, eller skriv stregkoden i stedet.",
+    );
+    // The browser's own error text, so a report from a phone says what failed.
+    expect(notice).toHaveTextContent("Teknisk: NotAllowedError: Permission denied");
     const field = screen.getByRole("searchbox", { name: "Stregkode" });
     fireEvent.change(field, { target: { value: "2000000000016" } });
     fireEvent.keyDown(field, { key: "Enter" });

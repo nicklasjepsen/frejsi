@@ -50,7 +50,13 @@
     "title": "Scan en stregkode",
     "aim": "Hold stregkoden inden for rammen",
     "typeBarcode": "Skriv stregkoden",
-    "denied": "Kameraet kan ikke bruges lige nu. Skriv stregkoden i stedet.",
+    "failed": {
+      "denied": "Appen må ikke bruge kameraet lige nu. Giv lov under telefonens indstillinger, eller skriv stregkoden i stedet.",
+      "noCamera": "Der blev ikke fundet et kamera, der kan bruges. Skriv stregkoden i stedet.",
+      "busy": "Kameraet kunne ikke starte. Måske bruger en anden app det. Prøv igen, eller skriv stregkoden i stedet.",
+      "reader": "Scanneren kunne ikke starte. Skriv stregkoden i stedet."
+    },
+    "failedDetail": "Teknisk: {detail}",
     "typedLabel": "Stregkode",
     "invalid": "Tjek stregkoden og prøv igen."
   },

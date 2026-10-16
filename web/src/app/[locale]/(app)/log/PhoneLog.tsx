@@ -96,7 +96,7 @@ function EntryView({ controller, phone, locale }: Props) {
       <EntryTiles
         onSay={controller.sayEnabled ? controller.openSay : undefined}
         onScan={() => {
-          phone.setCameraDenied(false);
+          phone.setScanFailure(null);
           phone.setView("scan");
         }}
         onPick={() => {
@@ -195,8 +195,8 @@ function EntryView({ controller, phone, locale }: Props) {
           onTypeBarcode={() => {
             phone.setView("typeBarcode");
           }}
-          onDenied={() => {
-            phone.setCameraDenied(true);
+          onFailed={(failure) => {
+            phone.setScanFailure(failure);
             phone.setView("typeBarcode");
           }}
         />
@@ -226,9 +226,15 @@ function TypeBarcodeView({ controller, phone }: Props) {
           phone.setView("entry");
         }}
       />
-      {phone.cameraDenied && (
+      {phone.scanFailure && (
         <Notice tone="sunken" role="status">
-          {t("scanner.denied")}
+          {t(`scanner.failed.${phone.scanFailure.reason}`)}
+          {phone.scanFailure.detail && (
+            <>
+              <br />
+              <small>{t("scanner.failedDetail", { detail: phone.scanFailure.detail })}</small>
+            </>
+          )}
         </Notice>
       )}
       <SearchField
