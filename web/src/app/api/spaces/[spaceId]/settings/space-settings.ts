@@ -144,12 +144,18 @@ export function saveConnectedSource(
   deps: AuthDeps = {},
 ): Promise<SpaceSettings> {
   return run(deps, async (tx, emit, now) => {
+    const before = await tx.space.findUnique({ where: { id: spaceId } });
+    // The last reading belongs to the source that fetched it: a space that gives its sensor source
+    // up for manual readings starts the manual card with none, not with the sensor's last time.
+    const leavingSensor =
+      config.type === "manual" && sourceTypeOf(before?.glucoseSource ?? null) !== "manual";
     const row = await tx.space.update({
       where: { id: spaceId },
       data: {
         glucoseSource: JSON.stringify(GlucoseSourceConfig.parse(config)),
         sourceStatus: "connected",
         sourceFailures: 0,
+        ...(leavingSensor ? { lastReadingAt: null } : {}),
       },
     });
     await emit(spaceId, "source.status", { status: "connected", since: now().toISOString() });

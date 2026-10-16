@@ -408,6 +408,18 @@ describe("POST /api/spaces/:id/source · manual", () => {
     expect(events[1]?.payload).toEqual({ fields: ["glucoseSource", "sourceStatus"] });
   });
 
+  it("clears the sensor's last reading time when leaving a sensor source, and keeps a manual one", async () => {
+    Object.assign(space(), {
+      glucoseSource: JSON.stringify({ type: "nightscout", secretRef: "glucose-s1" }),
+      lastReadingAt: new Date("2026-10-15T07:50:00.000Z"),
+    });
+    const first = await post("owner", { type: "manual" });
+    expect(await first.json()).toMatchObject({ sourceType: "manual", lastReadingAt: null });
+    space().lastReadingAt = new Date("2026-10-15T07:55:00.000Z");
+    const again = await post("owner", { type: "manual" });
+    expect(await again.json()).toMatchObject({ lastReadingAt: "2026-10-15T07:55:00.000Z" });
+  });
+
   it("is 403 for a carer and a viewer and writes nothing", async () => {
     expect((await post("carer", { type: "manual" })).status).toBe(403);
     expect((await post("viewer", { type: "manual" })).status).toBe(403);
