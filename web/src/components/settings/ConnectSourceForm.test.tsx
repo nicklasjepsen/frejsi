@@ -45,6 +45,28 @@ function mount(api: ReturnType<typeof settingsApi>, locale: AppLocale = "da") {
   );
 }
 
+function mountNightscout(api: ReturnType<typeof settingsApi>, locale: AppLocale = "da") {
+  return render(
+    <I18nProvider locale={locale} messages={getMessages(locale)}>
+      <ConnectSourceForm locale={locale} spaceId="s1" sourceType="nightscout" api={api} />
+    </I18nProvider>,
+  );
+}
+
+// The copy under test comes from the messages, not from the sources of the Nightscout adapter.
+const labels = getMessages("da").settings.connect.nightscout;
+
+const NS_URL = "https://nightscout.example.test";
+
+function fillNightscout() {
+  fireEvent.change(screen.getByLabelText("Adresse på din Nightscout-side"), {
+    target: { value: NS_URL },
+  });
+  fireEvent.change(screen.getByLabelText("Adgangstoken"), {
+    target: { value: "example-ns-token-0123" },
+  });
+}
+
 function fill() {
   fireEvent.change(screen.getByLabelText("Brugernavn"), { target: { value: "example-publisher" } });
   fireEvent.change(screen.getByLabelText("Kodeord"), { target: { value: "example-secret" } });
@@ -132,7 +154,10 @@ describe("ConnectSourceForm ('Skift login', plan task 9)", () => {
     });
     expect(calls[0]?.url).not.toContain("example-secret");
     expect(container.innerHTML).not.toContain("example-secret");
-    expect(screen.getByRole("link", { name: "Annullér" })).toHaveAttribute("href", "/da/settings");
+    expect(screen.getByRole("link", { name: "Annullér" })).toHaveAttribute(
+      "href",
+      "/da/settings/source",
+    );
   });
 
   it("speaks English for an English user", () => {
@@ -141,5 +166,88 @@ describe("ConnectSourceForm ('Skift login', plan task 9)", () => {
     expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("Change login");
     expect(screen.getByLabelText("Password")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Connect" })).toBeInTheDocument();
+  });
+});
+
+describe("ConnectSourceForm · Nightscout (undrawn, design gap)", () => {
+  it("asks for the address, a token or API secret and the secret, and posts the union body", async () => {
+    const { api, calls } = fakeApi(() => Response.json({ ...settings, sourceType: "nightscout" }));
+    mountNightscout(api);
+    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("Forbind Nightscout");
+    expect(screen.queryByLabelText("Brugernavn")).toBeNull();
+    fillNightscout();
+    fireEvent.click(screen.getByRole("button", { name: "Forbind" }));
+    await waitFor(() => {
+      expect(navigation.push).toHaveBeenCalledWith("/da/settings");
+    });
+    expect(calls[0]?.url).toBe("/api/spaces/s1/source");
+    expect(JSON.parse(calls[0]?.init.body as string)).toEqual({
+      type: "nightscout",
+      url: NS_URL,
+      token: "example-ns-token-0123",
+    });
+    expect(navigation.refresh).toHaveBeenCalled();
+  });
+
+  it("posts an apiSecret when the segmented control says the second option", async () => {
+    const { api, calls } = fakeApi(() => Response.json(settings));
+    mountNightscout(api);
+    fireEvent.click(screen.getByRole("radio", { name: labels.apiSecret }));
+    fireEvent.change(screen.getByLabelText("Adresse på din Nightscout-side"), {
+      target: { value: NS_URL },
+    });
+    fireEvent.change(screen.getByLabelText(labels.apiSecret, { selector: "input" }), {
+      target: { value: "example-second-kind-1" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Forbind" }));
+    await waitFor(() => {
+      expect(calls).toHaveLength(1);
+    });
+    expect(JSON.parse(calls[0]?.init.body as string)).toEqual({
+      type: "nightscout",
+      url: NS_URL,
+      apiSecret: "example-second-kind-1",
+    });
+  });
+
+  it("shows source-bad-credentials as the Nightscout hint under the field, and unreachable as the usual message", async () => {
+    const refused = fakeApi(() =>
+      Response.json({ error: { code: "source-bad-credentials", message: "x" } }, { status: 400 }),
+    );
+    mountNightscout(refused.api);
+    fillNightscout();
+    fireEvent.click(screen.getByRole("button", { name: "Forbind" }));
+    expect(await screen.findByRole("alert")).toHaveTextContent(labels.badCredentials);
+    expect(screen.getAllByRole("alert")).toHaveLength(1);
+    cleanup();
+
+    const down = fakeApi(() =>
+      Response.json({ error: { code: "source-unreachable", message: "x" } }, { status: 503 }),
+    );
+    mountNightscout(down.api);
+    fillNightscout();
+    fireEvent.click(screen.getByRole("button", { name: "Forbind" }));
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "Vi kunne ikke få forbindelse til kilden lige nu. Prøv igen om lidt.",
+    );
+  });
+
+  it("shows the address message for source-url-invalid", async () => {
+    const bad = fakeApi(() =>
+      Response.json({ error: { code: "source-url-invalid", message: "x" } }, { status: 400 }),
+    );
+    mountNightscout(bad.api);
+    fillNightscout();
+    fireEvent.click(screen.getByRole("button", { name: "Forbind" }));
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "Adressen skal begynde med https://",
+    );
+  });
+
+  it("does not post without an address and a secret", () => {
+    const { api, calls } = fakeApi(() => Response.json(settings));
+    mountNightscout(api);
+    fireEvent.click(screen.getByRole("button", { name: "Forbind" }));
+    expect(calls).toEqual([]);
   });
 });

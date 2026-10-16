@@ -301,7 +301,7 @@ describe("POST /api/spaces/:id/source · nightscout", () => {
     });
   });
 
-  it("accepts an API-secret in place of a token", async () => {
+  it("accepts the second kind of secret in place of a token", async () => {
     const res = await post("owner", {
       type: "nightscout",
       url: NS_URL,

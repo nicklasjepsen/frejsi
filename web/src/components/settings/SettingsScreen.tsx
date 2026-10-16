@@ -17,15 +17,14 @@ import { Avatar } from "@/components/ui/Avatar";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Notice } from "@/components/ui/Notice";
-import { SETTINGS_SOURCE_TYPES } from "./source-types";
 import { localeHref, type AppLocale } from "@/lib/i18n/routing";
-import { formatClock } from "@/lib/i18n/time";
 
 import type { UserSettingsPatch } from "./contracts";
 import { Row, SegmentedControl, Switch } from "./controls";
 import type { SettingsData, SettingsPerson } from "./load-settings";
 import { useServerState } from "./server-state";
-import { formatDay, sameDay } from "./reading-time";
+import { SourceCards } from "./SourceCards";
+import { useSourceText } from "./source-text";
 import { failureCode, settingsApi, type SettingsApi } from "./settings-client";
 import styles from "./settings.module.css";
 
@@ -63,19 +62,35 @@ export function SettingsScreen({
 
   // What the screen shows: the server's data, with this screen's own writes layered on until the
   // next refresh brings them back from the server (another owner's change arrives the same way).
-  const [{ space, people }, update] = useServerState(data, (d) => ({
+  const [{ space, people, source }, update] = useServerState(data, (d) => ({
     space: d.space,
     people: d.people,
+    source: d.source,
   }));
   const setSpace = (next: SpaceSettings) => {
     update((s) => ({ ...s, space: next }));
+  };
+  // A source switch answers with the settings; the card and the row follow from it at once, and
+  // the refresh that comes after brings the server's own view back.
+  const switchedSource = (next: SpaceSettings) => {
+    update((s) => ({
+      ...s,
+      space: next,
+      source: {
+        type: next.sourceType,
+        region: null,
+        status: next.sourceStatus,
+        lastReadingAt: next.lastReadingAt,
+        since: now,
+      },
+    }));
+    router.refresh();
   };
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<ApiErrorCode | null>(null);
 
   const isOwner = data.role === "owner";
   const me = people.find((p) => p.userId === data.me.userId) ?? data.me;
-  const source = data.source;
   const settingsHref = (path: string) => localeHref(locale, `/settings${path}`);
 
   async function attempt(work: () => Promise<void>) {
@@ -116,35 +131,7 @@ export function SettingsScreen({
     });
 
   const sourceName = source?.type ? sources(`${source.type}.name`) : null;
-  const phoneSourceText = describePhone();
-  const desktopSourceText = describeDesktop();
-
-  function describePhone(): string {
-    if (!source || !sourceName) return t("source.notConfigured");
-    if (source.status === "disconnected")
-      return t("source.rowDisconnected", { source: sourceName });
-    if (source.status === "connected" && source.lastReadingAt) {
-      const time = formatClock(new Date(source.lastReadingAt), data.timezone);
-      return t("source.rowConnected", { source: sourceName, time });
-    }
-    if (source.status === "connected")
-      return t("source.rowConnectedNoReading", { source: sourceName });
-    return t("source.notConfigured");
-  }
-
-  function describeDesktop(): string {
-    if (!source?.type || !source.region) return t("source.notConfigured");
-    const region = t(`source.region.${source.region}`);
-    if (source.status === "disconnected") return t("source.cardDisconnected", { region });
-    if (source.status !== "connected") return t("source.notConfigured");
-    if (!source.lastReadingAt) return t("source.cardConnectedNoReading", { region });
-    const at = new Date(source.lastReadingAt);
-    const time = formatClock(at, data.timezone);
-    const when = sameDay(at, new Date(now), data.timezone)
-      ? t("source.today", { time })
-      : t("source.onDate", { date: formatDay(at, data.timezone, locale), time });
-    return t("source.cardConnected", { when, region });
-  }
+  const sourceText = useSourceText(source, data.timezone, now, locale);
 
   /**
    * The person rows: a simpleMode switch for everyone but viewers (it means nothing in the viewer
@@ -222,50 +209,22 @@ export function SettingsScreen({
               <Card className={cx(styles.list, styles.phoneOnly)}>
                 <Row
                   title={sourceName ?? t("sections.source")}
-                  sub={phoneSourceText}
+                  sub={sourceText.phoneRow()}
                   testId="source-row"
                   {...(isOwner ? { href: settingsHref("/source") } : {})}
                 />
-                <Row title={t("source.nightscout")} sub={t("comingLater")} />
-                <Row title={t("source.manual")} sub={t("comingLater")} />
               </Card>
-              <div className={cx(styles.sourceCards, styles.desktopOnly)}>
-                {SETTINGS_SOURCE_TYPES.map((type) => {
-                  const selected = type === source.type;
-                  return (
-                    <div
-                      key={type}
-                      className={styles.sourceCard}
-                      data-selected={selected}
-                      data-testid={selected ? "source-card" : undefined}
-                    >
-                      <span className={styles.cardText}>
-                        <span className={styles.cardTitle}>{sources(`${type}.name`)}</span>
-                        <span className={styles.cardSub}>
-                          {selected ? desktopSourceText : t("source.notConfigured")}
-                        </span>
-                      </span>
-                      {isOwner && (
-                        <Button variant="secondary" href={settingsHref("/source")}>
-                          {selected ? t("source.changeLogin") : t("source.connect")}
-                        </Button>
-                      )}
-                    </div>
-                  );
-                })}
-                <div className={styles.sourceCard}>
-                  <span className={styles.cardText}>
-                    <span className={styles.cardTitle}>{t("source.nightscout")}</span>
-                    <span className={styles.cardSub}>{t("comingLater")}</span>
-                  </span>
-                </div>
-                <div className={styles.sourceCard}>
-                  <span className={styles.cardText}>
-                    <span className={styles.cardTitle}>{t("source.manual")}</span>
-                    <span className={styles.cardSub}>{t("comingLater")}</span>
-                  </span>
-                </div>
-                {sourceName && <Notice>{t("source.vaultNote", { source: sourceName })}</Notice>}
+              <div className={cx(styles.desktopOnly, styles.fill)}>
+                <SourceCards
+                  locale={locale}
+                  spaceId={data.spaceId}
+                  source={source}
+                  timezone={data.timezone}
+                  now={now}
+                  owner={isOwner}
+                  api={api}
+                  onSwitched={switchedSource}
+                />
               </div>
             </section>
           )}

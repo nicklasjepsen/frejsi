@@ -13,7 +13,7 @@ import { Card } from "@/components/ui/Card";
 import { Notice } from "@/components/ui/Notice";
 import { localeHref, type AppLocale } from "@/lib/i18n/routing";
 
-import { PageHeader } from "./controls";
+import { PageHeader, SegmentedControl } from "./controls";
 import { failureCode, settingsApi, type SettingsApi } from "./settings-client";
 import styles from "./settings.module.css";
 
@@ -50,17 +50,28 @@ export function ConnectSourceForm({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<ApiErrorCode | null>(null);
 
-  const back = localeHref(locale, "/settings");
+  const [url, setUrl] = useState("");
+  const [secretKind, setSecretKind] = useState<"token" | "apiSecret">("token");
+  const [secret, setSecret] = useState("");
+  const nightscout = sourceType === "nightscout";
+
+  const back = localeHref(locale, "/settings/source");
 
   async function submit(event: FormEvent) {
     event.preventDefault();
-    if (!username || !password) return;
+    if (nightscout ? !url || !secret : !username || !password) return;
     setBusy(true);
     setError(null);
     try {
-      await api.connectSource(spaceId, { type: "dexcom-share", region, username, password });
+      await api.connectSource(
+        spaceId,
+        nightscout
+          ? { type: "nightscout", url: url.trim(), [secretKind]: secret }
+          : { type: "dexcom-share", region, username, password },
+      );
       setPassword("");
-      router.push(back);
+      setSecret("");
+      router.push(localeHref(locale, "/settings"));
       router.refresh();
     } catch (failure) {
       setError(failureCode(failure));
@@ -70,68 +81,129 @@ export function ConnectSourceForm({
 
   return (
     <div className={styles.page} data-testid="connect-source">
-      <PageHeader backHref={back} backLabel={t("back")} title={t("connect.title")} />
+      <PageHeader
+        backHref={back}
+        backLabel={t("back")}
+        title={nightscout ? t("connect.nightscout.title") : t("connect.title")}
+      />
       <Card>
         <form className={styles.form} onSubmit={(e) => void submit(e)} aria-busy={busy}>
           <p className={styles.lead}>
-            <strong>{sources(`${sourceType}.name`)}</strong> · {t("connect.lead")}
+            <strong>{sources(`${sourceType}.name`)}</strong> ·{" "}
+            {nightscout ? t("connect.nightscout.lead") : t("connect.lead")}
           </p>
-          <label className={styles.field}>
-            {t("connect.username")}
-            <input
-              className={styles.input}
-              name="username"
-              type="text"
-              autoComplete="off"
-              autoCapitalize="none"
-              spellCheck={false}
-              required
-              value={username}
-              onChange={(e) => {
-                setUsername(e.target.value);
-              }}
-              disabled={busy}
-            />
-          </label>
-          <label className={styles.field}>
-            {t("connect.password")}
-            <input
-              className={styles.input}
-              name="password"
-              type="password"
-              autoComplete="off"
-              required
-              value={password}
-              onChange={(e) => {
-                setPassword(e.target.value);
-              }}
-              disabled={busy}
-            />
-          </label>
-          {/* The region options follow the shared contract today (ConnectSourceRequest.region is a
+          {nightscout ? (
+            <>
+              <label className={styles.field}>
+                {t("connect.nightscout.url")}
+                <input
+                  className={styles.input}
+                  name="url"
+                  type="url"
+                  inputMode="url"
+                  autoComplete="off"
+                  autoCapitalize="none"
+                  spellCheck={false}
+                  required
+                  placeholder={t("connect.nightscout.urlPlaceholder")}
+                  value={url}
+                  onChange={(e) => {
+                    setUrl(e.target.value);
+                  }}
+                  disabled={busy}
+                />
+              </label>
+              <SegmentedControl
+                label={t("connect.nightscout.secretKind")}
+                value={secretKind}
+                options={[
+                  { value: "token", label: t("connect.nightscout.token") },
+                  { value: "apiSecret", label: t("connect.nightscout.apiSecret") },
+                ]}
+                onChange={setSecretKind}
+                disabled={busy}
+              />
+              <label className={styles.field}>
+                {t(`connect.nightscout.${secretKind}`)}
+                <input
+                  className={styles.input}
+                  name="secret"
+                  type="password"
+                  autoComplete="off"
+                  required
+                  value={secret}
+                  onChange={(e) => {
+                    setSecret(e.target.value);
+                  }}
+                  disabled={busy}
+                />
+                {error === "source-bad-credentials" && (
+                  <span role="alert" className={styles.fieldError}>
+                    {t("connect.nightscout.badCredentials")}
+                  </span>
+                )}
+              </label>
+            </>
+          ) : (
+            <>
+              <label className={styles.field}>
+                {t("connect.username")}
+                <input
+                  className={styles.input}
+                  name="username"
+                  type="text"
+                  autoComplete="off"
+                  autoCapitalize="none"
+                  spellCheck={false}
+                  required
+                  value={username}
+                  onChange={(e) => {
+                    setUsername(e.target.value);
+                  }}
+                  disabled={busy}
+                />
+              </label>
+              <label className={styles.field}>
+                {t("connect.password")}
+                <input
+                  className={styles.input}
+                  name="password"
+                  type="password"
+                  autoComplete="off"
+                  required
+                  value={password}
+                  onChange={(e) => {
+                    setPassword(e.target.value);
+                  }}
+                  disabled={busy}
+                />
+              </label>
+              {/* The region options follow the shared contract today (ConnectSourceRequest.region is a
               DexcomShareRegion). When a second GlucoseSource lands, they come from that source
               type's own config schema instead of being fixed here. */}
-          <fieldset className={styles.field} style={{ border: 0, padding: 0, margin: 0 }}>
-            <legend>{t("connect.region")}</legend>
-            <div className={styles.radios}>
-              {DexcomShareRegion.options.map((option) => (
-                <label key={option} className={styles.radio}>
-                  <input
-                    type="radio"
-                    name="region"
-                    value={option}
-                    checked={region === option}
-                    onChange={() => {
-                      setRegion(option);
-                    }}
-                    disabled={busy}
-                  />
-                  {t(`connect.regionOption.${option}`)}
-                </label>
-              ))}
-            </div>
-          </fieldset>
-          {error && (
+              <fieldset className={styles.field} style={{ border: 0, padding: 0, margin: 0 }}>
+                <legend>{t("connect.region")}</legend>
+                <div className={styles.radios}>
+                  {DexcomShareRegion.options.map((option) => (
+                    <label key={option} className={styles.radio}>
+                      <input
+                        type="radio"
+                        name="region"
+                        value={option}
+                        checked={region === option}
+                        onChange={() => {
+                          setRegion(option);
+                        }}
+                        disabled={busy}
+                      />
+                      {t(`connect.regionOption.${option}`)}
+                    </label>
+                  ))}
+                </div>
+              </fieldset>
+            </>
+          )}
+          {error && !(nightscout && error === "source-bad-credentials") && (
             <Notice tone="sunken" role="alert">
               {errors(error)}
             </Notice>
