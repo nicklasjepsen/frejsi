@@ -60,7 +60,8 @@ export class AzureOpenAiProvider implements AiProvider {
     ]);
   }
   async embed(req: EmbedRequest) {
-    const deployment = this.options.deployments.embed ?? "text-embedding-3-small";
+    const requested = this.options.deployments.embed;
+    const deployment = requested?.length ? requested : "text-embedding-3-small";
     const response = await this.post(
       deployment,
       "embeddings",

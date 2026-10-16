@@ -180,3 +180,12 @@ it("can send the existing parse contract with its transformed food fields", asyn
   expect(result).toMatchObject({ kind: "json", json: { items: [], unmatched: [] } });
   expect(t.calls).toHaveLength(1);
 });
+it("uses the embedding default when its optional setting is blank", async () => {
+  const t = transport(fixture("ollama", "embed"));
+  await new OllamaProvider({
+    url: "http://127.0.0.1:11434",
+    models: { embed: "" },
+    fetch: t.fetch,
+  }).embed({ texts: ["Apple"] });
+  expect(t.calls[0]?.body.model).toBe("mxbai-embed-large");
+});

@@ -46,7 +46,8 @@ export class OllamaProvider implements AiProvider {
     return this.chat(req, [{ role: "user", content: req.prompt, images: [req.image.base64] }]);
   }
   async embed(req: EmbedRequest) {
-    const model = this.options.models?.embed ?? "mxbai-embed-large";
+    const requested = this.options.models?.embed;
+    const model = requested?.length ? requested : "mxbai-embed-large";
     const response = await this.post(
       "embed",
       { model, input: req.texts, dimensions: 1024 },

@@ -39,7 +39,7 @@ it.each(["embed-1536", "missing", "nonfinite", "count", "duplicate"])(
               : {};
     await expect(
       new VoyageEmbeddings({ apiKey: "fictional", fetch: transport(body).fetch }).embed({
-        texts: ["Apple"],
+        texts: name === "duplicate" ? ["Apple", "Pear"] : ["Apple"],
       }),
     ).rejects.toMatchObject({ code: "ai-unavailable" });
   },
