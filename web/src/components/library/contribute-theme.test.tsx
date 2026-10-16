@@ -1,6 +1,16 @@
+import "@testing-library/jest-dom/vitest";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { readFileSync } from "node:fs";
 import path from "node:path";
-import { expect, it } from "vitest";
+import { afterEach, expect, it, vi } from "vitest";
+
+import { I18nProvider } from "@/lib/i18n/Provider";
+import { getMessages } from "@/lib/i18n/messages";
+
+import { FoodForm } from "./FoodForm";
+import { artboardFoods, fakeFoodsApi } from "./test-support";
+
+afterEach(cleanup);
 
 const read = (file: string) => readFileSync(path.resolve(import.meta.dirname, file), "utf8");
 const css = read("library.module.css");
@@ -57,4 +67,41 @@ it("keeps the row at one size for the phone (360) and the desktop panel (1280)",
     }
     expect(css.slice(start, end)).not.toMatch(/\.toggle\b/);
   }
+});
+
+// The rendered form, so removing the checkbox or the outcome line fails here: the row is the
+// `.toggle` label from the stylesheet checked above, at every mode and accent, and it is the same
+// markup in the phone page and the desktop panel (one form, no width-specific branch).
+it("renders the checkbox row and the outcome line in every mode and accent", async () => {
+  const api = fakeFoodsApi(artboardFoods());
+  api.available = ["off"];
+  vi.stubGlobal("fetch", api.fetch);
+  const food = artboardFoods().find((row) => row.id === "f-rye");
+  if (!food) throw new Error("f-rye");
+  for (const mode of ["light", "dark"]) {
+    for (const accent of ["olive", "plum", "sea", "forest", "garnet"]) {
+      const { container, unmount } = render(
+        <div data-accent={accent} data-mode={mode}>
+          <I18nProvider locale="da" messages={getMessages("da")}>
+            <FoodForm spaceId="s1" food={food} onSaved={vi.fn()} />
+          </I18nProvider>
+        </div>,
+      );
+      const box = await screen.findByRole("checkbox", {
+        name: /Send rettelsen til Open Food Facts/,
+      });
+      expect(box.closest("label")?.className).toMatch(/toggle/);
+      fireEvent.click(box);
+      fireEvent.click(screen.getByRole("button", { name: "Gem" }));
+      await waitFor(() => {
+        expect(screen.getByTestId("contribution-outcome")).toHaveTextContent("Sendt til");
+      });
+      expect(box.closest("label")?.outerHTML).toMatchSnapshot(`row ${mode} ${accent}`);
+      expect(
+        container.querySelector("[data-testid=contribution-outcome]")?.outerHTML,
+      ).toMatchSnapshot(`outcome ${mode} ${accent}`);
+      unmount();
+    }
+  }
+  vi.unstubAllGlobals();
 });
