@@ -62,8 +62,12 @@ export class WebPushSink implements EventSink {
           typeof error === "object" && error !== null && "statusCode" in error
             ? error.statusCode
             : undefined;
-        if (status === 404 || status === 410) await this.repository.remove(recipient.id);
-        else await this.repository.failed(recipient.id);
+        try {
+          if (status === 404 || status === 410) await this.repository.remove(recipient.id);
+          else await this.repository.failed(recipient.id);
+        } catch {
+          this.write({ count: 1, code: "push-bookkeeping-failed" });
+        }
         this.write({
           count: 1,
           code: status === 404 || status === 410 ? "push-expired" : "push-failed",
