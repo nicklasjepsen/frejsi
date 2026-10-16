@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # Start one Codex lane end to end (docs/agent-workflow.md §12): worktree from origin/main, a brief,
 # and `codex exec` unsandboxed in the background. Codex builds, commits, pushes, opens the PR and
-# merges on green ci with every Codex thread resolved. Wait on it by pid from "$S/running"
-# (`while kill -0 <pid>`), never `pgrep -f "codex exec"`, which matches the waiting shell itself.
+# merges on green ci with every Codex thread resolved. Wait on it with lane-wait.sh <issue> (it
+# reports a lane whose log stops growing), never `pgrep -f "codex exec"`, which matches the waiting shell itself.
 #
 # Environment: MS (milestone, default v0.2.0 — always pass it), PLAN (plan file for "task N"),
 # CODEX_LANE_DIR (briefs, logs and final reports; default ~/.cache/frejsi-codex-lanes).
