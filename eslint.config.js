@@ -256,6 +256,36 @@ const aiBoundaryRule = {
 
 export const boundaries = [
   {
+    name: "frejsi/boundaries/db",
+    files: ["**/*.ts", "**/*.tsx", "**/*.mts", "**/*.cts"],
+    plugins: {
+      "frejsi-db": {
+        rules: {
+          vendor: {
+            meta: { type: "problem", schema: [] },
+            create(context) {
+              if (context.filename.replaceAll("\\", "/").includes("/shared/src/db/")) return {};
+              return {
+                Literal(node) {
+                  if (
+                    typeof node.value === "string" &&
+                    /^(?:@prisma\/adapter-mssql|mssql|tedious)(?:\/|$)/.test(node.value)
+                  )
+                    context.report({
+                      node,
+                      message:
+                        "Only shared/src/db/ imports the SQL Server driver adapter; use createPrismaFromEnv.",
+                    });
+                },
+              };
+            },
+          },
+        },
+      },
+    },
+    rules: { "frejsi-db/vendor": "error" },
+  },
+  {
     name: "frejsi/boundaries/push",
     files: ["**/*.ts", "**/*.tsx", "**/*.mts", "**/*.cts"],
     plugins: {
