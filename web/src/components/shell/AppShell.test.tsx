@@ -378,26 +378,20 @@ it("updates both simple navigation surfaces after another adult toggles AI", () 
       </I18nProvider>,
     );
   });
-  expect(
-    within(tabs()).queryByRole("link", { name: "Spørg" }),
-  ).not.toBeInTheDocument();
+  expect(within(tabs()).queryByRole("link", { name: "Spørg" })).not.toBeInTheDocument();
   act(() => {
     shellFeed.handlers.get("space.updated")?.();
   });
-  expect(within(tabs()).getByRole("link", { name: "Spørg" })).toHaveAttribute(
+  expect(within(tabs()).getByRole("link", { name: "Spørg" })).toHaveAttribute("href", "/da/ask");
+  expect(within(sidebar()).getByRole("link", { name: "Spørg en voksen" })).toHaveAttribute(
     "href",
     "/da/ask",
   );
-  expect(
-    within(sidebar()).getByRole("link", { name: "Spørg en voksen" }),
-  ).toHaveAttribute("href", "/da/ask");
   expect(shellFeed.calls).toContainEqual({ readings: false });
   act(() => {
     shellFeed.handlers.get("space.updated")?.();
   });
-  expect(
-    within(tabs()).queryByRole("link", { name: "Spørg" }),
-  ).not.toBeInTheDocument();
+  expect(within(tabs()).queryByRole("link", { name: "Spørg" })).not.toBeInTheDocument();
   expect(
     within(sidebar()).queryByRole("link", { name: "Spørg en voksen" }),
   ).not.toBeInTheDocument();

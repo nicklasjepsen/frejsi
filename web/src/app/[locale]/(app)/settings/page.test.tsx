@@ -162,9 +162,9 @@ describe("settings pages (plan task 9)", () => {
   it("sends a non-owner from the connect form back to Settings without loading anything", async () => {
     mocks.session = session;
     mocks.shell = shellFor("carer");
-    await expect(
-      ConnectSourcePage({ params, searchParams: search("nightscout") }),
-    ).rejects.toThrow("NEXT_REDIRECT:/da/settings");
+    await expect(ConnectSourcePage({ params, searchParams: search("nightscout") })).rejects.toThrow(
+      "NEXT_REDIRECT:/da/settings",
+    );
     expect(mocks.loadCalls).toEqual([]);
   });
 
@@ -184,9 +184,9 @@ describe("settings pages (plan task 9)", () => {
     asOwner();
     mocks.data = ownerData(null);
     for (const type of ["manual", "ftp", undefined]) {
-      await expect(
-        ConnectSourcePage({ params, searchParams: search(type) }),
-      ).rejects.toThrow("NEXT_REDIRECT:/da/settings/source");
+      await expect(ConnectSourcePage({ params, searchParams: search(type) })).rejects.toThrow(
+        "NEXT_REDIRECT:/da/settings/source",
+      );
     }
   });
 

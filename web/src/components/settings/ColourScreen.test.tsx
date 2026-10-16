@@ -148,19 +148,19 @@ describe("ColourScreen (Farve-Indstilling)", () => {
   it("offers the five colours by their Danish names, the two explanatory lines, and a way back to Settings", () => {
     mount(data);
     const swatches = screen.getByRole("radiogroup", { name: "Farver" });
-    expect(within(swatches).getAllByRole("radio").map((r) => r.textContent)).toEqual([
-      "Oliven",
-      "Blomme",
-      "Hav",
-      "Skov",
-      "Granat",
-    ]);
+    expect(
+      within(swatches)
+        .getAllByRole("radio")
+        .map((r) => r.textContent),
+    ).toEqual(["Oliven", "Blomme", "Hav", "Skov", "Granat"]);
     expect(
       screen.getByText(
         "Hver person vælger sin egen farve. Den ændrer kun udseendet – aldrig hvad et tal betyder.",
       ),
     ).toBeInTheDocument();
-    expect(screen.getByText(/Måltider er altid teglrøde, og tallet er altid sort/)).toBeInTheDocument();
+    expect(
+      screen.getByText(/Måltider er altid teglrøde, og tallet er altid sort/),
+    ).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Tilbage" })).toHaveAttribute("href", "/da/settings");
     expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("Farve");
   });
@@ -184,7 +184,11 @@ describe("ColourScreen (Farve-Indstilling)", () => {
     const preview = screen.getByTestId("colour-preview");
     expect(preview).toHaveAttribute("data-accent", "plum");
     expect(preview).toHaveTextContent("Sådan ser det ud for Alma");
-    expect(screen.getByText("Måltider er altid teglrøde, og tallet er altid sort – uanset farve. Alma kan også selv skifte under Mere.")).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "Måltider er altid teglrøde, og tallet er altid sort – uanset farve. Alma kan også selv skifte under Mere.",
+      ),
+    ).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("radio", { name: "Vælg farven Skov til Alma" }));
     await waitFor(() => {
@@ -210,7 +214,9 @@ describe("ColourScreen (Farve-Indstilling)", () => {
     mount({ ...data, role: "carer", me: child, people: [child] });
     expect(screen.queryByRole("radiogroup", { name: "Hvem" })).toBeNull();
     expect(screen.getByTestId("colour-preview")).toHaveAttribute("data-accent", "plum");
-    expect(screen.getByText("Måltider er altid teglrøde, og tallet er altid sort – uanset farve.")).toBeInTheDocument();
+    expect(
+      screen.getByText("Måltider er altid teglrøde, og tallet er altid sort – uanset farve."),
+    ).toBeInTheDocument();
   });
 
   it("shows owners and carers the latest live reading with its age in the preview", () => {
@@ -247,7 +253,9 @@ describe("ColourScreen (Farve-Indstilling)", () => {
   it("speaks English in the empty preview", () => {
     live.state = liveState({ readings: [], latest: null });
     mount({ ...data, me: { ...owner, locale: "en" } }, "en");
-    expect(within(screen.getByTestId("colour-preview")).getByText("No readings yet")).toBeInTheDocument();
+    expect(
+      within(screen.getByTestId("colour-preview")).getByText("No readings yet"),
+    ).toBeInTheDocument();
   });
 
   it("never mounts the reading for a viewer: the band and the button only", () => {
@@ -263,7 +271,9 @@ describe("ColourScreen (Farve-Indstilling)", () => {
 
   it("shows the API's message by code when the write is refused and keeps the old colour", async () => {
     const fetchImpl = vi.fn(() =>
-      Promise.resolve(Response.json({ error: { code: "forbidden", message: "x" } }, { status: 403 })),
+      Promise.resolve(
+        Response.json({ error: { code: "forbidden", message: "x" } }, { status: 403 }),
+      ),
     );
     mount(data, "da", settingsApi(fetchImpl));
     fireEvent.click(screen.getByRole("radio", { name: "Vælg farven Hav til Jonas" }));
@@ -297,7 +307,9 @@ describe("ColourScreen (Farve-Indstilling)", () => {
 
   it("speaks English for an English user", () => {
     mount({ ...data, me: { ...owner, locale: "en" } }, "en");
-    expect(screen.getByRole("radio", { name: "Pick the colour Plum for Jonas" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("radio", { name: "Pick the colour Plum for Jonas" }),
+    ).toBeInTheDocument();
     expect(screen.getByText("How it looks for Jonas")).toBeInTheDocument();
   });
 
@@ -305,11 +317,11 @@ describe("ColourScreen (Farve-Indstilling)", () => {
     it("offers the device, light and dark for the chosen person, in Danish and English", () => {
       mount(data);
       const control = screen.getByRole("radiogroup", { name: "Lys eller mørk for Jonas" });
-      expect(within(control).getAllByRole("radio").map((r) => r.textContent)).toEqual([
-        "Som enheden",
-        "Lys",
-        "Mørk",
-      ]);
+      expect(
+        within(control)
+          .getAllByRole("radio")
+          .map((r) => r.textContent),
+      ).toEqual(["Som enheden", "Lys", "Mørk"]);
       expect(within(control).getByRole("radio", { name: "Som enheden" })).toHaveAttribute(
         "aria-checked",
         "true",
@@ -318,11 +330,11 @@ describe("ColourScreen (Farve-Indstilling)", () => {
       cleanup();
       mount({ ...data, me: { ...owner, locale: "en" } }, "en");
       const english = screen.getByRole("radiogroup", { name: "Light or dark for Jonas" });
-      expect(within(english).getAllByRole("radio").map((r) => r.textContent)).toEqual([
-        "Like the device",
-        "Light",
-        "Dark",
-      ]);
+      expect(
+        within(english)
+          .getAllByRole("radio")
+          .map((r) => r.textContent),
+      ).toEqual(["Like the device", "Light", "Dark"]);
       expect(screen.getByText("Follow the device, or choose light or dark.")).toBeInTheDocument();
     });
 
@@ -388,7 +400,11 @@ describe("ColourScreen (Farve-Indstilling)", () => {
     });
 
     it("shows the person's stored theme", () => {
-      mount({ ...data, me: { ...owner, theme: "light" }, people: [{ ...owner, theme: "light" }, child, viewer] });
+      mount({
+        ...data,
+        me: { ...owner, theme: "light" },
+        people: [{ ...owner, theme: "light" }, child, viewer],
+      });
       expect(screen.getByRole("radio", { name: "Lys" })).toHaveAttribute("aria-checked", "true");
     });
   });

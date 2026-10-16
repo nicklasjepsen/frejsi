@@ -44,13 +44,49 @@ function setup() {
     lastSeq: 2,
   });
   const person = { createdAt: T0 };
-  fake.rows("user").push({ id: "u-owner", name: "Example Owner", simpleMode: false, accent: "olive", theme: "system", locale: "da", ...person });
-  fake.rows("user").push({ id: "u-child", name: "Example Subject", simpleMode: true, accent: "plum", theme: "system", locale: "da", ...person });
-  fake.rows("user").push({ id: "u-viewer", name: "Example Viewer", simpleMode: false, accent: "sea", theme: "system", locale: "en", ...person });
+  fake
+    .rows("user")
+    .push({
+      id: "u-owner",
+      name: "Example Owner",
+      simpleMode: false,
+      accent: "olive",
+      theme: "system",
+      locale: "da",
+      ...person,
+    });
+  fake
+    .rows("user")
+    .push({
+      id: "u-child",
+      name: "Example Subject",
+      simpleMode: true,
+      accent: "plum",
+      theme: "system",
+      locale: "da",
+      ...person,
+    });
+  fake
+    .rows("user")
+    .push({
+      id: "u-viewer",
+      name: "Example Viewer",
+      simpleMode: false,
+      accent: "sea",
+      theme: "system",
+      locale: "en",
+      ...person,
+    });
   const at = (minutes: number) => new Date(T0.getTime() + minutes * 60_000);
-  fake.rows("membership").push({ userId: "u-child", spaceId: "s1", role: "carer", createdAt: at(1) });
-  fake.rows("membership").push({ userId: "u-owner", spaceId: "s1", role: "owner", createdAt: at(0) });
-  fake.rows("membership").push({ userId: "u-viewer", spaceId: "s1", role: "viewer", createdAt: at(2) });
+  fake
+    .rows("membership")
+    .push({ userId: "u-child", spaceId: "s1", role: "carer", createdAt: at(1) });
+  fake
+    .rows("membership")
+    .push({ userId: "u-owner", spaceId: "s1", role: "owner", createdAt: at(0) });
+  fake
+    .rows("membership")
+    .push({ userId: "u-viewer", spaceId: "s1", role: "viewer", createdAt: at(2) });
   // Two status events: the loader must take the latest, whatever order the rows come back in.
   fake.rows("event").push({
     spaceId: "s1",
@@ -112,7 +148,11 @@ describe("loadSettingsData (plan task 9)", () => {
 
   it("gives a carer the space section but only themselves as a person", async () => {
     const { db } = setup();
-    const data = await loadSettingsData(session("u-child", "carer"), { ...shell, role: "carer" }, db);
+    const data = await loadSettingsData(
+      session("u-child", "carer"),
+      { ...shell, role: "carer" },
+      db,
+    );
     expect(data.space?.glucoseUnit).toBe("mgdl");
     expect(data.source?.type).toBe("dexcom-share");
     expect(data.people.map((p) => p.userId)).toEqual(["u-child"]);
@@ -121,7 +161,11 @@ describe("loadSettingsData (plan task 9)", () => {
 
   it("gives a viewer no space section at all: no unit, no target range, no source", async () => {
     const { fake, db } = setup();
-    const data = await loadSettingsData(session("u-viewer", "viewer"), { ...shell, role: "viewer" }, db);
+    const data = await loadSettingsData(
+      session("u-viewer", "viewer"),
+      { ...shell, role: "viewer" },
+      db,
+    );
     expect(data.space).toBeNull();
     expect(data.source).toBeNull();
     expect(data.people.map((p) => p.userId)).toEqual(["u-viewer"]);

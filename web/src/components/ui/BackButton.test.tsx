@@ -40,7 +40,15 @@ describe("BackButton (the one back control of every phone sub-screen and sheet)"
   });
 
   it("draws the label next to the chevron when asked, and takes a size and an extra class", () => {
-    render(<BackButton href="/da/settings" label="Tilbage til Mere" showLabel size="simple" className="extra" />);
+    render(
+      <BackButton
+        href="/da/settings"
+        label="Tilbage til Mere"
+        showLabel
+        size="simple"
+        className="extra"
+      />,
+    );
     const link = screen.getByRole("link", { name: "Tilbage til Mere" });
     expect(link).toHaveTextContent("Tilbage til Mere");
     expect(link).toHaveAttribute("data-size", "simple");

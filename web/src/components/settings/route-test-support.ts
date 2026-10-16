@@ -13,7 +13,12 @@ export const SESSIONS = {
 } as const;
 export type Who = keyof typeof SESSIONS;
 
-export const USERS = { owner: "u-owner", carer: "u-carer", viewer: "u-viewer", stranger: "u-stranger" };
+export const USERS = {
+  owner: "u-owner",
+  carer: "u-carer",
+  viewer: "u-viewer",
+  stranger: "u-stranger",
+};
 
 /** Seeds `s1` with its three members and `s2`, a second space the carer is also in as owner. */
 export function seedSpace(fake: FakeAuthDb): void {
@@ -34,15 +39,29 @@ export function seedSpace(fake: FakeAuthDb): void {
   };
   fake.rows("space").push({ id: "s1", name: "Example space", ...space });
   fake.rows("space").push({ id: "s2", name: "Second space", ...space });
-  const person = { simpleMode: false, accent: "olive", theme: "system", locale: "da", createdAt: T0 };
+  const person = {
+    simpleMode: false,
+    accent: "olive",
+    theme: "system",
+    locale: "da",
+    createdAt: T0,
+  };
   fake.rows("user").push({ id: USERS.owner, name: "Example Owner", ...person });
   fake.rows("user").push({ id: USERS.carer, name: "Example Carer", ...person });
   fake.rows("user").push({ id: USERS.viewer, name: "Example Viewer", ...person });
   fake.rows("user").push({ id: USERS.stranger, name: "Example Stranger", ...person });
-  fake.rows("membership").push({ userId: USERS.owner, spaceId: "s1", role: "owner", createdAt: T0 });
-  fake.rows("membership").push({ userId: USERS.carer, spaceId: "s1", role: "carer", createdAt: T0 });
-  fake.rows("membership").push({ userId: USERS.viewer, spaceId: "s1", role: "viewer", createdAt: T0 });
-  fake.rows("membership").push({ userId: USERS.carer, spaceId: "s2", role: "owner", createdAt: T0 });
+  fake
+    .rows("membership")
+    .push({ userId: USERS.owner, spaceId: "s1", role: "owner", createdAt: T0 });
+  fake
+    .rows("membership")
+    .push({ userId: USERS.carer, spaceId: "s1", role: "carer", createdAt: T0 });
+  fake
+    .rows("membership")
+    .push({ userId: USERS.viewer, spaceId: "s1", role: "viewer", createdAt: T0 });
+  fake
+    .rows("membership")
+    .push({ userId: USERS.carer, spaceId: "s2", role: "owner", createdAt: T0 });
   for (const who of Object.keys(SESSIONS) as Who[]) {
     fake.rows("session").push({ id: SESSIONS[who], userId: USERS[who], expiresAt, lastSeenAt: T0 });
   }

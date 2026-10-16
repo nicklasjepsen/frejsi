@@ -232,7 +232,9 @@ describe("assertRole and requireRole", () => {
       status: 404,
       code: "not-found",
     });
-    await expect(requireRole("s2", { now: () => T0 }, "owner")).rejects.toMatchObject({ status: 403 });
+    await expect(requireRole("s2", { now: () => T0 }, "owner")).rejects.toMatchObject({
+      status: 403,
+    });
     cookieJar.clear();
     await expect(requireRole("s1", { now: () => T0 })).rejects.toMatchObject({
       status: 403,

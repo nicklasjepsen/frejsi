@@ -165,10 +165,7 @@ export function ColourScreen({ locale, data, api = settingsApi() }: ColourScreen
         <p className={styles.previewTitle}>{t("colour.previewFor", { name: selected.name })}</p>
         <div className={styles.previewBand}>
           {canSeeGlucose && (
-            <PreviewReading
-              spaceId={data.spaceId}
-              unit={data.space?.glucoseUnit ?? "mmol"}
-            />
+            <PreviewReading spaceId={data.spaceId} unit={data.space?.glucoseUnit ?? "mmol"} />
           )}
         </div>
         <Button size="phone" disabled>

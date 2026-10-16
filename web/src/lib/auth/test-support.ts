@@ -25,7 +25,15 @@ type Row = Record<string, unknown>;
 type Where = Record<string, unknown>;
 
 export type TableName =
-  "user" | "space" | "membership" | "invite" | "passkey" | "session" | "authChallenge" | "event" | "pushSubscription";
+  | "user"
+  | "space"
+  | "membership"
+  | "invite"
+  | "passkey"
+  | "session"
+  | "authChallenge"
+  | "event"
+  | "pushSubscription";
 
 export type Tables = Record<TableName, Row[]>;
 
@@ -331,20 +339,20 @@ export class FakeAuthDb {
         rows().push(row);
         return Promise.resolve(this.include(table, row, args.include));
       },
-      upsert: (args: {where: Where; create: Row; update: Row}) => {
+      upsert: (args: { where: Where; create: Row; update: Row }) => {
         record("upsert");
         this.failIfAsked(table);
         const row = rows().find((r) => matches(r, args.where));
         if (row) {
-          const next = {...row, ...strip(args.update, row)};
+          const next = { ...row, ...strip(args.update, row) };
           this.checkUnique(table, next, row);
           Object.assign(row, next);
-          return Promise.resolve({...row});
+          return Promise.resolve({ ...row });
         }
-        const created = {...defaults[table](this.now()), ...strip(args.create)};
+        const created = { ...defaults[table](this.now()), ...strip(args.create) };
         this.checkUnique(table, created);
         rows().push(created);
-        return Promise.resolve({...created});
+        return Promise.resolve({ ...created });
       },
       findUnique: (args: { where: Where; include?: Record<string, unknown> }) => {
         record("findUnique");
