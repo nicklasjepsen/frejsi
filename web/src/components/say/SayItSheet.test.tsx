@@ -117,3 +117,20 @@ it("only sends a photo after capture and keeps text when AI is unavailable", asy
   expect(await screen.findByText("AI-hjælp er ikke tilgængelig lige nu")).toBeInTheDocument();
   expect(screen.getByLabelText("Skriv hvad der spises")).toHaveValue("apple");
 });
+it("invalidates parsed foods on a description edit, including after a failed retry", async () => {
+  const fake = fetchFake().on("POST /api/spaces/s1/parse", meal);
+  fake.install();
+  const { onAdd } = mount();
+  fireEvent.change(screen.getByLabelText("Skriv hvad der spises"), { target: { value: "apple" } });
+  fireEvent.click(screen.getByRole("button", { name: "Find maden" }));
+  await screen.findByText("Apple · ca. 12 g");
+  fireEvent.change(screen.getByLabelText("Skriv hvad der spises"), { target: { value: "bread" } });
+  expect(screen.queryByText("Apple · ca. 12 g")).not.toBeInTheDocument();
+  expect(screen.queryByRole("button", { name: "Tilføj til måltidet" })).not.toBeInTheDocument();
+  fake.on("POST /api/spaces/s1/parse", { error: { code: "ai-unavailable" } }, 503);
+  fireEvent.click(screen.getByRole("button", { name: "Find maden" }));
+  await screen.findByText("AI-hjælp er ikke tilgængelig lige nu");
+  expect(screen.getByLabelText("Skriv hvad der spises")).toHaveValue("bread");
+  expect(screen.queryByRole("button", { name: "Tilføj til måltidet" })).not.toBeInTheDocument();
+  expect(onAdd).not.toHaveBeenCalled();
+});
