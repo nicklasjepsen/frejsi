@@ -9,6 +9,8 @@ export type PageHeaderProps =
   | {
       variant?: "default";
       title: string;
+      /** An id for the h1, so a form or region on the page can be named by it. */
+      titleId?: string;
       subtitle?: string;
       onBack?: () => void;
       onClose?: () => void;
@@ -58,6 +60,7 @@ function MetaHeader({
 
 function DefaultHeader({
   title,
+  titleId,
   subtitle,
   onBack,
   onClose,
@@ -86,7 +89,7 @@ function DefaultHeader({
         )
       )}
       <div>
-        <h1>{title}</h1>
+        <h1 id={titleId}>{title}</h1>
         {subtitle && <p>{subtitle}</p>}
       </div>
       <div className={styles.headerTrailing}>{trailing}</div>

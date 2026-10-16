@@ -35,9 +35,9 @@
       "frida": "Frida"
     },
     "per100g": "{amount} g pr. 100 g",
-    "portion": "{label} {amount} g",
-    "simple": "vises i simpel visning"
+    "portion": "{label} {amount} g"
   },
+  "simpleBadge": "Vises i simpel visning",
   "keyboardHint": "J/K flytter · Mellemrum vælger · V godkender · E retter",
   "columns": {
     "food": "Fødevare",
@@ -86,7 +86,7 @@
     "needsCarbs": "Skriv kulhydrat pr. 100 g eller mindst én portion med kulhydrat.",
     "needsName": "Skriv et navn.",
     "invalidNumber": "Skriv tallet som fx 40 eller 40,5.",
-    "source": "{source} · stregkode {barcode}…",
+    "source": "{source} · stregkode {barcode}",
     "photoPreview": "Det valgte billede",
     "loadFailed": "Fødevaren kunne ikke hentes lige nu.",
     "contribute": "Send rettelsen til {source}, så andre får gavn af den",

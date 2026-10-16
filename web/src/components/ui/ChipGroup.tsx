@@ -22,7 +22,8 @@ export interface ChipGroupProps {
 }
 
 /**
- * A row of 38 px filter chips (touch.filterChip) with exactly one pressed, as a radiogroup:
+ * A row of filter chips (touch.filterChip: 44 px on the phone, 38 px on desktop) with exactly one
+ * pressed, as a radiogroup:
  * "Uge · Dag · Måltider" (Historik-Desktop), "Kun denne gang · Sammen med de sidste 5 gange"
  * (Maaltid-Desktop). Arrow keys move between chips; one chip is in the tab order.
  */

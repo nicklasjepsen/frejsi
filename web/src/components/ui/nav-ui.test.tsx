@@ -33,7 +33,7 @@ describe("ChipGroup", () => {
     { value: "maaltider", label: "Måltider" },
   ];
 
-  it("is a radiogroup of 38 px chips with exactly one pressed, and buttons call onChange", () => {
+  it("is a radiogroup of 44 px chips (38 px on desktop) with exactly one pressed, and buttons call onChange", () => {
     const onChange = vi.fn();
     mount(<ChipGroup label="Visning" options={options} value="uge" onChange={onChange} />);
     const group = screen.getByRole("radiogroup", { name: "Visning" });
@@ -43,7 +43,10 @@ describe("ChipGroup", () => {
     expect(chips[0]?.tagName).toBe("BUTTON");
     fireEvent.click(screen.getByRole("radio", { name: "Dag" }));
     expect(onChange).toHaveBeenCalledWith("dag");
-    expect(block(".chip {")).toContain("min-height: 38px");
+    expect(block(".chip {")).toContain("min-height: 44px");
+    expect(css.slice(css.indexOf("@media (min-width: 1280px)"))).toMatch(
+      /\.chip \{[^}]*min-height: 38px;/,
+    );
   });
 
   it("moves with the arrow keys and keeps one chip in the tab order", () => {
@@ -76,7 +79,7 @@ describe("ChipGroup", () => {
 });
 
 describe("ArrowNav", () => {
-  it("renders two 40×40 r10 arrow buttons with their labels and the optional label between", () => {
+  it("renders two 44×44 r10 arrow buttons (40×40 on desktop) with their labels and the optional label between", () => {
     const previous = vi.fn();
     mount(
       <ArrowNav
@@ -89,7 +92,11 @@ describe("ArrowNav", () => {
     expect(previous).toHaveBeenCalledOnce();
     expect(screen.getByRole("button", { name: "Næste måltid" })).toBeDisabled();
     expect(screen.getByText("forrige / næste måltid")).toBeInTheDocument();
-    expect(block(".arrow {")).toMatch(/width: 40px[\s\S]*height: 40px[\s\S]*border-radius: 10px/);
+    // 44 px on the phone (the touch-min token); the desktop media query keeps the 40 px artboard size.
+    expect(block(".arrow {")).toMatch(/width: 44px[\s\S]*height: 44px[\s\S]*border-radius: 10px/);
+    expect(css.slice(css.indexOf("@media (min-width: 1280px)"))).toMatch(
+      /\.arrow \{[^}]*width: 40px;[^}]*height: 40px;/,
+    );
     expect(block(".navLabel {")).toMatch(/font-size: 13px[\s\S]*var\(--text-muted\)/);
   });
 

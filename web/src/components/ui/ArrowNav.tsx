@@ -38,7 +38,10 @@ function Arrow({ action, glyph }: { action: ArrowAction; glyph: string }) {
   );
 }
 
-/** Two 40×40 r10 arrow buttons with an optional label between (Maaltid-Desktop, Historik-Desktop). */
+/**
+ * Two r10 arrow buttons (44×44 on the phone, 40×40 on desktop) with an optional label between
+ * (Maaltid-Desktop, Historik-Desktop).
+ */
 export function ArrowNav({ previous, next, label }: ArrowNavProps) {
   return (
     <div className={styles.arrowNav}>

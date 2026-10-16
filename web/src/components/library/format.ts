@@ -54,10 +54,14 @@ export function useFoodText() {
         has(`sourceName.${origin}`) ? say(`sourceName.${origin}`) : origin,
       portions,
       /**
+       * A verified food without a per-100 g value can only be picked by portion, which is what
+       * the simple picker shows: the row marks it with a badge (`simpleBadge`), not a sentence.
+       */
+      simpleOnly: (food: Pick<FoodView, "verified" | "carbsPer100g">) =>
+        food.verified && food.carbsPer100g == null,
+      /**
        * The phone row's secondary line in the artboard's forms: "40 g pr. 100 g · 1 skive 45 g",
-       * "Frida · 17 g pr. 100 g", "Egen ret · 1 portion 55 g · ½ portion 28 g", and "… · vises i
-       * simpel visning" for a verified food without a per-100 g value (it can only be picked by
-       * portion, which the simple picker shows).
+       * "Frida · 17 g pr. 100 g", "Egen ret · 1 portion 55 g · ½ portion 28 g".
        */
       line: (food: FoodView) => {
         if (food.origin === "ai" && !food.verified)
@@ -73,7 +77,6 @@ export function useFoodText() {
         if (food.carbsPer100g != null)
           parts.push(say("line.per100g", { amount: number.format(food.carbsPer100g) }));
         if (food.portions.length > 0) parts.push(portions(food));
-        if (food.verified && food.carbsPer100g == null) parts.push(say("line.simple"));
         return parts.join(" · ");
       },
       isOwn: (origin: string) => OWN_ORIGINS.has(origin),

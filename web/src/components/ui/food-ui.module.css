@@ -27,7 +27,7 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-height: 40px;
+  min-height: 44px;
   border-radius: 999px;
   border: 2px solid var(--hairline);
   background: var(--surface);
@@ -54,11 +54,34 @@
   cursor: default;
 }
 .listRow {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 12px;
   padding: 12px 0;
   border-bottom: 1px solid var(--hairline);
+}
+/* The whole row is the target: the title's link (or button) is stretched over the row, and the
+   trailing control is lifted above it. The focus ring then goes round the row, not the title. */
+.listRow[data-link="true"] .foodTitle::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+}
+.trailing {
+  position: relative;
+  z-index: 1;
+  flex-shrink: 0;
+}
+@supports selector(:has(a)) {
+  .listRow[data-link="true"] .foodTitle:focus-visible {
+    outline: none;
+  }
+  .listRow[data-link="true"]:has(.foodTitle:focus-visible) {
+    outline: 2px solid var(--accent-base);
+    outline-offset: -2px;
+    border-radius: 8px;
+  }
 }
 .thumb {
   flex-shrink: 0;

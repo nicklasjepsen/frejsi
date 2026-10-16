@@ -53,6 +53,9 @@ export function SearchField({
         id={inputId}
         aria-label={label}
         type="search"
+        // iOS shows a Search key and offers no autofill for a food search.
+        enterKeyHint="search"
+        autoComplete="off"
         value={value}
         placeholder={placeholder}
         aria-describedby={hint ? `${inputId}-hint` : undefined}

@@ -9,12 +9,19 @@ interface Props {
   verified: boolean;
   secondary?: ReactNode;
   photo?: ReactNode;
+  /** The one control beside the link (a verify circle); it sits above the stretched link. */
   trailing?: ReactNode;
   href?: string;
   onClick?: () => void;
   thumbSize?: 44 | 52;
   variant?: "food";
 }
+
+/**
+ * A food row: photo, title, secondary line and the unverified mark. With an `href` or `onClick`
+ * the whole row is the target (a stretched link named by the title alone), so the photo and the
+ * subtitle take the tap too; `trailing` is the only nested control.
+ */
 export function ListRow({
   title,
   verified,
@@ -25,8 +32,9 @@ export function ListRow({
   onClick,
   thumbSize = 44,
 }: Props) {
+  const stretched = href !== undefined || onClick !== undefined;
   return (
-    <div className={styles.listRow}>
+    <div className={styles.listRow} data-link={stretched ? "true" : undefined}>
       {photo && (
         <div className={styles.thumb} style={{ width: thumbSize, height: thumbSize }}>
           {photo}
@@ -47,7 +55,7 @@ export function ListRow({
         {secondary && <div className={styles.secondary}>{secondary}</div>}
         {!verified && <Badge verified={false} />}
       </div>
-      {trailing}
+      {trailing && <div className={styles.trailing}>{trailing}</div>}
     </div>
   );
 }

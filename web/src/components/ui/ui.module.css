@@ -72,20 +72,23 @@
   cursor: pointer;
 }
 
-.button:hover {
-  background: var(--accent-strong);
-  color: var(--accent-on);
-}
-
 .button[data-variant="secondary"] {
   background: var(--surface);
   color: var(--text);
   border-color: var(--hairline-strong);
 }
 
-.button[data-variant="secondary"]:hover {
-  background: var(--surface-selected);
-  color: var(--text);
+/* Only for pointers that hover: on a touch screen a hover style would stick after the tap. */
+@media (hover: hover) {
+  .button:hover {
+    background: var(--accent-strong);
+    color: var(--accent-on);
+  }
+
+  .button[data-variant="secondary"]:hover {
+    background: var(--surface-selected);
+    color: var(--text);
+  }
 }
 
 .button[data-size="phone"] {
@@ -100,4 +103,23 @@
   min-height: 84px;
   border-radius: var(--radius-button-simple);
   font-size: 26px;
+}
+
+/* One checkbox row for every form: a 44 px label with the accent box, which never shrinks when
+   the label wraps. */
+.checkbox {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: var(--touch-min);
+  cursor: pointer;
+}
+
+.checkbox input {
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  margin: 0;
+  accent-color: var(--accent-base);
+  cursor: pointer;
 }

@@ -1,4 +1,6 @@
 import "@testing-library/jest-dom/vitest";
+import { readFileSync } from "node:fs";
+import path from "node:path";
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -19,12 +21,24 @@ afterEach(() => {
 });
 
 describe("food kit", () => {
-  it("uses the thumbnail and replaces a failed image with the photo placeholder", () => {
+  it("uses the thumbnail and replaces a failed image with a placeholder that keeps its name", () => {
     mount(<FoodPhoto src="https://photos.example.invalid/thumb.jpg" alt="Fictional food" />);
     const photo = screen.getByRole("img", { name: "Fictional food" });
     expect(photo).toHaveAttribute("src", "https://photos.example.invalid/thumb.jpg");
     fireEvent.error(photo);
-    expect(screen.getByText("foto")).toBeVisible();
+    const placeholder = screen.getByRole("img", { name: "Fictional food" });
+    expect(placeholder.tagName).toBe("SPAN");
+    expect(placeholder).toHaveTextContent("");
+    expect(placeholder.querySelector("svg")).toHaveAttribute("aria-hidden", "true");
+  });
+  it("draws a food without a photo as an icon screen readers skip, never the word foto", () => {
+    const { container } = mount(<FoodPhoto size={44} />);
+    expect(screen.queryByText("foto")).toBeNull();
+    expect(screen.queryByRole("img")).toBeNull();
+    const placeholder = container.firstElementChild;
+    expect(placeholder).toHaveAttribute("aria-hidden", "true");
+    expect(placeholder?.querySelector("svg")).not.toBeNull();
+    expect(placeholder).toHaveStyle({ width: "44px", height: "44px" });
   });
   it.each([92, 104, 112, 140] as const)(
     "renders selected %i px tiles with the unverified mark",
@@ -86,6 +100,17 @@ describe("food kit", () => {
     expect(submit).toHaveBeenCalledWith("fiction");
     expect(screen.getByText("/").tagName).toBe("KBD");
     expect(screen.getByTestId("search-icon")).toHaveAttribute("data-icon", "barcode");
+  });
+  it("asks the phone keyboard for a Search key and no autofill, and draws one focus ring", () => {
+    mount(<SearchField label="Find food" value="" onChange={vi.fn()} onSubmit={vi.fn()} />);
+    const input = screen.getByRole("searchbox", { name: "Find food" });
+    expect(input).toHaveAttribute("enterkeyhint", "search");
+    expect(input).toHaveAttribute("autocomplete", "off");
+    // The wrapper's :focus-within ring is the one ring; the input's own is switched off, and the
+    // native clear button takes the accent instead of the system blue.
+    const css = readFileSync(path.join(import.meta.dirname, "food.module.css"), "utf8");
+    expect(css).toMatch(/\.search input:focus-visible \{\s*outline: none;/);
+    expect(css).toMatch(/\.search input::-webkit-search-cancel-button \{[^}]*var\(--accent-base\)/);
   });
   it("downsizing precedes the picker callback for capture and file input", async () => {
     const onPhoto = vi.fn();

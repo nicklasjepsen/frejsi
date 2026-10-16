@@ -50,11 +50,35 @@
   outline: 2px solid var(--accent-base);
 }
 
+/* The chips scroll edge to edge (the gutter is inside the scroller) and fade out at both edges so
+   a cut-off chip reads as "more". At either end the gutter is what sits under the fade, so the
+   first and last chips are clear: the chip row is sized to its content (`max-content`), which
+   puts the trailing gutter after the last chip rather than after the flex box the chips overflow. */
 .chipScroll {
   overflow-x: auto;
   margin: 0 calc(-1 * var(--phone-gutter, 16px));
   padding: 0 var(--phone-gutter, 16px);
   scrollbar-width: none;
+  -webkit-mask-image: linear-gradient(
+    to right,
+    transparent,
+    black var(--phone-gutter, 16px),
+    black calc(100% - var(--phone-gutter, 16px)),
+    transparent
+  );
+  mask-image: linear-gradient(
+    to right,
+    transparent,
+    black var(--phone-gutter, 16px),
+    black calc(100% - var(--phone-gutter, 16px)),
+    transparent
+  );
+}
+.chipScroll::-webkit-scrollbar {
+  display: none;
+}
+.chipScroll .filters {
+  width: max-content;
 }
 .filters {
   display: flex;
@@ -191,6 +215,17 @@
   padding: 0 12px;
   cursor: pointer;
 }
+/* On the phone the form's small buttons ("+ Portion", the portion's ×) are touch targets. */
+.textButton,
+.addPortion {
+  min-height: var(--touch-min);
+}
+@media (min-width: 1280px) {
+  .textButton,
+  .addPortion {
+    min-height: 36px;
+  }
+}
 .batchVerify {
   display: inline-flex;
   align-items: center;
@@ -274,6 +309,10 @@
   margin: 0;
   overflow-wrap: anywhere;
 }
+/* The source line carries the whole barcode; it wraps rather than being cut. */
+.formTitle .muted {
+  overflow-wrap: anywhere;
+}
 .portionRows {
   border: 0;
   margin: 0;
@@ -304,17 +343,6 @@
   border: 1px dashed var(--hairline-strong);
   color: var(--accent-strong);
 }
-.toggle {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  min-height: 44px;
-}
-.toggle input {
-  width: 20px;
-  height: 20px;
-  accent-color: var(--accent-base);
-}
 .formActions {
   display: flex;
   gap: 10px;
@@ -344,6 +372,17 @@
   align-items: center;
   flex-wrap: wrap;
   gap: 6px;
+}
+/* "Vises i simpel visning" as a small named icon on the row, not a sentence on every row. */
+.simpleBadge {
+  display: inline-grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--library-tint);
+  color: var(--accent-strong);
+  border: 1px solid var(--library-tint-border);
 }
 .askedMeta {
   color: var(--text-muted);

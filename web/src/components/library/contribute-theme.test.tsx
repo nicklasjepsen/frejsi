@@ -14,6 +14,7 @@ afterEach(cleanup);
 
 const read = (file: string) => readFileSync(path.resolve(import.meta.dirname, file), "utf8");
 const css = read("library.module.css");
+const ui = read("../ui/ui.module.css");
 const tokens = read("../../styles/tokens.css");
 const block = (source: string, selector: string) => {
   const start = source.indexOf(selector);
@@ -28,9 +29,15 @@ const variables = (source: string): Record<string, string> =>
     ]),
   );
 
-// The checkbox row ("Send rettelsen …") reuses `.toggle` and the status line `.muted` / `.problem`.
+// The checkbox row ("Send rettelsen …") is the shared `Checkbox` (`.checkbox` in ui.module.css,
+// the same row as Favorit) and the status line `.muted` / `.problem`.
 it("renders the checkbox row and its status line from tokens in light, dark and the five accents", () => {
-  const rows = [".toggle {", ".toggle input {", ".muted {", ".problem {"].map((s) => block(css, s));
+  const rows = [
+    block(ui, ".checkbox {"),
+    block(ui, ".checkbox input {"),
+    block(css, ".muted {"),
+    block(css, ".problem {"),
+  ];
   const names = rows.flatMap((r) => [...r.matchAll(/var\((--[a-z-]+)\)/g)].map((m) => m[1] ?? ""));
   const used = [...new Set(names)].sort();
   expect(used.length).toBeGreaterThan(0);
@@ -55,23 +62,24 @@ it("renders the checkbox row and its status line from tokens in light, dark and 
 });
 
 it("keeps the row at one size for the phone (360) and the desktop panel (1280)", () => {
-  const row = block(css, ".toggle {");
-  expect(row).toContain("min-height: 44px");
+  const row = block(ui, ".checkbox {");
+  expect(row).toContain("min-height: var(--touch-min)");
+  expect(block(tokens, ":root")).toContain("--touch-min: 44px");
   // No media query hides or resizes the row at either width.
-  for (const start of [...css.matchAll(/@media[^{]*\{/g)].map((m) => m.index)) {
+  for (const start of [...ui.matchAll(/@media[^{]*\{/g)].map((m) => m.index)) {
     let depth = 0;
     let end = start;
-    for (; end < css.length; end++) {
-      if (css[end] === "{") depth++;
-      if (css[end] === "}" && --depth === 0) break;
+    for (; end < ui.length; end++) {
+      if (ui[end] === "{") depth++;
+      if (ui[end] === "}" && --depth === 0) break;
     }
-    expect(css.slice(start, end)).not.toMatch(/\.toggle\b/);
+    expect(ui.slice(start, end)).not.toMatch(/\.checkbox\b/);
   }
 });
 
 // The rendered form, so removing the checkbox or the outcome line fails here: the row is the
-// `.toggle` label from the stylesheet checked above, at every mode and accent, and it is the same
-// markup in the phone page and the desktop panel (one form, no width-specific branch).
+// `.checkbox` label from the stylesheet checked above, at every mode and accent, and it is the
+// same markup in the phone page and the desktop panel (one form, no width-specific branch).
 it("renders the checkbox row and the outcome line in every mode and accent", async () => {
   const api = fakeFoodsApi(artboardFoods());
   api.available = ["off"];
@@ -90,7 +98,7 @@ it("renders the checkbox row and the outcome line in every mode and accent", asy
       const box = await screen.findByRole("checkbox", {
         name: /Send rettelsen til Open Food Facts/,
       });
-      expect(box.closest("label")?.className).toMatch(/toggle/);
+      expect(box.closest("label")?.className).toMatch(/checkbox/);
       fireEvent.click(box);
       fireEvent.click(screen.getByRole("button", { name: "Gem" }));
       await waitFor(() => {

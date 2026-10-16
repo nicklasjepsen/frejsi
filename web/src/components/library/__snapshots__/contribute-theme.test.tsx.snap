@@ -5,6 +5,7 @@ exports[`renders the checkbox row and its status line from tokens in light, dark
   "--accent-base": "#86bbad",
   "--destructive": "#e08a6c",
   "--text-muted": "#b5aa9a",
+  "--touch-min": "44px",
 }
 `;
 
@@ -13,6 +14,7 @@ exports[`renders the checkbox row and its status line from tokens in light, dark
   "--accent-base": "#c98a9c",
   "--destructive": "#e08a6c",
   "--text-muted": "#b5aa9a",
+  "--touch-min": "44px",
 }
 `;
 
@@ -21,6 +23,7 @@ exports[`renders the checkbox row and its status line from tokens in light, dark
   "--accent-base": "#9dae78",
   "--destructive": "#e08a6c",
   "--text-muted": "#b5aa9a",
+  "--touch-min": "44px",
 }
 `;
 
@@ -29,6 +32,7 @@ exports[`renders the checkbox row and its status line from tokens in light, dark
   "--accent-base": "#b59ad0",
   "--destructive": "#e08a6c",
   "--text-muted": "#b5aa9a",
+  "--touch-min": "44px",
 }
 `;
 
@@ -37,6 +41,7 @@ exports[`renders the checkbox row and its status line from tokens in light, dark
   "--accent-base": "#8fb0cd",
   "--destructive": "#e08a6c",
   "--text-muted": "#b5aa9a",
+  "--touch-min": "44px",
 }
 `;
 
@@ -45,6 +50,7 @@ exports[`renders the checkbox row and its status line from tokens in light, dark
   "--accent-base": "#2f6b5e",
   "--destructive": "#a3503a",
   "--text-muted": "#6e6458",
+  "--touch-min": "44px",
 }
 `;
 
@@ -53,6 +59,7 @@ exports[`renders the checkbox row and its status line from tokens in light, dark
   "--accent-base": "#7a3a4b",
   "--destructive": "#a3503a",
   "--text-muted": "#6e6458",
+  "--touch-min": "44px",
 }
 `;
 
@@ -61,6 +68,7 @@ exports[`renders the checkbox row and its status line from tokens in light, dark
   "--accent-base": "#5a6a3b",
   "--destructive": "#a3503a",
   "--text-muted": "#6e6458",
+  "--touch-min": "44px",
 }
 `;
 
@@ -69,6 +77,7 @@ exports[`renders the checkbox row and its status line from tokens in light, dark
   "--accent-base": "#5b3f73",
   "--destructive": "#a3503a",
   "--text-muted": "#6e6458",
+  "--touch-min": "44px",
 }
 `;
 
@@ -77,6 +86,7 @@ exports[`renders the checkbox row and its status line from tokens in light, dark
   "--accent-base": "#3b5f7e",
   "--destructive": "#a3503a",
   "--text-muted": "#6e6458",
+  "--touch-min": "44px",
 }
 `;
 
@@ -100,22 +110,22 @@ exports[`renders the checkbox row and the outcome line in every mode and accent 
 
 exports[`renders the checkbox row and the outcome line in every mode and accent > outcome light sea 1`] = `"<p aria-live="polite" data-testid="contribution-outcome" class="_muted_6d56ba">Sendt til Open Food Facts · tak</p>"`;
 
-exports[`renders the checkbox row and the outcome line in every mode and accent > row dark forest 1`] = `"<label class="_toggle_6d56ba"><input type="checkbox">Send rettelsen til Open Food Facts, så andre får gavn af den</label>"`;
+exports[`renders the checkbox row and the outcome line in every mode and accent > row dark forest 1`] = `"<label class="_checkbox_2684fe"><input type="checkbox"><span>Send rettelsen til Open Food Facts, så andre får gavn af den</span></label>"`;
 
-exports[`renders the checkbox row and the outcome line in every mode and accent > row dark garnet 1`] = `"<label class="_toggle_6d56ba"><input type="checkbox">Send rettelsen til Open Food Facts, så andre får gavn af den</label>"`;
+exports[`renders the checkbox row and the outcome line in every mode and accent > row dark garnet 1`] = `"<label class="_checkbox_2684fe"><input type="checkbox"><span>Send rettelsen til Open Food Facts, så andre får gavn af den</span></label>"`;
 
-exports[`renders the checkbox row and the outcome line in every mode and accent > row dark olive 1`] = `"<label class="_toggle_6d56ba"><input type="checkbox">Send rettelsen til Open Food Facts, så andre får gavn af den</label>"`;
+exports[`renders the checkbox row and the outcome line in every mode and accent > row dark olive 1`] = `"<label class="_checkbox_2684fe"><input type="checkbox"><span>Send rettelsen til Open Food Facts, så andre får gavn af den</span></label>"`;
 
-exports[`renders the checkbox row and the outcome line in every mode and accent > row dark plum 1`] = `"<label class="_toggle_6d56ba"><input type="checkbox">Send rettelsen til Open Food Facts, så andre får gavn af den</label>"`;
+exports[`renders the checkbox row and the outcome line in every mode and accent > row dark plum 1`] = `"<label class="_checkbox_2684fe"><input type="checkbox"><span>Send rettelsen til Open Food Facts, så andre får gavn af den</span></label>"`;
 
-exports[`renders the checkbox row and the outcome line in every mode and accent > row dark sea 1`] = `"<label class="_toggle_6d56ba"><input type="checkbox">Send rettelsen til Open Food Facts, så andre får gavn af den</label>"`;
+exports[`renders the checkbox row and the outcome line in every mode and accent > row dark sea 1`] = `"<label class="_checkbox_2684fe"><input type="checkbox"><span>Send rettelsen til Open Food Facts, så andre får gavn af den</span></label>"`;
 
-exports[`renders the checkbox row and the outcome line in every mode and accent > row light forest 1`] = `"<label class="_toggle_6d56ba"><input type="checkbox">Send rettelsen til Open Food Facts, så andre får gavn af den</label>"`;
+exports[`renders the checkbox row and the outcome line in every mode and accent > row light forest 1`] = `"<label class="_checkbox_2684fe"><input type="checkbox"><span>Send rettelsen til Open Food Facts, så andre får gavn af den</span></label>"`;
 
-exports[`renders the checkbox row and the outcome line in every mode and accent > row light garnet 1`] = `"<label class="_toggle_6d56ba"><input type="checkbox">Send rettelsen til Open Food Facts, så andre får gavn af den</label>"`;
+exports[`renders the checkbox row and the outcome line in every mode and accent > row light garnet 1`] = `"<label class="_checkbox_2684fe"><input type="checkbox"><span>Send rettelsen til Open Food Facts, så andre får gavn af den</span></label>"`;
 
-exports[`renders the checkbox row and the outcome line in every mode and accent > row light olive 1`] = `"<label class="_toggle_6d56ba"><input type="checkbox">Send rettelsen til Open Food Facts, så andre får gavn af den</label>"`;
+exports[`renders the checkbox row and the outcome line in every mode and accent > row light olive 1`] = `"<label class="_checkbox_2684fe"><input type="checkbox"><span>Send rettelsen til Open Food Facts, så andre får gavn af den</span></label>"`;
 
-exports[`renders the checkbox row and the outcome line in every mode and accent > row light plum 1`] = `"<label class="_toggle_6d56ba"><input type="checkbox">Send rettelsen til Open Food Facts, så andre får gavn af den</label>"`;
+exports[`renders the checkbox row and the outcome line in every mode and accent > row light plum 1`] = `"<label class="_checkbox_2684fe"><input type="checkbox"><span>Send rettelsen til Open Food Facts, så andre får gavn af den</span></label>"`;
 
-exports[`renders the checkbox row and the outcome line in every mode and accent > row light sea 1`] = `"<label class="_toggle_6d56ba"><input type="checkbox">Send rettelsen til Open Food Facts, så andre får gavn af den</label>"`;
+exports[`renders the checkbox row and the outcome line in every mode and accent > row light sea 1`] = `"<label class="_checkbox_2684fe"><input type="checkbox"><span>Send rettelsen til Open Food Facts, så andre får gavn af den</span></label>"`;

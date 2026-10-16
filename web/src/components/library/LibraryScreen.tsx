@@ -172,6 +172,7 @@ function PhoneLibrary({
                   <span className={styles.estimateLine}>
                     <span>{text.line(food)}</span>
                     {food.origin === "ai" && !food.verified && <EstimateBadge />}
+                    {text.simpleOnly(food) && <SimpleBadge />}
                   </span>
                 }
                 trailing={
@@ -432,4 +433,28 @@ function DesktopLibrary({
 function EstimateBadge({ desktop = false }: { desktop?: boolean }) {
   const t = useTranslations("library.estimate");
   return <span className={styles.estimateBadge}>{t(desktop ? "status" : "badge")}</span>;
+}
+
+/** A small friendly face with the name "Vises i simpel visning": picked by portion in the simple view. */
+function SimpleBadge() {
+  const t = useTranslations("library");
+  const label = t("simpleBadge");
+  return (
+    <span className={styles.simpleBadge} role="img" aria-label={label} title={label}>
+      <svg
+        width="14"
+        height="14"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        aria-hidden="true"
+      >
+        <circle cx="12" cy="12" r="9" />
+        <path d="M8.5 14.5c1 1.2 2.2 1.8 3.5 1.8s2.5-.6 3.5-1.8" />
+        <path d="M9 9.5h.01M15 9.5h.01" />
+      </svg>
+    </span>
+  );
 }

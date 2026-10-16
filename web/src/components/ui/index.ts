@@ -5,6 +5,7 @@ export { Kbd } from "./Kbd";
 export { Notice } from "./Notice";
 export { Badge } from "./Badge";
 export { Chip } from "./Chip";
+export { Checkbox, type CheckboxProps } from "./Checkbox";
 export { ListRow } from "./ListRow";
 export { DataTable, type DataColumn, type DataTableProps } from "./DataTable";
 export { PageHeader, type PageHeaderProps } from "./PageHeader";

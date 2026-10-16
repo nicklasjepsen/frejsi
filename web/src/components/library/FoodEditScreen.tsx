@@ -2,7 +2,7 @@
 import type { FoodView } from "@frejsi/shared/schemas/food";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { useEffect, useState } from "react";
+import { useEffect, useId, useState } from "react";
 
 import { Button, PageHeader } from "@/components/ui";
 import { localeHref, type AppLocale } from "@/lib/i18n/routing";
@@ -29,6 +29,8 @@ export function FoodEditScreen({
   const [food, setFood] = useState<FoodView>();
   const [status, setStatus] = useState<"loading" | "ready" | "error">(foodId ? "loading" : "ready");
   const [attempt, setAttempt] = useState(0);
+  // The page header is the one title; the form is named by it and draws no second one.
+  const titleId = useId();
   const back = () => {
     router.push(localeHref(locale, "/library"));
   };
@@ -54,7 +56,11 @@ export function FoodEditScreen({
 
   return (
     <section className={styles.editPage} data-testid="food-edit">
-      <PageHeader title={t(foodId ? "form.editTitle" : "form.newTitle")} onBack={back} />
+      <PageHeader
+        title={t(foodId ? "form.editTitle" : "form.newTitle")}
+        titleId={titleId}
+        onBack={back}
+      />
       {status === "loading" && <p className={styles.muted} aria-busy="true" />}
       {status === "error" && (
         <div className={styles.state} role="alert">
@@ -73,6 +79,7 @@ export function FoodEditScreen({
       {status === "ready" && (
         <FoodForm
           spaceId={spaceId}
+          titleId={titleId}
           {...(food ? { food } : {})}
           // A ticked send ends with a message the carer has to be able to read: stay on the page.
           onSaved={(_saved, _previous, sent) => {

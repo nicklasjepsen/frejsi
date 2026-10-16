@@ -75,9 +75,16 @@ describe("Bibliotek on the phone (Bibliotek-Telefon)", () => {
     expect(text[0]).toContain("Rugbrød, Eksempelbageriet");
     expect(text[0]).toContain("40 g pr. 100 g · 1 skive 45 g");
     expect(text[1]).toContain("Egen ret · 1 portion 55 g · ½ portion 28 g");
-    expect(text[2]).toContain("Egen ret · 1 madpakke 42 g · vises i simpel visning");
+    expect(text[2]).toContain("Egen ret · 1 madpakke 42 g");
+    expect(text[2]).not.toContain("vises i simpel visning");
     expect(text[3]).toContain("Frida · 17 g pr. 100 g");
     expect(text[4]).toContain("Egen ret · 10,5 g pr. 100 g · 1 skål 300 g");
+    // A verified food without a per-100 g value is picked by portion in the simple view: a badge
+    // with a name, not a sentence on every row.
+    const simple = rows.map(
+      (row) => within(row).queryByRole("img", { name: "Vises i simpel visning" }) !== null,
+    );
+    expect(simple).toEqual([false, false, true, false, false]);
     // The "Ikke tjekket" mark on every unverified food, and on no verified one.
     const marked = rows.map((row) => within(row).queryByText("Ikke tjekket") !== null);
     expect(marked).toEqual([true, true, false, true, false]);
@@ -159,6 +166,7 @@ describe("Bibliotek on the phone (Bibliotek-Telefon)", () => {
     expect(phone().getByRole("heading", { level: 1 })).toHaveTextContent("Food");
     expect(phone().getByText("Frida · 17 g per 100 g")).toBeInTheDocument();
     expect(phone().getByRole("button", { name: "Not checked · 3" })).toBeInTheDocument();
+    expect(phone().getByRole("img", { name: "Shown in simple view" })).toBeInTheDocument();
   });
 });
 
@@ -267,7 +275,7 @@ describe("Bibliotek on desktop (Bibliotek-Desktop)", () => {
     fireEvent.keyDown(at(rows, 0), { key: "e" });
     const panel = within(desktop().getByTestId("edit-panel"));
     expect(panel.getByRole("heading", { level: 2 })).toHaveTextContent("Rugbrød, Eksempelbageriet");
-    expect(panel.getByText("Open Food Facts · stregkode 2000…")).toBeInTheDocument();
+    expect(panel.getByText("Open Food Facts · stregkode 2000000000015")).toBeInTheDocument();
     fireEvent.click(panel.getByRole("button", { name: "Gem og godkend" }));
     await waitFor(() => {
       expect(within(at(rows, 0)).getByText("Tjekket")).toBeInTheDocument();

@@ -5,7 +5,6 @@
   "selectRow": "Vælg {name}",
   "back": "Tilbage",
   "close": "Luk",
-  "photo": "foto",
   "takePhoto": "Tag et billede",
   "attachPhoto": "Vedhæft billede",
   "photoError": "Billedet kunne ikke læses – prøv et andet billede",

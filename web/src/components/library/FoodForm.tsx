@@ -10,7 +10,7 @@ import { useTranslations } from "next-intl";
 import { useEffect, useId, useRef, useState, type FormEvent } from "react";
 
 import { FoodPhoto, PhotoPicker } from "@/components/food";
-import { Badge, Button, NumberInput, TextInput } from "@/components/ui";
+import { Badge, Button, Checkbox, NumberInput, TextInput } from "@/components/ui";
 
 import { libraryApi, OWN_ORIGINS } from "./api-client";
 import { useFoodText } from "./format";
@@ -58,6 +58,12 @@ export interface FoodFormProps {
   spaceId: string;
   /** The food being edited; absent for "Ny fødevare". */
   food?: FoodView;
+  /**
+   * The id of the page's own title when the form is a page of its own (the phone): the form is
+   * named by it and draws no second "Ny fødevare". Without it (the desktop panel) the form carries
+   * its own heading.
+   */
+  titleId?: string;
   /** `sent` is set only when the box was ticked: how the send ended (the food is saved either way). */
   onSaved: (food: FoodView, previous?: FoodView, sent?: "sent" | "failed") => void;
 }
@@ -70,7 +76,7 @@ export interface FoodFormProps {
  * explicit `POST foods/verify`); a picked photo is only previewed until the form is saved, then
  * sent to `PUT foods/[id]/photo`. A failed save keeps everything that was typed.
  */
-export function FoodForm({ spaceId, food, onSaved }: FoodFormProps) {
+export function FoodForm({ spaceId, food, titleId, onSaved }: FoodFormProps) {
   const t = useTranslations("library.form");
   const text = useFoodText();
   const headingId = useId();
@@ -230,36 +236,39 @@ export function FoodForm({ spaceId, food, onSaved }: FoodFormProps) {
       ? current.sourceName
         ? `${text.sourceName(current.origin)} · ${current.sourceName}`
         : current.barcode
-          ? t("source", {
-              source: text.sourceName(current.origin),
-              barcode: current.barcode.slice(0, 4),
-            })
+          ? t("source", { source: text.sourceName(current.origin), barcode: current.barcode })
           : text.sourceName(current.origin)
       : undefined;
+
+  // A new food on a page with its own title shows no head until a photo is picked.
+  const ownHeading = current !== undefined || titleId === undefined;
+  const showHead = ownHeading || preview !== undefined;
 
   return (
     <form
       className={styles.form}
-      aria-labelledby={headingId}
+      aria-labelledby={titleId ?? headingId}
       noValidate
       onSubmit={(event) => {
         void submit(event);
       }}
     >
-      <div className={styles.formHead}>
-        <div className={styles.formPhoto}>
-          <FoodPhoto
-            src={preview ?? current?.photo?.thumbUrl}
-            alt={preview ? t("photoPreview") : ""}
-            size={72}
-          />
+      {showHead && (
+        <div className={styles.formHead}>
+          <div className={styles.formPhoto}>
+            <FoodPhoto
+              src={preview ?? current?.photo?.thumbUrl}
+              alt={preview ? t("photoPreview") : ""}
+              size={72}
+            />
+          </div>
+          <div className={styles.formTitle}>
+            {ownHeading && <h2 id={headingId}>{current ? current.name : t("newTitle")}</h2>}
+            {sourceLine && <p className={styles.muted}>{sourceLine}</p>}
+            {current && <Badge verified={current.verified} />}
+          </div>
         </div>
-        <div className={styles.formTitle}>
-          <h2 id={headingId}>{current ? current.name : t("newTitle")}</h2>
-          {sourceLine && <p className={styles.muted}>{sourceLine}</p>}
-          {current && <Badge verified={current.verified} />}
-        </div>
-      </div>
+      )}
       <PhotoPicker onPhoto={setPhoto} />
       <TextInput
         label={t("name")}
@@ -349,27 +358,21 @@ export function FoodForm({ spaceId, food, onSaved }: FoodFormProps) {
           {t("addPortion")}
         </button>
       </fieldset>
-      <label className={styles.toggle}>
-        <input
-          type="checkbox"
-          checked={favourite}
+      <Checkbox
+        label={t("favourite")}
+        checked={favourite}
+        onChange={(event) => {
+          setFavourite(event.target.checked);
+        }}
+      />
+      {canSend && origin && (
+        <Checkbox
+          label={t("contribute", { source: text.sourceName(origin) })}
+          checked={send}
           onChange={(event) => {
-            setFavourite(event.target.checked);
+            setSend(event.target.checked);
           }}
         />
-        {t("favourite")}
-      </label>
-      {canSend && origin && (
-        <label className={styles.toggle}>
-          <input
-            type="checkbox"
-            checked={send}
-            onChange={(event) => {
-              setSend(event.target.checked);
-            }}
-          />
-          {t("contribute", { source: text.sourceName(origin) })}
-        </label>
       )}
       {sendOutcome && (
         <p

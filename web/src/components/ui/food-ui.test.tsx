@@ -1,4 +1,6 @@
 import "@testing-library/jest-dom/vitest";
+import { readFileSync } from "node:fs";
+import path from "node:path";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -55,6 +57,42 @@ describe("food UI primitives", () => {
     expect(
       screen.getByRole("button", { name: "Check" }).parentElement?.closest("button"),
     ).toBeNull();
+  });
+  it("makes the whole row the link, named by the title alone, with the trailing control above it", () => {
+    const { container } = mount(
+      <ListRow
+        title="Fictional bread"
+        verified
+        href="/da/library/f-1"
+        photo={<span>photo</span>}
+        secondary="40 g per 100 g"
+        trailing={<button>Check</button>}
+      />,
+    );
+    // One link, named by the title: the subtitle stays ordinary text for screen readers.
+    expect(screen.getAllByRole("link")).toHaveLength(1);
+    const link = screen.getByRole("link", { name: "Fictional bread" });
+    expect(link).toHaveAttribute("href", "/da/library/f-1");
+    // The link is stretched over the row: the row is its positioned ancestor, and the trailing
+    // control is lifted above it so the only nested control still gets the tap.
+    const row = container.firstElementChild;
+    expect(row).toHaveAttribute("data-link", "true");
+    expect(link.closest("[data-link]")).toBe(row);
+    const trailing = screen.getByRole("button", { name: "Check" }).parentElement;
+    expect(trailing?.className).toMatch(/trailing/);
+    expect(trailing?.parentElement).toBe(row);
+    const css = readFileSync(path.join(import.meta.dirname, "food-ui.module.css"), "utf8");
+    expect(css).toMatch(/\.listRow \{[^}]*position: relative;/);
+    expect(css).toMatch(
+      /\.listRow\[data-link="true"\] \.foodTitle::after \{[^}]*position: absolute;[^}]*inset: 0;/,
+    );
+    expect(css).toMatch(/\.trailing \{[^}]*position: relative;[^}]*z-index: 1;/);
+    // Filter chips are 44 px on the phone (the touch-min token); the desktop query keeps 36 px.
+    expect(css).toMatch(/\.chip \{[^}]*min-height: 44px;/);
+    expect(css.slice(css.indexOf("@media (min-width: 1280px)"))).toMatch(
+      /\.chip \{[^}]*min-height: 36px;/,
+    );
+    expect(css).not.toMatch(/:hover/);
   });
   it("moves table focus with J/K, selects with Space, and activates with Enter", () => {
     const activate = vi.fn();

@@ -5,7 +5,6 @@
   "selectRow": "Select {name}",
   "back": "Back",
   "close": "Close",
-  "photo": "photo",
   "takePhoto": "Take a photo",
   "attachPhoto": "Attach a photo",
   "photoError": "Could not read the photo – try another photo",

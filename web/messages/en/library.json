@@ -35,9 +35,9 @@
       "frida": "Frida"
     },
     "per100g": "{amount} g per 100 g",
-    "portion": "{label} {amount} g",
-    "simple": "shown in simple view"
+    "portion": "{label} {amount} g"
   },
+  "simpleBadge": "Shown in simple view",
   "keyboardHint": "J/K moves · Space selects · V approves · E edits",
   "columns": {
     "food": "Food",
@@ -86,7 +86,7 @@
     "needsCarbs": "Enter carbohydrate per 100 g or at least one portion with carbohydrate.",
     "needsName": "Enter a name.",
     "invalidNumber": "Enter the number like 40 or 40.5.",
-    "source": "{source} · barcode {barcode}…",
+    "source": "{source} · barcode {barcode}",
     "photoPreview": "The chosen photo",
     "loadFailed": "The food could not be loaded right now.",
     "contribute": "Send the fix to {source} so others benefit",

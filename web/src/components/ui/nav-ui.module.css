@@ -10,7 +10,7 @@
   align-items: center;
   justify-content: center;
   box-sizing: border-box;
-  min-height: 38px;
+  min-height: 44px;
   padding: 0 14px;
   border-radius: 999px;
   border: 1px solid var(--hairline);
@@ -46,8 +46,8 @@
   align-items: center;
   justify-content: center;
   box-sizing: border-box;
-  width: 40px;
-  height: 40px;
+  width: 44px;
+  height: 44px;
   border-radius: 10px;
   border: 1px solid var(--hairline);
   background: var(--surface);
@@ -101,4 +101,15 @@
 .metaTrailing a {
   padding: 10px 4px;
   text-decoration: none;
+}
+
+/* The phone sizes above are the touch-min token; the desktop keeps the artboards' compact sizes. */
+@media (min-width: 1280px) {
+  .chip {
+    min-height: 38px;
+  }
+  .arrow {
+    width: 40px;
+    height: 40px;
+  }
 }

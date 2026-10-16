@@ -1,15 +1,40 @@
 import "@testing-library/jest-dom/vitest";
 
-import { render, screen } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { readFileSync } from "node:fs";
+import path from "node:path";
+
+import { fireEvent, render, screen } from "@testing-library/react";
+import { describe, expect, it, vi } from "vitest";
 
 import { Avatar } from "./Avatar";
 import { Button } from "./Button";
 import { Card } from "./Card";
+import { Checkbox } from "./Checkbox";
 import { Kbd } from "./Kbd";
 import { Notice } from "./Notice";
 
+const css = readFileSync(path.join(import.meta.dirname, "ui.module.css"), "utf8");
+
 describe("ui", () => {
+  it("keeps hover styles for pointers that hover, so a tap never leaves a button stuck", () => {
+    const hoverMedia = css.indexOf("@media (hover: hover)");
+    expect(hoverMedia).toBeGreaterThanOrEqual(0);
+    for (const match of css.matchAll(/:hover/g)) expect(match.index).toBeGreaterThan(hoverMedia);
+  });
+
+  it("Checkbox is one labelled 44 px row with the accent box, shared by every form", () => {
+    const onChange = vi.fn();
+    render(<Checkbox label="Favourite" checked={false} onChange={onChange} />);
+    const box = screen.getByRole("checkbox", { name: "Favourite" });
+    fireEvent.click(box);
+    expect(onChange).toHaveBeenCalledOnce();
+    expect(box.closest("label")?.className).toMatch(/checkbox/);
+    expect(css).toMatch(/\.checkbox \{[^}]*min-height: var\(--touch-min\)/);
+    expect(css).toMatch(
+      /\.checkbox input \{[^}]*flex-shrink: 0;[^}]*accent-color: var\(--accent-base\)/,
+    );
+  });
+
   it("Avatar shows the first letter of the name and hides it from screen readers", () => {
     const { container } = render(<Avatar name="Example Person" size={36} />);
     const el = container.firstElementChild;

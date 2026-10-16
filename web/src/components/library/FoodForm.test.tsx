@@ -237,10 +237,17 @@ describe("FoodForm: Send rettelsen til Open Food Facts (spec §4, always behind 
   it("shows the box for an off food only when GET contributions lists off, unchecked", async () => {
     api.available = ["off"];
     mount({ food: food("f-rye") });
-    expect(
-      await screen.findByRole("checkbox", { name: /Send rettelsen til Open Food Facts/ }),
-    ).not.toBeChecked();
+    const send = await screen.findByRole("checkbox", {
+      name: /Send rettelsen til Open Food Facts/,
+    });
+    expect(send).not.toBeChecked();
     expect(contributionCalls().map((call) => call.method)).toEqual(["GET"]);
+    // The same checkbox as Favorit: one shared control, not a native box beside a styled one.
+    const favourite = screen.getByRole("checkbox", { name: "Favorit" });
+    expect(send.closest("label")?.className).toMatch(/checkbox/);
+    expect(send.closest("label")?.className).toBe(favourite.closest("label")?.className);
+    // The source line shows the whole barcode, not four digits and an ellipsis.
+    expect(screen.getByText("Open Food Facts · stregkode 2000000000015")).toBeInTheDocument();
   });
 
   it("hides the box when nothing is available, and for family, manual and frida foods", async () => {
@@ -406,7 +413,12 @@ describe("FoodEditScreen (the phone pages library/new and library/[foodId])", ()
 
   it("starts empty for a new food and goes back with the arrow", () => {
     mountPage();
-    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("Ny fødevare");
+    const title = screen.getByRole("heading", { level: 1 });
+    expect(title).toHaveTextContent("Ny fødevare");
+    // The page header is the one title: the form has no second "Ny fødevare" and is named by it.
+    expect(screen.getAllByText("Ny fødevare")).toHaveLength(1);
+    expect(screen.queryByRole("heading", { level: 2 })).toBeNull();
+    expect(screen.getByRole("form", { name: "Ny fødevare" })).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Tilbage" }));
     expect(navigation.push).toHaveBeenCalledWith("/da/library");
     expect(api.calls).toEqual([]);
