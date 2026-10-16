@@ -1,6 +1,7 @@
 {
   "title": "Historik",
   "subtitle": "Uge {week} · {dates}",
+  "weekHeading": "Uge {week}",
   "viewLabel": "Historikvisning",
   "week": "Uge",
   "day": "Dag",
@@ -12,6 +13,7 @@
   "mealCount": "{count, plural, one {# måltid} other {# måltider}}",
   "grams": "{grams} g",
   "percent": "{value} %",
+  "belowOnePercent": "< 1 %",
   "inRange": "I mål {percent}",
   "rangeLabel": "I mål {low}–{high}",
   "belowLabel": "Under {low}",

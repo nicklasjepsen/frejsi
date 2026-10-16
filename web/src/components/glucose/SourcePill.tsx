@@ -38,15 +38,24 @@ export function SourcePill({
   if (status === "disconnected") return null;
 
   let text: string;
+  // The pill's wording for a phone header under 400 px, where the space name needs the room: the
+  // dot and one word. The full text stays in the DOM for assistive technology.
+  let short: string | undefined;
   // A manual space is never polled, so its status is never "connected" in the sensor's sense:
   // it is configured from the moment it is chosen.
   if (!sourceType || (status === "not-configured" && sourceType !== "manual")) {
     text = t("none");
+    if (variant === "pill") short = t("noneShort");
   } else {
     const source = names(`${sourceType}.name`);
-    // "Manuelt" alone: "forbundet" describes a connection nobody makes (plan §5).
-    if (variant === "pill") text = sourceType === "manual" ? source : t("connected", { source });
-    else if (latest)
+    if (variant === "pill") {
+      // "Manuelt" alone: "forbundet" describes a connection nobody makes (plan §5).
+      if (sourceType === "manual") text = source;
+      else {
+        text = t("connected", { source });
+        short = t("connectedShort");
+      }
+    } else if (latest)
       text = t("lastReading", { source, time: formatClock(new Date(latest.ts), timeZone) });
     else text = t("noReading", { source });
   }
@@ -61,7 +70,14 @@ export function SourcePill({
         data-testid="source-dot"
         aria-hidden="true"
       />
-      <span>{text}</span>
+      <span className={styles.sourceText} data-part="full">
+        {text}
+      </span>
+      {short !== undefined && (
+        <span className={styles.sourceShort} data-part="short" aria-hidden="true">
+          {short}
+        </span>
+      )}
     </div>
   );
 }

@@ -24,6 +24,9 @@ export function WeekNumbersTiles({
   const percent = (value?: number) =>
     empty || value === undefined ? missing : t("percent", { value });
   const { count, atNight } = n.lowEpisodes;
+  // "0 %" over "5 gange" contradicts itself: a share that rounds to nothing is "< 1 %" when
+  // there were episodes at all.
+  const below = n.belowPercent === 0 && count > 0 ? t("belowOnePercent") : percent(n.belowPercent);
   const episodes =
     count === 0
       ? t("none")
@@ -49,7 +52,7 @@ export function WeekNumbersTiles({
         <StatTile
           size="week"
           label={t("belowLabel", { low: formatBound(week.target.low, unit, locale) })}
-          value={percent(n.belowPercent)}
+          value={below}
           {...(!empty ? { footnote: n.belowPercent === undefined ? missing : episodes } : {})}
         />
         <StatTile

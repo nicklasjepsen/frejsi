@@ -702,6 +702,18 @@ it("refreshes the asked-food cards and the stored week state from live events", 
   await waitFor(() => {
     expect(screen.getAllByText("Alma spurgte om et billede · Gennemgå og godkend")).toHaveLength(2);
   });
+  // The phone's primary action stays within the first screen: its review card comes after it.
+  const [phoneLog] = screen.getAllByRole("link", { name: "Log et måltid" }).toReversed();
+  const [phoneCard] = screen
+    .getAllByText("Alma spurgte om et billede · Gennemgå og godkend")
+    .toReversed();
+  expect(phoneLog).toBeDefined();
+  expect(phoneCard).toBeDefined();
+  expect(
+    phoneLog &&
+      phoneCard &&
+      phoneLog.compareDocumentPosition(phoneCard) & Node.DOCUMENT_POSITION_FOLLOWING,
+  ).toBeTruthy();
   const asked = api.foods.find((f) => f.id === "asked");
   if (!asked) throw new Error("missing asked food fixture");
   asked.verified = true;

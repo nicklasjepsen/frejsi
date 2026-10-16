@@ -377,6 +377,12 @@ export function NowScreen({
             ))}
         </section>
 
+        <div className={styles.logAction}>
+          <Button size="phone" href={localeHref(locale, "/log")}>
+            {meals("logMeal")}
+          </Button>
+        </div>
+        {/* After the primary action, so "Log et måltid" is on the first screen of an iPhone. */}
         {ai.enabled && foods.askedBy && (
           <div className={styles.phoneReview}>
             <QuickLinkCard
@@ -387,11 +393,6 @@ export function NowScreen({
             />
           </div>
         )}
-        <div className={styles.logAction}>
-          <Button size="phone" href={localeHref(locale, "/log")}>
-            {meals("logMeal")}
-          </Button>
-        </div>
         {canEnter && manual.open && (
           <ManualReadingSheet
             spaceId={spaceId}

@@ -1,6 +1,7 @@
 {
   "title": "History",
   "subtitle": "Week {week} · {dates}",
+  "weekHeading": "Week {week}",
   "viewLabel": "History view",
   "week": "Week",
   "day": "Day",
@@ -12,6 +13,7 @@
   "mealCount": "{count, plural, one {# meal} other {# meals}}",
   "grams": "{grams} g",
   "percent": "{value} %",
+  "belowOnePercent": "< 1 %",
   "inRange": "In range {percent}",
   "rangeLabel": "In range {low}–{high}",
   "belowLabel": "Below {low}",

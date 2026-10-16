@@ -1,6 +1,6 @@
 import "@testing-library/jest-dom/vitest";
 
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, render, screen, within } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { afterEach, describe, expect, it } from "vitest";
 
@@ -134,6 +134,54 @@ describe("SourcePill", () => {
       expect(screen.getByRole("status")).toHaveTextContent("Manuelt · sidste måling 15:10");
       line.unmount();
     }
+  });
+
+  it("carries a short wording for narrow phone headers beside the full text", () => {
+    wrap(
+      <SourcePill
+        status="connected"
+        sourceType="dexcom-share"
+        latest={latest(3)}
+        now={T0}
+        timeZone="Europe/Copenhagen"
+        variant="pill"
+      />,
+    );
+    const status = screen.getByRole("status");
+    // The full text stays for assistive technology; the short one is decoration under 400 px.
+    expect(within(status).getByText("Dexcom Share forbundet")).toHaveAttribute("data-part", "full");
+    const short = within(status).getByText("forbundet");
+    expect(short).toHaveAttribute("data-part", "short");
+    expect(short).toHaveAttribute("aria-hidden", "true");
+    cleanup();
+    wrap(
+      <SourcePill
+        status="not-configured"
+        sourceType={null}
+        latest={null}
+        now={T0}
+        timeZone="Europe/Copenhagen"
+        variant="pill"
+      />,
+      "en",
+    );
+    expect(within(screen.getByRole("status")).getByText("No source")).toHaveAttribute(
+      "data-part",
+      "short",
+    );
+    cleanup();
+    // "Manuelt" is short already, and the desktop line never shortens.
+    wrap(
+      <SourcePill
+        status="connected"
+        sourceType="manual"
+        latest={latest(3)}
+        now={T0}
+        timeZone="Europe/Copenhagen"
+        variant="pill"
+      />,
+    );
+    expect(screen.getByRole("status").querySelector('[data-part="short"]')).toBeNull();
   });
 
   it("mutes the dot when the last finger-prick is older than 15 minutes", () => {

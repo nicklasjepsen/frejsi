@@ -1,8 +1,10 @@
 /* Historik-Desktop and the plan's derived phone week. All colour comes from shell tokens. */
+/* As the day view: 16 px under the space header, the shell's gutter the only one on the phone. */
 .page {
   display: flex;
   flex-direction: column;
   gap: 20px;
+  padding: 16px 0 32px;
   min-width: 0;
   color: var(--text);
 }
@@ -11,15 +13,18 @@
   border-radius: 16px;
   background: var(--surface-sunken);
 }
-.toolbar {
+.top {
   display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+/* The desktop toolbar (view chips and ArrowNav); the phone has the PeriodHeader instead. */
+.toolbar {
+  display: none;
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-}
-.views {
-  display: none;
 }
 .phoneDay {
   display: inline-flex;
@@ -55,6 +60,7 @@
   color: var(--text);
   text-decoration: none;
 }
+/* 64 px tall; the phone passes a wider viewBox and the tile stretches to the card's width. */
 .dayTile svg {
   height: 64px;
 }
@@ -103,11 +109,11 @@
   cursor: pointer;
 }
 @media (min-width: 1280px) {
-  .views {
-    display: block;
+  .page {
+    padding: 0;
   }
-  .phoneDay {
-    display: none;
+  .toolbar {
+    display: flex;
   }
   .days {
     grid-template-columns: repeat(7, minmax(0, 1fr));

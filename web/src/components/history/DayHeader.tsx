@@ -2,7 +2,7 @@
 import { useTranslations } from "next-intl";
 import type { AppLocale } from "@/lib/i18n/routing";
 import { dayHeading, shiftDate } from "./dates";
-import styles from "./history.module.css";
+import { PeriodHeader } from "./PeriodHeader";
 
 export function DayHeader({
   date,
@@ -21,34 +21,24 @@ export function DayHeader({
 }) {
   const t = useTranslations("history");
   const prefix = date === today ? t("today") : date === shiftDate(today, -1) ? t("yesterday") : "";
+  const summary = t("daySummary", { carbs, count });
   return (
-    <header className={styles.dayHeader}>
-      <button
-        type="button"
-        aria-label={t("previousDay")}
-        onClick={() => {
+    <PeriodHeader
+      heading={dayHeading(date, locale)}
+      line={prefix ? `${prefix} · ${summary}` : summary}
+      previous={{
+        label: t("previousDay"),
+        onClick: () => {
           onNavigate(shiftDate(date, -1));
-        }}
-      >
-        ‹
-      </button>
-      <div>
-        <h2>{dayHeading(date, locale)}</h2>
-        <p>
-          {prefix && `${prefix} · `}
-          {t("daySummary", { carbs, count })}
-        </p>
-      </div>
-      <button
-        type="button"
-        aria-label={t("nextDay")}
-        disabled={date >= today}
-        onClick={() => {
+        },
+      }}
+      next={{
+        label: t("nextDay"),
+        disabled: date >= today,
+        onClick: () => {
           onNavigate(shiftDate(date, 1));
-        }}
-      >
-        ›
-      </button>
-    </header>
+        },
+      }}
+    />
   );
 }

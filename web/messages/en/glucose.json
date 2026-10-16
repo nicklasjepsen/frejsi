@@ -30,6 +30,8 @@
   "chartToday": "Glucose today from {from} to {to}",
   "source": {
     "connected": "{source} connected",
+    "connectedShort": "connected",
+    "noneShort": "No source",
     "lastReading": "{source} · last reading {time}",
     "noReading": "{source} · no reading yet",
     "none": "No glucose source chosen yet"

@@ -128,7 +128,8 @@
   :root:not([data-theme="light"]) {
     --ground: #1f1b17;
     --surface: #2a2521;
-    --surface-sunken: #26211c;
+    /* Below the ground, as in the light palette, so a notice reads as sunken and not as a card. */
+    --surface-sunken: #171310;
     --surface-selected: #332d27;
     --surface-input: #2a2521;
     --text: #f1eadf;
@@ -211,7 +212,8 @@
 :root[data-theme="dark"] {
   --ground: #1f1b17;
   --surface: #2a2521;
-  --surface-sunken: #26211c;
+  /* Below the ground, as in the light palette, so a notice reads as sunken and not as a card. */
+  --surface-sunken: #171310;
   --surface-selected: #332d27;
   --surface-input: #2a2521;
   --text: #f1eadf;

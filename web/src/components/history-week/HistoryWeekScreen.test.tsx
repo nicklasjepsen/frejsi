@@ -69,7 +69,8 @@ afterEach(() => {
 it("loads only the week route once, showing seven day links, real charts and weekly statistics", async () => {
   mount();
   expect(await screen.findByRole("heading", { name: "Historik", level: 1 })).toBeVisible();
-  expect(screen.getByText(/Uge 41 · 6\.–12\. oktober/)).toBeVisible();
+  expect(screen.getByRole("heading", { name: "Uge 41", level: 2 })).toBeVisible();
+  expect(screen.getByText("6.–12. oktober")).toBeVisible();
   const days = screen.getByRole("region", { name: "Ugens dage" });
   expect(within(days).getAllByRole("link")).toHaveLength(7);
   expect(within(days).getAllByRole("img")).toHaveLength(7);
@@ -252,6 +253,72 @@ it("ignores an old week's delayed response after navigation", async () => {
   });
   expect(screen.getByText("77 %")).toBeVisible();
   expect(screen.queryByText("81 %")).toBeNull();
+});
+it("says '< 1 %' below the target when there were episodes but the share rounds to 0", async () => {
+  data.numbers.belowPercent = 0;
+  data.numbers.lowEpisodes = { count: 5, atNight: 2 };
+  mount();
+  expect(await screen.findByText("5 gange, 2 om natten")).toBeVisible();
+  expect(screen.getByText("< 1 %")).toBeVisible();
+  expect(screen.queryByText("0 %")).toBeNull();
+});
+it("keeps '0 %' below the target when there were no episodes at all", async () => {
+  data.numbers.belowPercent = 0;
+  data.numbers.lowEpisodes = { count: 0, atNight: 0 };
+  mount();
+  expect(await screen.findByText("ingen")).toBeVisible();
+  expect(screen.getByText("0 %")).toBeVisible();
+});
+it("draws the phone header like the day view: title with the Day link, the week between the arrows", async () => {
+  mount();
+  expect(await screen.findByRole("heading", { name: "Historik", level: 1 })).toBeVisible();
+  const week = screen.getByRole("heading", { name: "Uge 41", level: 2 });
+  const period = week.closest("header");
+  expect(period).not.toBeNull();
+  if (!period) return;
+  expect(within(period).getByText("6.–12. oktober")).toBeVisible();
+  expect(within(period).getByRole("link", { name: "Forrige uge" })).toHaveAttribute(
+    "href",
+    "/da/history/week?start=2025-09-29&view=uge",
+  );
+  expect(within(period).getByRole("link", { name: "Næste uge" })).toHaveAttribute(
+    "href",
+    "/da/history/week?start=2025-10-13&view=uge",
+  );
+  // The phone tiles stretch to the card: a wide viewBox drawn without letterboxing.
+  const tile = screen.getByRole("region", { name: "Ugens dage" }).querySelector("svg");
+  expect(tile).toHaveAttribute("viewBox", "0 0 320 64");
+  expect(tile).toHaveAttribute("preserveAspectRatio", "none");
+});
+it("keeps Historik-Desktop from 1280 px: subtitle under the title, chips and arrows in the toolbar", async () => {
+  vi.stubGlobal("matchMedia", (query: string): MediaQueryList => ({
+    matches: query === "(min-width: 1280px)",
+    media: query,
+    onchange: null,
+    addEventListener: () => undefined,
+    removeEventListener: () => undefined,
+    addListener: () => undefined,
+    removeListener: () => undefined,
+    dispatchEvent: () => false,
+  }));
+  try {
+    mount();
+    expect(await screen.findByText("Uge 41 · 6.–12. oktober")).toBeVisible();
+    expect(screen.queryByRole("heading", { name: "Uge 41", level: 2 })).toBeNull();
+    expect(screen.queryByRole("link", { name: "Dag" })).toBeNull();
+    expect(screen.getByRole("radio", { name: "Dag" })).toHaveAttribute(
+      "href",
+      "/da/history?date=2025-10-06",
+    );
+    expect(screen.getByRole("link", { name: "Forrige uge" })).toHaveAttribute(
+      "href",
+      "/da/history/week?start=2025-09-29&view=uge",
+    );
+    const tile = screen.getByRole("region", { name: "Ugens dage" }).querySelector("svg");
+    expect(tile).toHaveAttribute("viewBox", "0 0 120 64");
+  } finally {
+    vi.unstubAllGlobals();
+  }
 });
 it("shows partial night episode counts and an after-meal mean without advice", async () => {
   data.numbers.lowEpisodes.atNight = 1;

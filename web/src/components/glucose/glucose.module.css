@@ -161,11 +161,13 @@
   stroke-linejoin: round;
 }
 
+/* The tile stretches to its box (preserveAspectRatio none); the stroke keeps its width. */
 .weekLine {
   fill: none;
   stroke: var(--text);
   stroke-width: 1.8;
   stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
 }
 
 .mealLine {
@@ -216,9 +218,11 @@
 
 /* The source status: a dot and one line. */
 .source {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 8px;
+  min-width: 0;
   font-size: 14px;
   color: var(--text-muted);
   white-space: nowrap;
@@ -226,6 +230,31 @@
 
 .source[data-variant="pill"] {
   gap: 6px;
+}
+
+.sourceText {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sourceShort {
+  display: none;
+}
+
+/* Under 400 px the phone header has no room for the source's name beside the space name: the dot
+   and one word ("forbundet"). The full text is clipped away, not removed, so it is still read out. */
+@media (max-width: 399px) {
+  .source[data-variant="pill"] .sourceText {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+  }
+
+  .source[data-variant="pill"] .sourceShort {
+    display: inline;
+  }
 }
 
 .dot {

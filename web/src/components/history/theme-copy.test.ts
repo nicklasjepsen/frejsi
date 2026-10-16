@@ -58,6 +58,15 @@ it("uses the inherited light, dark and accent variables at 360 and 1280 px", () 
     expect(dark).toContain(`[data-accent="${accent}"]`);
   }
 });
+it("lets the shell's gutter be the phone's only one and keeps hover effects off touch screens", () => {
+  const css = read("history.module.css");
+  const phone = css.slice(0, css.indexOf("@media (min-width: 1280px)"));
+  expect(phone).toMatch(/\.page \{[^}]*padding: 16px 0 32px;/);
+  const day = read("../day/day.module.css");
+  const hover = day.slice(day.indexOf("@media (hover: hover)"));
+  expect(hover).toContain(".cellLink:hover");
+  expect(day.slice(0, day.indexOf("@media (hover: hover)"))).not.toContain(":hover");
+});
 it("keeps the viewer branch's executable imports free of chart and statistics components", () => {
   const source = read("ViewerDays.tsx");
   expect(source).not.toMatch(/import(?! type).*from.*(?:glucose|stats|DaySection|HistoryScreen)/);

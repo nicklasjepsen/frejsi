@@ -192,8 +192,11 @@
   text-decoration: none;
 }
 
-.cellLink:hover {
-  text-decoration: underline;
+/* Hover only where a pointer can hover: on a touch screen the underline would stick after a tap. */
+@media (hover: hover) {
+  .cellLink:hover {
+    text-decoration: underline;
+  }
 }
 
 .hint {

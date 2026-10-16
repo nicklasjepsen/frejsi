@@ -134,6 +134,28 @@ describe('GlucoseChart variant="week-tile"', () => {
   });
 });
 
+describe('GlucoseChart variant="week-tile" stretched', () => {
+  it("draws a wider tile when asked, filling its box without letterboxing", () => {
+    mount(
+      <GlucoseChart
+        variant="week-tile"
+        width={320}
+        curve={[{ ts: "2026-10-05T06:00:00.000Z", mmol: 6 }]}
+        mealTimes={["2026-10-05T12:00:00.000Z"]}
+        from={new Date("2026-10-04T22:00:00.000Z")}
+        to={new Date("2026-10-05T22:00:00.000Z")}
+        target={{ low: 4, high: 10 }}
+        timeZone={zone}
+      />,
+    );
+    const svg = screen.getByRole("img", { name: "Mandag" });
+    expect(svg).toHaveAttribute("viewBox", "0 0 320 64");
+    expect(svg).toHaveAttribute("preserveAspectRatio", "none");
+    // 14:00 lands at 14/24 of the wider tile.
+    expect(svg.querySelector("circle[data-testid=meal-dot]")).toHaveAttribute("cx", "186.7");
+  });
+});
+
 describe('GlucoseChart variant="week-tile" with one bucket', () => {
   it("draws a lone bucket as a dot", () => {
     const { container } = mount(

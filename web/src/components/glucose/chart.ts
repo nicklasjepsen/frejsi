@@ -351,6 +351,8 @@ export const WEEK_TILE = {
 };
 
 export interface WeekTileInput {
+  /** The viewBox width: 120 on the desktop grid; the phone passes a wider tile for its card. */
+  width?: number;
   /** The day downsampled to 30-minute buckets (plan §5), at most 48 points. */
   curve: readonly { ts: string; mmol: number }[];
   mealTimes: readonly string[];
@@ -369,9 +371,10 @@ export interface WeekTileGeometry {
 }
 
 export function weekTileGeometry(input: WeekTileInput): WeekTileGeometry {
+  const width = input.width ?? WEEK_TILE.width;
   const fromMs = input.from.getTime();
   const span = Math.max(1, input.to.getTime() - fromMs);
-  const x = (ts: string) => round(((new Date(ts).getTime() - fromMs) / span) * WEEK_TILE.width);
+  const x = (ts: string) => round(((new Date(ts).getTime() - fromMs) / span) * width);
   const y = fixedY(WEEK_TILE.plotTop, WEEK_TILE.baseline);
   const inDay = input.curve
     .filter((p) => {
@@ -385,7 +388,7 @@ export function weekTileGeometry(input: WeekTileInput): WeekTileGeometry {
   const bucketMinutes = span / 60_000 / WEEK_TILE.maxPoints;
   const gapMinutes = Math.max(GAP_MINUTES, bucketMinutes * 1.5);
   return {
-    width: WEEK_TILE.width,
+    width,
     height: WEEK_TILE.height,
     band: { top: y(input.target.high), bottom: y(input.target.low) },
     segments: segmentsOf(points, x, y, gapMinutes * Math.max(1, step)),

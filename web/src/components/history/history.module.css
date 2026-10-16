@@ -1,6 +1,7 @@
+/* The shell's gutter is the phone's only one; the page adds none of its own. */
 .page {
   color: var(--text);
-  padding: 16px 24px 32px;
+  padding: 16px 0 32px;
   display: flex;
   flex-direction: column;
   gap: 24px;
@@ -29,40 +30,48 @@
 .section {
   scroll-margin-top: 24px;
 }
-.dayHeader {
+/* PeriodHeader: the day's or the week's heading between two round arrows (phone only). */
+.periodHeader {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 8px;
   margin-bottom: 14px;
 }
-.dayHeader > div {
+.periodHeader > div {
   text-align: center;
   min-width: 0;
 }
-.dayHeader h2 {
+.periodHeader h2 {
   font-size: 17px;
   font-weight: 700;
   margin: 0 0 4px;
 }
-.dayHeader p {
+.periodHeader p {
   color: var(--text-muted);
   font-size: 13px;
   margin: 0;
 }
-.dayHeader button {
+.periodArrow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
   width: 44px;
   height: 44px;
+  padding: 0;
   flex-shrink: 0;
   border-radius: 50%;
   background: var(--surface);
   box-shadow: var(--card-shadow);
   border: var(--card-border);
   color: var(--text);
+  font: inherit;
   font-size: 26px;
+  line-height: 1;
+  text-decoration: none;
   cursor: pointer;
 }
-.dayHeader button:disabled {
+.periodArrow:disabled {
   color: var(--hairline-strong);
   cursor: default;
 }
@@ -144,7 +153,7 @@
   .page {
     padding: 0;
   }
-  .dayHeader {
+  .periodHeader {
     display: none;
   }
   .dayBody {

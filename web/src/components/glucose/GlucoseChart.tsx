@@ -69,6 +69,8 @@ export interface MealChartProps {
 
 export interface WeekTileChartProps {
   variant: "week-tile";
+  /** The viewBox width: 120 (Historik-Desktop) unless the phone asks for a wider tile. */
+  width?: number;
   /** The day downsampled to 30-minute buckets, at most 48 points. */
   curve: readonly { ts: string; mmol: number }[];
   mealTimes: readonly string[];
@@ -323,12 +325,7 @@ function MealChart(props: MealChartProps) {
         data-testid="meal-line"
       />
       {g.bolus && (
-        <path
-          className={styles.bolus}
-          d={g.bolus.path}
-          aria-hidden="true"
-          data-testid="bolus"
-        />
+        <path className={styles.bolus} d={g.bolus.path} aria-hidden="true" data-testid="bolus" />
       )}
       <Segments segments={g.segments} />
       {g.end && (
@@ -372,6 +369,7 @@ function WeekTile(props: WeekTileChartProps) {
       className={styles.chart}
       viewBox={`0 0 ${g.width} ${g.height}`}
       width="100%"
+      preserveAspectRatio="none"
       role="img"
       aria-label={weekday}
       data-variant="week-tile"

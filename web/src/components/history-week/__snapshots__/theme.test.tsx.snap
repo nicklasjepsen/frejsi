@@ -15,7 +15,7 @@ exports[`uses inherited theme variables for the week, phone, and meals views at 
   "--meal-bolus-marker": "#e08a6c",
   "--meal-marker": "#e08a6c",
   "--surface": "#2a2521",
-  "--surface-sunken": "#26211c",
+  "--surface-sunken": "#171310",
   "--text": "#f1eadf",
   "--text-muted": "#b5aa9a",
 }
@@ -36,7 +36,7 @@ exports[`uses inherited theme variables for the week, phone, and meals views at 
   "--meal-bolus-marker": "#e08a6c",
   "--meal-marker": "#e08a6c",
   "--surface": "#2a2521",
-  "--surface-sunken": "#26211c",
+  "--surface-sunken": "#171310",
   "--text": "#f1eadf",
   "--text-muted": "#b5aa9a",
 }
@@ -57,7 +57,7 @@ exports[`uses inherited theme variables for the week, phone, and meals views at 
   "--meal-bolus-marker": "#e08a6c",
   "--meal-marker": "#e08a6c",
   "--surface": "#2a2521",
-  "--surface-sunken": "#26211c",
+  "--surface-sunken": "#171310",
   "--text": "#f1eadf",
   "--text-muted": "#b5aa9a",
 }
@@ -78,7 +78,7 @@ exports[`uses inherited theme variables for the week, phone, and meals views at 
   "--meal-bolus-marker": "#e08a6c",
   "--meal-marker": "#e08a6c",
   "--surface": "#2a2521",
-  "--surface-sunken": "#26211c",
+  "--surface-sunken": "#171310",
   "--text": "#f1eadf",
   "--text-muted": "#b5aa9a",
 }
@@ -99,7 +99,7 @@ exports[`uses inherited theme variables for the week, phone, and meals views at 
   "--meal-bolus-marker": "#e08a6c",
   "--meal-marker": "#e08a6c",
   "--surface": "#2a2521",
-  "--surface-sunken": "#26211c",
+  "--surface-sunken": "#171310",
   "--text": "#f1eadf",
   "--text-muted": "#b5aa9a",
 }

@@ -6,6 +6,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { localDateOf } from "@/components/day/format";
+import { PeriodHeader } from "@/components/history/PeriodHeader";
+import { useDesktop } from "@/components/meal-detail/useDesktop";
 import { ArrowNav } from "@/components/ui/ArrowNav";
 import { ChipGroup } from "@/components/ui/ChipGroup";
 import { PageHeader } from "@/components/ui/PageHeader";
@@ -51,6 +53,7 @@ export function HistoryWeekScreen({
   const t = useTranslations("historyWeek");
   const errors = useTranslations("errors.api");
   const router = useRouter();
+  const desktop = useDesktop();
   const key = `${spaceId}:${start}`;
   const [state, setState] = useState<State>({ key, status: "loading" });
   const generation = useRef(0);
@@ -193,19 +196,26 @@ export function HistoryWeekScreen({
     );
   const dayDate = current ? localDateOf(new Date(week.now), week.timezone) : start;
   const showTiles = view === "uge" || week.meals.length === 0;
+  const dates = weekDateLabel(start, locale);
+  const previous = { label: t("previous"), href: weekHref(dateAfter(start, -7)) };
+  const next = { label: t("next"), href: weekHref(dateAfter(start, 7)), disabled: current };
   return (
     <div className={styles.page} data-view={view}>
-      <PageHeader
-        title={t("title")}
-        subtitle={t("subtitle", { week: week.isoWeek, dates: weekDateLabel(start, locale) })}
-        trailing={
-          <Link className={styles.phoneDay} href={localeHref(locale, "/history")}>
-            {t("day")}
-          </Link>
-        }
-      />
-      <div className={styles.toolbar}>
-        <div className={styles.views}>
+      {/* The phone reads like the day view: the title with the Day link, then the week between
+          the arrows. The desktop keeps Historik-Desktop: subtitle, chips and ArrowNav. */}
+      <div className={styles.top}>
+        <PageHeader
+          title={t("title")}
+          {...(desktop ? { subtitle: t("subtitle", { week: week.isoWeek, dates }) } : {})}
+          trailing={
+            !desktop && (
+              <Link className={styles.phoneDay} href={localeHref(locale, "/history")}>
+                {t("day")}
+              </Link>
+            )
+          }
+        />
+        <div className={styles.toolbar}>
           <ChipGroup
             label={t("viewLabel")}
             value={view}
@@ -227,16 +237,23 @@ export function HistoryWeekScreen({
               },
             ]}
           />
+          {desktop && (
+            <div className={styles.arrows}>
+              <ArrowNav previous={previous} next={next} />
+            </div>
+          )}
         </div>
-        <div className={styles.arrows}>
-          <ArrowNav
-            previous={{ label: t("previous"), href: weekHref(dateAfter(start, -7)) }}
-            next={{ label: t("next"), href: weekHref(dateAfter(start, 7)), disabled: current }}
+        {!desktop && (
+          <PeriodHeader
+            heading={t("weekHeading", { week: week.isoWeek })}
+            line={dates}
+            previous={previous}
+            next={next}
           />
-        </div>
+        )}
       </div>
       {showTiles ? (
-        <WeekTiles week={week} locale={locale} />
+        <WeekTiles week={week} locale={locale} desktop={desktop} />
       ) : (
         <WeekMealsTable
           week={week}

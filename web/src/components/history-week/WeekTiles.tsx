@@ -8,7 +8,19 @@ import { localeHref, type AppLocale } from "@/lib/i18n/routing";
 import { dateLocale } from "./dates";
 import styles from "./history-week.module.css";
 
-export function WeekTiles({ week, locale }: { week: WeekHistoryView; locale: AppLocale }) {
+/** The one-column phone tile's viewBox width: it stretches to the card (Historik-Desktop: 120). */
+const PHONE_TILE_WIDTH = 320;
+
+export function WeekTiles({
+  week,
+  locale,
+  desktop = false,
+}: {
+  week: WeekHistoryView;
+  locale: AppLocale;
+  /** From 1280 px the seven tiles share a row at the design's 120×64. */
+  desktop?: boolean;
+}) {
   const t = useTranslations("historyWeek");
   const formatter = new Intl.DateTimeFormat(dateLocale(locale), {
     weekday: "short",
@@ -33,6 +45,7 @@ export function WeekTiles({ week, locale }: { week: WeekHistoryView; locale: App
             </div>
             <GlucoseChart
               variant="week-tile"
+              {...(desktop ? {} : { width: PHONE_TILE_WIDTH })}
               curve={day.curve}
               mealTimes={day.mealTimes}
               from={from}

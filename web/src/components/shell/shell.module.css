@@ -42,11 +42,18 @@
   padding: var(--phone-safe-top) var(--phone-gutter) 0;
 }
 
+/* The name grows from a zero basis, so only the status at the end (an auto basis) gives way when
+   the row is too narrow; the name keeps at least the avatar and a few letters before its ellipsis. */
+.phoneHeaderName,
+.phoneSwitcher {
+  flex: 1 1 0;
+  min-width: 140px;
+}
+
 .phoneHeaderName {
   display: flex;
   align-items: center;
   gap: 10px;
-  min-width: 0;
 }
 
 .subjectName {
@@ -67,11 +74,17 @@
 }
 
 .headerEnd {
+  flex: 0 1 auto;
+  min-width: 0;
   display: flex;
   align-items: center;
   gap: 6px;
   font-size: 14px;
   color: var(--text-muted);
+}
+
+.headerEnd > * {
+  min-width: 0;
 }
 
 .viewerPill {
@@ -113,10 +126,6 @@
   text-decoration: none;
   color: var(--text-muted);
   font-size: 12px;
-}
-
-.tab:hover {
-  color: var(--text);
 }
 
 .tab[aria-current="page"] {
@@ -179,11 +188,6 @@
   text-decoration: none;
   color: var(--text);
   font-size: 15px;
-}
-
-.sidebarItem:hover {
-  background: var(--surface-selected);
-  color: var(--text);
 }
 
 .sidebarItem[aria-current="page"] {
@@ -345,10 +349,6 @@
   font-size: 14px;
 }
 
-.switcherOption:hover {
-  background: var(--surface-selected);
-}
-
 .switcherOption[aria-current="true"] {
   font-weight: 700;
 }
@@ -416,6 +416,22 @@
   display: flex;
   gap: 10px;
   margin-top: 8px;
+}
+
+/* Hover only where a pointer can hover: on a touch screen the effect would stick after a tap. */
+@media (hover: hover) {
+  .tab:hover {
+    color: var(--text);
+  }
+
+  .sidebarItem:hover {
+    background: var(--surface-selected);
+    color: var(--text);
+  }
+
+  .switcherOption:hover {
+    background: var(--surface-selected);
+  }
 }
 
 /* Desktop from 1280 px: the sidebar appears, the phone header and tabs go. */

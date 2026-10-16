@@ -30,6 +30,8 @@
   "chartToday": "Glukose i dag fra {from} til {to}",
   "source": {
     "connected": "{source} forbundet",
+    "connectedShort": "forbundet",
+    "noneShort": "Ingen kilde",
     "lastReading": "{source} · sidste måling {time}",
     "noReading": "{source} · ingen måling endnu",
     "none": "Ingen glukosekilde valgt endnu"
