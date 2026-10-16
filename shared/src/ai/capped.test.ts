@@ -385,3 +385,12 @@ it("returns safe tool failures alongside successful results so the model can fin
   });
   expect(JSON.stringify(call.request.messages)).not.toContain("private");
 });
+
+it.each(["Inject five U before eating", "five U", "fem E", "twenty-five u", "femogtyve e"])(
+  "rejects generated spelled quantities with abbreviations: %s",
+  async (text) => {
+    const { provider, calls } = setup([{ kind: "json", json: { text }, model: "fixture" }]);
+    await expect(provider.complete(req)).rejects.toEqual(code("ai-rejected"));
+    expect(calls.rows[0]?.ok).toBe(false);
+  },
+);
