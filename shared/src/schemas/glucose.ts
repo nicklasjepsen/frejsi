@@ -30,21 +30,62 @@ export type Reading = z.infer<typeof Reading>;
 export const GlucoseUnit = z.enum(["mmol", "mgdl"]);
 export type GlucoseUnit = z.infer<typeof GlucoseUnit>;
 
-export const GlucoseSourceType = z.enum(["dexcom-share"]);
+export const GlucoseSourceType = z.enum(["dexcom-share", "nightscout", "manual"]);
 export type GlucoseSourceType = z.infer<typeof GlucoseSourceType>;
+
+/** The types the poller fetches from; `manual` has no adapter and is never polled (plan §4). */
+export type PolledSourceType = Exclude<GlucoseSourceType, "manual">;
 
 export const DexcomShareRegion = z.enum(["eu", "us"]);
 export type DexcomShareRegion = z.infer<typeof DexcomShareRegion>;
 
-/** Stored as JSON on `Space.glucoseSource`. The credential lives in Key Vault under `secretRef`. */
+/**
+ * Stored as JSON on `Space.glucoseSource`. The credential lives in Key Vault under `secretRef`;
+ * for Nightscout that includes the site's URL, so the database holds nothing that locates it.
+ */
 export const GlucoseSourceConfig = z.discriminatedUnion("type", [
   z.object({
     type: z.literal("dexcom-share"),
     region: DexcomShareRegion,
     secretRef: z.string().min(1),
   }),
+  z.strictObject({ type: z.literal("nightscout"), secretRef: z.string().min(1) }),
+  z.strictObject({ type: z.literal("manual") }),
 ]);
 export type GlucoseSourceConfig = z.infer<typeof GlucoseSourceConfig>;
+
+/** An https URL with no query, fragment or userinfo: a token in the URL would reach every log. */
+const NightscoutUrl = z
+  .url({ protocol: /^https$/, hostname: z.regexes.domain })
+  .max(2048)
+  .refine(
+    (value) => {
+      if (!URL.canParse(value)) return false;
+      const url = new URL(value);
+      return url.search === "" && url.hash === "" && url.username === "" && url.password === "";
+    },
+    { message: "The URL has no query, fragment or credentials." },
+  )
+  .refine((value) => !value.includes("?") && !value.includes("#"), {
+    message: "The URL has no query or fragment.",
+  });
+
+const oneOfTokenOrApiSecret = (value: {
+  token?: string | undefined;
+  apiSecret?: string | undefined;
+}) => (value.token === undefined) !== (value.apiSecret === undefined);
+const oneOfMessage = { message: "Exactly one of token and apiSecret.", path: ["token"] };
+
+const nightscoutSecrets = {
+  token: z.string().min(1).max(200).optional(),
+  apiSecret: z.string().min(1).max(200).optional(),
+};
+
+/** What `source-connect` stores in Key Vault for a Nightscout space (spec §3). */
+export const NightscoutCredential = z
+  .strictObject({ url: NightscoutUrl, ...nightscoutSecrets })
+  .refine(oneOfTokenOrApiSecret, oneOfMessage);
+export type NightscoutCredential = z.infer<typeof NightscoutCredential>;
 
 export const SourceStatus = z.enum(["not-configured", "connected", "disconnected"]);
 export type SourceStatus = z.infer<typeof SourceStatus>;
@@ -53,14 +94,36 @@ export const ProbeResult = z.enum(["ok", "bad-credentials", "unreachable"]);
 export type ProbeResult = z.infer<typeof ProbeResult>;
 
 /** Settings route → the poller's `source-connect` function (plan §4). */
-export const ConnectSourceRequest = z.object({
-  spaceId: z.string().min(1),
-  type: GlucoseSourceType,
-  region: DexcomShareRegion,
-  username: z.string().min(1),
-  password: z.string().min(1),
-});
+export const ConnectSourceRequest = z.discriminatedUnion("type", [
+  z.object({
+    type: z.literal("dexcom-share"),
+    spaceId: z.string().min(1),
+    region: DexcomShareRegion,
+    username: z.string().min(1),
+    password: z.string().min(1),
+  }),
+  z
+    .strictObject({
+      type: z.literal("nightscout"),
+      spaceId: z.string().min(1),
+      url: NightscoutUrl,
+      ...nightscoutSecrets,
+    })
+    .refine(oneOfTokenOrApiSecret, oneOfMessage),
+  z.strictObject({ type: z.literal("manual"), spaceId: z.string().min(1) }),
+]);
 export type ConnectSourceRequest = z.infer<typeof ConnectSourceRequest>;
+
+/**
+ * A finger-prick value typed in by hand (plan §4). `value` is in `unit`; the route converts to
+ * mmol and checks the window. `ts` is the time of the measurement and defaults to now.
+ */
+export const ManualReadingRequest = z.strictObject({
+  ts: z.iso.datetime().default(() => new Date().toISOString()),
+  value: z.number().positive().max(1000),
+  unit: GlucoseUnit,
+});
+export type ManualReadingRequest = z.infer<typeof ManualReadingRequest>;
 
 export const ConnectSourceResult = z.discriminatedUnion("result", [
   z.object({ result: z.literal("ok"), secretRef: z.string().min(1) }),

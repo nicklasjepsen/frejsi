@@ -41,8 +41,11 @@ export const UserSettingsPatch = z
   .refine(atLeastOne, { message: "nothing to change" });
 export type UserSettingsPatch = z.infer<typeof UserSettingsPatch>;
 
-/** What the connect form posts; the route adds the `spaceId` from the path, so a body with one is refused. */
-export const ConnectSourceBody = ConnectSourceRequest.omit({ spaceId: true }).strict();
+/**
+ * What the connect form posts; the route adds the `spaceId` from the path, so a body with one is
+ * refused. Dexcom Share only until the Nightscout form and the `manual` choice reach Settings (v0.5.0).
+ */
+export const ConnectSourceBody = ConnectSourceRequest.options[0].omit({ spaceId: true }).strict();
 export type ConnectSourceBody = z.infer<typeof ConnectSourceBody>;
 
 /**
