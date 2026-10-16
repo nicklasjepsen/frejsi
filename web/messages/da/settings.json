@@ -29,10 +29,20 @@
       "us": "US-server"
     },
     "changeLogin": "Skift login",
-    "nightscout": "Nightscout",
-    "manual": "Manuelt",
-    "vaultNote": "Login til {source} gemmes i en låst boks, aldrig i databasen. Ejere får besked, hvis forbindelsen har været nede i mere end 35 minutter.",
-    "connect": "Forbind"
+    "vaultNote": "Login til {source} gemmes i et låst hvælv, aldrig i databasen. Ejere får besked, hvis forbindelsen har været nede i mere end 35 minutter.",
+    "connect": "Forbind",
+    "cardConnectedPlain": "Forbundet · sidste måling {when} · henter hvert 5. minut",
+    "cardConnectedNoReadingPlain": "Forbundet · ingen målinger endnu · henter hvert 5. minut",
+    "cardDisconnectedPlain": "Ingen forbindelse",
+    "cardManual": "Fingerprik-målinger · sidste måling {when}",
+    "cardManualNoReading": "Fingerprik-målinger · ingen målinger endnu",
+    "rowManual": "{source} · sidste måling {time}",
+    "rowManualNoReading": "{source} · ingen målinger endnu",
+    "choose": "Vælg",
+    "manualNote": "Målinger tastes ind på Nu-skærmen.",
+    "manualConfirm": "Skift til manuelle målinger? Frejsi henter så ikke længere fra {source}.",
+    "manualConfirmYes": "Skift til manuelt",
+    "pickerLead": "Vælg, hvor Frejsi henter målingerne fra. Én kilde ad gangen."
   },
   "connect": {
     "title": "Skift login",
@@ -46,7 +56,17 @@
     },
     "submit": "Forbind",
     "submitting": "Forbinder …",
-    "cancel": "Annullér"
+    "cancel": "Annullér",
+    "nightscout": {
+      "title": "Forbind Nightscout",
+      "lead": "Skriv adressen på din egen Nightscout-side. Frejsi gemmer adressen og adgangen i en låst boks – aldrig i databasen.",
+      "url": "Adresse på din Nightscout-side",
+      "urlPlaceholder": "https://",
+      "secretKind": "Adgangstoken · API-secret",
+      "token": "Adgangstoken",
+      "apiSecret": "API-secret",
+      "badCredentials": "Nightscout afviste adgangen – tjek token eller API-secret"
+    }
   },
   "ai": {
     "lead": "Søgning, stemme, billeder og observationer",

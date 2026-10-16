@@ -1,12 +1,15 @@
 {
   "dexcom-share": {
-    "name": "Dexcom Share"
+    "name": "Dexcom Share",
+    "description": "Dexcom-sensor, hentet via Share-appen."
   },
   "nightscout": {
-    "name": "Nightscout"
+    "name": "Nightscout",
+    "description": "Din egen Nightscout-side som kilde"
   },
   "manual": {
-    "name": "Manuelt"
+    "name": "Manuelt",
+    "description": "Fingerprik-målinger tastes ind. Uden sensor."
   },
   "disconnected": "Ingen forbindelse til {source} siden {time}",
   "disconnectedNoTime": "Ingen forbindelse til {source}"

@@ -44,3 +44,17 @@ it("uses the shared theme variables for the AI row, picker and push switch at bo
       tokens.match(new RegExp(`\\[data-accent="${accent}"\\]`, "g"))?.length,
     ).toBeGreaterThanOrEqual(2);
 });
+
+it("draws the selected source card with the 2 px accent border and tint, from theme variables only", () => {
+  const css = readFileSync(new URL("./settings.module.css", import.meta.url), "utf8");
+  const rule = (selector: string) =>
+    new RegExp(`${selector.replace(/[[\]"().]/g, "\\$&")}\\s*\\{([^}]*)\\}`).exec(css)?.[1] ?? "";
+  expect(rule('.sourceCard[data-selected="true"]')).toMatch(
+    /border: 2px solid var\(--accent-base\)/,
+  );
+  expect(rule('.sourceCard[data-selected="true"]')).toContain("background: var(--accent-tint)");
+  // The phone RadioCard, the confirmation and the Nightscout hint add no colour of their own.
+  for (const selector of ['.sourceCard[data-layout="radio"]', ".confirm", ".fieldError"])
+    expect(rule(selector)).not.toMatch(/#[0-9a-f]{3,8}\b|rgb\(/i);
+  expect(rule(".confirm")).toContain("background: var(--surface-sunken)");
+});

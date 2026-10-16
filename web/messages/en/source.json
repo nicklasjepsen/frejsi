@@ -1,12 +1,15 @@
 {
   "dexcom-share": {
-    "name": "Dexcom Share"
+    "name": "Dexcom Share",
+    "description": "Dexcom sensor, fetched through the Share app."
   },
   "nightscout": {
-    "name": "Nightscout"
+    "name": "Nightscout",
+    "description": "Your own Nightscout site as the source"
   },
   "manual": {
-    "name": "Manual"
+    "name": "Manual",
+    "description": "Finger-prick readings typed in. No sensor."
   },
   "disconnected": "No connection to {source} since {time}",
   "disconnectedNoTime": "No connection to {source}"

@@ -39,7 +39,8 @@ vi.mock("next/navigation", () => ({
 import ColourPage from "./colour/page";
 import SettingsPage from "./page";
 import ImportPage from "./import/page";
-import ConnectSourcePage from "./source/page";
+import SourcePage from "./source/page";
+import ConnectSourcePage from "./source/connect/page";
 
 const params = Promise.resolve({ locale: "da" });
 
@@ -113,7 +114,8 @@ describe("settings pages (plan task 9)", () => {
     mocks.session = session;
     expect(await SettingsPage({ params })).toBeNull();
     expect(await ColourPage({ params })).toBeNull();
-    expect(await ConnectSourcePage({ params })).toBeNull();
+    expect(await ConnectSourcePage({ params, searchParams: Promise.resolve({}) })).toBeNull();
+    expect(await SourcePage({ params })).toBeNull();
     expect(mocks.loadCalls).toEqual([]);
   });
 
@@ -137,30 +139,71 @@ describe("settings pages (plan task 9)", () => {
     expect(screen.queryByTestId("preview-reading")).toBeNull();
   });
 
+  const ownerData = (type: "dexcom-share" | "nightscout" | "manual" | null): SettingsData => ({
+    ...viewerData,
+    role: "owner",
+    source: {
+      type,
+      region: type === "dexcom-share" ? "us" : null,
+      status: type ? "connected" : "not-configured",
+      lastReadingAt: null,
+      since: null,
+    },
+  });
+  const asOwner = () => {
+    mocks.session = { ...session, memberships: [{ spaceId: "s1", role: "owner" }] };
+    mocks.shell = shellFor("owner");
+  };
+  const search = (type?: string) => Promise.resolve(type === undefined ? {} : { type });
+
   it("sends a non-owner from the connect form back to Settings without loading anything", async () => {
     mocks.session = session;
     mocks.shell = shellFor("carer");
-    await expect(ConnectSourcePage({ params })).rejects.toThrow("NEXT_REDIRECT:/da/settings");
+    await expect(
+      ConnectSourcePage({ params, searchParams: search("nightscout") }),
+    ).rejects.toThrow("NEXT_REDIRECT:/da/settings");
     expect(mocks.loadCalls).toEqual([]);
   });
 
-  it("gives an owner the connect form for the configured source", async () => {
-    mocks.session = { ...session, memberships: [{ spaceId: "s1", role: "owner" }] };
-    mocks.shell = shellFor("owner");
-    mocks.data = {
-      ...viewerData,
-      role: "owner",
-      source: {
-        type: "dexcom-share",
-        region: "us",
-        status: "connected",
-        lastReadingAt: null,
-        since: null,
-      },
-    };
-    mount(await ConnectSourcePage({ params }));
+  it("gives an owner the connect form for the source in ?type=, with the configured region", async () => {
+    asOwner();
+    mocks.data = ownerData("dexcom-share");
+    mount(await ConnectSourcePage({ params, searchParams: search("dexcom-share") }));
     expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("Skift login");
     expect(screen.getByRole("radio", { name: "US" })).toBeChecked();
+    cleanup();
+    mocks.data = ownerData("dexcom-share");
+    mount(await ConnectSourcePage({ params, searchParams: search("nightscout") }));
+    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("Forbind Nightscout");
+  });
+
+  it("sends manual, an unknown type and no type to the source page", async () => {
+    asOwner();
+    mocks.data = ownerData(null);
+    for (const type of ["manual", "ftp", undefined]) {
+      await expect(
+        ConnectSourcePage({ params, searchParams: search(type) }),
+      ).rejects.toThrow("NEXT_REDIRECT:/da/settings/source");
+    }
+  });
+
+  it("gives an owner the source page with the three cards and sends anyone else to Settings", async () => {
+    asOwner();
+    mocks.data = ownerData("nightscout");
+    mount(await SourcePage({ params }));
+    expect(screen.getByTestId("source-picker")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("Glukosekilde");
+    expect(screen.getByTestId("source-card")).toHaveTextContent("Nightscout");
+    expect(screen.getByTestId("source-card-manual")).toBeInTheDocument();
+    cleanup();
+
+    mocks.loadCalls = [];
+    mocks.session = session;
+    mocks.shell = shellFor("carer");
+    await expect(SourcePage({ params })).rejects.toThrow("NEXT_REDIRECT:/da/settings");
+    mocks.shell = shellFor("viewer");
+    await expect(SourcePage({ params })).rejects.toThrow("NEXT_REDIRECT:/da/settings");
+    expect(mocks.loadCalls).toEqual([]);
   });
 });
 

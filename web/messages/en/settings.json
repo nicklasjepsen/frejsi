@@ -29,10 +29,20 @@
       "us": "US server"
     },
     "changeLogin": "Change login",
-    "nightscout": "Nightscout",
-    "manual": "Manual",
     "vaultNote": "The {source} login is kept in a locked vault, never in the database. Owners are told if the connection has been down for more than 35 minutes.",
-    "connect": "Connect"
+    "connect": "Connect",
+    "cardConnectedPlain": "Connected · last reading {when} · fetches every 5 minutes",
+    "cardConnectedNoReadingPlain": "Connected · no readings yet · fetches every 5 minutes",
+    "cardDisconnectedPlain": "No connection",
+    "cardManual": "Finger-prick readings · last reading {when}",
+    "cardManualNoReading": "Finger-prick readings · no readings yet",
+    "rowManual": "{source} · last reading {time}",
+    "rowManualNoReading": "{source} · no readings yet",
+    "choose": "Choose",
+    "manualNote": "Readings are typed in on the Now screen.",
+    "manualConfirm": "Switch to manual readings? Frejsi will then no longer fetch from {source}.",
+    "manualConfirmYes": "Switch to manual",
+    "pickerLead": "Choose where Frejsi gets the readings from. One source at a time."
   },
   "connect": {
     "title": "Change login",
@@ -46,7 +56,17 @@
     },
     "submit": "Connect",
     "submitting": "Connecting …",
-    "cancel": "Cancel"
+    "cancel": "Cancel",
+    "nightscout": {
+      "title": "Connect Nightscout",
+      "lead": "Enter the address of your own Nightscout site. Frejsi keeps the address and the access in a locked vault – never in the database.",
+      "url": "Address of your Nightscout site",
+      "urlPlaceholder": "https://",
+      "secretKind": "Access token · API secret",
+      "token": "Access token",
+      "apiSecret": "API secret",
+      "badCredentials": "Nightscout refused the access – check the token or API secret"
+    }
   },
   "ai": {
     "lead": "Search, voice, photos and observations",

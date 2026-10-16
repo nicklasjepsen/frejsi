@@ -11,6 +11,7 @@ import { getMessages } from "@/lib/i18n/messages";
 import type { AppLocale } from "@/lib/i18n/routing";
 
 import type { SpaceSettings } from "@frejsi/shared";
+import { GlucoseSourceType } from "@frejsi/shared/schemas/glucose";
 
 import type { SourceView } from "./contracts";
 import type { SettingsData, SettingsPerson } from "./load-settings";
@@ -139,7 +140,7 @@ describe("SettingsScreen · the source (Indstillinger-Telefon, Indstillinger-Des
     ).toBeInTheDocument();
     expect(screen.getAllByRole("link", { name: "Skift login" })[0]).toHaveAttribute(
       "href",
-      "/da/settings/source",
+      "/da/settings/source/connect?type=dexcom-share",
     );
   });
 
@@ -151,22 +152,125 @@ describe("SettingsScreen · the source (Indstillinger-Telefon, Indstillinger-Des
     expect(screen.getByTestId("source-card")).toHaveTextContent(/sidste måling 14\.? okt\.? 15:13/);
   });
 
-  it("renders Nightscout, Manuelt, data export as 'Kommer i en senere version' rows and the phone footer", () => {
+  it("has no 'coming later' rows in the source section and keeps the AI row and the phone footer", () => {
     mount(connected);
-    expect(screen.getAllByText("Kommer i en senere version").length).toBeGreaterThanOrEqual(4);
-    expect(screen.getAllByText("Nightscout").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("Manuelt").length).toBeGreaterThan(0);
+    const section = screen.getByTestId("source-section");
+    expect(within(section).queryByText("Kommer i en senere version")).toBeNull();
     expect(screen.getByRole("heading", { name: "AI-hjælp" })).toBeInTheDocument();
     expect(screen.getByRole("switch", { name: "AI-hjælp" })).toBeDisabled();
     expect(screen.getByText("Frejsi · åben kildekode · regner aldrig insulin")).toBeInTheDocument();
   });
 
-  it("shows each deferred source once on the phone and once on the desktop, without a Connect button", () => {
+  it("draws one card per source type, from the enum, with the drawn descriptions and buttons", () => {
     mount(connected);
-    // One phone row and one desktop card each: the source enum must not add cards of its own.
-    expect(screen.getAllByText("Nightscout")).toHaveLength(2);
-    expect(screen.getAllByText("Manuelt")).toHaveLength(2);
-    expect(screen.getAllByRole("link", { name: /Forbind|Skift login/ })).toHaveLength(1);
+    const cards = within(screen.getByTestId("source-section"));
+    expect(GlucoseSourceType.options).toHaveLength(3);
+    expect(cards.getByTestId("source-card")).toHaveTextContent("Dexcom Share");
+    const nightscout = within(cards.getByTestId("source-card-nightscout"));
+    expect(nightscout.getByText("Din egen Nightscout-side som kilde")).toBeInTheDocument();
+    expect(nightscout.getByRole("link", { name: "Forbind" })).toHaveAttribute(
+      "href",
+      "/da/settings/source/connect?type=nightscout",
+    );
+    const manual = within(cards.getByTestId("source-card-manual"));
+    expect(manual.getByText("Fingerprik-målinger tastes ind. Uden sensor.")).toBeInTheDocument();
+    expect(manual.getByRole("button", { name: "Vælg" })).toBeInTheDocument();
+    expect(cards.getAllByTestId("source-card")).toHaveLength(1);
+    expect(
+      cards.getByText(/Login til Dexcom Share gemmes i et låst hvælv, aldrig i databasen/),
+    ).toBeInTheDocument();
+  });
+
+  it("writes the Nightscout card and row without a region", () => {
+    mount({
+      ...connected,
+      space: { ...space, sourceType: "nightscout" },
+      source: { ...source, type: "nightscout", region: null },
+    });
+    expect(screen.getByTestId("source-card")).toHaveTextContent(
+      "Forbundet · sidste måling i dag 15:13 · henter hvert 5. minut",
+    );
+    expect(screen.getByTestId("source-card")).toHaveTextContent("Skift login");
+    expect(screen.getByTestId("source-row")).toHaveTextContent(
+      "Nightscout · forbundet · sidste måling 15:13",
+    );
+  });
+
+  it("writes the Manuelt card, row and notice", () => {
+    mount({
+      ...connected,
+      space: { ...space, sourceType: "manual" },
+      source: { ...source, type: "manual", region: null },
+    });
+    expect(screen.getByTestId("source-card")).toHaveTextContent(
+      "Fingerprik-målinger · sidste måling i dag 15:13",
+    );
+    expect(screen.getByTestId("source-row")).toHaveTextContent("Manuelt · sidste måling 15:13");
+    expect(screen.getByText("Målinger tastes ind på Nu-skærmen.")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Vælg" })).toBeNull();
+  });
+
+  it("shows a carer the cards read-only: no buttons, no link on the row", () => {
+    mount({ ...connected, role: "carer", me: grandma, people: [grandma] });
+    const section = within(screen.getByTestId("source-section"));
+    expect(section.queryByRole("link")).toBeNull();
+    expect(section.queryByRole("button")).toBeNull();
+    expect(screen.getByTestId("source-row")).not.toHaveAttribute("href");
+  });
+
+  it("asks before leaving a fetching source for Manuelt, writes only after the answer, and re-renders from the response", async () => {
+    const calls: { url: string; body: unknown }[] = [];
+    const fetchImpl = vi.fn((url: string, init: RequestInit = {}) => {
+      calls.push({ url, body: JSON.parse(init.body as string) });
+      return Promise.resolve(
+        Response.json({ ...space, sourceType: "manual", lastReadingAt: null }),
+      );
+    });
+    mount(connected, "da", settingsApi(fetchImpl as unknown as typeof fetch));
+    fireEvent.click(screen.getByRole("button", { name: "Vælg" }));
+    expect(screen.getByTestId("manual-confirm")).toHaveTextContent(
+      "Skift til manuelle målinger? Frejsi henter så ikke længere fra Dexcom Share.",
+    );
+    expect(calls).toEqual([]);
+    fireEvent.click(screen.getByRole("button", { name: "Annullér" }));
+    expect(screen.queryByTestId("manual-confirm")).toBeNull();
+    expect(calls).toEqual([]);
+
+    fireEvent.click(screen.getByRole("button", { name: "Vælg" }));
+    fireEvent.click(screen.getByRole("button", { name: "Skift til manuelt" }));
+    await waitFor(() => {
+      expect(screen.getByTestId("source-card")).toHaveTextContent("Fingerprik-målinger");
+    });
+    expect(calls).toEqual([{ url: "/api/spaces/s1/source", body: { type: "manual" } }]);
+    expect(screen.getByTestId("source-row")).toHaveTextContent("Manuelt · ingen målinger endnu");
+    expect(navigation.refresh).toHaveBeenCalled();
+  });
+
+  it("chooses Manuelt at once when no source is configured, and shows a refusal", async () => {
+    const fetchImpl = vi.fn(() =>
+      Promise.resolve(
+        Response.json({ error: { code: "forbidden", message: "x" } }, { status: 403 }),
+      ),
+    );
+    mount(
+      {
+        ...connected,
+        space: { ...space, sourceType: null, sourceStatus: "not-configured" },
+        source: {
+          type: null,
+          region: null,
+          status: "not-configured",
+          lastReadingAt: null,
+          since: null,
+        },
+      },
+      "da",
+      settingsApi(fetchImpl),
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Vælg" }));
+    expect(screen.queryByTestId("manual-confirm")).toBeNull();
+    expect(await screen.findAllByRole("alert")).not.toHaveLength(0);
+    expect(fetchImpl).toHaveBeenCalledTimes(1);
   });
 
   it("shows the SourceStatusBanner while disconnected, with the time it went down", () => {
@@ -470,11 +574,13 @@ describe("SettingsScreen · data (import, #154)", () => {
 });
 
 it("switches AI off through the API, immediately re-renders the phone suffix and preserves import", async () => {
-  const {api, calls} = fakeApi();
-  mount({...connected, space: {...space, aiEnabled: true, aiProvider: "anthropic"}}, "da", api);
+  const { api, calls } = fakeApi();
+  mount({ ...connected, space: { ...space, aiEnabled: true, aiProvider: "anthropic" } }, "da", api);
   expect(screen.getByTestId("ai-row")).toHaveTextContent("· Anthropic");
-  fireEvent.click(screen.getByRole("switch", {name: "AI-hjælp"}));
+  fireEvent.click(screen.getByRole("switch", { name: "AI-hjælp" }));
   await waitFor(() => expect(screen.getByTestId("ai-row")).toHaveTextContent("· fra"));
-  expect(calls).toEqual([{url: "/api/spaces/s1/settings", method: "PATCH", body: {aiEnabled: false}}]);
+  expect(calls).toEqual([
+    { url: "/api/spaces/s1/settings", method: "PATCH", body: { aiEnabled: false } },
+  ]);
   expect(screen.getByTestId("import-row")).toHaveAttribute("href", "/da/settings/import");
 });
