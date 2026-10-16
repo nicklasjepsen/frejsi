@@ -38,6 +38,10 @@
       "prisma",
       "sharp",
       "unrs-resolver"
-    ]
+    ],
+    "overrides": {
+      "postcss": ">=8.5.23",
+      "deepmerge-ts": ">=8.0.0"
+    }
   }
 }
