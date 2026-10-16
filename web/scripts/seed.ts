@@ -44,6 +44,7 @@ import { bootstrapSpace } from "../src/lib/auth/bootstrap";
 import { transact, type AuthDeps } from "../src/lib/auth/core";
 import { createInvite, type CreatedInvite } from "../src/lib/auth/invites";
 import { addMember } from "../src/lib/auth/members";
+import { addManualReading } from "../src/lib/readings/service";
 
 export const SEED_SPACE = { name: "Almas rum", timezone: "Europe/Copenhagen" } as const;
 
@@ -63,6 +64,19 @@ export const SEED_PEOPLE = {
 } as const satisfies Record<string, SeedPerson>;
 
 export type SeedPersonKey = keyof typeof SEED_PEOPLE;
+
+/**
+ * The second space (v0.5.0): a grandfather without a sensor. His readings are finger-pricks typed
+ * in by hand, so the source is `manual`. Mette is in both spaces, as the same person.
+ */
+export const SEED_ARNES_ROOM = { name: "Arnes rum", timezone: "Europe/Copenhagen" } as const;
+export const SEED_ARNE = { name: "Arne", role: "owner", simpleMode: false } as const;
+/** Minutes before "now" of the three finger-pricks, and their values in mmol/L. */
+export const SEED_ARNES_READINGS = [
+  { minutesAgo: 22 * 60, mmol: 6.8 },
+  { minutesAgo: 9 * 60 + 30, mmol: 8.1 },
+  { minutesAgo: 3 * 60 + 15, mmol: 5.9 },
+] as const;
 
 /** Hand-written artboard foods: fictional nutrition, restricted-circulation barcode, no photos. */
 export const SEED_AI_FOOD = "Pasta med kødsovs";
@@ -128,6 +142,8 @@ export function seedTime(at: Date, hour: number, minute: number): string {
 /** Every name the seed writes; the e2e checks that none of them reaches the server's log. */
 export const SEED_NAMES: readonly string[] = [
   SEED_SPACE.name,
+  SEED_ARNES_ROOM.name,
+  SEED_ARNE.name,
   SEED_AI_FOOD,
   SEED_INSIGHT,
   SEED_TRANSCRIPT,
@@ -162,8 +178,17 @@ export interface SeedOptions {
   env?: Record<string, string | undefined>;
 }
 
+export interface SeededArnesRoom {
+  spaceId: string;
+  arneUserId: string;
+  /** Finger-pricks stored, each with its `reading` event. */
+  readings: number;
+}
+
 export interface SeededSpace {
   spaceId: string;
+  /** The second, manual-source space. */
+  arnesRoom: SeededArnesRoom;
   people: Record<SeedPersonKey, SeedPerson & { userId: string }>;
   /** The owner's own add-a-device link from the bootstrap. */
   ownerInviteUrl: string;
@@ -416,7 +441,46 @@ export async function seed(options: SeedOptions = {}): Promise<SeededSpace> {
       lunch.id,
     ),
   );
-  return { spaceId, people, ownerInviteUrl: boot.inviteUrl, readings };
+  const arnesRoom = await seedArnesRoom({ db, sink, now }, people.mette.userId);
+  return { spaceId, arnesRoom, people, ownerInviteUrl: boot.inviteUrl, readings };
+}
+
+/**
+ * "Arnes rum": the space, Arne as owner and Mette (already a person in Almas rum) as carer in one
+ * transaction like the bootstrap; the manual source through the Settings route's writer; and the
+ * three finger-pricks through `addManualReading`, the only writer of manual readings. Every row
+ * has its event, so the space's `events` are gap-free like Almas.
+ */
+async function seedArnesRoom(
+  deps: { db: PrismaClient; sink: MemoryEventSink; now: () => Date },
+  metteId: string,
+): Promise<SeededArnesRoom> {
+  const { db, sink, now } = deps;
+  const { spaceId, arneUserId } = await transact(db, sink, async (tx, emit) => {
+    const space = await tx.space.create({
+      data: { name: SEED_ARNES_ROOM.name, timezone: SEED_ARNES_ROOM.timezone },
+    });
+    const arne = await tx.user.create({
+      data: { name: SEED_ARNE.name, simpleMode: SEED_ARNE.simpleMode },
+    });
+    const txDeps = { db: tx, emit, now };
+    await addMember({ spaceId: space.id, userId: arne.id, role: SEED_ARNE.role }, txDeps);
+    await addMember({ spaceId: space.id, userId: metteId, role: "carer" }, txDeps);
+    return { spaceId: space.id, arneUserId: arne.id };
+  });
+  await saveConnectedSource(spaceId, { type: "manual" }, deps);
+  for (const { minutesAgo, mmol } of SEED_ARNES_READINGS) {
+    await addManualReading(
+      spaceId,
+      {
+        value: mmol,
+        unit: "mmol",
+        ts: new Date(now().getTime() - minutesAgo * 60_000).toISOString(),
+      },
+      { db, sink, now, track: () => undefined },
+    );
+  }
+  return { spaceId, arneUserId, readings: SEED_ARNES_READINGS.length };
 }
 
 /** A single-use add-a-device link for a seeded person, made by Jonas as People would. */
@@ -449,6 +513,7 @@ async function main(): Promise<void> {
   const space = await seed();
   const lines = [
     `Seeded "${SEED_SPACE.name}" (${space.spaceId}) with ${String(space.readings)} readings.`,
+    `Seeded "${SEED_ARNES_ROOM.name}" (${space.arnesRoom.spaceId}) with ${String(space.arnesRoom.readings)} finger-prick readings; Mette is a carer there.`,
     "Add-a-device links, one per person, each good once for seven days:",
   ];
   for (const key of Object.keys(SEED_PEOPLE) as SeedPersonKey[]) {

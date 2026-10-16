@@ -6,6 +6,13 @@ import { createEmptyDatabase, migrate, type ScratchDatabase } from "./database";
 const SEED = new URL("../../../web/scripts/seed.ts", import.meta.url).pathname;
 let scratch: ScratchDatabase;
 let db: PrismaClient;
+interface Seeded {
+  spaceId: string;
+  readings: number;
+  arnesRoom: { spaceId: string; readings: number };
+}
+let seeded: Seeded;
+const NOW = new Date("2026-10-15T13:00:00Z");
 beforeAll(async () => {
   vi.stubEnv("APP_ORIGIN", "http://localhost:3100");
   scratch = await createEmptyDatabase("frejsi_seed_it");
@@ -20,9 +27,10 @@ afterAll(async () => {
 
 it("seeds ten foods, fourteen reading days and seven meals through the emitting services", async () => {
   const { seed } = (await import(SEED)) as {
-    seed: (options: { db: PrismaClient; now: () => Date }) => Promise<{ spaceId: string }>;
+    seed: (options: { db: PrismaClient; now: () => Date }) => Promise<Seeded>;
   };
-  const { spaceId } = await seed({ db, now: () => new Date("2026-10-15T13:00:00Z") });
+  seeded = await seed({ db, now: () => NOW });
+  const { spaceId } = seeded;
   const foods = await db.food.findMany({ where: { spaceId } });
   expect(foods).toHaveLength(10);
   expect(await db.space.findUniqueOrThrow({ where: { id: spaceId } })).toMatchObject({
@@ -134,4 +142,56 @@ it("seeds ten foods, fourteen reading days and seven meals through the emitting 
   expect(
     new Set(mealEvents.map((event) => (JSON.parse(event.payload) as { mealId: string }).mealId)),
   ).toEqual(new Set(meals.map((meal) => meal.id)));
-}, 180_000);
+}, 300_000);
+
+it("seeds Arnes rum: a manual source, Mette as carer, three finger-pricks each with its event", async () => {
+  const now = NOW;
+  const alma = seeded;
+  const room = alma.arnesRoom;
+  expect(room.spaceId).not.toBe(alma.spaceId);
+  // Alma's space is as it was: the sensor source, the same reading count.
+  const almaSpace = await db.space.findUniqueOrThrow({ where: { id: alma.spaceId } });
+  expect(JSON.parse(almaSpace.glucoseSource ?? "{}")).toMatchObject({ type: "dexcom-share" });
+  expect(alma.readings).toBe(13 * 288 + 181);
+  expect(await db.reading.count({ where: { spaceId: alma.spaceId } })).toBe(alma.readings);
+
+  const space = await db.space.findUniqueOrThrow({
+    where: { id: room.spaceId },
+    include: { memberships: { include: { user: true } } },
+  });
+  expect(space.name).toBe("Arnes rum");
+  expect(JSON.parse(space.glucoseSource ?? "{}")).toEqual({ type: "manual" });
+  expect(space.memberships.map((m) => [m.user.name, m.role, m.user.simpleMode]).sort()).toEqual([
+    ["Arne", "owner", false],
+    ["Mette", "carer", false],
+  ]);
+  // Mette is the same person as in Almas rum, not a second user.
+  expect(await db.user.count({ where: { name: "Mette" } })).toBe(1);
+
+  const readings = await db.reading.findMany({
+    where: { spaceId: room.spaceId },
+    orderBy: { ts: "asc" },
+  });
+  expect(readings).toHaveLength(3);
+  expect(room.readings).toBe(3);
+  for (const reading of readings) {
+    expect(reading.source).toBe("manual");
+    expect(reading.trend).toBe("not-computable");
+    expect(+now - +reading.ts).toBeGreaterThan(0);
+    expect(+now - +reading.ts).toBeLessThan(24 * 3_600_000);
+  }
+  expect(space.lastReadingAt?.toISOString()).toBe(readings[2]?.ts.toISOString());
+
+  const events = await db.event.findMany({
+    where: { spaceId: room.spaceId },
+    orderBy: { seq: "asc" },
+  });
+  expect(events.map((e) => e.seq)).toEqual(events.map((_, i) => i + 1));
+  expect(space.lastSeq).toBe(events.length);
+  const readingEvents = events.filter((e) => e.type === "reading");
+  expect(readingEvents).toHaveLength(3);
+  expect(new Set(readingEvents.map((e) => (JSON.parse(e.payload) as { ts: string }).ts))).toEqual(
+    new Set(readings.map((r) => r.ts.toISOString())),
+  );
+  expect(events.filter((e) => e.type === "member.joined")).toHaveLength(2);
+});
