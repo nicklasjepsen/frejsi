@@ -1,7 +1,7 @@
 "use client";
 import type { ParsedItem, ParsedMeal } from "@frejsi/shared/schemas/ai";
 import { useTranslations } from "next-intl";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { PhotoPicker } from "../food/PhotoPicker";
 import { Button } from "../ui/Button";
 import { Notice } from "../ui/Notice";
@@ -34,6 +34,12 @@ export function SayItSheet({
   const panel = useRef<HTMLElement>(null);
   const pending = useRef(false);
   const live = useRef(true);
+  const updateText = useCallback((value: string) => {
+    if (pending.current) return;
+    setText(value);
+    setMeal(null);
+    setFailed(false);
+  }, []);
   useEffect(() => {
     live.current = true;
     return () => {
@@ -91,7 +97,7 @@ export function SayItSheet({
         </button>
         <h2>{t("title")}</h2>
       </header>
-      {active && <MicButton locale={locale} onTranscript={setText} disabled={busy} />}
+      {active && <MicButton locale={locale} onTranscript={updateText} disabled={busy} />}
       <form
         onSubmit={(event) => {
           event.preventDefault();
@@ -109,7 +115,7 @@ export function SayItSheet({
             value={text}
             disabled={busy}
             onChange={(event) => {
-              setText(event.target.value);
+              updateText(event.target.value);
             }}
           />
         </label>

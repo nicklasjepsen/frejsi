@@ -1,5 +1,5 @@
 "use client";
-import type { FoodView } from "@frejsi/shared/schemas/food";
+import type { FoodView, LookupResponse } from "@frejsi/shared/schemas/food";
 import { useLocale, useTranslations } from "next-intl";
 import { useEffect, useState, type KeyboardEvent } from "react";
 
@@ -60,17 +60,26 @@ export function DesktopLog({ controller, spaceId, timeZone, userName, simpleMode
   const slot = useSlotLabel(at, timeZone);
   const { line } = useSourceLine();
   const [mode, setMode] = useState<"favourites" | "recent">("favourites");
-  const [highlighted, setHighlighted] = useState(0);
-  /** The arrows were used on this answer: Enter then adds the row even before a full search. */
-  const [moved, setMoved] = useState(false);
   const response = controller.response;
   const rowCount = response ? response.results.length + 1 : 0;
-
-  // A new answer or a changed query starts the highlight over: Enter never adds a stale row.
-  useEffect(() => {
-    setHighlighted(0);
-    setMoved(false);
-  }, [response, controller.query]);
+  const [selection, setSelection] = useState<{
+    response: LookupResponse | null;
+    query: string;
+    index: number;
+  } | null>(null);
+  const moved = selection?.response === response && selection.query === controller.query;
+  const highlighted = moved ? selection.index : 0;
+  const moveHighlight = (delta: number) => {
+    setSelection((current) => {
+      const index =
+        current?.response === response && current.query === controller.query ? current.index : 0;
+      return {
+        response,
+        query: controller.query,
+        index: Math.max(0, Math.min(index + delta, rowCount - 1)),
+      };
+    });
+  };
 
   // `/` focuses the field; ⌘↩ or Ctrl+Enter saves the meal from anywhere on the screen.
   useEffect(() => {
@@ -105,12 +114,10 @@ export function DesktopLog({ controller, spaceId, timeZone, userName, simpleMode
     if (!response) return;
     if (event.key === "ArrowDown") {
       event.preventDefault();
-      setMoved(true);
-      setHighlighted((index) => Math.min(index + 1, rowCount - 1));
+      moveHighlight(1);
     } else if (event.key === "ArrowUp") {
       event.preventDefault();
-      setMoved(true);
-      setHighlighted((index) => Math.max(index - 1, 0));
+      moveHighlight(-1);
     }
   };
 
