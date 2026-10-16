@@ -24,6 +24,7 @@ const version = expectedVersion();
 // The global setup, the workers and the seed's `@frejsi/shared` client all read these.
 process.env.DATABASE_URL = databaseUrl;
 process.env.APP_ORIGIN = ORIGIN;
+process.env.FAKE_AI_PROVIDER = "1";
 process.env.E2E_APP_VERSION = version;
 // A stable afternoon on today's local date, shared by browser, app and seed.
 process.env.E2E_NOW = seedTime(new Date(), 15, 13);
@@ -36,6 +37,8 @@ const appProjects = [
   "pwa.spec.ts",
   "meal-detail.spec.ts",
   "history.spec.ts",
+  "ai.spec.ts",
+  "now-theme.spec.ts",
 ];
 
 export default defineConfig({
@@ -102,6 +105,7 @@ export default defineConfig({
         BLOB_CONNECTION_STRING: `DefaultEndpointsProtocol=http;AccountName=fictional;AccountKey=RmljdGlvbmFs;BlobEndpoint=http://127.0.0.1:${String(BLOB_PORT)}/fictional;`,
         APP_ORIGIN: ORIGIN,
         FAKE_GLUCOSE_SOURCE: "1",
+        FAKE_AI_PROVIDER: "1",
         NEXT_PUBLIC_APP_VERSION: version,
         // No Web PubSub: negotiate answers 503 and the client polls (plan §5).
         WEB_PUBSUB_CONNECTION_STRING: "",

@@ -15,6 +15,11 @@ test("the server log of the run contains no seeded name, title or reading value"
     expect(log, name).not.toContain(name);
   }
   expect(log).not.toContain("mindre æble");
+  for (const row of await prisma.insight.findMany({ select: { text: true, questions: true } })) {
+    expect(log).not.toContain(row.text);
+    for (const question of JSON.parse(row.questions ?? "[]") as string[])
+      expect(log).not.toContain(question);
+  }
   const readings = await prisma.reading.findMany({ select: { mmol: true } });
   // Match serialized values, not bare digits that also occur in timestamps, ports and counts.
   for (const value of new Set(readings.map((row) => row.mmol.toNumber()))) {

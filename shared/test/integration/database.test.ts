@@ -11,7 +11,7 @@ import { runPollCycle } from "../../src/glucose/poll-cycle";
 import { createLogger } from "../../src/log";
 import type { EventEnvelope, Role } from "../../src/schemas/index";
 import { glucoseSecretName } from "../../src/secrets/types";
-import { SCHEMA, createEmptyDatabase, migrate, prismaCli, type ScratchDatabase } from "./database";
+import { createEmptyDatabase, migrate, schemaDiff, type ScratchDatabase } from "./database";
 
 /** The web app's viewer query (`/api/spaces/:id/events`), loaded at run time from web/src. */
 interface EventsPageModule {
@@ -92,21 +92,10 @@ describe("the database (SQL Server)", () => {
     expect(applied.map((row) => row.migration_name).sort()).toEqual([
       "0001_foundation",
       "0002_food",
+      "0003_ai",
     ]);
     // Nothing left between the migrated database and schema.prisma: exit code 0, no script.
-    const diff = prismaCli(
-      [
-        "migrate",
-        "diff",
-        "--from-url",
-        scratch.url,
-        "--to-schema-datamodel",
-        SCHEMA,
-        "--script",
-        "--exit-code",
-      ],
-      scratch.url,
-    );
+    const diff = await schemaDiff(scratch.url, db);
     expect(diff).not.toMatch(/CREATE|ALTER|DROP/);
   });
 

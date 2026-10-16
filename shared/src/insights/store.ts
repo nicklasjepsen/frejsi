@@ -1,3 +1,4 @@
+import { Prisma } from "@prisma/client";
 import { prisma } from "../db/client";
 import type { PrismaClient } from "../index";
 import type { EmitFn } from "../events/emit";
@@ -59,20 +60,25 @@ export class PrismaInsightRepository implements InsightRepository {
   }
   async save(input: InsightWrite) {
     const data = { ...input, questions: JSON.stringify(input.questions), questionsEdited: false };
-    return view(
-      await this.db.insight.upsert({
-        where: {
-          spaceId_kind_subjectKey: {
-            spaceId: input.spaceId,
-            kind: input.kind,
-            subjectKey: input.subjectKey,
-          },
-        },
-        create: data,
-        update: { ...data, createdAt: new Date() },
-      }),
-    );
+    const where = {
+      spaceId_kind_subjectKey: {
+        spaceId: input.spaceId,
+        kind: input.kind,
+        subjectKey: input.subjectKey,
+      },
+    };
+    const update = { ...data, createdAt: new Date() };
+    try {
+      return view(await this.db.insight.upsert({ where, create: data, update }));
+    } catch (error) {
+      // SQL Server's Prisma upsert is a read then insert. A competing insert can win;
+      // its unique row is now present, so finish the same write with an update.
+      if (!(error instanceof Prisma.PrismaClientKnownRequestError) || error.code !== "P2002")
+        throw error;
+      return view(await this.db.insight.update({ where, data: update }));
+    }
   }
+
   async edit(spaceId: string, id: string, questions: string[]) {
     return view(
       await this.db.insight.update({

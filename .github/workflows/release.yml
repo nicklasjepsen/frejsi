@@ -108,7 +108,7 @@ jobs:
     timeout-minutes: 25
     services:
       sql:
-        image: mcr.microsoft.com/mssql/server:2022-latest
+        image: mcr.microsoft.com/mssql/server:2025-latest
         env:
           ACCEPT_EULA: Y
           MSSQL_SA_PASSWORD: ${{ secrets.CI_SQL_SA_PASSWORD }}
@@ -133,8 +133,9 @@ jobs:
         run: pnpm -r typecheck && pnpm -r lint && pnpm -r test
       - name: Prisma integration tests
         run: pnpm --filter ./shared test:integration
-      - name: AI evals (no package until v0.4.0; exits 0)
+      - name: AI evals (full release corpus; live only with the dedicated key)
         env:
+          EVALS_SCOPE: release
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY_EVALS }}
         run: pnpm --filter ./evals test
       - name: Production build
@@ -144,6 +145,7 @@ jobs:
       - name: Playwright (simpleMode flows)
         env:
           FAKE_GLUCOSE_SOURCE: '1'
+          FAKE_AI_PROVIDER: '1'
         run: pnpm --filter ./web test:e2e
       # The standalone Next.js build and the poller bundle; `.next` is a hidden directory.
       - uses: actions/upload-artifact@v7

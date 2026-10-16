@@ -10,7 +10,14 @@ import { MemoryEventSink } from "../../src/events/memory";
 import type { FoodCandidate, FoodView } from "../../src/schemas/food";
 import type { SessionContext } from "../../src/schemas/auth";
 import type { CreateMealRequest, DayView, MealView } from "../../src/schemas/meal";
-import { SCHEMA, createEmptyDatabase, migrate, prismaCli, type ScratchDatabase } from "./database";
+import {
+  SCHEMA,
+  createEmptyDatabase,
+  migrate,
+  prismaCli,
+  schemaDiff,
+  type ScratchDatabase,
+} from "./database";
 
 const FOODS = "@/lib/foods";
 const MEALS = "@/lib/meals/service";
@@ -90,22 +97,12 @@ it("upgrades 0001_foundation to 0002_food with no schema drift", async () => {
   const applied = await db.$queryRaw<
     { migration_name: string }[]
   >`SELECT migration_name FROM _prisma_migrations WHERE finished_at IS NOT NULL AND rolled_back_at IS NULL ORDER BY migration_name`;
-  expect(applied.map((row) => row.migration_name)).toEqual(["0001_foundation", "0002_food"]);
-  expect(
-    prismaCli(
-      [
-        "migrate",
-        "diff",
-        "--from-url",
-        scratch.url,
-        "--to-schema-datamodel",
-        SCHEMA,
-        "--script",
-        "--exit-code",
-      ],
-      scratch.url,
-    ),
-  ).not.toMatch(/CREATE|ALTER|DROP/);
+  expect(applied.map((row) => row.migration_name)).toEqual([
+    "0001_foundation",
+    "0002_food",
+    "0003_ai",
+  ]);
+  expect(await schemaDiff(scratch.url, db)).not.toMatch(/CREATE|ALTER|DROP/);
 });
 
 it("resolves the SQL library before cache before a fake source", async () => {
