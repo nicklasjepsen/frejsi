@@ -4,7 +4,7 @@
 // module at the end and never reorder. Resources live in modules/. The release pipeline deploys it
 // (`release.yml`, job `infra`); nobody runs `az deployment` from a session.
 //
-// Costs (infra/README.md has the table): Static Web App Standard, Function App Consumption, Azure SQL
+// Costs (docs/deploy-your-own.md has the table): Static Web App Standard, Function App Consumption, Azure SQL
 // Basic 5 DTU, Web PubSub Free, Key Vault Standard, Log Analytics + Application Insights.
 // Blob Storage for photos is deferred to v0.2.0.
 
