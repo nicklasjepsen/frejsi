@@ -22,7 +22,8 @@
 # Optional: CUSTOM_DOMAIN (sets APP_ORIGIN; otherwise the default hostname), GITHUB_OUTPUT,
 # PHOTOS_STORAGE_ACCOUNT (dedicated photo account; creates blob-connection-string once),
 # SQL_SERVER_ID (resource ID of an existing SQL server holding the database; infra/README.md),
-# DEFAULT_LOCALE, FOOD_SOURCES, OFF_COUNTRY (written to the web app's settings only when set).
+# DEFAULT_LOCALE, FOOD_SOURCES, OFF_COUNTRY, OFF_CONTRIBUTE_HOST (written to the web app's settings
+# only when set; FOOD_SOURCES and OFF_COUNTRY also to the Function App).
 # Tools: az (logged in), sqlcmd (go-sqlcmd), pnpm (workspace installed), docker, curl, zip, openssl, jq.
 #
 # Nothing secret is ever printed. Secrets travel through files with mode 600 or environment
@@ -51,6 +52,7 @@ fi
 DEFAULT_LOCALE="${DEFAULT_LOCALE:-}"
 FOOD_SOURCES="${FOOD_SOURCES:-}"
 OFF_COUNTRY="${OFF_COUNTRY:-}"
+OFF_CONTRIBUTE_HOST="${OFF_CONTRIBUTE_HOST:-}"
 WEB_PUBSUB_HUB="${WEB_PUBSUB_HUB:-frejsi}"
 SQL_DATABASE="${SQL_DATABASE:-frejsi}"
 SQL_APP_USER="${SQL_APP_USER:-frejsi_app}"
@@ -460,7 +462,8 @@ fi
 
 # --- Optional OFF contribution account and the country settings (web app only) -------------------
 # The account is the owner's: both Key Vault secrets exist, or the feature is off and the checkbox
-# is absent. The three country settings travel from repository variables, set or not at all.
+# is absent. The country settings (and the OFF host) travel from repository variables, set or not
+# at all.
 for OFF_SETTING in OFF_CONTRIBUTE_USER OFF_CONTRIBUTE_PASSWORD; do
   OFF_SECRET="${OFF_SETTING,,}"
   OFF_SECRET="${OFF_SECRET//_/-}"
@@ -475,7 +478,11 @@ for OFF_SETTING in OFF_CONTRIBUTE_USER OFF_CONTRIBUTE_PASSWORD; do
     mv "$WORK/off-swa.json" "$SWA_SETTINGS_FILE"
   )
 done
-for COUNTRY_SETTING in DEFAULT_LOCALE FOOD_SOURCES OFF_COUNTRY; do
+# FOOD_SOURCES and OFF_COUNTRY also configure the poller's food enrichment, so they go to the Function
+# App too; the other two are read by the web app only.
+( umask 077; printf '{}' > "$WORK/country-function.json" )
+COUNTRY_FUNCTION_COUNT=0
+for COUNTRY_SETTING in DEFAULT_LOCALE FOOD_SOURCES OFF_COUNTRY OFF_CONTRIBUTE_HOST; do
   COUNTRY_VALUE="${!COUNTRY_SETTING}"
   [ -n "$COUNTRY_VALUE" ] || continue
   ( umask 077
@@ -483,7 +490,20 @@ for COUNTRY_SETTING in DEFAULT_LOCALE FOOD_SOURCES OFF_COUNTRY; do
       "$SWA_SETTINGS_FILE" > "$WORK/country-swa.json"
     mv "$WORK/country-swa.json" "$SWA_SETTINGS_FILE"
   )
+  case "$COUNTRY_SETTING" in
+    FOOD_SOURCES|OFF_COUNTRY)
+      ( umask 077
+        jq --arg name "$COUNTRY_SETTING" --arg value "$COUNTRY_VALUE" '. + {($name): $value}' \
+          "$WORK/country-function.json" > "$WORK/country-next.json"
+        mv "$WORK/country-next.json" "$WORK/country-function.json"
+      )
+      COUNTRY_FUNCTION_COUNT=$((COUNTRY_FUNCTION_COUNT + 1)) ;;
+    *) ;;
+  esac
 done
+if [ "$COUNTRY_FUNCTION_COUNT" -gt 0 ]; then
+  az functionapp config appsettings set -g "$RG" -n "$FUNCTION_APP" --settings "@$WORK/country-function.json" >/dev/null
+fi
 # --- End OFF and country settings -------------------------------------------------------------
 az rest --method put --url "https://management.azure.com${SWA_ID}/config/appsettings?api-version=2024-04-01" \
   --body "@$SWA_SETTINGS_FILE" --output none

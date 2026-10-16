@@ -248,6 +248,7 @@ jobs:
           DEFAULT_LOCALE: ${{ vars.DEFAULT_LOCALE }}
           FOOD_SOURCES: ${{ vars.FOOD_SOURCES }}
           OFF_COUNTRY: ${{ vars.OFF_COUNTRY }}
+          OFF_CONTRIBUTE_HOST: ${{ vars.OFF_CONTRIBUTE_HOST }}
           APP_VERSION: ${{ env.TAG }}
           ALERT_EMAIL: ${{ secrets.ALERT_EMAIL }}
         run: bash infra/deploy.sh
