@@ -372,8 +372,77 @@ describe("selected filters outside the default chips", () => {
           "true",
         );
       }
-      await waitFor(() => { expect(lists().at(-1)?.query).toEqual({ filter }); });
+      await waitFor(() => {
+        expect(lists().at(-1)?.query).toEqual({ filter });
+      });
       view.unmount();
     }
   });
+});
+
+it("sends keyword while typing and semantic only on Enter, on both layouts", async () => {
+  mount();
+  await phoneRows();
+  for (const view of [phone, desktop]) {
+    const input = view().getByRole("searchbox");
+    fireEvent.change(input, { target: { value: "det brune brød" } });
+    await waitFor(() => {
+      expect(lists().at(-1)?.query.q).toBe("det brune brød");
+    });
+    expect(lists().at(-1)?.query.mode).not.toBe("semantic");
+    fireEvent.keyDown(input, { key: "Enter" });
+    await waitFor(() => {
+      expect(lists().at(-1)?.query.mode).toBe("semantic");
+    });
+    fireEvent.change(input, { target: { value: "pasta" } });
+    await waitFor(() => {
+      expect(lists().at(-1)?.query.q).toBe("pasta");
+    });
+    expect(lists().at(-1)?.query.mode).not.toBe("semantic");
+  }
+});
+it("renders an asked photo as an approximate unchecked guess and shows its photo and portion in the editor", async () => {
+  const asked = {
+    ...at(artboardFoods(), 0),
+    id: "asked",
+    name: "Sky pasta",
+    origin: "ai",
+    verified: false,
+    sourceName: undefined,
+    createdBy: { id: "child", name: "Example child" },
+    createdAt: "2026-10-15T12:00:00Z",
+    carbsPer100g: 20,
+    portions: [{ label: "1 plate", grams: 250, carbs: 50 }],
+    photo: {
+      thumbUrl: "https://example.invalid/thumb.jpg",
+      originalUrl: "https://example.invalid/photo.jpg",
+    },
+  };
+  api = fakeFoodsApi([asked]);
+  vi.stubGlobal("fetch", api.fetch);
+  mount();
+  await waitFor(() => expect(phone().getByText("Sky pasta (fra billede)")).toBeInTheDocument());
+  expect(phone().getByText(/ca\. 50 g · Example child spurgte/)).toBeInTheDocument();
+  expect(phone().getByText("Et gæt · ikke tjekket")).toBeInTheDocument();
+  expect(desktop().getByText("ca. 20 g")).toBeInTheDocument();
+  expect(desktop().getByText("1 tallerken ca. 250 g")).toBeInTheDocument();
+  expect(desktop().getByRole("cell", { name: "AI fra billede" })).toBeInTheDocument();
+  expect(desktop().getByText("Et gæt")).toBeInTheDocument();
+  fireEvent.click(desktop().getByRole("button", { name: "Ret Sky pasta" }));
+  const panel = within(screen.getByTestId("edit-panel"));
+  expect(panel.getByDisplayValue("250")).toBeInTheDocument();
+  expect(panel.getByRole("presentation")).toHaveAttribute("src", asked.photo.thumbUrl);
+});
+it("the normalised source line retains the plugin's original name", async () => {
+  const sourceName = "EXAMPLE WHOLE GRAIN LOAF 900G";
+  api = fakeFoodsApi([{ ...at(artboardFoods(), 0), sourceName }]);
+  vi.stubGlobal("fetch", api.fetch);
+  mount();
+  await waitFor(() =>
+    expect(desktop().getByRole("button", { name: /Ret Rugbrød/ })).toBeInTheDocument(),
+  );
+  fireEvent.click(desktop().getByRole("button", { name: /Ret Rugbrød/ }));
+  expect(
+    within(screen.getByTestId("edit-panel")).getByText(`Open Food Facts · ${sourceName}`),
+  ).toBeInTheDocument();
 });

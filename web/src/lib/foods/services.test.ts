@@ -537,3 +537,33 @@ it("batches creator provenance for a 100-food library and verification responses
   expect(single).not.toHaveBeenCalled();
   expect(batch).toHaveBeenCalledTimes(2);
 });
+
+it("renaming clears the vector and model, preserving search after a human edit", async () => {
+  const rig = foodTestRig();
+  const food = rig.seed({ id: "rename", embedding: [1], embeddingModel: "test:model" });
+  await updateFood("s1", actor, String(food.id), { name: "New pear" }, rig.deps);
+  expect(rig.rows.find((row) => row.id === "rename")).toMatchObject({
+    name: "New pear",
+    embedding: null,
+    embeddingModel: null,
+  });
+  expect(rig.events.at(-1)?.type).toBe("food.updated");
+});
+
+it("addCandidate keeps its key-free signature and never obtains or calls AI", async () => {
+  const { FakeAiProvider } = await import("@frejsi/shared/ai/fake");
+  const { CappedAiProvider } = await import("@frejsi/shared/ai");
+  const { MemoryAiCallRepository } = await import("@frejsi/shared/ai/calls");
+  const { searchEmbed } = await import("@frejsi/shared/ai/search/embed");
+  const rig = foodTestRig();
+  const fake = new FakeAiProvider();
+  const provider = new CappedAiProvider(fake, new MemoryAiCallRepository(), {
+    spaceId: "s1",
+    timezone: "UTC",
+  });
+  rig.deps.searchEmbedding = () => Promise.resolve(searchEmbed(provider, ""));
+  const food = await addCandidate("s1", actor, candidate, rig.deps);
+  expect(food).toMatchObject({ name: candidate.name, verified: false });
+  expect(rig.events.map((event) => event.type)).toEqual(["food.created"]);
+  expect(fake.calls).toEqual([]);
+});

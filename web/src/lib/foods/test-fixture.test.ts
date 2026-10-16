@@ -2,6 +2,7 @@
 import { randomUUID } from "node:crypto";
 import {
   createLogger,
+  type Prisma,
   type EventEnvelope,
   type FoodCandidate,
   type FoodSourceStatus,
@@ -93,7 +94,7 @@ export function foodTestRig() {
   };
   let seq = 0;
   const present = (row: Row): Row => ({
-    ...row,
+    ...Object.fromEntries(Object.entries(row).filter(([key]) => key !== "embedding")),
     carbsPer100g:
       row.carbsPer100g == null
         ? null
@@ -101,6 +102,15 @@ export function foodTestRig() {
   });
   const find = (args: { where?: Row }) => rig.rows.filter((row) => matches(row, args.where));
   const tx = {
+    $executeRaw: (sql: Prisma.Sql) => {
+      if (!sql.sql.startsWith("UPDATE [Food] SET [embedding] = NULL, [embeddingModel] = NULL"))
+        throw new Error("Unsupported fake SQL");
+      const [id, spaceId] = sql.values;
+      const row = rig.rows.find((row) => row.id === id && row.spaceId === spaceId);
+      if (!row) return Promise.resolve(0);
+      Object.assign(row, { embedding: null, embeddingModel: null });
+      return Promise.resolve(1);
+    },
     user: {
       findMany: ({ where }: { where: { id: { in: string[] } } }) =>
         Promise.resolve(rig.users.filter((user) => where.id.in.includes(user.id))),

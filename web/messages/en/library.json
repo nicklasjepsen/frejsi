@@ -18,13 +18,15 @@
     "manual": "From the meal log",
     "off": "From Open Food Facts",
     "frida": "From Frida",
-    "other": "From {origin}"
+    "other": "From {origin}",
+    "ai": "AI from photo"
   },
   "sourceName": {
     "off": "Open Food Facts",
     "frida": "Frida",
     "family": "Own dish",
-    "manual": "Own dish"
+    "manual": "Own dish",
+    "ai": "AI from photo"
   },
   "line": {
     "origin": {
@@ -87,5 +89,16 @@
     "source": "{source} · barcode {barcode}…",
     "photoPreview": "The chosen photo",
     "loadFailed": "The food could not be loaded right now."
+  },
+  "estimate": {
+    "title": "{name} (from photo)",
+    "asked": "approx. {amount} g · {child} asked at {time}",
+    "someone": "Someone",
+    "portion": "1 plate approx. {amount} g",
+    "gramsCell": "approx. {amount} g",
+    "status": "A guess",
+    "badge": "A guess · not checked",
+    "askedDesktop": "{child} asked {date} at {time}",
+    "today": "today"
   }
 }

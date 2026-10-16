@@ -17,6 +17,7 @@ export const GET = spaceRoute("lookup.get", async (request, spaceId) => {
     lookupSessionDb(),
   );
   const deps = lookupDeps();
+  const photos = deps.photos;
   const params = new URL(request.url).searchParams;
   const barcode = params.get("barcode");
   if (barcode !== null && !normaliseBarcode(barcode)) throw new HttpError(400, "barcode-invalid");
@@ -35,27 +36,19 @@ export const GET = spaceRoute("lookup.get", async (request, spaceId) => {
       session,
       locale: session.locale,
       query: query.data,
+      ...(photos
+        ? {
+            photo: async (key: string) => ({
+              thumbUrl: await photos.readUrl(key, "thumb"),
+              originalUrl: await photos.readUrl(key, "original"),
+            }),
+          }
+        : {}),
+      embed:
+        "q" in query.data && query.data.remote && query.data.q.length >= 3
+          ? await deps.searchEmbedding(spaceId, session)
+          : null,
     });
-    if (deps.photos) {
-      const rows =
-        "barcode" in query.data
-          ? await deps.repo.findLibraryByBarcode(spaceId, query.data.barcode, {
-              verifiedOnly: session.simpleMode,
-            })
-          : await deps.repo.searchLibrary(spaceId, query.data.q, {
-              verifiedOnly: session.simpleMode,
-            });
-      for (const result of body.results) {
-        if (result.source !== "library" || !("id" in result.food)) continue;
-        const id = result.food.id;
-        const key = rows.find((row) => row.id === id)?.photoKey;
-        if (key)
-          result.food.photo = {
-            thumbUrl: await deps.photos.readUrl(key, "thumb"),
-            originalUrl: await deps.photos.readUrl(key, "original"),
-          };
-      }
-    }
     log.info("lookup.loaded", { spaceId, userId: session.userId, count: body.results.length });
     return json(LookupResponse.parse(body));
   } catch {

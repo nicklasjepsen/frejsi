@@ -29,7 +29,8 @@ export function deriveCounts(foods: readonly FoodView[]): Record<string, number>
  */
 export function useLibrary(spaceId: string, initialFilter: LibraryFilter = "all") {
   const [filter, setFilter] = useState<LibraryFilter>(initialFilter);
-  const [query, setQuery] = useState("");
+  const [query, setQueryValue] = useState("");
+  const [mode, setMode] = useState<"keyword" | "semantic">("keyword");
   const [status, setStatus] = useState<LoadStatus>("loading");
   const [foods, setFoods] = useState<FoodView[]>([]);
   const [counts, setCounts] = useState<Record<string, number>>();
@@ -39,8 +40,13 @@ export function useLibrary(spaceId: string, initialFilter: LibraryFilter = "all"
     const controller = new AbortController();
     setStatus((current) => (current === "ready" ? current : "loading"));
     libraryApi
-      .list(spaceId, { filter, q: query }, controller.signal)
+      .list(
+        spaceId,
+        { filter, q: query, ...(mode === "semantic" ? { mode } : {}) },
+        controller.signal,
+      )
       .then((list) => {
+        if (controller.signal.aborted) return;
         setFoods(list.foods);
         if (list.counts) setCounts(list.counts);
         else if (filter === "all" && !query.trim()) setCounts(deriveCounts(list.foods));
@@ -52,7 +58,7 @@ export function useLibrary(spaceId: string, initialFilter: LibraryFilter = "all"
     return () => {
       controller.abort();
     };
-  }, [spaceId, filter, query, reloads]);
+  }, [spaceId, filter, query, mode, reloads]);
 
   /** Origin chips from the origins present: "Fra Open Food Facts", "Fra Frida". */
   const origins = useMemo(
@@ -95,20 +101,33 @@ export function useLibrary(spaceId: string, initialFilter: LibraryFilter = "all"
   );
 
   const removeIds = useCallback((ids: readonly string[]) => {
+    setMode("keyword");
     setFoods((list) => list.filter((food) => !ids.includes(food.id)));
     setReloads((value) => value + 1);
   }, []);
 
   return {
     filter,
-    setFilter,
+    setFilter: (value: LibraryFilter) => {
+      setMode("keyword");
+      setFilter(value);
+    },
     query,
-    setQuery,
+    setQuery: (value: string) => {
+      setMode("keyword");
+      setQueryValue(value);
+    },
+    submitQuery: (value: string) => {
+      setQueryValue(value);
+      setMode("semantic");
+      setReloads((n) => n + 1);
+    },
     status,
     foods,
     counts,
     origins,
     reload: () => {
+      setMode("keyword");
       setReloads((value) => value + 1);
     },
     replace,
