@@ -16,9 +16,9 @@ Frejsi is a web app — on your phone for the moment you're eating, on your desk
 - **Import glucose history** — an owner loads a Dexcom Clarity CSV export into the space: its readings fill History and the meal curves, and its carb entries can become meals to correct later. Importing the same file twice adds nothing; rows of any other kind in the file are counted and never kept.
 - **People and settings** — passkey sign-in, single-use invitations by link or QR code, extra devices and owner/carer/viewer roles. Danish and English, light and dark themes, mmol/L or mg/dL, target range and a personal accent. Responsive phone and desktop layouts, with an installable PWA shell.
 
-On a phone, log a meal from the food picker and tap its marker on Now to open the meal curve. On a desktop, review the week, compare earlier meals and manage the food library and people. Photos are uploaded when you save; the app does not estimate their contents.
+On a phone, log a meal from the food picker and tap its marker on Now to open the meal curve. On a desktop, review the week, compare earlier meals and manage the food library and people. Meal attachments are uploaded when you save. In the v0.4.0 implementation, spaces with AI enabled and a configured provider can explicitly capture a plate photo from the picker or `/ask` for an approximate estimate. “Ask an adult” saves it as an unverified library food and stores the photo; it never logs a meal. AI is off without provider configuration; notification delivery is a separate lane.
 
-AI search, voice logging, photo estimates and narrated insights are planned for v0.4.0. Nightscout, manual glucose entry and community/portability features are also future work; see the [issues](https://github.com/nicklasjepsen/frejsi/issues) and [roadmap](docs/superpowers/plans/2026-10-14-roadmap.md).
+AI search, voice logging and narrated insights remain planned for v0.4.0. Photo estimates are implemented for that release but have not been deployed. Nightscout, manual glucose entry and community/portability features are also future work; see the [issues](https://github.com/nicklasjepsen/frejsi/issues) and [roadmap](docs/superpowers/plans/2026-10-14-roadmap.md).
 
 ## What it will never do
 

@@ -27,5 +27,7 @@
     "unverifiedSubtitle": "Review and approve",
     "unverifiedLabel": "{count, plural, one {# food is not checked} other {# foods are not checked}}",
     "myFood": "My food"
-  }
+  },
+  "findOther": "Find something else",
+  "photo": "Take a photo"
 }

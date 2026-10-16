@@ -1,0 +1,681 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`capture and estimate theme matrix > dark forest at 360px 1`] = `
+{
+  "accent": "forest",
+  "mode": "dark",
+  "palette": "
+    --accent-base: #86bbad;
+    --accent-strong: #a3d0c4;
+    --accent-tint: #27403a;
+    --accent-tint-border: #3a5c53;
+    --accent-band: #86bbad;
+    --accent-on: #1f1b17;
+  ",
+  "variables": [
+    "var(--accent-base)",
+    "var(--accent-on)",
+    "var(--accent-strong)",
+    "var(--card-shadow)",
+    "var(--font-body-stack)",
+    "var(--font-display-stack)",
+    "var(--hairline)",
+    "var(--hairline-strong)",
+    "var(--kit-tint)",
+    "var(--radius-card-simple)",
+    "var(--surface)",
+    "var(--surface-input)",
+    "var(--text)",
+    "var(--text-muted)",
+    "var(--unverified-bg)",
+    "var(--unverified-fg)",
+  ],
+  "width": 360,
+}
+`;
+
+exports[`capture and estimate theme matrix > dark forest at 1280px 1`] = `
+{
+  "accent": "forest",
+  "mode": "dark",
+  "palette": "
+    --accent-base: #86bbad;
+    --accent-strong: #a3d0c4;
+    --accent-tint: #27403a;
+    --accent-tint-border: #3a5c53;
+    --accent-band: #86bbad;
+    --accent-on: #1f1b17;
+  ",
+  "variables": [
+    "var(--accent-base)",
+    "var(--accent-on)",
+    "var(--accent-strong)",
+    "var(--card-shadow)",
+    "var(--font-body-stack)",
+    "var(--font-display-stack)",
+    "var(--hairline)",
+    "var(--hairline-strong)",
+    "var(--kit-tint)",
+    "var(--radius-card-simple)",
+    "var(--surface)",
+    "var(--surface-input)",
+    "var(--text)",
+    "var(--text-muted)",
+    "var(--unverified-bg)",
+    "var(--unverified-fg)",
+  ],
+  "width": 1280,
+}
+`;
+
+exports[`capture and estimate theme matrix > dark garnet at 360px 1`] = `
+{
+  "accent": "garnet",
+  "mode": "dark",
+  "palette": "
+    --accent-base: #c98a9c;
+    --accent-strong: #dba7b6;
+    --accent-tint: #43303a;
+    --accent-tint-border: #5f4552;
+    --accent-band: #c98a9c;
+    --accent-on: #1f1b17;
+  ",
+  "variables": [
+    "var(--accent-base)",
+    "var(--accent-on)",
+    "var(--accent-strong)",
+    "var(--card-shadow)",
+    "var(--font-body-stack)",
+    "var(--font-display-stack)",
+    "var(--hairline)",
+    "var(--hairline-strong)",
+    "var(--kit-tint)",
+    "var(--radius-card-simple)",
+    "var(--surface)",
+    "var(--surface-input)",
+    "var(--text)",
+    "var(--text-muted)",
+    "var(--unverified-bg)",
+    "var(--unverified-fg)",
+  ],
+  "width": 360,
+}
+`;
+
+exports[`capture and estimate theme matrix > dark garnet at 1280px 1`] = `
+{
+  "accent": "garnet",
+  "mode": "dark",
+  "palette": "
+    --accent-base: #c98a9c;
+    --accent-strong: #dba7b6;
+    --accent-tint: #43303a;
+    --accent-tint-border: #5f4552;
+    --accent-band: #c98a9c;
+    --accent-on: #1f1b17;
+  ",
+  "variables": [
+    "var(--accent-base)",
+    "var(--accent-on)",
+    "var(--accent-strong)",
+    "var(--card-shadow)",
+    "var(--font-body-stack)",
+    "var(--font-display-stack)",
+    "var(--hairline)",
+    "var(--hairline-strong)",
+    "var(--kit-tint)",
+    "var(--radius-card-simple)",
+    "var(--surface)",
+    "var(--surface-input)",
+    "var(--text)",
+    "var(--text-muted)",
+    "var(--unverified-bg)",
+    "var(--unverified-fg)",
+  ],
+  "width": 1280,
+}
+`;
+
+exports[`capture and estimate theme matrix > dark olive at 360px 1`] = `
+{
+  "accent": "olive",
+  "mode": "dark",
+  "palette": "
+    --accent-base: #9dae78;
+    --accent-strong: #b8c797;
+    --accent-tint: #353b2a;
+    --accent-tint-border: #4a5438;
+    --accent-band: #9dae78;
+    --accent-on: #1f1b17;
+  ",
+  "variables": [
+    "var(--accent-base)",
+    "var(--accent-on)",
+    "var(--accent-strong)",
+    "var(--card-shadow)",
+    "var(--font-body-stack)",
+    "var(--font-display-stack)",
+    "var(--hairline)",
+    "var(--hairline-strong)",
+    "var(--kit-tint)",
+    "var(--radius-card-simple)",
+    "var(--surface)",
+    "var(--surface-input)",
+    "var(--text)",
+    "var(--text-muted)",
+    "var(--unverified-bg)",
+    "var(--unverified-fg)",
+  ],
+  "width": 360,
+}
+`;
+
+exports[`capture and estimate theme matrix > dark olive at 1280px 1`] = `
+{
+  "accent": "olive",
+  "mode": "dark",
+  "palette": "
+    --accent-base: #9dae78;
+    --accent-strong: #b8c797;
+    --accent-tint: #353b2a;
+    --accent-tint-border: #4a5438;
+    --accent-band: #9dae78;
+    --accent-on: #1f1b17;
+  ",
+  "variables": [
+    "var(--accent-base)",
+    "var(--accent-on)",
+    "var(--accent-strong)",
+    "var(--card-shadow)",
+    "var(--font-body-stack)",
+    "var(--font-display-stack)",
+    "var(--hairline)",
+    "var(--hairline-strong)",
+    "var(--kit-tint)",
+    "var(--radius-card-simple)",
+    "var(--surface)",
+    "var(--surface-input)",
+    "var(--text)",
+    "var(--text-muted)",
+    "var(--unverified-bg)",
+    "var(--unverified-fg)",
+  ],
+  "width": 1280,
+}
+`;
+
+exports[`capture and estimate theme matrix > dark plum at 360px 1`] = `
+{
+  "accent": "plum",
+  "mode": "dark",
+  "palette": "
+    --accent-base: #b59ad0;
+    --accent-strong: #cdb8e3;
+    --accent-tint: #3a2f47;
+    --accent-tint-border: #54456a;
+    --accent-band: #b59ad0;
+    --accent-on: #1f1b17;
+  ",
+  "variables": [
+    "var(--accent-base)",
+    "var(--accent-on)",
+    "var(--accent-strong)",
+    "var(--card-shadow)",
+    "var(--font-body-stack)",
+    "var(--font-display-stack)",
+    "var(--hairline)",
+    "var(--hairline-strong)",
+    "var(--kit-tint)",
+    "var(--radius-card-simple)",
+    "var(--surface)",
+    "var(--surface-input)",
+    "var(--text)",
+    "var(--text-muted)",
+    "var(--unverified-bg)",
+    "var(--unverified-fg)",
+  ],
+  "width": 360,
+}
+`;
+
+exports[`capture and estimate theme matrix > dark plum at 1280px 1`] = `
+{
+  "accent": "plum",
+  "mode": "dark",
+  "palette": "
+    --accent-base: #b59ad0;
+    --accent-strong: #cdb8e3;
+    --accent-tint: #3a2f47;
+    --accent-tint-border: #54456a;
+    --accent-band: #b59ad0;
+    --accent-on: #1f1b17;
+  ",
+  "variables": [
+    "var(--accent-base)",
+    "var(--accent-on)",
+    "var(--accent-strong)",
+    "var(--card-shadow)",
+    "var(--font-body-stack)",
+    "var(--font-display-stack)",
+    "var(--hairline)",
+    "var(--hairline-strong)",
+    "var(--kit-tint)",
+    "var(--radius-card-simple)",
+    "var(--surface)",
+    "var(--surface-input)",
+    "var(--text)",
+    "var(--text-muted)",
+    "var(--unverified-bg)",
+    "var(--unverified-fg)",
+  ],
+  "width": 1280,
+}
+`;
+
+exports[`capture and estimate theme matrix > dark sea at 360px 1`] = `
+{
+  "accent": "sea",
+  "mode": "dark",
+  "palette": "
+    --accent-base: #8fb0cd;
+    --accent-strong: #aac6de;
+    --accent-tint: #2c3a47;
+    --accent-tint-border: #405466;
+    --accent-band: #8fb0cd;
+    --accent-on: #1f1b17;
+  ",
+  "variables": [
+    "var(--accent-base)",
+    "var(--accent-on)",
+    "var(--accent-strong)",
+    "var(--card-shadow)",
+    "var(--font-body-stack)",
+    "var(--font-display-stack)",
+    "var(--hairline)",
+    "var(--hairline-strong)",
+    "var(--kit-tint)",
+    "var(--radius-card-simple)",
+    "var(--surface)",
+    "var(--surface-input)",
+    "var(--text)",
+    "var(--text-muted)",
+    "var(--unverified-bg)",
+    "var(--unverified-fg)",
+  ],
+  "width": 360,
+}
+`;
+
+exports[`capture and estimate theme matrix > dark sea at 1280px 1`] = `
+{
+  "accent": "sea",
+  "mode": "dark",
+  "palette": "
+    --accent-base: #8fb0cd;
+    --accent-strong: #aac6de;
+    --accent-tint: #2c3a47;
+    --accent-tint-border: #405466;
+    --accent-band: #8fb0cd;
+    --accent-on: #1f1b17;
+  ",
+  "variables": [
+    "var(--accent-base)",
+    "var(--accent-on)",
+    "var(--accent-strong)",
+    "var(--card-shadow)",
+    "var(--font-body-stack)",
+    "var(--font-display-stack)",
+    "var(--hairline)",
+    "var(--hairline-strong)",
+    "var(--kit-tint)",
+    "var(--radius-card-simple)",
+    "var(--surface)",
+    "var(--surface-input)",
+    "var(--text)",
+    "var(--text-muted)",
+    "var(--unverified-bg)",
+    "var(--unverified-fg)",
+  ],
+  "width": 1280,
+}
+`;
+
+exports[`capture and estimate theme matrix > light forest at 360px 1`] = `
+{
+  "accent": "forest",
+  "mode": "light",
+  "palette": "
+  --accent-base: #2f6b5e;
+  --accent-strong: #22514a;
+  --accent-tint: #ddebe6;
+  --accent-tint-border: #b3cfc6;
+  --accent-band: #2f6b5e;
+  --accent-on: #f6f1e8;
+",
+  "variables": [
+    "var(--accent-base)",
+    "var(--accent-on)",
+    "var(--accent-strong)",
+    "var(--card-shadow)",
+    "var(--font-body-stack)",
+    "var(--font-display-stack)",
+    "var(--hairline)",
+    "var(--hairline-strong)",
+    "var(--kit-tint)",
+    "var(--radius-card-simple)",
+    "var(--surface)",
+    "var(--surface-input)",
+    "var(--text)",
+    "var(--text-muted)",
+    "var(--unverified-bg)",
+    "var(--unverified-fg)",
+  ],
+  "width": 360,
+}
+`;
+
+exports[`capture and estimate theme matrix > light forest at 1280px 1`] = `
+{
+  "accent": "forest",
+  "mode": "light",
+  "palette": "
+  --accent-base: #2f6b5e;
+  --accent-strong: #22514a;
+  --accent-tint: #ddebe6;
+  --accent-tint-border: #b3cfc6;
+  --accent-band: #2f6b5e;
+  --accent-on: #f6f1e8;
+",
+  "variables": [
+    "var(--accent-base)",
+    "var(--accent-on)",
+    "var(--accent-strong)",
+    "var(--card-shadow)",
+    "var(--font-body-stack)",
+    "var(--font-display-stack)",
+    "var(--hairline)",
+    "var(--hairline-strong)",
+    "var(--kit-tint)",
+    "var(--radius-card-simple)",
+    "var(--surface)",
+    "var(--surface-input)",
+    "var(--text)",
+    "var(--text-muted)",
+    "var(--unverified-bg)",
+    "var(--unverified-fg)",
+  ],
+  "width": 1280,
+}
+`;
+
+exports[`capture and estimate theme matrix > light garnet at 360px 1`] = `
+{
+  "accent": "garnet",
+  "mode": "light",
+  "palette": "
+  --accent-base: #7a3a4b;
+  --accent-strong: #5c2a38;
+  --accent-tint: #f0e0e4;
+  --accent-tint-border: #d3b5bd;
+  --accent-band: #7a3a4b;
+  --accent-on: #f6f1e8;
+",
+  "variables": [
+    "var(--accent-base)",
+    "var(--accent-on)",
+    "var(--accent-strong)",
+    "var(--card-shadow)",
+    "var(--font-body-stack)",
+    "var(--font-display-stack)",
+    "var(--hairline)",
+    "var(--hairline-strong)",
+    "var(--kit-tint)",
+    "var(--radius-card-simple)",
+    "var(--surface)",
+    "var(--surface-input)",
+    "var(--text)",
+    "var(--text-muted)",
+    "var(--unverified-bg)",
+    "var(--unverified-fg)",
+  ],
+  "width": 360,
+}
+`;
+
+exports[`capture and estimate theme matrix > light garnet at 1280px 1`] = `
+{
+  "accent": "garnet",
+  "mode": "light",
+  "palette": "
+  --accent-base: #7a3a4b;
+  --accent-strong: #5c2a38;
+  --accent-tint: #f0e0e4;
+  --accent-tint-border: #d3b5bd;
+  --accent-band: #7a3a4b;
+  --accent-on: #f6f1e8;
+",
+  "variables": [
+    "var(--accent-base)",
+    "var(--accent-on)",
+    "var(--accent-strong)",
+    "var(--card-shadow)",
+    "var(--font-body-stack)",
+    "var(--font-display-stack)",
+    "var(--hairline)",
+    "var(--hairline-strong)",
+    "var(--kit-tint)",
+    "var(--radius-card-simple)",
+    "var(--surface)",
+    "var(--surface-input)",
+    "var(--text)",
+    "var(--text-muted)",
+    "var(--unverified-bg)",
+    "var(--unverified-fg)",
+  ],
+  "width": 1280,
+}
+`;
+
+exports[`capture and estimate theme matrix > light olive at 360px 1`] = `
+{
+  "accent": "olive",
+  "mode": "light",
+  "palette": "
+  --accent-base: #5a6a3b;
+  --accent-strong: #3f4c28;
+  --accent-tint: #e9ecdf;
+  --accent-tint-border: #c9cdb8;
+  --accent-band: #6b7a4b;
+  --accent-on: #f6f1e8;
+",
+  "variables": [
+    "var(--accent-base)",
+    "var(--accent-on)",
+    "var(--accent-strong)",
+    "var(--card-shadow)",
+    "var(--font-body-stack)",
+    "var(--font-display-stack)",
+    "var(--hairline)",
+    "var(--hairline-strong)",
+    "var(--kit-tint)",
+    "var(--radius-card-simple)",
+    "var(--surface)",
+    "var(--surface-input)",
+    "var(--text)",
+    "var(--text-muted)",
+    "var(--unverified-bg)",
+    "var(--unverified-fg)",
+  ],
+  "width": 360,
+}
+`;
+
+exports[`capture and estimate theme matrix > light olive at 1280px 1`] = `
+{
+  "accent": "olive",
+  "mode": "light",
+  "palette": "
+  --accent-base: #5a6a3b;
+  --accent-strong: #3f4c28;
+  --accent-tint: #e9ecdf;
+  --accent-tint-border: #c9cdb8;
+  --accent-band: #6b7a4b;
+  --accent-on: #f6f1e8;
+",
+  "variables": [
+    "var(--accent-base)",
+    "var(--accent-on)",
+    "var(--accent-strong)",
+    "var(--card-shadow)",
+    "var(--font-body-stack)",
+    "var(--font-display-stack)",
+    "var(--hairline)",
+    "var(--hairline-strong)",
+    "var(--kit-tint)",
+    "var(--radius-card-simple)",
+    "var(--surface)",
+    "var(--surface-input)",
+    "var(--text)",
+    "var(--text-muted)",
+    "var(--unverified-bg)",
+    "var(--unverified-fg)",
+  ],
+  "width": 1280,
+}
+`;
+
+exports[`capture and estimate theme matrix > light plum at 360px 1`] = `
+{
+  "accent": "plum",
+  "mode": "light",
+  "palette": "
+  --accent-base: #5b3f73;
+  --accent-strong: #432c57;
+  --accent-tint: #eae3ef;
+  --accent-tint-border: #cdbfd8;
+  --accent-band: #5b3f73;
+  --accent-on: #f6f1e8;
+",
+  "variables": [
+    "var(--accent-base)",
+    "var(--accent-on)",
+    "var(--accent-strong)",
+    "var(--card-shadow)",
+    "var(--font-body-stack)",
+    "var(--font-display-stack)",
+    "var(--hairline)",
+    "var(--hairline-strong)",
+    "var(--kit-tint)",
+    "var(--radius-card-simple)",
+    "var(--surface)",
+    "var(--surface-input)",
+    "var(--text)",
+    "var(--text-muted)",
+    "var(--unverified-bg)",
+    "var(--unverified-fg)",
+  ],
+  "width": 360,
+}
+`;
+
+exports[`capture and estimate theme matrix > light plum at 1280px 1`] = `
+{
+  "accent": "plum",
+  "mode": "light",
+  "palette": "
+  --accent-base: #5b3f73;
+  --accent-strong: #432c57;
+  --accent-tint: #eae3ef;
+  --accent-tint-border: #cdbfd8;
+  --accent-band: #5b3f73;
+  --accent-on: #f6f1e8;
+",
+  "variables": [
+    "var(--accent-base)",
+    "var(--accent-on)",
+    "var(--accent-strong)",
+    "var(--card-shadow)",
+    "var(--font-body-stack)",
+    "var(--font-display-stack)",
+    "var(--hairline)",
+    "var(--hairline-strong)",
+    "var(--kit-tint)",
+    "var(--radius-card-simple)",
+    "var(--surface)",
+    "var(--surface-input)",
+    "var(--text)",
+    "var(--text-muted)",
+    "var(--unverified-bg)",
+    "var(--unverified-fg)",
+  ],
+  "width": 1280,
+}
+`;
+
+exports[`capture and estimate theme matrix > light sea at 360px 1`] = `
+{
+  "accent": "sea",
+  "mode": "light",
+  "palette": "
+  --accent-base: #3b5f7e;
+  --accent-strong: #2b4660;
+  --accent-tint: #e0e8ef;
+  --accent-tint-border: #b8c8d6;
+  --accent-band: #3b5f7e;
+  --accent-on: #f6f1e8;
+",
+  "variables": [
+    "var(--accent-base)",
+    "var(--accent-on)",
+    "var(--accent-strong)",
+    "var(--card-shadow)",
+    "var(--font-body-stack)",
+    "var(--font-display-stack)",
+    "var(--hairline)",
+    "var(--hairline-strong)",
+    "var(--kit-tint)",
+    "var(--radius-card-simple)",
+    "var(--surface)",
+    "var(--surface-input)",
+    "var(--text)",
+    "var(--text-muted)",
+    "var(--unverified-bg)",
+    "var(--unverified-fg)",
+  ],
+  "width": 360,
+}
+`;
+
+exports[`capture and estimate theme matrix > light sea at 1280px 1`] = `
+{
+  "accent": "sea",
+  "mode": "light",
+  "palette": "
+  --accent-base: #3b5f7e;
+  --accent-strong: #2b4660;
+  --accent-tint: #e0e8ef;
+  --accent-tint-border: #b8c8d6;
+  --accent-band: #3b5f7e;
+  --accent-on: #f6f1e8;
+",
+  "variables": [
+    "var(--accent-base)",
+    "var(--accent-on)",
+    "var(--accent-strong)",
+    "var(--card-shadow)",
+    "var(--font-body-stack)",
+    "var(--font-display-stack)",
+    "var(--hairline)",
+    "var(--hairline-strong)",
+    "var(--kit-tint)",
+    "var(--radius-card-simple)",
+    "var(--surface)",
+    "var(--surface-input)",
+    "var(--text)",
+    "var(--text-muted)",
+    "var(--unverified-bg)",
+    "var(--unverified-fg)",
+  ],
+  "width": 1280,
+}
+`;
