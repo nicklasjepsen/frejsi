@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 
 import { formatClock } from "@/lib/i18n/time";
+import { useDialogScrollLock } from "@/lib/ui/useScrollLock";
 
 import { Button } from "../ui/Button";
 import { Chip } from "../ui/Chip";
@@ -50,6 +51,7 @@ export function ManualReadingSheet({
   const [busy, setBusy] = useState(false);
   const locked = useRef(false);
   const dialog = useRef<HTMLDialogElement>(null);
+  useDialogScrollLock(dialog);
 
   useEffect(() => {
     const node = dialog.current;

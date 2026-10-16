@@ -23,6 +23,8 @@ import {
 export const POLL_MS = 30_000;
 /** How many of the latest non-reading events `LiveFeedState.events` keeps. */
 export const MAX_EVENTS = 100;
+/** `visibilitychange`, `pageshow` and `online` fire together on a wake-up: one resume per burst. */
+export const RESUME_DEBOUNCE_MS = 1_000;
 
 /** Every event type but `reading`: the ones `events` and `onEvent` carry. */
 export type FeedEventType = Exclude<EventType, "reading">;
@@ -150,6 +152,11 @@ export class LiveFeed {
   /** True once a tick has seen the current catch-up still out. */
   private catchUpOutlivedTick = false;
   private catchUpAgain = false;
+  /** When the socket last opened or delivered a message; a longer silence than `pollMs` is suspect. */
+  private lastMessageAt = 0;
+  /** Messages received over the socket since `start()`; tells a catch-up's events from pushed ones. */
+  private messageCount = 0;
+  private lastResumeAt = 0;
 
   constructor(options: LiveFeedOptions) {
     this.spaceId = options.spaceId;
@@ -218,6 +225,66 @@ export class LiveFeed {
     this.stopPolling();
     this.discardSocket();
     if (this.state.connection === "live") this.set({ connection: "polling" });
+  }
+
+  /**
+   * The page is in the foreground again (`visibilitychange` to visible, `pageshow`, `online`). iOS
+   * kills a background socket and pauses timers without a prompt `close`, so a stale value could
+   * sit under a "live" badge until the dead socket is noticed: catch up at once, restart the poll
+   * timer, and verify the socket. One that has been silent for longer than the poll interval, or
+   * that the catch-up shows missed events, is dropped and a new one negotiated. A burst of resume
+   * events within a second counts as one; nothing happens before `start()` or after `stop()`.
+   */
+  resume = (): void => {
+    if (this.stopped) return;
+    const gen = this.generation;
+    const at = this.now().getTime();
+    if (at - this.lastResumeAt < RESUME_DEBOUNCE_MS) return;
+    this.lastResumeAt = at;
+    if (this.pollTimer) {
+      // A paused interval fires whenever the browser gets round to it: start it afresh from now.
+      this.stopPolling();
+      this.ensureTimer();
+    }
+    if (!this.state.loaded || this.windowStale) {
+      // The request that was out when the phone slept may never answer: ask again.
+      void this.loadWindow(gen);
+      return;
+    }
+    const liveSocket = this.state.connection === "live" ? this.socket : null;
+    if (liveSocket && at - this.lastMessageAt > this.pollMs) {
+      this.discardSocket();
+      this.startPolling();
+      this.abandonCatchUp();
+      void this.catchUp(gen);
+      this.connect(gen);
+      return;
+    }
+    // A handshake the sleep interrupted never finishes: a new socket after the catch-up.
+    if (!liveSocket && this.socket) this.discardSocket();
+    void this.verify(gen, liveSocket);
+  };
+
+  /**
+   * A fresh catch-up, with a reconnect alongside when no socket is live. A live socket that
+   * delivered none of the events the catch-up found has lost its group or its connection: replaced.
+   */
+  private async verify(gen: number, socket: SocketLike | null): Promise<void> {
+    const messages = this.messageCount;
+    const before = this.state.lastSeq;
+    this.abandonCatchUp();
+    const catchingUp = this.catchUp(gen);
+    if (!socket) this.connect(gen);
+    await catchingUp;
+    if (this.cancelled(gen) || !socket || this.socket !== socket) return;
+    if (this.messageCount === messages && this.state.lastSeq > before) this.reconnect(gen);
+  }
+
+  /** Drops the socket, polls meanwhile, and negotiates a new one. */
+  private reconnect(gen: number): void {
+    this.discardSocket();
+    this.startPolling();
+    this.connect(gen);
   }
 
   /** True when `gen` is not the running life: its result is thrown away. */
@@ -368,6 +435,7 @@ export class LiveFeed {
     this.socket = socket;
     socket.onopen = () => {
       if (this.socket !== socket || this.cancelled(gen)) return;
+      this.lastMessageAt = this.now().getTime();
       // A window reload that failed before the socket opened is retried only by the timer.
       this.set({ connection: "live" });
       this.settleTimer();
@@ -375,6 +443,8 @@ export class LiveFeed {
     };
     socket.onmessage = (event) => {
       if (this.socket !== socket || this.cancelled(gen)) return;
+      this.lastMessageAt = this.now().getTime();
+      this.messageCount += 1;
       this.receive(event.data, gen);
     };
     socket.onclose = () => {

@@ -12,6 +12,7 @@ import { BolusTap } from "@/components/meal/BolusTap";
 import { editableItems, EditMealItems, refreshNutrition } from "@/components/meal/EditMealItems";
 import { TotalBar } from "@/components/meal/TotalBar";
 import { BackButton, Button } from "@/components/ui";
+import { useDialogScrollLock } from "@/lib/ui/useScrollLock";
 
 import styles from "./meal-detail.module.css";
 
@@ -55,6 +56,7 @@ export function EditMealSheet({
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleteFailed, setDeleteFailed] = useState(false);
   const dialog = useRef<HTMLDialogElement>(null);
+  useDialogScrollLock(dialog);
   const locked = useRef(false);
   const libraryChanged = editableItems(view.editItems).some(
     (item) => refreshNutrition(item).input.carbs !== item.source.carbs,

@@ -55,10 +55,18 @@ interface FakeRequest {
   mode: string;
 }
 
-/** Runs sw.js in a sandbox with a fake cache and fetch, and returns its event listeners. */
-function loadWorker(fetchImpl: (request: FakeRequest) => Promise<Response>) {
+/**
+ * Runs sw.js in a sandbox with a fake cache and fetch, and returns its event listeners. `search` is
+ * the registration URL's query (`?v=<version>`); `existing` the cache names already on the device.
+ */
+function loadWorker(
+  fetchImpl: (request: FakeRequest) => Promise<Response>,
+  { search = "", existing = [] as string[] } = {},
+) {
   const store = new Map<string, Response>();
   const puts: string[] = [];
+  const opened: string[] = [];
+  const deleted: string[] = [];
   const cache = {
     addAll: (urls: string[]) => {
       for (const url of urls) store.set(url, new Response(`cached ${url}`));
@@ -84,21 +92,28 @@ function loadWorker(fetchImpl: (request: FakeRequest) => Promise<Response>) {
       },
       skipWaiting: () => undefined,
       clients: { claim: () => Promise.resolve() },
-      location: { origin: "https://frejsi.example" },
+      location: { origin: "https://frejsi.example", search },
     },
     caches: {
-      open: () => Promise.resolve(cache),
+      open: (name: string) => {
+        opened.push(name);
+        return Promise.resolve(cache);
+      },
       match: (request: FakeRequest | string) => cache.match(request),
-      keys: () => Promise.resolve([]),
-      delete: () => Promise.resolve(true),
+      keys: () => Promise.resolve(existing),
+      delete: (name: string) => {
+        deleted.push(name);
+        return Promise.resolve(true);
+      },
     },
     fetch: fetchImpl,
     URL,
+    URLSearchParams,
     Response,
     Promise,
   };
   vm.runInNewContext(read("sw.js"), sandbox);
-  const dispatch = async (type: "install" | "fetch", request?: FakeRequest) => {
+  const dispatch = async (type: "install" | "activate" | "fetch", request?: FakeRequest) => {
     const captured: { response?: Promise<Response | undefined>; wait?: Promise<unknown> } = {};
     listeners.get(type)?.({
       request,
@@ -117,7 +132,7 @@ function loadWorker(fetchImpl: (request: FakeRequest) => Promise<Response>) {
     url: `https://frejsi.example${url}`,
     mode,
   });
-  return { dispatch, get, store, puts };
+  return { dispatch, get, store, puts, opened, deleted };
 }
 
 const online = (request: FakeRequest) => Promise.resolve(new Response(`live ${request.url}`));
@@ -126,7 +141,8 @@ const offline = () => Promise.reject(new TypeError("Failed to fetch"));
 describe("sw.js (the offline shell)", () => {
   const sw = read("sw.js");
   const match = /const PRECACHE = (\[[^\]]*\])/.exec(sw);
-  const precache = JSON.parse(match?.[1] ?? "[]") as string[];
+  // The source is prettier-formatted: a trailing comma that JSON does not take.
+  const precache = JSON.parse((match?.[1] ?? "[]").replace(/,\s*\]$/, "]")) as string[];
 
   it("precaches the offline page, the manifest and the icons, and no page that carries a person's data", () => {
     expect(precache).toContain("/offline.html");
@@ -180,6 +196,23 @@ describe("sw.js (the offline shell)", () => {
     const second = await worker.dispatch("fetch", asset);
     expect(second).toBeDefined();
     expect(calls).toBe(1);
+  });
+
+  it("names its cache after the build version in the registration URL, and drops the other builds' caches", async () => {
+    const worker = loadWorker(online, {
+      search: "?v=v0.5.1",
+      existing: ["frejsi-shell-v2", "frejsi-shell-v0.5.0", "frejsi-shell-v0.5.1"],
+    });
+    await worker.dispatch("install");
+    expect(worker.opened).toEqual(["frejsi-shell-v0.5.1"]);
+    await worker.dispatch("activate");
+    expect(worker.deleted).toEqual(["frejsi-shell-v2", "frejsi-shell-v0.5.0"]);
+  });
+
+  it("falls back to a dev cache name without a version", async () => {
+    const worker = loadWorker(online);
+    await worker.dispatch("install");
+    expect(worker.opened).toEqual(["frejsi-shell-dev"]);
   });
 
   it("leaves other origins and non-GET requests to the browser", async () => {

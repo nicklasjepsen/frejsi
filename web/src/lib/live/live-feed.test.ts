@@ -796,4 +796,146 @@ describe("LiveFeed (plan §5)", () => {
     expect(feed.getState().readings).toHaveLength(1);
     expect(calls.filter((c) => c.includes("/readings"))).toHaveLength(2);
   });
+
+  describe("resume(): the page returns to the foreground (visibilitychange, pageshow, online)", () => {
+    async function live(initial: Parameters<typeof fakeServer>[0] = { readings: [], lastSeq: 1 }) {
+      const { server, fetch, calls } = fakeServer(initial);
+      const { feed } = start(fetch);
+      await flush();
+      sockets[0]?.open();
+      await flush();
+      expect(feed.getState().connection).toBe("live");
+      calls.length = 0;
+      return { server, fetch, calls, feed };
+    }
+
+    it("replaces a socket that has been silent for longer than the poll interval, catching up at once", async () => {
+      const { server, calls, feed } = await live();
+      // iOS froze the page; the socket died without a close, and a reading was stored meanwhile.
+      await vi.advanceTimersByTimeAsync(5 * 60_000);
+      server.append(reading(minutesAgo(1), 7.1));
+      feed.resume();
+      await flush();
+      expect(sockets[0]?.closed).toBe(true);
+      expect(feed.getState().connection).toBe("polling");
+      expect(calls).toEqual(["/api/spaces/s1/events?since=1", "/api/spaces/s1/negotiate"]);
+      expect(feed.getState().readings.map((r) => r.mmol)).toEqual([7.1]);
+      expect(sockets).toHaveLength(2);
+      sockets[1]?.open();
+      await flush();
+      expect(feed.getState().connection).toBe("live");
+      await vi.advanceTimersByTimeAsync(POLL_MS * 3);
+      expect(calls).toHaveLength(3);
+    });
+
+    it("keeps a socket that spoke recently and missed nothing, after one catch-up", async () => {
+      const { server, calls, feed } = await live();
+      sockets[0]?.receive(server.append(reading(minutesAgo(2), 6.0)));
+      await vi.advanceTimersByTimeAsync(10_000);
+      feed.resume();
+      await flush();
+      expect(calls).toEqual(["/api/spaces/s1/events?since=2"]);
+      expect(sockets[0]?.closed).toBe(false);
+      expect(sockets).toHaveLength(1);
+      expect(feed.getState().connection).toBe("live");
+      await vi.advanceTimersByTimeAsync(POLL_MS * 3);
+      expect(calls).toHaveLength(1);
+    });
+
+    it("replaces a socket that spoke recently when the catch-up finds events it never delivered", async () => {
+      const { server, calls, feed } = await live();
+      sockets[0]?.receive(server.append(reading(minutesAgo(3), 6.0)));
+      await vi.advanceTimersByTimeAsync(10_000);
+      // The server moved on; the socket, though open, delivers nothing: its group is gone.
+      server.append(reading(minutesAgo(2), 6.3));
+      server.append(reading(minutesAgo(1), 6.6));
+      feed.resume();
+      await flush();
+      expect(calls).toEqual(["/api/spaces/s1/events?since=2", "/api/spaces/s1/negotiate"]);
+      expect(feed.getState().readings.map((r) => r.mmol)).toEqual([6.0, 6.3, 6.6]);
+      expect(sockets[0]?.closed).toBe(true);
+      expect(sockets).toHaveLength(2);
+      sockets[1]?.open();
+      await flush();
+      expect(feed.getState().connection).toBe("live");
+    });
+
+    it("counts a burst of resume events as one", async () => {
+      const { calls, feed } = await live();
+      await vi.advanceTimersByTimeAsync(10_000);
+      feed.resume();
+      feed.resume();
+      feed.resume();
+      await flush();
+      expect(calls).toEqual(["/api/spaces/s1/events?since=1"]);
+    });
+
+    it("catches up at once while polling and starts the next interval from now", async () => {
+      const { server, fetch, calls } = fakeServer({ readings: [], lastSeq: 1 });
+      server.live = false;
+      const { feed } = start(fetch);
+      await flush();
+      expect(feed.getState().connection).toBe("polling");
+      calls.length = 0;
+      await vi.advanceTimersByTimeAsync(20_000);
+      server.append(reading(minutesAgo(1), 5.5));
+      feed.resume();
+      await flush();
+      expect(calls).toEqual(["/api/spaces/s1/events?since=1", "/api/spaces/s1/negotiate"]);
+      expect(feed.getState().readings.map((r) => r.mmol)).toEqual([5.5]);
+      // The old timer would have fired 10 s from here; the restarted one fires a full interval on.
+      await vi.advanceTimersByTimeAsync(20_000);
+      expect(calls).toHaveLength(2);
+      await vi.advanceTimersByTimeAsync(10_000);
+      expect(calls).toHaveLength(4);
+    });
+
+    it("replaces a socket whose handshake the sleep interrupted", async () => {
+      const { fetch, calls } = fakeServer({ readings: [], lastSeq: 1 });
+      const { feed } = start(fetch);
+      await flush();
+      expect(feed.getState().connection).toBe("connecting");
+      calls.length = 0;
+      await vi.advanceTimersByTimeAsync(10_000);
+      feed.resume();
+      await flush();
+      expect(sockets[0]?.closed).toBe(true);
+      expect(calls).toEqual(["/api/spaces/s1/events?since=1", "/api/spaces/s1/negotiate"]);
+      expect(sockets).toHaveLength(2);
+    });
+
+    it("asks for a window that was still loading again", async () => {
+      const { server, fetch, calls } = fakeServer({ readings: [], lastSeq: 1 });
+      server.readingsHangs = true;
+      const { feed } = start(fetch);
+      await flush();
+      server.readingsHangs = false;
+      await vi.advanceTimersByTimeAsync(5_000);
+      feed.resume();
+      await flush();
+      expect(calls).toEqual([
+        "/api/spaces/s1/readings?hours=24",
+        "/api/spaces/s1/readings?hours=24",
+        "/api/spaces/s1/negotiate",
+      ]);
+      expect(feed.getState().loaded).toBe(true);
+    });
+
+    it("does nothing before start() or after stop()", async () => {
+      const { fetch, calls } = fakeServer({ readings: [], lastSeq: 1 });
+      const feed = new LiveFeed({ spaceId: "s1", fetch, socketFactory: factory });
+      feed.resume();
+      await flush();
+      expect(calls).toEqual([]);
+      feed.start();
+      await flush();
+      feed.stop();
+      calls.length = 0;
+      await vi.advanceTimersByTimeAsync(5 * 60_000);
+      feed.resume();
+      await flush();
+      expect(calls).toEqual([]);
+      expect(sockets).toHaveLength(1);
+    });
+  });
 });

@@ -6,6 +6,7 @@ import { Card } from "@/components/ui/Card";
 import { Chip } from "@/components/ui/Chip";
 import { Notice } from "@/components/ui/Notice";
 import { Button } from "@/components/ui/Button";
+import { useDialogScrollLock } from "@/lib/ui/useScrollLock";
 import { Row, Switch } from "./controls";
 import { PushRow } from "./PushRow";
 import styles from "./settings.module.css";
@@ -31,6 +32,7 @@ export function AiSection({
 }) {
   const t = useTranslations("settings");
   const picker = useRef<HTMLDialogElement>(null);
+  useDialogScrollLock(picker);
   const selected = usage?.providers.find((p) => p.id === provider && p.configured)?.id;
   const available = selected ?? usage?.providers.find((p) => p.configured)?.id;
   const chips = () => (

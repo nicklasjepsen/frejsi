@@ -60,7 +60,26 @@ export function useLiveFeed(
   );
   useEffect(() => {
     feed.start();
+    if (typeof document === "undefined" || typeof window === "undefined") {
+      return () => {
+        feed.stop();
+      };
+    }
+    // The phone wakes up, the tab comes back, the page is restored from the back-forward cache or
+    // the network returns: the feed checks its socket and catches up (see `LiveFeed.resume`).
+    const onVisibility = () => {
+      if (document.visibilityState === "visible") feed.resume();
+    };
+    const onPageShow = (event: PageTransitionEvent) => {
+      if (event.persisted) feed.resume();
+    };
+    document.addEventListener("visibilitychange", onVisibility);
+    window.addEventListener("pageshow", onPageShow);
+    window.addEventListener("online", feed.resume);
     return () => {
+      document.removeEventListener("visibilitychange", onVisibility);
+      window.removeEventListener("pageshow", onPageShow);
+      window.removeEventListener("online", feed.resume);
       feed.stop();
     };
   }, [feed]);
