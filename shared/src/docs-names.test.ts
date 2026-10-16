@@ -87,7 +87,8 @@ function namesIn(file: string): { settings: string[]; environments: string[] } {
 describe("docs/deploy-your-own.md and the pipeline", () => {
   const pipeline = namesRead();
   const document = namesIn(WALKTHROUGH);
-  const corpus = SOURCES.map(read).join("\n");
+  // The Docker Compose section names settings docker/compose.yaml and docker/.env.example define.
+  const corpus = [...SOURCES, "docker/compose.yaml", "docker/.env.example"].map(read).join("\n");
 
   it("finds what the pipeline reads (the scan itself works)", () => {
     for (const name of [

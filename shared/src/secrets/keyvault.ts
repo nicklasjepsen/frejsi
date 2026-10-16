@@ -1,6 +1,7 @@
 import { DefaultAzureCredential } from "@azure/identity";
 import { SecretClient } from "@azure/keyvault-secrets";
 
+import { FileSecrets } from "./file";
 import type { Secrets } from "./types";
 
 /** The slice of `SecretClient` the adapter uses; tests pass a fake. */
@@ -40,14 +41,21 @@ export class KeyVaultSecrets implements Secrets {
 /** `process.env` or a plain object with the same keys. */
 export type SecretsEnv = Record<string, string | undefined>;
 
+/**
+ * Key Vault when `KEY_VAULT_URL` is set (Azure, and it wins when both are set), otherwise one file
+ * per secret under `SECRETS_DIR` (Docker Compose). The choice lives here and nowhere in web/ or
+ * poller/ (shared/src/secrets/boundaries.test.ts).
+ */
 export function createSecretsFromEnv(
   env: SecretsEnv = process.env,
   factory: (url: string) => SecretClientLike = (url) =>
     new SecretClient(url, new DefaultAzureCredential()),
 ): Secrets {
   const url = env.KEY_VAULT_URL;
-  if (!url) {
-    throw new Error("KEY_VAULT_URL is not set; secrets need a Key Vault outside tests");
-  }
-  return new KeyVaultSecrets(factory(url));
+  if (url) return new KeyVaultSecrets(factory(url));
+  const directory = env.SECRETS_DIR;
+  if (directory) return new FileSecrets(directory);
+  throw new Error(
+    "KEY_VAULT_URL is not set; secrets need a Key Vault (or SECRETS_DIR for Docker Compose) outside tests",
+  );
 }

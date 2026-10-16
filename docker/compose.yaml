@@ -1,0 +1,115 @@
+# Frejsi on any host with Docker (docs/deploy-your-own.md, "Docker Compose"). Run docker/init-secrets.sh
+# once first, then: docker compose -f docker/compose.yaml up --build
+#
+# No secret is written here: every credential is read from docker/.env (generated, ignored by git
+# and Docker) or from the two volumes init-secrets.sh fills. No Web PubSub (clients poll), no
+# Application Insights, no Key Vault (secrets are files under SECRETS_DIR).
+name: frejsi
+
+x-runtime-env: &runtime-env
+  DATABASE_URL: ${DATABASE_URL:?run docker/init-secrets.sh first}
+  BLOB_CONNECTION_STRING: ${BLOB_CONNECTION_STRING}
+  BLOB_PUBLIC_ENDPOINT: ${BLOB_PUBLIC_ENDPOINT}
+  DEFAULT_LOCALE: ${DEFAULT_LOCALE}
+  FOOD_SOURCES: ${FOOD_SOURCES}
+  OFF_COUNTRY: ${OFF_COUNTRY}
+  FAKE_GLUCOSE_SOURCE: ${FAKE_GLUCOSE_SOURCE}
+
+services:
+  sql:
+    image: mcr.microsoft.com/mssql/server:2025-latest
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_SA_PASSWORD: ${SQL_SA_PASSWORD:?run docker/init-secrets.sh first}
+      MSSQL_PID: Developer
+    volumes:
+      - sql-data:/var/opt/mssql
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          '/opt/mssql-tools18/bin/sqlcmd -C -S localhost -U sa -P "$$MSSQL_SA_PASSWORD" -Q "SELECT 1" -b -o /dev/null',
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 40
+      start_period: 15s
+    restart: unless-stopped
+
+  azurite:
+    image: mcr.microsoft.com/azure-storage/azurite:3.35.0
+    command: azurite --blobHost 0.0.0.0 --queueHost 0.0.0.0 --tableHost 0.0.0.0 --location /data --skipApiVersionCheck
+    environment:
+      # Replaces the emulator's well-known account with one whose key init-secrets.sh generated.
+      AZURITE_ACCOUNTS: frejsi:${AZURITE_ACCOUNT_KEY:?run docker/init-secrets.sh first}
+    ports:
+      # Photos are read by the browser straight from here (BLOB_PUBLIC_ENDPOINT); the queue and
+      # table ports stay inside the network.
+      - "10000:10000"
+    volumes:
+      - azurite-data:/data
+    restart: unless-stopped
+
+  migrate:
+    build:
+      context: ..
+      dockerfile: docker/migrate.Dockerfile
+    environment:
+      DATABASE_URL: ${DATABASE_URL:?run docker/init-secrets.sh first}
+      BLOB_CONNECTION_STRING: ${BLOB_CONNECTION_STRING}
+    depends_on:
+      sql:
+        condition: service_healthy
+      azurite:
+        condition: service_started
+    restart: "no"
+
+  web:
+    build:
+      context: ..
+      dockerfile: docker/web.Dockerfile
+    environment:
+      <<: *runtime-env
+      APP_ORIGIN: ${APP_ORIGIN}
+      BOOTSTRAP_TOKEN: ${BOOTSTRAP_TOKEN:?run docker/init-secrets.sh first}
+      SOURCE_CONNECT_URL: ${SOURCE_CONNECT_URL}
+      SOURCE_CONNECT_KEY: ${SOURCE_CONNECT_KEY:?run docker/init-secrets.sh first}
+    ports:
+      - "3000:3000"
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    restart: unless-stopped
+
+  poller:
+    build:
+      context: ..
+      dockerfile: docker/poller.Dockerfile
+    environment:
+      <<: *runtime-env
+      SECRETS_DIR: ${SECRETS_DIR}
+      AzureWebJobsStorage: DefaultEndpointsProtocol=http;AccountName=frejsi;AccountKey=${AZURITE_ACCOUNT_KEY};BlobEndpoint=http://azurite:10000/frejsi;QueueEndpoint=http://azurite:10001/frejsi;TableEndpoint=http://azurite:10002/frejsi
+      AzureWebJobsSecretStorageType: Files
+      AzureWebJobsSecretStoragePath: /azure-functions-host/Secrets
+      FUNCTIONS_WORKER_RUNTIME: node
+    volumes:
+      - host-keys:/azure-functions-host/Secrets
+      - credentials:/credentials
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      azurite:
+        condition: service_started
+    restart: unless-stopped
+
+volumes:
+  # Your data: the database and the photos. Back up the database with sqlcmd BACKUP DATABASE.
+  sql-data:
+  azurite-data:
+  # Filled by docker/init-secrets.sh before the first `up` (hence external).
+  host-keys:
+    name: frejsi-host-keys
+    external: true
+  credentials:
+    name: frejsi-credentials
+    external: true

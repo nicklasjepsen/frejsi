@@ -1,0 +1,78 @@
+name: compose-check
+
+# Builds the three images of docker/compose.yaml, starts the stack and asks /api/health, then checks
+# what is inside the images (docs/deploy-your-own.md, "Docker Compose"). Runs only on pull requests
+# that touch docker/ or .dockerignore and on demand; it is not a required check and ci.yml stays
+# free of Docker. Nothing is pushed anywhere.
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "docker/**"
+      - ".dockerignore"
+      - ".github/workflows/compose-check.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: compose-check-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  compose:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+
+      # Generates docker/.env and the two volumes on the runner; nothing here is a stored secret.
+      - name: Generate the secrets
+        run: docker/init-secrets.sh
+
+      - name: Build the images
+        run: docker compose -f docker/compose.yaml build
+
+      - name: Start the stack
+        run: docker compose -f docker/compose.yaml up -d
+
+      - name: Wait for /api/health (five minutes at most)
+        run: |
+          deadline=$((SECONDS + 300))
+          while [ "$SECONDS" -lt "$deadline" ]; do
+            body="$(curl -fsS -m 5 http://localhost:3000/api/health 2>/dev/null || true)"
+            if [ -n "$body" ]; then
+              echo "$body"
+              # No space exists before the bootstrap, so readings is "none".
+              if echo "$body" | jq -e '.ok == true and .db == "ok" and .readings == "none"' >/dev/null; then
+                exit 0
+              fi
+            fi
+            sleep 5
+          done
+          echo "health did not report ok within five minutes" >&2
+          exit 1
+
+      - name: The poller host is up
+        run: |
+          for _ in $(seq 1 30); do
+            docker compose -f docker/compose.yaml logs poller | grep -q "Job host started" && exit 0
+            sleep 2
+          done
+          echo "the poller host did not start" >&2
+          exit 1
+
+      - name: Images hold no .env, secret, fixture or .git file
+        run: docker/check-image-contents.sh
+
+      - name: Logs of a failed run
+        if: failure()
+        run: docker compose -f docker/compose.yaml logs --no-color --tail 80
+
+      - name: Tear down
+        if: always()
+        run: |
+          docker compose -f docker/compose.yaml down -v
+          docker volume rm frejsi-host-keys frejsi-credentials || true

@@ -1,0 +1,31 @@
+# The Docker build context is the repository root (docker/*.Dockerfile). Nothing that can hold a
+# secret, a history or a local install goes in: docker/.env, every .env*, the secrets volume's
+# working copies, git, node_modules and build output. .env.example files are kept out too: no image
+# needs them, and compose-check.yml fails on any .env file inside an image.
+**/node_modules
+**/.next
+**/dist
+**/.turbo
+**/*.tsbuildinfo
+.git
+.github
+.claude
+**/.env
+**/.env.*
+docker/.env
+docker/secrets
+# Only the migrate image needs a file from docker/ (the Dockerfiles themselves are always sent).
+docker/*
+!docker/ensure-photos-container.cjs
+**/*.pem
+**/*.key
+**/*.log
+**/coverage
+web/e2e/.output
+web/test-results
+web/playwright-report
+fixtures
+evals/**
+!evals/package.json
+docs
+infra
