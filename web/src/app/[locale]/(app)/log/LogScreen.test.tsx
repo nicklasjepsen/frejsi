@@ -16,11 +16,30 @@ function stubMedia(media: unknown) {
   Object.defineProperty(navigator, "mediaDevices", { configurable: true, value: media });
 }
 
+vi.mock("@/lib/photos/downscale", () => ({
+  downscale: () =>
+    Promise.resolve({ arrayBuffer: () => Promise.resolve(new Uint8Array([1, 2, 3]).buffer) }),
+}));
+
 const nav = vi.hoisted(() => ({ push: vi.fn() }));
 vi.mock("next/navigation", () => ({ useRouter: () => nav }));
 
-const live = vi.hoisted(() => ({ state: null as LiveState | null }));
-vi.mock("@/lib/live/useLiveFeed", () => ({ useLiveFeed: () => live.state }));
+const live = vi.hoisted(() => {
+  const handlers = new Map<string, () => void>();
+  return {
+    state: null as LiveState | null,
+    handlers,
+    subscribe: (type: string, handler: () => void) => {
+      handlers.set(type, handler);
+      return () => {
+        handlers.delete(type);
+      };
+    },
+  };
+});
+vi.mock("@/lib/live/useLiveFeed", () => ({
+  useLiveFeed: () => ({ ...live.state, subscribe: live.subscribe }),
+}));
 
 // 12:10 in Copenhagen on a Wednesday: lunch.
 const T0 = new Date("2026-10-14T10:10:00.000Z");
@@ -121,6 +140,7 @@ afterEach(() => {
   vi.unstubAllGlobals();
   nav.push.mockReset();
   live.state = null;
+  live.handlers.clear();
 });
 
 async function typeAndSubmit(label: string, value: string) {
@@ -555,4 +575,152 @@ describe("Log-Desktop", () => {
     await screen.findByTestId("lookup-results");
     expect(lookups()).toEqual(["/api/spaces/s1/lookup?q=rugbr%C3%B8d&remote=true"]);
   });
+});
+
+const enabledAi = {
+  enabled: true,
+  providers: [],
+  callsToday: 0,
+  dailyCap: 50,
+  embedCallsToday: 0,
+  embedDailyCap: 500,
+};
+describe("Say entry and confirmation", () => {
+  beforeEach(() => {
+    live.state = { loaded: false } as LiveState;
+  });
+  it.each(["phone", "desktop"] as const)(
+    "opens Say on %s and saves candidates plus guesses through existing routes",
+    async (layout) => {
+      api()
+        .on("GET /api/spaces/s1/ai", enabledAi)
+        .on("POST /api/spaces/s1/parse", {
+          items: [
+            { query: "bread", match: { source: "off", food: offBread, portionLabel: "2 skiver" } },
+            {
+              query: "apple",
+              estimate: { name: "Example apple", carbs: 14, confidence: "low", approx: true },
+            },
+          ],
+          unmatched: [],
+        });
+      mount({ layout });
+      fireEvent.click(
+        await screen.findByRole("button", {
+          name: layout === "phone" ? "Sig det" : "Sig det i stedet",
+        }),
+      );
+      fireEvent.change(screen.getByLabelText("Skriv hvad der spises"), {
+        target: { value: "bread and apple" },
+      });
+      expect(writes()).toEqual([]);
+      fireEvent.click(screen.getByRole("button", { name: "Find maden" }));
+      await screen.findByText("Example apple · ca. 14 g");
+      fireEvent.click(screen.getByRole("button", { name: "Tilføj til måltidet" }));
+      await waitFor(() => {
+        expect(screen.queryByRole("button", { name: "Find maden" })).toBeNull();
+      });
+      expect(screen.getByText("Example apple · ca. 14 g")).toBeVisible();
+      fireEvent.click(screen.getByRole("button", { name: /Gem måltid/ }));
+      await waitFor(() => {
+        expect(nav.push).toHaveBeenCalledWith("/da/now");
+      });
+      expect(writes().map((call) => call.path)).toEqual([
+        "/api/spaces/s1/parse",
+        "/api/spaces/s1/foods",
+        "/api/spaces/s1/meals",
+      ]);
+      expect(writes().at(-1)?.body).toEqual({
+        items: [
+          { foodId: "f-bread", name: offBread.name, portionLabel: "2 skiver", carbs: 36 },
+          { name: "Example apple", carbs: 14 },
+        ],
+      });
+    },
+  );
+  it("keeps Say absent for simpleMode even if AI is enabled", async () => {
+    api().on("GET /api/spaces/s1/ai", enabledAi);
+    mount({ simpleMode: true });
+    await act(async () => {
+      await Promise.resolve();
+    });
+    expect(screen.queryByText("Sig det")).toBeNull();
+    expect(fake.calls.some((call) => call.path.endsWith("/ai"))).toBe(false);
+  });
+});
+
+it("attaches a confirmation photo without calling parse or estimates", async () => {
+  api({ favourites: [toast] });
+  mount();
+  fireEvent.click(await screen.findByRole("button", { name: /Rugbrød med ost/ }));
+  fireEvent.change(screen.getByLabelText("Tag et billede", { selector: "input" }), {
+    target: {
+      files: [new File([new Uint8Array([1, 2, 3])], "fictional.jpg", { type: "image/jpeg" })],
+    },
+  });
+  await screen.findByTestId("meal-photo-preview");
+  expect(writes()).toEqual([]);
+  fireEvent.click(screen.getByRole("button", { name: "1 skive · 18 g" }));
+  fireEvent.click(screen.getByRole("button", { name: /Gem måltid/ }));
+  await waitFor(() => {
+    expect(writes()).toHaveLength(1);
+  });
+  expect(writes()[0]).toMatchObject({
+    path: "/api/spaces/s1/meals",
+    body: { photoDataUrl: "data:image/jpeg;base64,AQID" },
+  });
+});
+
+it("keeps reviewed lines when choosing an unmatched food in search", async () => {
+  api()
+    .on("GET /api/spaces/s1/ai", enabledAi)
+    .on("POST /api/spaces/s1/parse", {
+      items: [
+        {
+          query: "apple",
+          estimate: { name: "Example apple", carbs: 14, confidence: "low", approx: true },
+        },
+      ],
+      unmatched: ["bread"],
+    });
+  mount();
+  fireEvent.click(await screen.findByRole("button", { name: "Sig det" }));
+  fireEvent.change(screen.getByLabelText("Skriv hvad der spises"), {
+    target: { value: "apple and bread" },
+  });
+  fireEvent.click(screen.getByRole("button", { name: "Find maden" }));
+  await screen.findByText("Example apple · ca. 14 g");
+  fireEvent.change(screen.getByLabelText("Kulhydrat (g)"), { target: { value: "16" } });
+  fireEvent.click(screen.getByRole("button", { name: /Ikke fundet/ }));
+  expect(screen.getByRole("searchbox")).toHaveValue("bread");
+  fireEvent.click(screen.getByRole("button", { name: "Sig det" }));
+  expect(screen.getByText("Example apple · ca. 16 g")).toBeVisible();
+  expect(writes()).toHaveLength(1);
+});
+
+it("refreshes Say after a live AI setting change and closes it on opt-out", async () => {
+  let enabled = false;
+  api().on("GET /api/spaces/s1/ai", () => ({ ...enabledAi, enabled }));
+  const mounted = mount();
+  await waitFor(() => {
+    expect(fake.calls.some((call) => call.path.endsWith("/ai"))).toBe(true);
+  });
+  expect(screen.queryByRole("button", { name: "Sig det" })).toBeNull();
+  enabled = true;
+  act(() => {
+    live.handlers.get("space.updated")?.();
+  });
+  fireEvent.click(await screen.findByRole("button", { name: "Sig det" }));
+  expect(screen.getByRole("button", { name: "Find maden" })).toBeVisible();
+  enabled = false;
+  act(() => {
+    live.handlers.get("space.updated")?.();
+  });
+  await waitFor(() => {
+    expect(screen.queryByRole("button", { name: "Find maden" })).toBeNull();
+  });
+  expect(screen.queryByRole("button", { name: "Sig det" })).toBeNull();
+  expect(writes()).toEqual([]);
+  mounted.unmount();
+  expect(live.handlers.has("space.updated")).toBe(false);
 });

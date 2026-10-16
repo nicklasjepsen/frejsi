@@ -1,0 +1,21 @@
+{
+  "title": "Sig det",
+  "back": "Tilbage",
+  "microphone": "Brug stemmen",
+  "listening": "Lytter …",
+  "voiceNotice": "Stemmen genkendes af din browser, ikke af Frejsi.",
+  "voiceUnavailable": "Stemmen kan ikke bruges lige nu. Du kan skrive i stedet.",
+  "field": "Skriv hvad der spises",
+  "placeholder": "Skriv fx 'to skiver rugbrød med ost'",
+  "find": "Find maden",
+  "add": "Tilføj til måltidet",
+  "unavailable": "AI-hjælp er ikke tilgængelig lige nu",
+  "estimate": "{name} · ca. {carbs} g",
+  "uncertain": "usikkert",
+  "guess": "Et gæt · ikke tjekket",
+  "unmatched": "Ikke fundet · vælg selv",
+  "grams": "Vægt (g)",
+  "carbs": "Kulhydrat (g)",
+  "remove": "Fjern",
+  "instead": "Sig det i stedet"
+}

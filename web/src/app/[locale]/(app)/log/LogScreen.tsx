@@ -48,6 +48,7 @@ export function LogScreen(props: LogScreenProps) {
   const phone = usePhoneView("entry");
   const controller = useLogController({
     spaceId: props.spaceId,
+    simpleMode: props.simpleMode,
     locale: props.locale,
     initialQuery: props.initialQuery,
     initialBarcode: props.initialBarcode,

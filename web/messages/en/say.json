@@ -1,0 +1,21 @@
+{
+  "title": "Say it",
+  "back": "Back",
+  "microphone": "Use voice",
+  "listening": "Listening …",
+  "voiceNotice": "Your browser recognises speech, not Frejsi.",
+  "voiceUnavailable": "Voice is unavailable right now. You can type instead.",
+  "field": "Type what is being eaten",
+  "placeholder": "Try 'two slices of rye bread with cheese'",
+  "find": "Find the food",
+  "add": "Add to the meal",
+  "unavailable": "AI help is unavailable right now",
+  "estimate": "{name} · approx. {carbs} g",
+  "uncertain": "uncertain",
+  "guess": "An estimate · not checked",
+  "unmatched": "Not found · choose yourself",
+  "grams": "Weight (g)",
+  "carbs": "Carbs (g)",
+  "remove": "Remove",
+  "instead": "Say it instead"
+}

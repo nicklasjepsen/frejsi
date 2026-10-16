@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { useState } from "react";
 
+import { SayItSheet } from "@/components/say/SayItSheet";
 import { FoodPhoto } from "@/components/food/FoodPhoto";
 import { PhotoTile } from "@/components/food/PhotoTile";
 import { SearchField } from "@/components/food/SearchField";
@@ -41,17 +42,40 @@ type Props = LogScreenProps & { controller: LogController; phone: PhoneViewState
 /** Log-Telefon, Log-Portioner and the scanner, under 1280 px. */
 export function PhoneLog(props: Props) {
   const { controller, phone } = props;
-  if (controller.manual) return <ManualView {...props} />;
-  switch (phone.view) {
-    case "confirm":
-      return <ConfirmView {...props} />;
-    case "library":
-      return <LibraryView {...props} />;
-    case "typeBarcode":
-      return <TypeBarcodeView {...props} />;
-    default:
-      return <EntryView {...props} />;
-  }
+  const content = controller.manual ? (
+    <ManualView {...props} />
+  ) : phone.view === "confirm" ? (
+    <ConfirmView {...props} />
+  ) : phone.view === "library" ? (
+    <LibraryView {...props} />
+  ) : phone.view === "typeBarcode" ? (
+    <TypeBarcodeView {...props} />
+  ) : (
+    <EntryView {...props} />
+  );
+  return (
+    <>
+      {controller.sayEnabled && (
+        <div style={{ display: controller.sayOpen ? "contents" : "none" }}>
+          <div className={styles.phone}>
+            <SayItSheet
+              active={controller.sayOpen}
+              spaceId={props.spaceId}
+              locale={props.locale}
+              onClose={controller.closeSay}
+              onAdd={controller.addParsed}
+              onSearch={(query) => {
+                controller.setQuery(query);
+                controller.closeSay();
+                phone.setView("entry");
+              }}
+            />
+          </div>
+        </div>
+      )}
+      {!controller.sayOpen && content}
+    </>
+  );
 }
 
 function EntryView({ controller, phone, locale }: Props) {
@@ -69,6 +93,7 @@ function EntryView({ controller, phone, locale }: Props) {
         </Notice>
       )}
       <EntryTiles
+        onSay={controller.sayEnabled ? controller.openSay : undefined}
         onScan={() => {
           phone.setCameraDenied(false);
           phone.setView("scan");

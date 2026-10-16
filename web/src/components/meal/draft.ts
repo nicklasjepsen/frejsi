@@ -10,6 +10,8 @@ export type Choice = { portion: number } | { grams: number };
 
 export interface DraftItem {
   key: string;
+  approx?: true;
+  confidence?: "low" | "medium" | "high";
   name: string;
   /** The library food; for a stored item, null until it is found in the library again. */
   food: FoodView | null;

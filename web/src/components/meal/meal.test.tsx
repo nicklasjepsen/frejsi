@@ -66,7 +66,19 @@ const response: LookupResponse = {
 };
 
 describe("EntryTiles", () => {
-  it("draws Scan and Vælg, and no voice tile until v0.4.0", () => {
+  it("draws three entry tiles and opens Say when AI is enabled", () => {
+    const say = vi.fn();
+    mount(<EntryTiles onScan={vi.fn()} onPick={vi.fn()} onSay={say} />);
+    expect(screen.getAllByRole("button").map((button) => button.textContent)).toEqual([
+      "Scan",
+      "Sig det",
+      "Vælg",
+    ]);
+    fireEvent.click(screen.getByRole("button", { name: "Sig det" }));
+    expect(say).toHaveBeenCalledOnce();
+  });
+
+  it("draws Scan and Vælg when AI is unavailable", () => {
     const scan = vi.fn();
     const pick = vi.fn();
     mount(<EntryTiles onScan={scan} onPick={pick} />);

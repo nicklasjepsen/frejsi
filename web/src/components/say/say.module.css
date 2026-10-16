@@ -1,0 +1,144 @@
+.sheet[hidden] {
+  display: none;
+}
+.sheet {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 20px;
+  min-width: 0;
+  border-radius: var(--radius-card);
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--hairline);
+  box-shadow: var(--card-shadow);
+}
+.header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.header h2 {
+  margin: 0;
+  font: 600 24px/1.2 var(--font-display-stack);
+}
+.back {
+  width: 44px;
+  height: 44px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--surface-sunken);
+  color: var(--text);
+  font-size: 24px;
+  cursor: pointer;
+}
+.mic {
+  display: grid;
+  place-items: center;
+  width: 58px;
+  height: 58px;
+  border-radius: 50%;
+  border: 2px solid var(--hairline);
+  background: var(--surface-sunken);
+  color: var(--accent-strong);
+  cursor: pointer;
+}
+.mic[aria-pressed="true"] {
+  background: var(--accent-tint);
+  border-color: var(--accent-base);
+}
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-weight: 700;
+}
+.field textarea {
+  width: 100%;
+  box-sizing: border-box;
+  min-height: 100px;
+  padding: 12px;
+  border-radius: 16px;
+  border: 1px solid var(--hairline);
+  background: var(--surface-input);
+  color: var(--text);
+  font: inherit;
+  resize: vertical;
+}
+.parsed {
+  border: 0;
+  padding: 0;
+  margin: 0;
+  min-width: 0;
+}
+.sheet form,
+.parsed {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.row {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 16px 0;
+  border-bottom: 1px solid var(--hairline);
+}
+.row h3 {
+  margin: 0;
+  font: 600 19px/1.2 var(--font-display-stack);
+}
+.muted {
+  color: var(--text-muted);
+  font-size: 12px;
+  margin: 4px 0;
+}
+.guess {
+  margin: 0;
+  color: var(--unverified-fg);
+  font-size: 12px;
+}
+.amounts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  font-variant-numeric: tabular-nums;
+}
+.amounts > * {
+  flex: 1 1 100px;
+  min-width: 0;
+}
+.photos {
+  border: 0;
+  padding: 0;
+  margin: 0;
+  min-width: 0;
+}
+.remove,
+.unmatched {
+  min-height: 44px;
+  border: 1px solid var(--hairline);
+  border-radius: 12px;
+  padding: 8px 12px;
+  background: var(--surface-sunken);
+  color: var(--text);
+  font: inherit;
+  cursor: pointer;
+}
+.sheet button:focus-visible,
+.sheet textarea:focus-visible {
+  outline: 2px solid var(--accent-base);
+  outline-offset: 3px;
+}
+.mode {
+  min-height: 40px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+@media (min-width: 1280px) {
+  .sheet {
+    padding: 24px;
+  }
+}

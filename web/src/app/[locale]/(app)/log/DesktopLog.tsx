@@ -3,6 +3,9 @@ import type { FoodView } from "@frejsi/shared/schemas/food";
 import { useLocale, useTranslations } from "next-intl";
 import { useEffect, useState, type KeyboardEvent } from "react";
 
+import { SayItSheet } from "@/components/say/SayItSheet";
+import { MicIcon } from "@/components/say/MicButton";
+import sayStyles from "@/components/say/say.module.css";
 import { FoodPhoto } from "@/components/food/FoodPhoto";
 import { SearchField } from "@/components/food/SearchField";
 import { GlucoseValue } from "@/components/glucose/GlucoseValue";
@@ -48,6 +51,7 @@ function HeaderGlucose({ spaceId }: { spaceId: string }) {
 /** Log-Desktop at 1280 px: search and results on the left, the meal on the right. */
 export function DesktopLog({ controller, spaceId, timeZone, userName, simpleMode }: Props) {
   const t = useTranslations("log");
+  const say = useTranslations("say");
   const errors = useTranslations("errors.api");
   const locale = useLocale();
   const online = useOnline();
@@ -159,63 +163,89 @@ export function DesktopLog({ controller, spaceId, timeZone, userName, simpleMode
           </div>
           {controller.lookupFailed && <p role="alert">{errors("lookup-unavailable")}</p>}
           {controller.pickFailed && <p role="alert">{t("manual.failed")}</p>}
-          {controller.manual ? (
-            <ManualFoodForm
-              initialName={controller.manual.name}
-              barcode={controller.manual.barcode}
-              busy={controller.manualBusy}
-              failed={controller.manualFailed}
-              onCreate={(request) => void controller.createManual(request)}
-              onCancel={controller.closeManual}
-            />
-          ) : response ? (
-            <LookupResults
-              desktop
-              response={response}
-              query={controller.query}
-              highlighted={highlighted}
-              onPick={(result) => void controller.pick(result)}
-              onManual={() => {
-                controller.openManual(response.manual.name ?? controller.query.trim());
+          {!controller.sayOpen && (controller.sayEnabled || (!response && !controller.manual)) && (
+            <div className={styles.chips} role="group">
+              {!response && !controller.manual && (
+                <>
+                  <Chip
+                    pressed={mode === "favourites"}
+                    onClick={() => {
+                      setMode("favourites");
+                    }}
+                  >
+                    {t("favourites")}
+                  </Chip>
+                  <Chip
+                    pressed={mode === "recent"}
+                    onClick={() => {
+                      setMode("recent");
+                    }}
+                  >
+                    {t("recent")}
+                  </Chip>
+                </>
+              )}
+              {controller.sayEnabled && (
+                <Chip className={sayStyles.mode} onClick={controller.openSay}>
+                  <MicIcon />
+                  {say("instead")}
+                </Chip>
+              )}
+            </div>
+          )}
+          {controller.sayEnabled && (
+            <SayItSheet
+              active={controller.sayOpen}
+              spaceId={spaceId}
+              locale={locale}
+              onClose={controller.closeSay}
+              onAdd={controller.addParsed}
+              onSearch={(query) => {
+                controller.setQuery(query);
+                controller.closeSay();
               }}
             />
-          ) : (
-            <>
-              <div className={styles.chips} role="group">
-                <Chip
-                  pressed={mode === "favourites"}
-                  onClick={() => {
-                    setMode("favourites");
-                  }}
-                >
-                  {t("favourites")}
-                </Chip>
-                <Chip
-                  pressed={mode === "recent"}
-                  onClick={() => {
-                    setMode("recent");
-                  }}
-                >
-                  {t("recent")}
-                </Chip>
-              </div>
-              <ul className={styles.list} role="list" data-testid="chip-foods">
-                {chipFoods.map((food) => (
-                  <li key={food.id}>
-                    <ListRow
-                      title={food.name}
-                      verified={food.verified}
-                      secondary={line(food)}
-                      photo={<FoodPhoto src={food.photo?.thumbUrl} />}
-                      onClick={() => {
-                        controller.addToMeal(food);
-                      }}
-                    />
-                  </li>
-                ))}
-              </ul>
-            </>
           )}
+          {!controller.sayOpen &&
+            (controller.manual ? (
+              <ManualFoodForm
+                initialName={controller.manual.name}
+                barcode={controller.manual.barcode}
+                busy={controller.manualBusy}
+                failed={controller.manualFailed}
+                onCreate={(request) => void controller.createManual(request)}
+                onCancel={controller.closeManual}
+              />
+            ) : response ? (
+              <LookupResults
+                desktop
+                response={response}
+                query={controller.query}
+                highlighted={highlighted}
+                onPick={(result) => void controller.pick(result)}
+                onManual={() => {
+                  controller.openManual(response.manual.name ?? controller.query.trim());
+                }}
+              />
+            ) : (
+              <>
+                <ul className={styles.list} role="list" data-testid="chip-foods">
+                  {chipFoods.map((food) => (
+                    <li key={food.id}>
+                      <ListRow
+                        title={food.name}
+                        verified={food.verified}
+                        secondary={line(food)}
+                        photo={<FoodPhoto src={food.photo?.thumbUrl} />}
+                        onClick={() => {
+                          controller.addToMeal(food);
+                        }}
+                      />
+                    </li>
+                  ))}
+                </ul>
+              </>
+            ))}
         </section>
         <section className={styles.mealColumn} aria-labelledby="log-meal-title">
           <div className={styles.mealHead}>

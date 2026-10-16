@@ -3,7 +3,8 @@
   "desktopSubtitle": "{date} · {time}",
   "entry": {
     "scan": "Scan",
-    "pick": "Choose"
+    "pick": "Choose",
+    "say": "Say it"
   },
   "search": {
     "phoneLabel": "Type what is being eaten",

@@ -31,6 +31,7 @@ export function MealItems({
   desktop?: boolean;
 }) {
   const t = useTranslations("log");
+  const say = useTranslations("say");
   const { per100g, format } = useSourceLine();
   return (
     <ul className={styles.items} role="list" data-testid="meal-items">
@@ -58,7 +59,17 @@ export function MealItems({
                 onClick={() => onSelect?.(item.key)}
                 disabled={!onSelect || !item.food}
               >
-                <span className={styles.itemName}>{item.name}</span>
+                <span className={styles.itemName}>
+                  {item.approx
+                    ? say("estimate", { name: item.name, carbs: carbs ?? 0 })
+                    : item.name}
+                </span>
+                {item.approx && (
+                  <span className={styles.itemMeta}>
+                    {say("guess")}
+                    {item.confidence === "low" ? ` · ${say("uncertain")}` : ""}
+                  </span>
+                )}
                 <span className={styles.itemMeta}>
                   {perLine && <span>{perLine}</span>}
                   {item.food && !item.food.verified && <Badge verified={false} />}
