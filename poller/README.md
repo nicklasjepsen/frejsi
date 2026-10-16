@@ -61,14 +61,16 @@ App Insights property (the shared telemetry initializer strips `username` and `p
 
 ## Settings
 
-| Variable                                | Used by | Notes                                                           |
-| --------------------------------------- | ------- | --------------------------------------------------------------- |
-| `DATABASE_URL`                          | both    | Key Vault reference on the Function App                         |
-| `KEY_VAULT_URL`                         | both    | the vault that holds `glucose-<spaceId>`; managed identity      |
-| `WEB_PUBSUB_ENDPOINT`, `WEB_PUBSUB_HUB` | `poll`  | live push through `emit()`; unset means rows only, clients poll |
-| `APPLICATIONINSIGHTS_CONNECTION_STRING` | both    | optional; unset means no telemetry, never a failure             |
-| `APP_VERSION`                           | both    | the release tag, set by `infra/deploy.sh`                       |
-| `FAKE_GLUCOSE_SOURCE`                   | both    | `1` runs the cycle against `FakeGlucoseSource`                  |
+| Variable                                | Used by | Notes                                                                                                                                            |
+| --------------------------------------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `DATABASE_URL`                          | both    | local development and tests; not set on the Function App in Azure                                                                                |
+| `SQL_SERVER_FQDN`, `SQL_DATABASE`       | both    | in Azure the database connection: Entra sign-in as the Function App's managed identity, with no password; used only when `DATABASE_URL` is unset |
+| `AZURE_CLIENT_ID`                       | both    | the client id of that user-assigned identity; `DefaultAzureCredential` uses it for SQL, Key Vault and Web PubSub                                 |
+| `KEY_VAULT_URL`                         | both    | the vault that holds `glucose-<spaceId>`; managed identity                                                                                       |
+| `WEB_PUBSUB_ENDPOINT`, `WEB_PUBSUB_HUB` | `poll`  | live push through `emit()`; unset means rows only, clients poll                                                                                  |
+| `APPLICATIONINSIGHTS_CONNECTION_STRING` | both    | optional; unset means no telemetry, never a failure                                                                                              |
+| `APP_VERSION`                           | both    | the release tag, set by `infra/deploy.sh`                                                                                                        |
+| `FAKE_GLUCOSE_SOURCE`                   | both    | `1` runs the cycle against `FakeGlucoseSource`                                                                                                   |
 
 `local.settings.example.json` has the local shape; copy it to `local.settings.json` and fill in your
 own values. That file holds a connection string and is not in the repo's `.gitignore`: never stage
