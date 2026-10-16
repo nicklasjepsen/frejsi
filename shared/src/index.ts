@@ -109,3 +109,4 @@ export {
   type StoreImportDeps,
   type StoredImport,
 } from "./glucose/import/index";
+export { Prisma } from "@prisma/client";

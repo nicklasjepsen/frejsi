@@ -320,3 +320,32 @@
   gap: 10px;
   flex-wrap: wrap;
 }
+
+.estimateBadge {
+  font-weight: 700;
+  display: inline-flex;
+  width: fit-content;
+  padding: 3px 8px;
+  border-radius: 999px;
+  font-size: 12px;
+  background: var(--unverified-bg);
+  color: var(--unverified-fg);
+  border: 1px solid var(--unverified-fg);
+}
+
+.cellFood {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.estimateLine {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.askedMeta {
+  color: var(--text-muted);
+  font-size: 12px;
+}

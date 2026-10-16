@@ -1,3 +1,4 @@
+import { mergeSemantic } from "../ai/search/rank";
 import type { SessionContext } from "../schemas/auth";
 import {
   FoodCandidate,
@@ -9,13 +10,15 @@ import {
   type LookupResult,
 } from "../schemas/food";
 import type { Locale } from "../schemas/settings";
-import type { FoodRepository, FoodSource, FoodSourceResult } from "./types";
+import type { FoodRepository, FoodSource, FoodSourceResult, SearchEmbed } from "./types";
 
 export interface LookupOptions {
   spaceId: string;
   session: Pick<SessionContext, "simpleMode">;
   query: { q: string; remote?: boolean } | { barcode: string };
   locale: Locale;
+  embed?: SearchEmbed | null;
+  photo?: (key: string) => Promise<NonNullable<FoodView["photo"]>>;
 }
 
 function candidateFromRow(row: Food): FoodCandidate {
@@ -92,22 +95,54 @@ export async function lookup(
   const query = LookupQuery.parse(options.query);
   const { spaceId, session, locale } = options;
   const libraryOptions = { verifiedOnly: session.simpleMode };
-  const library =
+  let library =
     "barcode" in query
       ? await repo.findLibraryByBarcode(spaceId, query.barcode, libraryOptions)
       : await repo.searchLibrary(spaceId, query.q, libraryOptions);
   const excluded = library.map((row) => row.sourceRef);
-  const cache = session.simpleMode
+  let cache = session.simpleMode
     ? []
     : "barcode" in query
       ? await repo.findCacheByBarcode(query.barcode, excluded)
       : await repo.searchCache(query.q, excluded);
+  const statuses: Record<string, FoodSourceStatus> = {};
+  if (options.embed !== undefined) {
+    statuses.semantic = "skipped";
+    if (options.embed && "q" in query && query.remote && query.q.length >= 3) {
+      const embedding = await options.embed(query.q).catch(() => null);
+      if (embedding) {
+        const [own, shared] = await Promise.all([
+          repo.searchLibrarySemantic(
+            spaceId,
+            embedding.vector,
+            embedding.model,
+            20,
+            libraryOptions,
+          ),
+          session.simpleMode ? [] : repo.searchCacheSemantic(embedding.vector, embedding.model, 10),
+        ]);
+        library = mergeSemantic(library, own);
+        const ownedRefs = new Set(library.map((food) => food.sourceRef));
+        cache = mergeSemantic(cache, shared).filter((food) => !ownedRefs.has(food.sourceRef));
+        statuses.semantic = "ok";
+      }
+    }
+  }
   const results: LookupResult[] = [
-    ...library.map(libraryResult),
+    ...(await Promise.all(
+      library.map(async (row) => {
+        const result = libraryResult(row);
+        if (row.photoKey && options.photo)
+          result.food = FoodView.parse({
+            ...result.food,
+            photo: await options.photo(row.photoKey),
+          });
+        return result;
+      }),
+    )),
     ...cache.map((row) => ({ source: "cache", verified: false, food: candidateFromRow(row) })),
   ];
   const seen = new Set([...library, ...cache].map((row) => row.sourceRef));
-  const statuses: Record<string, FoodSourceStatus> = {};
   const replies = await Promise.all(
     sources.map(async (source) => {
       const skipped =

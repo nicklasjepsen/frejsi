@@ -104,12 +104,13 @@ const one = (spaceId: string, foodId: string) => `${foods(spaceId)}/${encodeURIC
 export const libraryApi = {
   list: async (
     spaceId: string,
-    query: { filter: LibraryFilter; q: string },
+    query: { filter: LibraryFilter; q: string; mode?: "keyword" | "semantic" },
     signal?: AbortSignal,
   ): Promise<FoodList> => {
     const params = new URLSearchParams({ filter: query.filter });
     const q = searchText(query.q);
     if (q) params.set("q", q);
+    if (query.mode === "semantic") params.set("mode", "semantic");
     return callJson(
       `${foods(spaceId)}?${params.toString()}`,
       { method: "GET", ...(signal ? { signal } : {}) },

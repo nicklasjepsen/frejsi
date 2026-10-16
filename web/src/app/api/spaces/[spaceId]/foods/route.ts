@@ -8,7 +8,11 @@ export const GET = foodRoute("foods.list", async (request, context) => {
   const result = await listFoods(
     context.spaceId,
     context.session,
-    { q: query.get("q") ?? "", filter: query.get("filter") ?? "all" },
+    {
+      q: query.get("q") ?? "",
+      filter: query.get("filter") ?? "all",
+      mode: query.get("mode") ?? "keyword",
+    },
     context.deps,
   );
   context.count = result.foods.length;

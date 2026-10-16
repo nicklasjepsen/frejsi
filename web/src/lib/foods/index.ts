@@ -1,3 +1,4 @@
+import { mergeSemantic } from "@frejsi/shared/ai/search/rank";
 import { randomUUID } from "node:crypto";
 import { z } from "zod";
 import {
@@ -5,8 +6,9 @@ import {
   CreateFoodRequest,
   Food,
   FoodView,
-  HttpError,
+  Prisma,
   PrismaFoodRepository,
+  HttpError,
   UpdateFoodRequest,
   VerifyFoodsRequest,
   carbsFor,
@@ -114,6 +116,7 @@ async function owned(
   return row;
 }
 const listQuery = z.strictObject({
+  mode: z.enum(["keyword", "semantic"]).default("keyword"),
   q: z.string().trim().max(80).default(""),
   filter: z
     .string()
@@ -123,11 +126,11 @@ const listQuery = z.strictObject({
 export async function listFoods(
   spaceId: string,
   session: SessionContext,
-  query: { q?: string; filter?: string } = {},
+  query: { q?: string; filter?: string; mode?: string } = {},
   input: FoodDeps = {},
 ) {
   authorize(spaceId, session);
-  const { q, filter } = parse(listQuery, query);
+  const { q, filter, mode } = parse(listQuery, query);
   const deps = resolveFoods(input);
   const words = foldForSearch(q).split(/\s+/).filter(Boolean);
   const rows = await deps.db.food.findMany({
@@ -174,9 +177,29 @@ export async function listFoods(
     [...keys].map((key) => [key, rows.filter((row) => selected(row, key)).length]),
   );
   // Counts describe the visible library, allowing the UI to distinguish no matches from no foods.
-  const filtered = rows.filter(
+  let filtered = rows.filter(
     (row) => selected(row, filter) && words.every((word) => row.nameSearch.includes(word)),
   );
+  if (mode === "semantic" && q.length >= 3) {
+    const embed = await deps.searchEmbedding(spaceId, session);
+    const embedding = await embed?.(q);
+    if (embedding) {
+      const hits = await deps.repo.searchLibrarySemantic(
+        spaceId,
+        embedding.vector,
+        embedding.model,
+        20,
+        { verifiedOnly: session.simpleMode },
+      );
+      filtered = mergeSemantic(
+        filtered,
+        hits.flatMap(({ food, distance }) => {
+          const row = rows.find((row) => row.id === food.id);
+          return row && selected(row, filter) ? [{ food: row, distance }] : [];
+        }),
+      );
+    }
+  }
   if (filter === "recent")
     filtered.sort((a, b) => recentIds.indexOf(a.id) - recentIds.indexOf(b.id));
   return { foods: await viewsOf(filtered, deps), counts };
@@ -362,9 +385,18 @@ export async function updateFood(
       (fields.carbsPer100g ?? null) !== (current.carbsPer100g ?? null) ||
       fields.barcode !== current.barcode ||
       JSON.stringify(fields.portions) !== JSON.stringify(current.portions);
+    if (fields.name !== current.name) {
+      await tx.$executeRaw(
+        Prisma.sql`UPDATE [Food] SET [embedding] = NULL, [embeddingModel] = NULL WHERE [id] = ${id} AND [spaceId] = ${spaceId}`,
+      );
+    }
     const food = await tx.food.update({
       where: { id, spaceId },
       data: {
+        ...(fields.name !== current.name &&
+        deps.sources.some((source) => source.kind === "remote" && source.id === current.origin)
+          ? { sourceName: current.sourceName ?? current.name }
+          : {}),
         ...(contentChanged ? { verified: false, verifiedBy: null, verifiedAt: null } : {}),
         name: fields.name,
         favourite: fields.favourite ?? false,

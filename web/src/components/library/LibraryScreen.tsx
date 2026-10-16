@@ -141,7 +141,7 @@ function PhoneLibrary({
         placeholder={t("search")}
         value={library.query}
         onChange={library.setQuery}
-        onSubmit={library.setQuery}
+        onSubmit={library.submitQuery}
       />
       <div className={styles.chipScroll}>
         <LibraryFilters
@@ -164,11 +164,16 @@ function PhoneLibrary({
             <li key={food.id} data-testid="food-row">
               <ListRow
                 variant="food"
-                title={food.name}
-                verified={food.verified}
+                title={text.title(food)}
+                verified={food.verified || food.origin === "ai"}
                 href={localeHref(locale, `/library/${encodeURIComponent(food.id)}`)}
                 photo={<FoodPhoto src={food.photo?.thumbUrl} size={44} />}
-                secondary={text.line(food)}
+                secondary={
+                  <span className={styles.estimateLine}>
+                    <span>{text.line(food)}</span>
+                    {food.origin === "ai" && !food.verified && <EstimateBadge />}
+                  </span>
+                }
                 trailing={
                   <VerifyCircle
                     name={food.name}
@@ -294,17 +299,23 @@ function DesktopLibrary({
       key: "food",
       header: t("columns.food"),
       render: (food) => (
-        <button
-          type="button"
-          className={styles.cellName}
-          aria-label={t("edit", { name: food.name })}
-          tabIndex={-1}
-          onClick={() => {
-            setEditing({ kind: "edit", id: food.id });
-          }}
-        >
-          {food.name}
-        </button>
+        <div className={styles.cellFood}>
+          {food.origin === "ai" && <FoodPhoto src={food.photo?.thumbUrl} size={44} />}
+          <div>
+            <button
+              type="button"
+              className={styles.cellName}
+              aria-label={t("edit", { name: food.name })}
+              tabIndex={-1}
+              onClick={() => {
+                setEditing({ kind: "edit", id: food.id });
+              }}
+            >
+              {food.name}
+            </button>
+            {food.origin === "ai" && <div className={styles.askedMeta}>{text.asked(food)}</div>}
+          </div>
+        </div>
       ),
     },
     {
@@ -313,14 +324,21 @@ function DesktopLibrary({
       render: (food) =>
         food.carbsPer100g == null
           ? "–"
-          : t("gramsCell", { amount: text.number(food.carbsPer100g) }),
+          : t(food.origin === "ai" && !food.verified ? "estimate.gramsCell" : "gramsCell", {
+              amount: text.number(food.carbsPer100g),
+            }),
     },
     { key: "portions", header: t("columns.portions"), render: (food) => text.portions(food) },
     { key: "source", header: t("columns.source"), render: (food) => text.sourceName(food.origin) },
     {
       key: "status",
       header: t("columns.status"),
-      render: (food) => <Badge verified={food.verified} />,
+      render: (food) =>
+        food.origin === "ai" && !food.verified ? (
+          <EstimateBadge desktop />
+        ) : (
+          <Badge verified={food.verified} />
+        ),
     },
   ];
 
@@ -340,7 +358,7 @@ function DesktopLibrary({
             shortcut="/"
             value={library.query}
             onChange={library.setQuery}
-            onSubmit={library.setQuery}
+            onSubmit={library.submitQuery}
           />
           <Button
             onClick={() => {
@@ -409,4 +427,9 @@ function DesktopLibrary({
       </div>
     </section>
   );
+}
+
+function EstimateBadge({ desktop = false }: { desktop?: boolean }) {
+  const t = useTranslations("library.estimate");
+  return <span className={styles.estimateBadge}>{t(desktop ? "status" : "badge")}</span>;
 }
