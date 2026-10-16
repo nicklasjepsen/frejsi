@@ -504,11 +504,26 @@ test('DEFAULT_LOCALE, FOOD_SOURCES and OFF_COUNTRY reach the web settings only w
   assert.equal(swa.DEFAULT_LOCALE, 'en');
   assert.equal(swa.FOOD_SOURCES, 'off,frida');
   assert.equal(swa.OFF_COUNTRY, 'gb');
+  // The poller's food enrichment reads the same two, so they reach the Function App as well.
+  const fn = JSON.parse(readFileSync(path.join(set.logDir, 'function-ai-settings.json'), 'utf8'));
+  assert.deepEqual(fn, { FOOD_SOURCES: 'off,frida', OFF_COUNTRY: 'gb' });
+  assert.ok(!Object.hasOwn(fn, 'DEFAULT_LOCALE'));
+  assert.ok(!unset.calls.some((c) => /appsettings set .*--settings @/.test(c)), 'nothing to set on the Function App');
   // Only the one that is set.
   const one = runDeploy({ env: { FAKE_EXISTING_SECRETS: existingSecrets, DEFAULT_LOCALE: 'en' } });
   const swaOne = JSON.parse(readFileSync(path.join(one.logDir, 'swa-appsettings.json'), 'utf8')).properties;
   assert.equal(swaOne.DEFAULT_LOCALE, 'en');
   assert.ok(!Object.hasOwn(swaOne, 'FOOD_SOURCES') && !Object.hasOwn(swaOne, 'OFF_COUNTRY'));
+});
+
+test('OFF_CONTRIBUTE_HOST reaches the web settings only when set, so a staging host survives the wholesale PUT', () => {
+  const unset = runDeploy({ env: { FAKE_EXISTING_SECRETS: existingSecrets } });
+  const swaUnset = JSON.parse(readFileSync(path.join(unset.logDir, 'swa-appsettings.json'), 'utf8')).properties;
+  assert.ok(!Object.hasOwn(swaUnset, 'OFF_CONTRIBUTE_HOST'));
+  const set = runDeploy({ env: { FAKE_EXISTING_SECRETS: existingSecrets, OFF_CONTRIBUTE_HOST: 'world.openfoodfacts.net' } });
+  assert.equal(set.status, 0, set.output);
+  const swa = JSON.parse(readFileSync(path.join(set.logDir, 'swa-appsettings.json'), 'utf8')).properties;
+  assert.equal(swa.OFF_CONTRIBUTE_HOST, 'world.openfoodfacts.net');
 });
 
 test('prints nothing secret across the whole run, identity included', () => {

@@ -13,10 +13,10 @@ test('release.yml and preview.yml read the resource group from AZURE_RESOURCE_GR
   }
 });
 
-test('the deploy step hands DEFAULT_LOCALE, FOOD_SOURCES and OFF_COUNTRY to deploy.sh from repository variables', () => {
+test('the deploy step hands DEFAULT_LOCALE, FOOD_SOURCES, OFF_COUNTRY and OFF_CONTRIBUTE_HOST to deploy.sh from repository variables', () => {
   const release = read('release.yml');
   const step = release.slice(release.indexOf('(infra/deploy.sh)'), release.indexOf('run: bash infra/deploy.sh'));
-  for (const name of ['DEFAULT_LOCALE', 'FOOD_SOURCES', 'OFF_COUNTRY']) {
+  for (const name of ['DEFAULT_LOCALE', 'FOOD_SOURCES', 'OFF_COUNTRY', 'OFF_CONTRIBUTE_HOST']) {
     assert.match(step, new RegExp(`^ {10}${name}: \\$\\{\\{ vars\\.${name} \\}\\}$`, 'm'), name);
   }
 });

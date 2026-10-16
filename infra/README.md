@@ -337,14 +337,15 @@ az keyvault secret set --vault-name <vault> -n off-contribute-user --value <acco
 az keyvault secret set --vault-name <vault> -n off-contribute-password --file <file with the password>
 ```
 
-Three repository variables are optional deployment settings. `release.yml` hands them to `deploy.sh`,
+Four repository variables are optional deployment settings. `release.yml` hands them to `deploy.sh`,
 which writes each to the web app's settings only when it is set (an unset or empty one is left out):
 
 | Repository variable | App setting | Meaning |
 |---|---|---|
 | `DEFAULT_LOCALE` | `DEFAULT_LOCALE` | `da` or `en`: the first language for a visitor with no cookie and no `Accept-Language`, and the locale of a new user. Unset or anything else means `da` |
-| `FOOD_SOURCES` | `FOOD_SOURCES` | the food source plugins switched on, comma separated by id (`off`, `frida`) |
-| `OFF_COUNTRY` | `OFF_COUNTRY` | the Open Food Facts country, a two-letter code such as `dk`; unset means `world` |
+| `FOOD_SOURCES` | `FOOD_SOURCES` (web app and Function App) | the food source plugins switched on, comma separated by id (`off`, `frida`) |
+| `OFF_COUNTRY` | `OFF_COUNTRY` (web app and Function App) | the Open Food Facts country, a two-letter code such as `dk`; unset means `world` |
+| `OFF_CONTRIBUTE_HOST` | `OFF_CONTRIBUTE_HOST` | optional: the Open Food Facts host contributions go to, for example `world.openfoodfacts.net` for a first try on staging; unset means the production host |
 
 `AZURE_RESOURCE_GROUP` is a fourth optional repository variable: `release.yml` and `preview.yml`
 read it as `vars.AZURE_RESOURCE_GROUP || 'frejsi'`, so a fork can name its resource group. Create the
