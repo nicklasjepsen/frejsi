@@ -23,8 +23,8 @@ error codes rather than generated text.
 History reads the weekly cache without calling a provider. On phones the week card shows the summary
 and questions; desktop shows questions only. Owners and carers can edit and copy the questions.
 Edits remain unverified and emit `insight.updated`; generated rows emit `insight.created`. The store
-is the only production writer of the existing Insight model. Unsafe questions are dropped and counted;
-an unsafe summary is retried once, then rejected without a stored row.
+is the only production writer of the existing Insight model. Unsafe questions and questions with unsupported numerals are dropped and counted;
+a summary with unsafe wording or unsupported numerals is retried once, then rejected without a stored row.
 
 All generated strings and edited questions pass the generated-text vocabulary guard. Tests use
 fictional data and `FakeAiProvider` behind the same capped interface used in production. No provider

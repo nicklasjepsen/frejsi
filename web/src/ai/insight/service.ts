@@ -8,6 +8,7 @@ import type { InsightRepository } from "@frejsi/shared/insights/types";
 import { aiForSpace } from "../provider";
 export interface InsightDeps {
   repo: InsightRepository;
+  providerName?: string;
   emit: EmitFn;
   provider: (spaceId: string, session: SessionContext) => AiProvider | Promise<AiProvider>;
 }
@@ -67,7 +68,7 @@ export async function mealInsight(
           text: result.text,
           questions: [],
           rejectedCount: 0,
-          provider: provider.id,
+          provider: deps.providerName ?? provider.id,
           model: result.model,
         },
         mealId,
