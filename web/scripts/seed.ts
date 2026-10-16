@@ -506,6 +506,27 @@ export function deviceInvite(
   );
 }
 
+/** Arne's own add-a-device link, as the bootstrap makes the first owner's: he is the only owner. */
+export function arneInvite(
+  space: SeededSpace,
+  options: Pick<SeedOptions, "db" | "now"> = {},
+): Promise<CreatedInvite> {
+  return createInvite(
+    {
+      spaceId: space.arnesRoom.spaceId,
+      role: SEED_ARNE.role,
+      name: SEED_ARNE.name,
+      forUserId: space.arnesRoom.arneUserId,
+      createdBy: space.arnesRoom.arneUserId,
+    },
+    {
+      db: options.db ?? prisma,
+      sink: new MemoryEventSink(),
+      ...(options.now ? { now: options.now } : {}),
+    },
+  );
+}
+
 async function main(): Promise<void> {
   assertNotProduction();
   // The links point at the local app unless told otherwise.
@@ -522,6 +543,9 @@ async function main(): Promise<void> {
     const mode = person.simpleMode ? ", simpleMode" : "";
     lines.push(`  ${person.name} (${person.role}${mode}): ${url}`);
   }
+  lines.push(
+    `  ${SEED_ARNE.name} (${SEED_ARNE.role}, ${SEED_ARNES_ROOM.name}): ${(await arneInvite(space)).url}`,
+  );
   process.stdout.write(`${lines.join("\n")}\n`);
 }
 

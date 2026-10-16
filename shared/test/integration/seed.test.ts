@@ -9,7 +9,7 @@ let db: PrismaClient;
 interface Seeded {
   spaceId: string;
   readings: number;
-  arnesRoom: { spaceId: string; readings: number };
+  arnesRoom: { spaceId: string; readings: number; arneUserId: string };
 }
 let seeded: Seeded;
 const NOW = new Date("2026-10-15T13:00:00Z");
@@ -194,4 +194,14 @@ it("seeds Arnes rum: a manual source, Mette as carer, three finger-pricks each w
     new Set(readings.map((r) => r.ts.toISOString())),
   );
   expect(events.filter((e) => e.type === "member.joined")).toHaveLength(2);
+
+  // Arne can sign in: the seed prints an owner invitation for him, as for the other people.
+  const { arneInvite } = (await import(SEED)) as {
+    arneInvite: (space: Seeded, options: { db: PrismaClient }) => Promise<{ url: string }>;
+  };
+  const invite = await arneInvite(alma, { db });
+  expect(invite.url).toContain("/invite/");
+  const rows = await db.invite.findMany({ where: { spaceId: room.spaceId } });
+  expect(rows).toHaveLength(1);
+  expect(rows[0]).toMatchObject({ role: "owner", name: "Arne", forUserId: room.arneUserId });
 });
