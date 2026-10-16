@@ -1,0 +1,194 @@
+[
+  {
+    "source": "library",
+    "verified": false,
+    "food": {
+      "id": "fictional-food-0",
+      "name": "Rugbrød",
+      "origin": "family",
+      "verified": false,
+      "favourite": false,
+      "createdAt": "2026-10-12T10:00:00.000Z",
+      "updatedAt": "2026-10-12T10:00:00.000Z",
+      "portions": [
+        {
+          "label": "1 skive",
+          "carbs": 18,
+          "grams": 45
+        },
+        {
+          "label": "2 skiver",
+          "carbs": 36,
+          "grams": 90
+        }
+      ],
+      "carbsPer100g": 40
+    }
+  },
+  {
+    "source": "library",
+    "verified": false,
+    "food": {
+      "id": "fictional-food-1",
+      "name": "Kartoffel kogt",
+      "origin": "family",
+      "verified": false,
+      "favourite": false,
+      "createdAt": "2026-10-12T10:00:00.000Z",
+      "updatedAt": "2026-10-12T10:00:00.000Z",
+      "portions": [
+        {
+          "label": "1 portion",
+          "carbs": 17,
+          "grams": 100
+        }
+      ],
+      "carbsPer100g": 17
+    }
+  },
+  {
+    "source": "library",
+    "verified": false,
+    "food": {
+      "id": "fictional-food-2",
+      "name": "Pasta bolognese",
+      "origin": "family",
+      "verified": false,
+      "favourite": false,
+      "createdAt": "2026-10-12T10:00:00.000Z",
+      "updatedAt": "2026-10-12T10:00:00.000Z",
+      "portions": [
+        {
+          "label": "1 portion",
+          "carbs": 55
+        }
+      ]
+    }
+  },
+  {
+    "source": "library",
+    "verified": false,
+    "food": {
+      "id": "fictional-food-3",
+      "name": "Min madpakke",
+      "origin": "family",
+      "verified": false,
+      "favourite": false,
+      "createdAt": "2026-10-12T10:00:00.000Z",
+      "updatedAt": "2026-10-12T10:00:00.000Z",
+      "portions": [
+        {
+          "label": "1 madpakke",
+          "carbs": 42
+        }
+      ]
+    }
+  },
+  {
+    "source": "library",
+    "verified": false,
+    "food": {
+      "id": "fictional-food-4",
+      "name": "Havregrød",
+      "origin": "family",
+      "verified": false,
+      "favourite": false,
+      "createdAt": "2026-10-12T10:00:00.000Z",
+      "updatedAt": "2026-10-12T10:00:00.000Z",
+      "portions": [
+        {
+          "label": "1 skål",
+          "carbs": 24
+        }
+      ]
+    }
+  },
+  {
+    "source": "library",
+    "verified": false,
+    "food": {
+      "id": "fictional-food-5",
+      "name": "Rugbrød med ost",
+      "origin": "family",
+      "verified": false,
+      "favourite": false,
+      "createdAt": "2026-10-12T10:00:00.000Z",
+      "updatedAt": "2026-10-12T10:00:00.000Z",
+      "portions": [
+        {
+          "label": "1 skive",
+          "carbs": 18
+        },
+        {
+          "label": "2 skiver",
+          "carbs": 36
+        }
+      ]
+    }
+  },
+  {
+    "source": "library",
+    "verified": false,
+    "food": {
+      "id": "fictional-food-6",
+      "name": "Æble",
+      "origin": "family",
+      "verified": false,
+      "favourite": false,
+      "createdAt": "2026-10-12T10:00:00.000Z",
+      "updatedAt": "2026-10-12T10:00:00.000Z",
+      "portions": [
+        {
+          "label": "1 stk",
+          "carbs": 14
+        },
+        {
+          "label": "1 mellem",
+          "carbs": 14
+        },
+        {
+          "label": "½ mellem",
+          "carbs": 7
+        }
+      ]
+    }
+  },
+  {
+    "source": "library",
+    "verified": false,
+    "food": {
+      "id": "fictional-food-7",
+      "name": "Banan",
+      "origin": "family",
+      "verified": false,
+      "favourite": false,
+      "createdAt": "2026-10-12T10:00:00.000Z",
+      "updatedAt": "2026-10-12T10:00:00.000Z",
+      "portions": [
+        {
+          "label": "1 stk",
+          "carbs": 23
+        }
+      ]
+    }
+  },
+  {
+    "source": "library",
+    "verified": false,
+    "food": {
+      "id": "fictional-food-8",
+      "name": "Mælk",
+      "origin": "family",
+      "verified": false,
+      "favourite": false,
+      "createdAt": "2026-10-12T10:00:00.000Z",
+      "updatedAt": "2026-10-12T10:00:00.000Z",
+      "portions": [
+        {
+          "label": "1 glas",
+          "carbs": 10
+        }
+      ]
+    }
+  }
+]

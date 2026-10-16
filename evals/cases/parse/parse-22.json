@@ -1,0 +1,14 @@
+{
+  "locale": "da",
+  "id": "parse-22",
+  "kind": "parse",
+  "text": "to skiver rugbrød",
+  "expected": [
+    {
+      "name": "Rugbrød",
+      "portion": "2 skiver",
+      "carbs": 36
+    }
+  ],
+  "unmatched": []
+}

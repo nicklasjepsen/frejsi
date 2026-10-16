@@ -1,0 +1,19 @@
+{
+  "locale": "da",
+  "id": "photo-01",
+  "kind": "photo",
+  "description": "Rugbrød med ost og æble. Fictional plate layout and target masses; replace targets with weighed or label-read values when the owner supplies an image.",
+  "photo": "pending",
+  "items": [
+    {
+      "name": "Rugbrød med ost",
+      "grams": 90,
+      "carbs": 36
+    },
+    {
+      "name": "Æble",
+      "grams": 120,
+      "carbs": 14
+    }
+  ]
+}

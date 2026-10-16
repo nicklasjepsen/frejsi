@@ -407,3 +407,20 @@ limit, while provider invocations cannot. A crash after reservation still consum
 There is no prompt, transcript, image, endpoint, token count or output in a call row. Space data
 writes by the following lanes still go through `emit()`; the new notifications carry identifiers
 only, never insight text or glucose.
+
+### AI evals
+
+Run `pnpm --filter ./evals test` for the always-on recorded fake corpus and optional live evals.
+With no `ANTHROPIC_API_KEY_EVALS` / `ANTHROPIC_API_KEY`, it prints
+`live evals skipped: no ANTHROPIC_API_KEY` and still checks schemas, scores and output safety.
+The dedicated repository secret `ANTHROPIC_API_KEY_EVALS` is mapped to `ANTHROPIC_API_KEY` by
+PR CI; never reuse or print a production key. CI's existing prompt/eval path filter is unchanged.
+`EVALS_SCOPE=pr` (default) runs live text cases except weekly insights and up to ten ready photos;
+`EVALS_SCOPE=release` runs the full live set. The fake set always includes weekly insights.
+A live run has four workers, a hard three-minute budget, a 200-provider-call cap and a separate
+200-HTTP-attempt cap including rate-limit retries. A full run is estimated at approximately $2.
+
+Cases, scores and the initial `baseline: unset` thresholds are documented in `evals/README.md`.
+A missing key and pending photos are the accepted assumptions of #72: the owner supplies plate-only
+photos and weighed targets; the photo threshold is not enforced until twenty images exist.
+After the first live run, record its baseline and tighten thresholds in a reviewed follow-up PR.

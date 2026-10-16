@@ -1,0 +1,14 @@
+{
+  "locale": "da",
+  "id": "parse-15",
+  "kind": "parse",
+  "text": "45 gram rugbrød",
+  "expected": [
+    {
+      "name": "Rugbrød",
+      "grams": 45.0,
+      "carbs": 18.0
+    }
+  ],
+  "unmatched": []
+}

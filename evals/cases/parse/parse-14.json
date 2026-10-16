@@ -1,0 +1,14 @@
+{
+  "locale": "da",
+  "id": "parse-14",
+  "kind": "parse",
+  "text": "et halvt æble",
+  "expected": [
+    {
+      "name": "Æble",
+      "portion": "½ mellem",
+      "carbs": 7
+    }
+  ],
+  "unmatched": []
+}

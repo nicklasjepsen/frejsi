@@ -1,0 +1,19 @@
+{
+  "locale": "da",
+  "id": "photo-02",
+  "kind": "photo",
+  "description": "Havregrød og mælk. Fictional plate layout and target masses; replace targets with weighed or label-read values when the owner supplies an image.",
+  "photo": "pending",
+  "items": [
+    {
+      "name": "Havregrød",
+      "grams": 200,
+      "carbs": 24
+    },
+    {
+      "name": "Mælk",
+      "grams": 200,
+      "carbs": 10
+    }
+  ]
+}

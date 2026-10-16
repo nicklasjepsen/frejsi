@@ -1,0 +1,8 @@
+{
+  "locale": "da",
+  "id": "parse-05",
+  "kind": "parse",
+  "text": "en sky af stjernestøv",
+  "expected": [],
+  "unmatched": ["en sky af stjernestøv"]
+}

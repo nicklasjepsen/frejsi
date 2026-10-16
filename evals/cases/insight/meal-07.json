@@ -1,0 +1,32 @@
+{
+  "locale": "da",
+  "id": "meal-07",
+  "kind": "meal",
+  "input": {
+    "locale": "da",
+    "glucoseUnit": "mmol",
+    "meal": {
+      "title": "Æble",
+      "totalCarbs": 42,
+      "slot": "lunch",
+      "localTime": "12:00"
+    },
+    "stats": {
+      "peak": {
+        "mmol": 9.6,
+        "minutesAfterMeal": 60
+      },
+      "inRange": {
+        "minutes": 150,
+        "coveredMinutes": 180,
+        "windowMinutes": 180,
+        "complete": true,
+        "belowMinutes": 0,
+        "aboveMinutes": 30
+      },
+      "readingCount": 36
+    },
+    "previous": [],
+    "leadLabel": "none"
+  }
+}

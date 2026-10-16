@@ -1,0 +1,11 @@
+{
+  "baseline": "unset",
+  "parseRecall": 0.8,
+  "parsePortions": 0.6,
+  "photoAccuracy": 0.5,
+  "photoMinimum": 20,
+  "normaliseAccuracy": 0.8,
+  "unmatchedAccuracy": 1,
+  "dosingHits": 0,
+  "insightViolations": 0
+}

@@ -1,0 +1,19 @@
+{
+  "locale": "da",
+  "id": "parse-26",
+  "kind": "parse",
+  "text": "havregrød og en banan",
+  "expected": [
+    {
+      "name": "Havregrød",
+      "portion": "1 skål",
+      "carbs": 24
+    },
+    {
+      "name": "Banan",
+      "portion": "1 stk",
+      "carbs": 23
+    }
+  ],
+  "unmatched": []
+}

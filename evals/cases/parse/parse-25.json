@@ -1,0 +1,19 @@
+{
+  "locale": "da",
+  "id": "parse-25",
+  "kind": "parse",
+  "text": "min madpakke og et æble",
+  "expected": [
+    {
+      "name": "Min madpakke",
+      "portion": "1 madpakke",
+      "carbs": 42
+    },
+    {
+      "name": "Æble",
+      "portion": "1 stk",
+      "carbs": 14
+    }
+  ],
+  "unmatched": []
+}

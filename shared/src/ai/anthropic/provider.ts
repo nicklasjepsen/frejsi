@@ -35,6 +35,7 @@ interface Options {
   voyageApiKey?: string | undefined;
   fetch?: typeof globalThis.fetch | undefined;
   logger?: Logger | undefined;
+  timeout?: number | undefined;
 }
 export class AnthropicProvider implements AiProvider {
   readonly id = "anthropic";
@@ -125,7 +126,7 @@ export class AnthropicProvider implements AiProvider {
               }
             : {}),
         },
-        { timeout: deadlines[req.role], maxRetries: 0 },
+        { timeout: this.options.timeout ?? deadlines[req.role], maxRetries: 0 },
       );
       if (response.stop_reason === "refusal") return { kind: "refusal", model };
       const calls = response.content.filter((part) => part.type === "tool_use");

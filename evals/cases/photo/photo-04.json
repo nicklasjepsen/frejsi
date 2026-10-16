@@ -1,0 +1,19 @@
+{
+  "locale": "da",
+  "id": "photo-04",
+  "kind": "photo",
+  "description": "Kartofler og grønt. Fictional plate layout and target masses; replace targets with weighed or label-read values when the owner supplies an image.",
+  "photo": "pending",
+  "items": [
+    {
+      "name": "Kartoffel kogt",
+      "grams": 150,
+      "carbs": 26
+    },
+    {
+      "name": "Grønt",
+      "grams": 100,
+      "carbs": 5
+    }
+  ]
+}

@@ -1,0 +1,19 @@
+{
+  "locale": "da",
+  "id": "parse-27",
+  "kind": "parse",
+  "text": "pasta med kødsovs og mælk",
+  "expected": [
+    {
+      "name": "Pasta bolognese",
+      "portion": "1 portion",
+      "carbs": 55
+    },
+    {
+      "name": "Mælk",
+      "portion": "1 glas",
+      "carbs": 10
+    }
+  ],
+  "unmatched": []
+}

@@ -1,0 +1,14 @@
+{
+  "locale": "da",
+  "id": "parse-23",
+  "kind": "parse",
+  "text": "100 g kartoffel kogt",
+  "expected": [
+    {
+      "name": "Kartoffel kogt",
+      "grams": 100.0,
+      "carbs": 17.0
+    }
+  ],
+  "unmatched": []
+}

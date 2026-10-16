@@ -1,0 +1,14 @@
+{
+  "locale": "da",
+  "id": "parse-08",
+  "kind": "parse",
+  "text": "min madpakke",
+  "expected": [
+    {
+      "name": "Min madpakke",
+      "portion": "1 madpakke",
+      "carbs": 42
+    }
+  ],
+  "unmatched": []
+}

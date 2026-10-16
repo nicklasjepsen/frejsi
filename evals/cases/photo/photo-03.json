@@ -1,0 +1,14 @@
+{
+  "locale": "da",
+  "id": "photo-03",
+  "kind": "photo",
+  "description": "Pasta bolognese. Fictional plate layout and target masses; replace targets with weighed or label-read values when the owner supplies an image.",
+  "photo": "pending",
+  "items": [
+    {
+      "name": "Pasta bolognese",
+      "grams": 300,
+      "carbs": 55
+    }
+  ]
+}

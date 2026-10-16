@@ -1,0 +1,14 @@
+{
+  "locale": "da",
+  "id": "parse-13",
+  "kind": "parse",
+  "text": "pasta bolognese",
+  "expected": [
+    {
+      "name": "Pasta bolognese",
+      "portion": "1 portion",
+      "carbs": 55
+    }
+  ],
+  "unmatched": []
+}
