@@ -585,3 +585,47 @@ it("keeps a human rename's source provenance while the source plugin is disabled
     verified: false,
   });
 });
+
+it("keeps keyword hits before semantic hits in the recent-food filter", async () => {
+  const { Food } = await import("@frejsi/shared/schemas/food");
+  const { MemoryFoodRepository } = await import("@frejsi/shared/food/memory");
+  const { FakeAiProvider } = await import("@frejsi/shared/ai/fake");
+  const { CappedAiProvider } = await import("@frejsi/shared/ai");
+  const { MemoryAiCallRepository } = await import("@frejsi/shared/ai/calls");
+  const { searchEmbed } = await import("@frejsi/shared/ai/search/embed");
+  const vector = [1, ...Array<number>(1023).fill(0)];
+  const foods = [
+    { id: "keyword", name: "Cloud pear", nameSearch: "cloud pear" },
+    { id: "near", name: "Cloud fruit", nameSearch: "cloud fruit" },
+  ].map((food) =>
+    Food.parse({
+      ...food,
+      spaceId: "s1",
+      origin: "family",
+      sourceRef: `family:${food.id}`,
+      carbsPer100g: 10,
+      portions: [],
+      createdAt: T0.toISOString(),
+      updatedAt: T0.toISOString(),
+    }),
+  );
+  for (const food of foods) rig.seed({ id: food.id, name: food.name, nameSearch: food.nameSearch });
+  rig.items.push(
+    { foodId: "keyword", meal: { spaceId: "s1", ts: new Date(T0.getTime() - 60_000) } },
+    { foodId: "near", meal: { spaceId: "s1", ts: T0 } },
+  );
+  const repo = new MemoryFoodRepository(foods);
+  await repo.setEmbeddings(foods.map(({ id }) => ({ id, vector, model: "fixture" })));
+  const provider = new CappedAiProvider(
+    new FakeAiProvider([{ vectors: [vector], model: "fixture" }]),
+    new MemoryAiCallRepository(),
+    { spaceId: "s1", timezone: "UTC" },
+  );
+  const result = await listFoods(
+    "s1",
+    actor,
+    { q: "pear", filter: "recent", mode: "semantic" },
+    { ...rig.deps, repo, searchEmbedding: () => Promise.resolve(searchEmbed(provider, "")) },
+  );
+  expect(result.foods.map((food) => food.id)).toEqual(["keyword", "near"]);
+});
