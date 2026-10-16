@@ -180,18 +180,25 @@ or typed-in finger-prick values. A new food or glucose source for your country i
 
 ## 5. The first release
 
-A fork inherits the upstream tags but not the milestones, and a release is a milestone. Pushing a tag
-fires nothing here, and a brand new tag would skip the Bicep job, because its `infra/` diff against
-the previous tag is empty. So the first release is started by hand:
+A release is a tag plus a milestone with the tag's title, and a fork starts with the upstream's tags
+and none of its milestones. A tag that already exists fires nothing when you "push" it, so the first
+release is started by hand against an existing tag:
 
-1. In the fork create a **milestone** titled exactly like the tag you want to deploy, for example
-   `v0.5.0`. It may be closed; a hand-started run does not check for open issues.
-2. Actions, `release`, **Run workflow** (the `workflow_dispatch` trigger). Enter that tag, and tick the
-   **infra** box.
-3. Approve the `production-infra` environment when the run asks for it. The Bicep job takes about
+1. Pick the tag to deploy: `git ls-remote --tags origin 'v*'` lists what your fork has.
+2. In the fork create a **milestone** titled exactly like that tag. It may be closed; a hand-started
+   run does not check for open issues.
+3. Actions, `release`, **Run workflow** (the `workflow_dispatch` trigger). Enter the tag, and tick the
+   **infra** box. A fork has no earlier release to compare with, so the Bicep job runs anyway; the box
+   is what makes it run again later when only a repository variable changed.
+
+If your fork has no tag at all, create the milestone first and push a tag of your own
+(`git tag v0.1.0 && git push origin v0.1.0`): a new tag starts the release by itself, and on a first
+release the Bicep job runs, so you can skip step 3.
+
+4. Approve the `production-infra` environment when the run asks for it. The Bicep job takes about
    ten minutes. If the `bootstrap-token` secret fails with a 403 on the very first run, that is role
    propagation: the job retries once after a minute.
-4. The deploy job creates the database user and the Key Vault secrets, runs the migrations and
+5. The deploy job creates the database user and the Key Vault secrets, runs the migrations and
    deploys the poller and the web app, then reads `https://<default hostname>/api/health`.
 
 Where the site is: the Static Web App's default hostname, from the portal or
