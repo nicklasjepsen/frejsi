@@ -15,12 +15,18 @@ describe("SessionContext", () => {
     name: "Example Person",
     simpleMode: false,
     accent: "olive",
+    theme: "system",
     locale: "da",
     memberships: [{ spaceId: "s1", role: "carer" }],
   };
 
   it("accepts the shape the layouts and routes read", () => {
     expect(SessionContext.parse(valid)).toEqual(valid);
+  });
+
+  it("carries the theme, so the shell can mirror it into the cookie", () => {
+    expect(SessionContext.safeParse({ ...valid, theme: "dark" }).success).toBe(true);
+    expect(SessionContext.safeParse({ ...valid, theme: "auto" }).success).toBe(false);
   });
 
   it("rejects a membership with an unknown role", () => {

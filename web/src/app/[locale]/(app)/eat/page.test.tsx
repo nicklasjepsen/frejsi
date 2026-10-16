@@ -25,6 +25,7 @@ const alma: SessionContext = {
   name: "Alma",
   simpleMode: true,
   accent: "plum",
+  theme: "system",
   locale: "da",
   memberships: [{ spaceId: "s1", role: "carer" }],
 };

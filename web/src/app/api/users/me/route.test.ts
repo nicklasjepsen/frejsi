@@ -65,7 +65,12 @@ describe("GET /api/users/me", () => {
   it("returns the signed-in user's own settings", async () => {
     const res = await send(GET, request("/api/users/me", { as: "carer" }));
     expect(res.status).toBe(200);
-    expect(await res.json()).toEqual({ locale: "da", simpleMode: false, accent: "olive" });
+    expect(await res.json()).toEqual({
+      locale: "da",
+      simpleMode: false,
+      accent: "olive",
+      theme: "system",
+    });
   });
 
   it("is 403 without a session", async () => {
@@ -86,16 +91,55 @@ describe("PATCH /api/users/me", () => {
       }),
     );
     expect(res.status).toBe(200);
-    expect(await res.json()).toEqual({ locale: "en", simpleMode: true, accent: "sea" });
+    expect(await res.json()).toEqual({
+      locale: "en",
+      simpleMode: true,
+      accent: "sea",
+      theme: "system",
+    });
     expect(fake.rows("user").find((u) => u.id === USERS.carer)).toMatchObject({
       locale: "en",
       accent: "sea",
       simpleMode: true,
     });
+    // No theme in the patch: the device's theme cookie is left as it is.
+    expect(res.headers.getSetCookie()).toEqual([]);
     expect(events).toEqual([
       { spaceId: "s1", type: "member.updated", payload: { userId: USERS.carer } },
       { spaceId: "s2", type: "member.updated", payload: { userId: USERS.carer } },
     ]);
+  });
+
+  it("stores the theme and mirrors it into the frejsi_theme cookie, cleared again for system", async () => {
+    const dark = await send(
+      PATCH,
+      request("/api/users/me", { method: "PATCH", body: { theme: "dark" }, as: "carer" }),
+    );
+    expect(dark.status).toBe(200);
+    expect(await dark.json()).toMatchObject({ theme: "dark" });
+    expect(fake.rows("user").find((u) => u.id === USERS.carer)).toMatchObject({ theme: "dark" });
+    expect(dark.headers.getSetCookie()).toEqual([
+      "frejsi_theme=dark; Path=/; SameSite=Lax; Max-Age=31536000",
+    ]);
+    expect(events).toEqual([
+      { spaceId: "s1", type: "member.updated", payload: { userId: USERS.carer } },
+      { spaceId: "s2", type: "member.updated", payload: { userId: USERS.carer } },
+    ]);
+
+    const system = await send(
+      PATCH,
+      request("/api/users/me", { method: "PATCH", body: { theme: "system" }, as: "carer" }),
+    );
+    expect(system.headers.getSetCookie()).toEqual([
+      "frejsi_theme=; Path=/; SameSite=Lax; Max-Age=0",
+    ]);
+
+    const refused = await send(
+      PATCH,
+      request("/api/users/me", { method: "PATCH", body: { theme: "auto" }, as: "carer" }),
+    );
+    expect(refused.status).toBe(400);
+    expect(refused.headers.getSetCookie()).toEqual([]);
   });
 
   it("lets a viewer set only language and colour: simpleMode is 403 and writes nothing", async () => {

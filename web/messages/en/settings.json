@@ -130,7 +130,16 @@
     "noReadings": "No readings yet",
     "eatingNow": "I'm eating now",
     "note": "Meals are always terracotta and the number is always black – whatever the colour. {name} can also switch under More.",
-    "noteSelf": "Meals are always terracotta and the number is always black – whatever the colour."
+    "noteSelf": "Meals are always terracotta and the number is always black – whatever the colour.",
+    "theme": "Light or dark",
+    "themeFor": "Light or dark for {name}",
+    "themeLead": "Follow the device, or choose light or dark.",
+    "themeOptions": {
+      "system": "Like the device",
+      "light": "Light",
+      "dark": "Dark"
+    },
+    "rowWithTheme": "{colour} · {theme}"
   },
   "data": {
     "lead": "Export for the clinic",

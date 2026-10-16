@@ -7,6 +7,7 @@ const stored = vi.hoisted(() => ({
   name: "Alma",
   simpleMode: true,
   accent: "plum",
+  theme: "system",
   locale: "da",
   memberships: [{ spaceId: "s1", role: "viewer" }],
 }));

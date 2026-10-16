@@ -33,6 +33,7 @@ const owner: SettingsPerson = {
   locale: "da",
   simpleMode: false,
   accent: "olive",
+  theme: "system",
 };
 const child: SettingsPerson = {
   userId: "u-child",
@@ -41,6 +42,7 @@ const child: SettingsPerson = {
   locale: "da",
   simpleMode: true,
   accent: "plum",
+  theme: "system",
 };
 const grandma: SettingsPerson = {
   userId: "u-grandma",
@@ -49,6 +51,7 @@ const grandma: SettingsPerson = {
   locale: "da",
   simpleMode: false,
   accent: "olive",
+  theme: "system",
 };
 const viewer: SettingsPerson = {
   userId: "u-viewer",
@@ -57,6 +60,7 @@ const viewer: SettingsPerson = {
   locale: "da",
   simpleMode: false,
   accent: "sea",
+  theme: "system",
 };
 
 const space: SpaceSettings = {
@@ -106,7 +110,7 @@ function fakeApi() {
       return Promise.resolve(Response.json({ ...connected.space, ...body }));
     }
     return Promise.resolve(
-      Response.json({ locale: "da", simpleMode: false, accent: "olive", ...body }),
+      Response.json({ locale: "da", simpleMode: false, accent: "olive", theme: "system", ...body }),
     );
   });
   return { api: settingsApi(fetchImpl as unknown as typeof fetch), calls };
@@ -545,7 +549,20 @@ describe("SettingsScreen · language, simpleMode and colour (per person)", () =>
     expect(screen.queryByRole("status")).toBeNull();
     expect(screen.getByRole("radiogroup", { name: "Sprog" })).toBeInTheDocument();
     expect(screen.getByTestId("colour-row")).toHaveTextContent("Hav");
+    expect(screen.getByTestId("colour-row")).not.toHaveTextContent("Mørk");
     expect(container.textContent).not.toMatch(/mmol|mg\/dL|Dexcom|Glukosekilde/);
+  });
+
+  it("names a forced theme next to the colour on the Farve row", () => {
+    mount({
+      ...connected,
+      role: "viewer",
+      space: null,
+      source: null,
+      me: { ...viewer, theme: "dark" },
+      people: [{ ...viewer, theme: "dark" }],
+    });
+    expect(screen.getByTestId("colour-row")).toHaveTextContent("Hav · Mørk");
   });
 
   it("speaks English for an English user", () => {

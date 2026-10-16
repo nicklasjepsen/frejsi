@@ -43,6 +43,7 @@ const jonas: SessionContext = {
   name: "Jonas",
   simpleMode: false,
   accent: "forest",
+  theme: "system",
   locale: "da",
   memberships: [{ spaceId: "s1", role: "owner" }],
 };

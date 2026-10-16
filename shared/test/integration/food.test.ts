@@ -66,6 +66,7 @@ async function context() {
     name: user.name,
     simpleMode: false,
     accent: "olive",
+    theme: "system",
     locale: "da",
     memberships: [{ spaceId: space.id, role: "owner" }],
   };
@@ -101,6 +102,7 @@ it("upgrades 0001_foundation to 0002_food with no schema drift", async () => {
     "0001_foundation",
     "0002_food",
     "0003_ai",
+    "0004_theme",
   ]);
   expect(await schemaDiff(scratch.url, db)).not.toMatch(/CREATE|ALTER|DROP/);
 });

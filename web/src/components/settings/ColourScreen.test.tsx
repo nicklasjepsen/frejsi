@@ -10,6 +10,7 @@ import { I18nProvider } from "@/lib/i18n/Provider";
 import { getMessages } from "@/lib/i18n/messages";
 import type { AppLocale } from "@/lib/i18n/routing";
 import type { LiveState } from "@/lib/live/live-feed";
+import { applyTheme } from "@/lib/theme/theme";
 
 const live = vi.hoisted(() => ({
   state: null as LiveState | null,
@@ -40,6 +41,7 @@ const owner: SettingsPerson = {
   locale: "da",
   simpleMode: false,
   accent: "olive",
+  theme: "system",
 };
 const child: SettingsPerson = {
   userId: "u-child",
@@ -48,6 +50,7 @@ const child: SettingsPerson = {
   locale: "da",
   simpleMode: true,
   accent: "plum",
+  theme: "system",
 };
 const viewer: SettingsPerson = {
   userId: "u-viewer",
@@ -56,6 +59,7 @@ const viewer: SettingsPerson = {
   locale: "da",
   simpleMode: false,
   accent: "sea",
+  theme: "system",
 };
 
 const source: SourceView = {
@@ -115,7 +119,9 @@ function fakeApi() {
   const fetchImpl = vi.fn((url: string, init: RequestInit = {}) => {
     const body = JSON.parse(init.body as string) as Record<string, unknown>;
     calls.push({ url, body });
-    return Promise.resolve(Response.json({ locale: "da", simpleMode: false, accent: "olive", ...body }));
+    return Promise.resolve(
+      Response.json({ locale: "da", simpleMode: false, accent: "olive", theme: "system", ...body }),
+    );
   });
   return { api: settingsApi(fetchImpl as unknown as typeof fetch), calls };
 }
@@ -133,7 +139,10 @@ beforeEach(() => {
   live.state = liveState();
   live.calls.length = 0;
 });
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  applyTheme("system");
+});
 
 describe("ColourScreen (Farve-Indstilling)", () => {
   it("offers the five colours by their Danish names, the two explanatory lines, and a way back to Settings", () => {
@@ -290,6 +299,98 @@ describe("ColourScreen (Farve-Indstilling)", () => {
     mount({ ...data, me: { ...owner, locale: "en" } }, "en");
     expect(screen.getByRole("radio", { name: "Pick the colour Plum for Jonas" })).toBeInTheDocument();
     expect(screen.getByText("How it looks for Jonas")).toBeInTheDocument();
+  });
+
+  describe("light or dark", () => {
+    it("offers the device, light and dark for the chosen person, in Danish and English", () => {
+      mount(data);
+      const control = screen.getByRole("radiogroup", { name: "Lys eller mørk for Jonas" });
+      expect(within(control).getAllByRole("radio").map((r) => r.textContent)).toEqual([
+        "Som enheden",
+        "Lys",
+        "Mørk",
+      ]);
+      expect(within(control).getByRole("radio", { name: "Som enheden" })).toHaveAttribute(
+        "aria-checked",
+        "true",
+      );
+      expect(screen.getByText("Følg enheden, eller vælg lys eller mørk.")).toBeInTheDocument();
+      cleanup();
+      mount({ ...data, me: { ...owner, locale: "en" } }, "en");
+      const english = screen.getByRole("radiogroup", { name: "Light or dark for Jonas" });
+      expect(within(english).getAllByRole("radio").map((r) => r.textContent)).toEqual([
+        "Like the device",
+        "Light",
+        "Dark",
+      ]);
+      expect(screen.getByText("Follow the device, or choose light or dark.")).toBeInTheDocument();
+    });
+
+    it("one's own choice switches the document at once, writes the cookie and saves to /users/me", async () => {
+      const { api, calls } = fakeApi();
+      mount(data, "da", api);
+      fireEvent.click(screen.getByRole("radio", { name: "Mørk" }));
+      // Seen before the save answers.
+      expect(document.documentElement.dataset.theme).toBe("dark");
+      expect(document.cookie).toContain("frejsi_theme=dark");
+      await waitFor(() => {
+        expect(calls).toEqual([{ url: "/api/users/me", body: { theme: "dark" } }]);
+      });
+      await waitFor(() => {
+        expect(screen.getByRole("radio", { name: "Mørk" })).toHaveAttribute("aria-checked", "true");
+      });
+      expect(navigation.refresh).toHaveBeenCalled();
+
+      fireEvent.click(screen.getByRole("radio", { name: "Som enheden" }));
+      expect(document.documentElement.dataset.theme).toBeUndefined();
+      expect(document.cookie).not.toContain("frejsi_theme");
+      await waitFor(() => {
+        expect(calls).toHaveLength(2);
+      });
+      expect(calls[1]).toEqual({ url: "/api/users/me", body: { theme: "system" } });
+    });
+
+    it("puts the document back and shows the message when the save is refused", async () => {
+      const fetchImpl = vi.fn(() =>
+        Promise.resolve(
+          Response.json({ error: { code: "forbidden", message: "x" } }, { status: 403 }),
+        ),
+      );
+      mount(data, "da", settingsApi(fetchImpl));
+      fireEvent.click(screen.getByRole("radio", { name: "Lys" }));
+      expect(document.documentElement.dataset.theme).toBe("light");
+      await screen.findByRole("alert");
+      expect(document.documentElement.dataset.theme).toBeUndefined();
+      expect(document.cookie).not.toContain("frejsi_theme");
+      expect(screen.getByRole("radio", { name: "Som enheden" })).toHaveAttribute(
+        "aria-checked",
+        "true",
+      );
+    });
+
+    it("an owner's choice for another member is stored through the owner route and leaves this device alone", async () => {
+      const { api, calls } = fakeApi();
+      mount(data, "da", api);
+      fireEvent.click(screen.getByRole("radio", { name: "Alma" }));
+      fireEvent.click(
+        within(screen.getByRole("radiogroup", { name: "Lys eller mørk for Alma" })).getByRole(
+          "radio",
+          { name: "Mørk" },
+        ),
+      );
+      await waitFor(() => {
+        expect(calls).toEqual([
+          { url: "/api/spaces/s1/settings/members/u-child", body: { theme: "dark" } },
+        ]);
+      });
+      expect(document.documentElement.dataset.theme).toBeUndefined();
+      expect(document.cookie).not.toContain("frejsi_theme");
+    });
+
+    it("shows the person's stored theme", () => {
+      mount({ ...data, me: { ...owner, theme: "light" }, people: [{ ...owner, theme: "light" }, child, viewer] });
+      expect(screen.getByRole("radio", { name: "Lys" })).toHaveAttribute("aria-checked", "true");
+    });
   });
 
   it("does not know Dexcom", () => {

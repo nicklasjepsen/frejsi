@@ -1,4 +1,4 @@
-// The only place a user's presentation settings (locale, simpleMode, accent) are written. Both
+// The only place a user's presentation settings (locale, simpleMode, accent, theme) are written. Both
 // `/api/users/me` (one's own) and `/api/spaces/:id/settings/members/:userId` (an owner, for a
 // member) call this; the caller has already decided who may change what.
 import { HttpError, UserSettings } from "@frejsi/shared";
@@ -27,6 +27,7 @@ export function updateUserSettings(
       locale: user.locale,
       simpleMode: user.simpleMode,
       accent: user.accent,
+      theme: user.theme,
     });
   });
 }

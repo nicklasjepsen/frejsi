@@ -22,7 +22,7 @@ import type { SourceView } from "./contracts";
 
 export type SettingsDb = Pick<PrismaClient, "space" | "membership" | "event">;
 
-/** A member as the Settings screens show them: name, role and the three per-person settings. */
+/** A member as the Settings screens show them: name, role and the four per-person settings. */
 export interface SettingsPerson extends UserSettings {
   userId: string;
   name: string;
@@ -47,7 +47,7 @@ interface MemberRow {
   userId: string;
   role: string;
   createdAt: Date;
-  user: { name: string; locale: string; simpleMode: boolean; accent: string };
+  user: { name: string; locale: string; simpleMode: boolean; accent: string; theme: string };
 }
 
 const toPerson = (row: MemberRow): SettingsPerson => ({

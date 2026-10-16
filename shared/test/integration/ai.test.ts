@@ -44,6 +44,7 @@ it("applies the AI migration on top of the foundation and food migrations at com
     "0001_foundation",
     "0002_food",
     "0003_ai",
+    "0004_theme",
   ]);
 });
 const vector = (a: number, b = 0) => [a, b, ...Array<number>(1022).fill(0)];

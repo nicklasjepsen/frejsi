@@ -33,10 +33,14 @@ describe("settingsApi (the screens' side of the Settings routes)", () => {
   });
 
   it("sends one's own settings to /users/me and a member's to the owner route", async () => {
-    const me = fetching(Response.json({ locale: "en", simpleMode: false, accent: "sea" }));
+    const me = fetching(
+      Response.json({ locale: "en", simpleMode: false, accent: "sea", theme: "system" }),
+    );
     await me.api.patchPerson("s1", "u1", true, { accent: "sea" });
     expect(me.calls[0]?.url).toBe("/api/users/me");
-    const member = fetching(Response.json({ locale: "da", simpleMode: true, accent: "olive" }));
+    const member = fetching(
+      Response.json({ locale: "da", simpleMode: true, accent: "olive", theme: "system" }),
+    );
     await member.api.patchPerson("s1", "u2", false, { simpleMode: true });
     expect(member.calls[0]?.url).toBe("/api/spaces/s1/settings/members/u2");
   });

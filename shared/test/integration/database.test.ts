@@ -93,6 +93,7 @@ describe("the database (SQL Server)", () => {
       "0001_foundation",
       "0002_food",
       "0003_ai",
+      "0004_theme",
     ]);
     // Nothing left between the migrated database and schema.prisma: exit code 0, no script.
     const diff = await schemaDiff(scratch.url, db);

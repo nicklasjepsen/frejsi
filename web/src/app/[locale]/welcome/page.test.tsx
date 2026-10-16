@@ -97,6 +97,7 @@ describe("/[locale]/welcome · the returning sign-in (plan §6, design gap 23)",
       name: "Jonas",
       simpleMode: false,
       accent: "olive",
+      theme: "system",
       locale: "da",
       memberships: [{ spaceId: "s1", role: "owner" }],
     };

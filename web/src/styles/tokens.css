@@ -109,8 +109,23 @@
   --accent-on: #f6f1e8;
 }
 
+/*
+ * Appearance. The device decides unless the person has chosen in Settings: `data-theme` on <html>
+ * comes from the `frejsi_theme` cookie that mirrors `User.theme` (web/src/lib/theme/theme.ts),
+ * set by the root layout before the first paint. `light` keeps the values above whatever the
+ * device prefers; `color-scheme` follows so native controls match.
+ */
+:root[data-theme="light"] {
+  color-scheme: light;
+}
+
+/*
+ * The dark palette, twice: once for a device that prefers dark (unless light is forced), once for
+ * a forced dark. A media query cannot sit in a selector list, so the two blocks are copies and
+ * must stay identical; tokens.test.ts compares them declaration by declaration.
+ */
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme="light"]) {
     --ground: #1f1b17;
     --surface: #2a2521;
     --surface-sunken: #26211c;
@@ -144,9 +159,10 @@
     --accent-band: #9dae78;
     --accent-band-opacity: 0.14;
     --accent-on: #1f1b17;
+    color-scheme: dark;
   }
 
-  [data-accent="olive"] {
+  :root:not([data-theme="light"]) [data-accent="olive"] {
     --accent-base: #9dae78;
     --accent-strong: #b8c797;
     --accent-tint: #353b2a;
@@ -155,7 +171,7 @@
     --accent-on: #1f1b17;
   }
 
-  [data-accent="plum"] {
+  :root:not([data-theme="light"]) [data-accent="plum"] {
     --accent-base: #b59ad0;
     --accent-strong: #cdb8e3;
     --accent-tint: #3a2f47;
@@ -164,7 +180,7 @@
     --accent-on: #1f1b17;
   }
 
-  [data-accent="sea"] {
+  :root:not([data-theme="light"]) [data-accent="sea"] {
     --accent-base: #8fb0cd;
     --accent-strong: #aac6de;
     --accent-tint: #2c3a47;
@@ -173,7 +189,7 @@
     --accent-on: #1f1b17;
   }
 
-  [data-accent="forest"] {
+  :root:not([data-theme="light"]) [data-accent="forest"] {
     --accent-base: #86bbad;
     --accent-strong: #a3d0c4;
     --accent-tint: #27403a;
@@ -182,7 +198,7 @@
     --accent-on: #1f1b17;
   }
 
-  [data-accent="garnet"] {
+  :root:not([data-theme="light"]) [data-accent="garnet"] {
     --accent-base: #c98a9c;
     --accent-strong: #dba7b6;
     --accent-tint: #43303a;
@@ -190,4 +206,86 @@
     --accent-band: #c98a9c;
     --accent-on: #1f1b17;
   }
+}
+
+:root[data-theme="dark"] {
+  --ground: #1f1b17;
+  --surface: #2a2521;
+  --surface-sunken: #26211c;
+  --surface-selected: #332d27;
+  --surface-input: #2a2521;
+  --text: #f1eadf;
+  --text-muted: #b5aa9a;
+  --hairline: #3a332c;
+  --hairline-strong: #4a4238;
+  --gridline: #6e6458;
+  --card-shadow: none;
+  --card-border: 1px solid #3a332c;
+  --avatar-subject-bg: #4a3f33;
+  --avatar-subject-fg: #e7dbc6;
+  --avatar-member-bg: #4a3f33;
+  --avatar-member-fg: #e7dbc6;
+  --avatar-owner-bg: #3f4a30;
+  --avatar-owner-fg: #d6e0c0;
+  --meal-marker: #e08a6c;
+  --meal-bolus-marker: #e08a6c;
+  --unverified-bg: #4a2f27;
+  --unverified-fg: #e7a48a;
+  --destructive: #e08a6c;
+  --switch-off: #4a4238;
+
+  /* Olive, lifted, from Nu-Moerk. */
+  --accent-base: #9dae78;
+  --accent-strong: #b8c797;
+  --accent-tint: #353b2a;
+  --accent-tint-border: #4a5438;
+  --accent-band: #9dae78;
+  --accent-band-opacity: 0.14;
+  --accent-on: #1f1b17;
+  color-scheme: dark;
+}
+
+:root[data-theme="dark"] [data-accent="olive"] {
+  --accent-base: #9dae78;
+  --accent-strong: #b8c797;
+  --accent-tint: #353b2a;
+  --accent-tint-border: #4a5438;
+  --accent-band: #9dae78;
+  --accent-on: #1f1b17;
+}
+
+:root[data-theme="dark"] [data-accent="plum"] {
+  --accent-base: #b59ad0;
+  --accent-strong: #cdb8e3;
+  --accent-tint: #3a2f47;
+  --accent-tint-border: #54456a;
+  --accent-band: #b59ad0;
+  --accent-on: #1f1b17;
+}
+
+:root[data-theme="dark"] [data-accent="sea"] {
+  --accent-base: #8fb0cd;
+  --accent-strong: #aac6de;
+  --accent-tint: #2c3a47;
+  --accent-tint-border: #405466;
+  --accent-band: #8fb0cd;
+  --accent-on: #1f1b17;
+}
+
+:root[data-theme="dark"] [data-accent="forest"] {
+  --accent-base: #86bbad;
+  --accent-strong: #a3d0c4;
+  --accent-tint: #27403a;
+  --accent-tint-border: #3a5c53;
+  --accent-band: #86bbad;
+  --accent-on: #1f1b17;
+}
+
+:root[data-theme="dark"] [data-accent="garnet"] {
+  --accent-base: #c98a9c;
+  --accent-strong: #dba7b6;
+  --accent-tint: #43303a;
+  --accent-tint-border: #5f4552;
+  --accent-band: #c98a9c;
+  --accent-on: #1f1b17;
 }

@@ -1,6 +1,8 @@
 // Enums are String columns validated by the Zod enums in
 // src/schemas/; JSON is NVarChar(Max) parsed with Zod (the SQL Server connector has no Json).
-// Foundation: 0001_foundation. Food: 0002_food. AI: 0003_ai.
+// Foundation: 0001_foundation. Food: 0002_food. AI: 0003_ai. Theme: 0004_theme.
+// Each migration's end state is kept as a snapshot (foundation.prisma, food.prisma, ai.prisma) so
+// `prisma:check` can diff one step at a time.
 
 generator client {
   provider      = "prisma-client-js"
@@ -18,6 +20,7 @@ model User {
   avatar     String?
   simpleMode Boolean   @default(false)
   accent     String    @default("olive")
+  theme      String    @default("system")
   locale     String    @default("da")
   createdAt  DateTime  @default(now())
   lastSeen   DateTime?

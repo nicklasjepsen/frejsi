@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { Accent, Locale } from "./settings";
+import { Accent, Locale, Theme } from "./settings";
 
 export const Role = z.enum(["owner", "carer", "viewer"]);
 export type Role = z.infer<typeof Role>;
@@ -11,6 +11,7 @@ export const SessionContext = z.object({
   name: z.string(),
   simpleMode: z.boolean(),
   accent: Accent,
+  theme: Theme,
   locale: Locale,
   memberships: z.array(z.object({ spaceId: z.string().min(1), role: Role })),
 });

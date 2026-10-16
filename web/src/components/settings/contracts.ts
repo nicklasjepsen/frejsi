@@ -8,6 +8,7 @@ import {
   UpdateSpaceSettingsRequest,
   Locale,
   SourceStatus,
+  Theme,
 } from "@frejsi/shared";
 import { z } from "zod";
 
@@ -24,6 +25,7 @@ export const UserSettingsPatch = z
     locale: Locale.optional(),
     simpleMode: z.boolean().optional(),
     accent: Accent.optional(),
+    theme: Theme.optional(),
   })
   .refine(atLeastOne, { message: "nothing to change" });
 export type UserSettingsPatch = z.infer<typeof UserSettingsPatch>;

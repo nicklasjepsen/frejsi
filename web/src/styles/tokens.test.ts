@@ -43,6 +43,26 @@ function block(selector: string): string {
   return css.slice(open, close);
 }
 
+const escape = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+/**
+ * The rulesets whose selector starts with `guard`, keyed by what follows it ("" for the guard
+ * alone), each a sorted list of declarations without comments.
+ */
+function darkRulesets(guard: string): Record<string, string[]> {
+  const out: Record<string, string[]> = {};
+  const pattern = new RegExp(`${escape(guard)}((?: [^{\\n]+)?) \\{\\n([^}]*)\\}`, "g");
+  for (const match of css.matchAll(pattern)) {
+    const declarations = (match[2] ?? "")
+      .split("\n")
+      .map((line) => line.trim())
+      .filter((line) => line !== "" && !line.startsWith("/*"))
+      .sort();
+    out[(match[1] ?? "").trim()] = declarations;
+  }
+  return out;
+}
+
 describe("tokens.css (docs/design/tokens.json)", () => {
   it("defines the light palette on :root", () => {
     const root = block(":root {");
@@ -89,6 +109,28 @@ describe("tokens.css (docs/design/tokens.json)", () => {
     for (const accent of Accent.options) {
       expect(dark, accent).toContain(`[data-accent="${accent}"]`);
     }
+  });
+
+  it("lets a chosen theme override the device: light guards the media query, dark forces it", () => {
+    expect(css).toContain(
+      '@media (prefers-color-scheme: dark) {\n  :root:not([data-theme="light"]) {',
+    );
+    expect(block(':root[data-theme="light"] {')).toContain("color-scheme: light");
+    expect(block(':root[data-theme="dark"] {')).toContain("color-scheme: dark");
+    expect(block(':root:not([data-theme="light"]) {')).toContain("color-scheme: dark");
+    // Only the two dark blocks carry the dark ground; the light values stay on :root.
+    expect(block(":root {")).not.toContain(`--ground: ${lower(tokens.color.dark.ground)}`);
+  });
+
+  it("declares the same dark values for a device that prefers dark and for a forced dark", () => {
+    const media = darkRulesets(':root:not([data-theme="light"])');
+    const forced = darkRulesets(':root[data-theme="dark"]');
+    expect(Object.keys(media).sort()).toEqual(
+      ["", ...Accent.options.map((accent) => `[data-accent="${accent}"]`)].sort(),
+    );
+    expect(forced).toEqual(media);
+    expect(media[""]).toContain(`--ground: ${lower(tokens.color.dark.ground)};`);
+    expect(media[""]).toContain("color-scheme: dark;");
   });
 
   it("carries the navigation sizes and the desktop breakpoint", () => {
