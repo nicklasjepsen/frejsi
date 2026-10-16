@@ -51,6 +51,10 @@ function namesRead(): Map<string, string> {
   ].filter((file) => /\.(?:[cm]?tsx?|prisma)$/.test(file) && !isTest(file));
   for (const file of files) {
     const code = readFileSync(path.join(root, file), "utf8");
+    // Destructuring: `const { A: a, B } = env;`
+    for (const group of code.matchAll(/\{([^{}]*)\}\s*=\s*(?:process\.env|env)\b/g))
+      for (const key of (group[1] ?? "").matchAll(/(?:^|,)\s*([A-Z][A-Z0-9_]*)\s*(?=[:,=]|$)/g))
+        if (key[1]) found.set(key[1], found.get(key[1]) ?? file);
     for (const read of READS)
       for (const match of code.matchAll(read)) {
         const name = match[1];
@@ -74,6 +78,7 @@ function entries(): Map<string, string> {
 /** Constants the file may carry, each with the reason it is not a secret. */
 const DOCUMENTED_CONSTANTS: Record<string, string[]> = {
   WEB_PUBSUB_HUB: ["frejsi"], // the hub's name, fixed in infra/modules/webpubsub.bicep
+  SQL_DATABASE: ["frejsi"], // the database's name
   NEXT_PUBLIC_APP_VERSION: ["dev"],
   APP_VERSION: ["dev"],
   FAKE_GLUCOSE_SOURCE: ["1"],
