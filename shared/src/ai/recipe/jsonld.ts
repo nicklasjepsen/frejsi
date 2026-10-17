@@ -110,17 +110,46 @@ function readYield(value: unknown): Pick<RecipeParse, "yieldPortions" | "yieldGr
   return {};
 }
 
-const SCRIPT = /<script[^>]*type\s*=\s*["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi;
-
 /**
- * The `schema.org/Recipe` in a page's `application/ld+json`, read into a `RecipeParse` with no
- * model call (decision 10). Null when the page has none that parses.
+ * Every `<script type="application/ld+json">` body, found by scanning (indexOf, never a regex
+ * over the whole page: a page is attacker-shaped input and must read in linear time).
  */
-export function readJsonLd(html: string): RecipeParse | null {
-  for (const match of html.matchAll(SCRIPT)) {
+function jsonLdBlocks(html: string): string[] {
+  const lower = html.toLowerCase();
+  const blocks: string[] = [];
+  let from = 0;
+  for (;;) {
+    const open = lower.indexOf("<script", from);
+    if (open === -1) return blocks;
+    const tagEnd = lower.indexOf(">", open);
+    if (tagEnd === -1) return blocks;
+    const close = lower.indexOf("</script", tagEnd);
+    if (close === -1) return blocks;
+    const attributes = lower.slice(open + "<script".length, tagEnd);
+    if (attributes.includes("application/ld+json")) blocks.push(html.slice(tagEnd + 1, close));
+    from = close + "</script".length;
+  }
+}
+
+/** The page's own `<title>`, the fallback for a Recipe without a name. */
+function pageTitle(html: string): string {
+  const lower = html.toLowerCase();
+  const open = lower.indexOf("<title");
+  if (open === -1) return "";
+  const tagEnd = lower.indexOf(">", open);
+  const close = lower.indexOf("</title", tagEnd);
+  if (tagEnd === -1 || close === -1) return "";
+  return cleanName(decodeEntities(html.slice(tagEnd + 1, close)));
+}
+
+export function readJsonLd(
+  html: string,
+  options: { fallbackTitle?: string } = {},
+): RecipeParse | null {
+  for (const block of jsonLdBlocks(html)) {
     let json: unknown;
     try {
-      json = JSON.parse(decodeEntities(match[1] ?? "").trim() ? (match[1] ?? "") : "");
+      json = JSON.parse(block);
     } catch {
       continue;
     }
@@ -133,7 +162,9 @@ export function readJsonLd(html: string): RecipeParse | null {
         .slice(0, MAX_LINES);
       const title = typeof node.name === "string" ? cleanName(node.name) : "";
       const candidate = {
-        title: title || "Opskrift",
+        title:
+          [title, pageTitle(html), options.fallbackTitle?.trim()].find((value) => value) ??
+          "Recipe",
         ingredients,
         ...readYield(node.recipeYield),
       };
@@ -154,12 +185,61 @@ function decodeEntities(text: string): string {
   });
 }
 
-/** The page as the model reads it: no tags, scripts or styles, one space between words, capped. */
+const SKIPPED = new Set(["script", "style", "noscript", "svg", "template"]);
+const BREAKS = new Set([
+  "p",
+  "div",
+  "li",
+  "h1",
+  "h2",
+  "h3",
+  "h4",
+  "h5",
+  "h6",
+  "tr",
+  "br",
+  "section",
+  "article",
+  "header",
+  "footer",
+  "nav",
+]);
+
+/**
+ * The page as the model reads it: no tags, scripts or styles, one space between words, capped.
+ * A single pass with indexOf: the page is untrusted input and must strip in linear time.
+ */
 export function extractText(html: string): string {
-  const text = html
-    .replace(/<(script|style|noscript|svg|template)[^>]*>[\s\S]*?<\/\1>/gi, " ")
-    .replace(/<!--[\s\S]*?-->/g, " ")
-    .replace(/<\/(p|div|li|h[1-6]|tr|br|section|article|header|footer|nav)>/gi, "\n")
-    .replace(/<[^>]+>/g, " ");
-  return decodeEntities(text).replace(/\s+/g, " ").trim().slice(0, MAX_PAGE_TEXT).trim();
+  const lower = html.toLowerCase();
+  let out = "";
+  let at = 0;
+  while (at < html.length) {
+    const open = html.indexOf("<", at);
+    if (open === -1) {
+      out += html.slice(at);
+      break;
+    }
+    out += html.slice(at, open);
+    if (html.startsWith("<!--", open)) {
+      const end = html.indexOf("-->", open + 4);
+      at = end === -1 ? html.length : end + 3;
+      out += " ";
+      continue;
+    }
+    const tagEnd = html.indexOf(">", open);
+    if (tagEnd === -1) break;
+    const tag = /^<\/?([a-z0-9]+)/i.exec(html.slice(open, Math.min(tagEnd + 1, open + 40)));
+    const name = tag?.[1]?.toLowerCase() ?? "";
+    const closing = html.startsWith("</", open);
+    if (!closing && SKIPPED.has(name)) {
+      const end = lower.indexOf(`</${name}`, tagEnd);
+      const after = end === -1 ? html.length : lower.indexOf(">", end);
+      at = after === -1 ? html.length : after + 1;
+      out += " ";
+      continue;
+    }
+    out += closing && BREAKS.has(name) ? "\n" : " ";
+    at = tagEnd + 1;
+  }
+  return decodeEntities(out).replace(/\s+/g, " ").trim().slice(0, MAX_PAGE_TEXT).trim();
 }

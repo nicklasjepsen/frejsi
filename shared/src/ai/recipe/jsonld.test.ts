@@ -47,7 +47,33 @@ describe("readJsonLd (a schema.org/Recipe page needs no model, decision 10)", ()
       page({ recipeIngredient: Array.from({ length: 50 }, (_, i) => `${i + 1} g mel`) }),
     );
     expect(many?.ingredients).toHaveLength(40);
-    expect(readJsonLd(page({ name: "" }))?.title).toBe("Opskrift");
+  });
+  it("names an unnamed Recipe after the page title, then the caller's fallback, then Recipe", () => {
+    const block = (name: string) =>
+      `<script type="application/ld+json">${JSON.stringify({ "@type": "Recipe", name, recipeIngredient: ["1 l vand"] })}</script>`;
+    expect(
+      readJsonLd(`<html><head><title> Fiktiv side &amp; mad </title></head>${block("")}</html>`)
+        ?.title,
+    ).toBe("Fiktiv side & mad");
+    expect(readJsonLd(block(""), { fallbackTitle: "Opskrift" })?.title).toBe("Opskrift");
+    expect(readJsonLd(block(""))?.title).toBe("Recipe");
+    expect(readJsonLd(`<title>Ignored</title>${block("Named")}`)?.title).toBe("Named");
+  });
+  it("finds the block by scanning, whatever the attribute order or case, and stays linear on a hostile page", () => {
+    const recipe = JSON.stringify({
+      "@type": "Recipe",
+      name: "Scanned",
+      recipeIngredient: ["1 l vand"],
+    });
+    expect(
+      readJsonLd(`<SCRIPT id="x" TYPE='application/ld+json' async>${recipe}</SCRIPT>`)?.title,
+    ).toBe("Scanned");
+    expect(readJsonLd(`<script type="text/javascript">${recipe}</script>`)).toBeNull();
+    const hostile = "<script".repeat(50_000) + "<svg>".repeat(50_000);
+    const started = performance.now();
+    expect(readJsonLd(hostile)).toBeNull();
+    expect(extractText(hostile)).toBe("");
+    expect(performance.now() - started).toBeLessThan(2000);
   });
 });
 

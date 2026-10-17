@@ -273,6 +273,11 @@ describe("RecipeScreen (/recipe/new)", () => {
     expect(screen.getByText("Delt fra en anden app")).toBeVisible();
     expect(writes()).toEqual([]);
     cleanup();
+    // A title-only share still arrives: the title stands in for the text.
+    fake.on("GET /api/share/abc", { title: "Delt titel" });
+    mount({ shareId: "abc" });
+    expect(await screen.findByLabelText("Ingredienser")).toHaveValue("Delt titel");
+    cleanup();
     fake.on("GET /api/share/abc", { error: { code: "share-expired", message: "x" } }, 410);
     mount({ shareId: "abc" });
     expect(await screen.findByRole("alert")).toHaveTextContent("Det delte indhold er udløbet");
