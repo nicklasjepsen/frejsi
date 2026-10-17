@@ -45,6 +45,8 @@ const appProjects = [
   "symptoms.spec.ts",
   "recipe.spec.ts",
   "symbols.spec.ts",
+  // v0.6.2: the gap under the phone header (issue 214); on desktop it checks the column's padding.
+  "phone-header-gap.spec.ts",
 ];
 
 export default defineConfig({

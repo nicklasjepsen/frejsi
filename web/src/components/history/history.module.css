@@ -1,7 +1,7 @@
-/* The shell's gutter is the phone's only one; the page adds none of its own. */
+/* The shell draws the gap under the space header and the phone's only gutter; the page adds neither. */
 .page {
   color: var(--text);
-  padding: 16px 0 32px;
+  padding: 0 0 32px;
   display: flex;
   flex-direction: column;
   gap: 24px;
