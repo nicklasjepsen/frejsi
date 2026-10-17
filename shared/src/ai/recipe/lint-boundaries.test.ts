@@ -12,7 +12,10 @@ beforeAll(async () => {
   eslint = new ESLint({
     cwd: root,
     overrideConfigFile: true,
-    overrideConfig: [{ files: ["**/*.ts", "**/*.tsx"], languageOptions: { parser } }, ...boundaries],
+    overrideConfig: [
+      { files: ["**/*.ts", "**/*.tsx"], languageOptions: { parser } },
+      ...boundaries,
+    ],
   });
 });
 async function errors(filePath: string, code: string) {
@@ -43,12 +46,12 @@ describe("the recipe boundaries (plan task 4 hard rules)", () => {
   it("lets the recipe service call the provider, and keeps the web side on aiForSpace", async () => {
     for (const method of ["complete", "vision"]) {
       expect(await errors("shared/src/ai/recipe/parse.ts", `provider.${method}({});`)).toEqual([]);
-      expect(await errors("web/src/ai/recipe/service.ts", `provider.${method}({});`)).toContainEqual(
-        expect.stringContaining("AI services"),
-      );
-      expect(await errors("web/src/lib/recipes/service.ts", `provider.${method}({});`)).toContainEqual(
-        expect.stringContaining("AI services"),
-      );
+      expect(
+        await errors("web/src/ai/recipe/service.ts", `provider.${method}({});`),
+      ).toContainEqual(expect.stringContaining("AI services"));
+      expect(
+        await errors("web/src/lib/recipes/service.ts", `provider.${method}({});`),
+      ).toContainEqual(expect.stringContaining("AI services"));
     }
     expect(await errors("web/src/ai/recipe/service.ts", "aiProviders({});")).toContainEqual(
       expect.stringContaining("registry callers"),
@@ -94,10 +97,14 @@ describe("the recipe boundaries (plan task 4 hard rules)", () => {
       ...sources(path.join(root, "web/src/components/recipes")),
     ].map((file) => [relative(file), read(file)] as const);
     expect(web.length).toBeGreaterThan(5);
-    const providerUsers = web.filter(([, code]) => /provider/i.test(code) && /parseRecipe/.test(code));
+    const providerUsers = web.filter(
+      ([, code]) => /provider/i.test(code) && /parseRecipe/.test(code),
+    );
     expect(providerUsers.map(([file]) => file)).toEqual(["web/src/ai/recipe/service.ts"]);
     for (const [file, code] of web) {
-      expect(code, file).not.toMatch(/aiProviders\(|CappedAiProvider|FakeAiProvider|MemoryAiCallRepository/);
+      expect(code, file).not.toMatch(
+        /aiProviders\(|CappedAiProvider|FakeAiProvider|MemoryAiCallRepository/,
+      );
       expect(code, file).not.toMatch(/prisma\.(reading|event)\./);
     }
     const service = web.find(([file]) => file === "web/src/ai/recipe/service.ts")?.[1] ?? "";

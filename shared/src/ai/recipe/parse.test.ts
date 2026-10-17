@@ -23,13 +23,21 @@ const capped = (fake: FakeAiProvider, dailyCap = 2) =>
 describe("parseRecipe", () => {
   it("reads a JSON-LD page without touching the provider, even when one is given", async () => {
     const fake = new FakeAiProvider(defaultFakeAnswer);
-    const result = await parseRecipe(capped(fake), { kind: "html", html: fixture("lasagne.jsonld.html") }, "da");
+    const result = await parseRecipe(
+      capped(fake),
+      { kind: "html", html: fixture("lasagne.jsonld.html") },
+      "da",
+    );
     expect(result.approx).toBe(false);
     expect(result.parse.title).toBe("Eksempellasagne");
     expect(result.parse.yieldPortions).toBe(6);
     expect(result.parse.ingredients).toHaveLength(6);
     expect(fake.calls).toHaveLength(0);
-    const offline = await parseRecipe(null, { kind: "html", html: fixture("lasagne.jsonld.html") }, "da");
+    const offline = await parseRecipe(
+      null,
+      { kind: "html", html: fixture("lasagne.jsonld.html") },
+      "da",
+    );
     expect(offline.parse).toEqual(result.parse);
   });
   it("sends a page without JSON-LD to complete as stripped text of at most 12 000 characters, use recipe", async () => {
@@ -42,7 +50,11 @@ describe("parseRecipe", () => {
     const call = fake.calls[0];
     expect(call?.kind).toBe("complete");
     if (call?.kind !== "complete") throw new Error("expected a completion");
-    expect(call.request).toMatchObject({ role: "everyday", use: "recipe", outputSchema: RecipeParse });
+    expect(call.request).toMatchObject({
+      role: "everyday",
+      use: "recipe",
+      outputSchema: RecipeParse,
+    });
     const sent = call.request.messages[0]?.content[0];
     expect(sent?.type).toBe("text");
     if (sent?.type !== "text") throw new Error("expected text");
@@ -54,7 +66,9 @@ describe("parseRecipe", () => {
     await expect(
       parseRecipe(null, { kind: "html", html: "<p>no recipe here</p>" }, "da"),
     ).rejects.toMatchObject({ status: 422, code: "recipe-unreadable" });
-    await expect(parseRecipe(null, { kind: "text", text: "500 g mel" }, "da")).rejects.toMatchObject({
+    await expect(
+      parseRecipe(null, { kind: "text", text: "500 g mel" }, "da"),
+    ).rejects.toMatchObject({
       status: 409,
       code: "ai-disabled",
     });
@@ -70,7 +84,11 @@ describe("parseRecipe", () => {
     expect(fake.calls).toHaveLength(2);
     expect(fake.calls[1]).toMatchObject({
       kind: "vision",
-      request: { role: "everyday", use: "recipe", image: { mediaType: "image/jpeg", base64: "YWJj" } },
+      request: {
+        role: "everyday",
+        use: "recipe",
+        image: { mediaType: "image/jpeg", base64: "YWJj" },
+      },
     });
     await expect(
       parseRecipe(provider, { kind: "text", text: "1 l vand" }, "en"),

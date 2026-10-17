@@ -28,7 +28,9 @@ function words(name: string): string[] {
 
 /** "salt og peber", "lidt salt", "2 spsk olivenolie": the staple itself with fillers and amounts around it. */
 export function isNoCarbStaple(name: string): boolean {
-  const tokens = words(name).filter((token) => !/^\d+([.,]\d+)?$/.test(token) && !canonicalUnit(token));
+  const tokens = words(name).filter(
+    (token) => !/^\d+([.,]\d+)?$/.test(token) && !canonicalUnit(token),
+  );
   const bare = tokens.filter((token) => !FILLERS.has(token));
   if (bare.length === 0) return false;
   if (STAPLES.has(bare.join(" "))) return true;
@@ -76,10 +78,13 @@ export function lineFor(line: ParsedLine, food: RecipeMatch | null): RecipeIngre
     return { ...base, ...(grams === undefined ? {} : { grams }) };
   }
   const portion = food.portions[0];
-  const count = unitless(line.unit) && canonicalUnit(line.unit ?? "stk") ? (line.amount ?? 1) : undefined;
+  const count =
+    unitless(line.unit) && canonicalUnit(line.unit ?? "stk") ? (line.amount ?? 1) : undefined;
   const grams =
     gramsFor(line.amount, line.unit, food) ??
-    (count !== undefined && portion?.grams !== undefined ? round(count * portion.grams) : undefined);
+    (count !== undefined && portion?.grams !== undefined
+      ? round(count * portion.grams)
+      : undefined);
   let carbs = 0;
   if (grams !== undefined && food.carbsPer100g != null) carbs = carbsFor(food, grams);
   else if (count !== undefined && portion) carbs = clamp(count * portion.carbs, MAX_CARBS);

@@ -19,9 +19,13 @@ describe("ShareStore (ten minutes, one session, one take)", () => {
     now = SHARE_TTL_MS;
     expect(store.take(id, "sess-a")).toBeNull();
     expect(store.size).toBe(0);
-    const ids = Array.from({ length: SHARE_LIMIT + 5 }, (_, i) => store.put("sess-a", { title: `t${i}` }));
+    const ids = Array.from({ length: SHARE_LIMIT + 5 }, (_, i) =>
+      store.put("sess-a", { title: `t${i}` }),
+    );
     expect(store.size).toBe(SHARE_LIMIT);
     expect(store.take(ids[0] ?? "", "sess-a")).toBeNull();
-    expect(store.take(ids[ids.length - 1] ?? "", "sess-a")).toEqual({ title: `t${SHARE_LIMIT + 4}` });
+    expect(store.take(ids[ids.length - 1] ?? "", "sess-a")).toEqual({
+      title: `t${SHARE_LIMIT + 4}`,
+    });
   });
 });

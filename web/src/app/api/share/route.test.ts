@@ -1,7 +1,14 @@
 // @vitest-environment node
 import type { EventSink } from "@frejsi/shared";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { cookieStoreFor, seedSpace, SESSIONS, T0, USERS, type Who } from "@/components/settings/route-test-support";
+import {
+  cookieStoreFor,
+  seedSpace,
+  SESSIONS,
+  T0,
+  USERS,
+  type Who,
+} from "@/components/settings/route-test-support";
 import { FakeAuthDb } from "@/lib/auth/test-support";
 import { shareStore } from "@/lib/recipes/share-store";
 import plate from "../spaces/[spaceId]/estimates/fixtures/plate.json";
@@ -20,9 +27,12 @@ const shared = vi.hoisted(() => {
 vi.mock("@frejsi/shared", async (importOriginal) => {
   const original = await importOriginal<Record<string, unknown>>();
   const log = {
-    info: (msg: string, fields: unknown) => shared.holder.lines.push(JSON.stringify({ msg, fields })),
-    warn: (msg: string, fields: unknown) => shared.holder.lines.push(JSON.stringify({ msg, fields })),
-    error: (msg: string, fields: unknown) => shared.holder.lines.push(JSON.stringify({ msg, fields })),
+    info: (msg: string, fields: unknown) =>
+      shared.holder.lines.push(JSON.stringify({ msg, fields })),
+    warn: (msg: string, fields: unknown) =>
+      shared.holder.lines.push(JSON.stringify({ msg, fields })),
+    error: (msg: string, fields: unknown) =>
+      shared.holder.lines.push(JSON.stringify({ msg, fields })),
     raw: (line: string) => shared.holder.lines.push(line),
   };
   return { ...original, prisma: shared.prisma, createEventSinkFromEnv: () => shared.sink, log };
@@ -48,7 +58,11 @@ function post(fields: Record<string, string | Blob>, as: Who | null = "carer") {
     else form.append(key, value);
   const headers: Record<string, string> = {};
   if (as !== null) headers.cookie = `frejsi_session=${SESSIONS[as]}`;
-  const req = new Request("https://frejsi.example/api/share", { method: "POST", headers, body: form });
+  const req = new Request("https://frejsi.example/api/share", {
+    method: "POST",
+    headers,
+    body: form,
+  });
   shared.holder.request = req;
   return POST(req);
 }
@@ -60,7 +74,9 @@ function take(id: string, as: Who | null = "carer") {
   return GET(req, { params: Promise.resolve({ shareId: id }) });
 }
 const shareId = (response: Response) =>
-  new URL(response.headers.get("location") ?? "", "https://frejsi.example").searchParams.get("share") ?? "";
+  new URL(response.headers.get("location") ?? "", "https://frejsi.example").searchParams.get(
+    "share",
+  ) ?? "";
 const jpeg = () => {
   const base64 = plate.photoDataUrl.split(",")[1] ?? "";
   return new Blob([Buffer.from(base64, "base64")], { type: "image/jpeg" });
@@ -68,7 +84,11 @@ const jpeg = () => {
 
 describe("POST /api/share (the Web Share Target receiver)", () => {
   it("stores a title, text and URL for the session and redirects to the form in the person's locale", async () => {
-    const response = await post({ title: "Fictional lasagne", text: "500 g mince", url: "https://recipes.example/lasagne" });
+    const response = await post({
+      title: "Fictional lasagne",
+      text: "500 g mince",
+      url: "https://recipes.example/lasagne",
+    });
     expect(response.status).toBe(303);
     const location = response.headers.get("location") ?? "";
     expect(location).toMatch(/^https:\/\/frejsi\.example\/da\/recipe\/new\?share=[0-9a-f-]{36}$/);
@@ -101,7 +121,9 @@ describe("POST /api/share (the Web Share Target receiver)", () => {
     const share = (await (await take(withImage)).json()) as { photoDataUrl?: string };
     expect(share.photoDataUrl).toMatch(/^data:image\/jpeg;base64,\/9j\//);
     const sizeBefore = shareStore().size;
-    expect((await post({ files: new Blob(["%PDF"], { type: "application/pdf" }) })).status).toBe(400);
+    expect((await post({ files: new Blob(["%PDF"], { type: "application/pdf" }) })).status).toBe(
+      400,
+    );
     expect((await post({})).status).toBe(400);
     expect((await post({ url: "http://recipes.example/plain" })).status).toBe(400);
     expect(shareStore().size).toBe(sizeBefore);
@@ -118,7 +140,12 @@ describe("POST /api/share (the Web Share Target receiver)", () => {
     expect(shareStore().size).toBe(before);
   });
   it("logs the outcome only: never the title, the text, the URL or the image", async () => {
-    await post({ title: "Secret title", text: "secret text", url: "https://recipes.example/secret", files: jpeg() });
+    await post({
+      title: "Secret title",
+      text: "secret text",
+      url: "https://recipes.example/secret",
+      files: jpeg(),
+    });
     const log = shared.holder.lines.join("\n");
     expect(log).toContain("share.received");
     expect(log).not.toMatch(/Secret title|secret text|recipes\.example|\/9j\//);

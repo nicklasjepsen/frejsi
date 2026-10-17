@@ -42,7 +42,10 @@ export const RecalcRecipeRequest = z
     yieldPortions: yieldPortions.nullable().optional(),
     portionLabels: portionLabels.optional(),
   })
-  .refine((value) => Object.values(value).some((field) => field !== undefined), "Nothing to change");
+  .refine(
+    (value) => Object.values(value).some((field) => field !== undefined),
+    "Nothing to change",
+  );
 export type RecalcRecipeRequest = z.infer<typeof RecalcRecipeRequest>;
 
 /** What `GET /api/share/[id]` hands the form, once. */

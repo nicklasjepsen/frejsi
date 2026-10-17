@@ -1,6 +1,12 @@
 import { describe, expect, it, vi } from "vitest";
 import type { FoodCandidate, FoodView, LookupResponse } from "../../schemas/food";
-import { NO_CARB_STAPLES, gramsFor, isNoCarbStaple, lineFor, resolveIngredients } from "./ingredients";
+import {
+  NO_CARB_STAPLES,
+  gramsFor,
+  isNoCarbStaple,
+  lineFor,
+  resolveIngredients,
+} from "./ingredients";
 
 const library = (name: string, extra: Partial<FoodView> = {}): FoodView => ({
   id: `lib-${name}`,
@@ -42,7 +48,14 @@ describe("NO_CARB_STAPLES", () => {
       "friskkværnet peber",
     ])
       expect(isNoCarbStaple(name), name).toBe(true);
-    for (const name of ["hakket oksekød", "mælk", "løg", "sukker", "hvidløg", "sojasauce med sukker"])
+    for (const name of [
+      "hakket oksekød",
+      "mælk",
+      "løg",
+      "sukker",
+      "hvidløg",
+      "sojasauce med sukker",
+    ])
       expect(isNoCarbStaple(name), name).toBe(false);
   });
 });
@@ -80,7 +93,10 @@ describe("lineFor (one reviewed line from a parsed line and its match)", () => {
       carbs: 432,
     });
     const milk = library("Mælk", { carbsPer100g: 4.8 });
-    expect(lineFor({ name: "mælk", amount: 5, unit: "dl" }, milk)).toMatchObject({ grams: 500, carbs: 24 });
+    expect(lineFor({ name: "mælk", amount: 5, unit: "dl" }, milk)).toMatchObject({
+      grams: 500,
+      carbs: 24,
+    });
     const bun = candidate("Bolle", { portions: [{ label: "1 stk", grams: 60, carbs: 30 }] });
     expect(lineFor({ name: "boller", amount: 2, unit: "stk" }, bun)).toEqual({
       name: "boller",
@@ -90,11 +106,22 @@ describe("lineFor (one reviewed line from a parsed line and its match)", () => {
       foodName: "Bolle",
       carbs: 60,
     });
-    const onion = library("Løg", { carbsPer100g: 7, portions: [{ label: "1 stk", grams: 100, carbs: 7 }] });
-    expect(lineFor({ name: "løg" }, onion)).toMatchObject({ grams: 100, carbs: 7, foodId: "lib-Løg" });
+    const onion = library("Løg", {
+      carbsPer100g: 7,
+      portions: [{ label: "1 stk", grams: 100, carbs: 7 }],
+    });
+    expect(lineFor({ name: "løg" }, onion)).toMatchObject({
+      grams: 100,
+      carbs: 7,
+      foodId: "lib-Løg",
+    });
     const tomatoes = library("Flåede tomater", { portions: [{ label: "1 dåse", carbs: 12 }] });
-    expect(lineFor({ name: "flåede tomater", amount: 2, unit: "dåse" }, tomatoes)).toMatchObject({ carbs: 24 });
-    expect(lineFor({ name: "flåede tomater", amount: 2, unit: "dåse" }, tomatoes).grams).toBeUndefined();
+    expect(lineFor({ name: "flåede tomater", amount: 2, unit: "dåse" }, tomatoes)).toMatchObject({
+      carbs: 24,
+    });
+    expect(
+      lineFor({ name: "flåede tomater", amount: 2, unit: "dåse" }, tomatoes).grams,
+    ).toBeUndefined();
     expect(lineFor({ name: "salt", amount: 1, unit: "tsk" }, null)).toEqual({
       name: "salt",
       amount: 1,
@@ -111,7 +138,10 @@ describe("lineFor (one reviewed line from a parsed line and its match)", () => {
       carbs: 0,
     });
     // A per-100 g food with a count and no portion grams: the count cannot be weighed, carbs stay 0.
-    expect(lineFor({ name: "x", amount: 2, unit: "stk" }, flour)).toMatchObject({ carbs: 0, foodId: "lib-Hvedemel" });
+    expect(lineFor({ name: "x", amount: 2, unit: "stk" }, flour)).toMatchObject({
+      carbs: 0,
+      foodId: "lib-Hvedemel",
+    });
   });
 });
 
@@ -125,7 +155,11 @@ describe("resolveIngredients (lookup() once per line, staples without a lookup)"
   ];
   const beef = library("Hakket oksekød", { carbsPer100g: 0 });
   const pasta = candidate("Lasagneplader, Fiktiv", { carbsPer100g: 70 });
-  const otherPasta = candidate("Lasagne, Anden", { carbsPer100g: 68, origin: "frida", sourceRef: "frida:1" });
+  const otherPasta = candidate("Lasagne, Anden", {
+    carbsPer100g: 68,
+    origin: "frida",
+    sourceRef: "frida:1",
+  });
   it("looks every non-staple line up once in order, takes the library match, else the first candidate", async () => {
     const lookup = vi.fn((q: string) =>
       Promise.resolve(
@@ -143,24 +177,50 @@ describe("resolveIngredients (lookup() once per line, staples without a lookup)"
       ),
     );
     const resolved = await resolveIngredients(lines, lookup);
-    expect(lookup.mock.calls.map(([q]) => q)).toEqual(["hakket oksekød", "lasagneplader", "ukendt ting"]);
+    expect(lookup.mock.calls.map(([q]) => q)).toEqual([
+      "hakket oksekød",
+      "lasagneplader",
+      "ukendt ting",
+    ]);
     expect(resolved).toHaveLength(5);
-    expect(resolved[0]).toMatchObject({ foodId: beef.id, foodName: beef.name, carbs: 0, grams: 500, match: beef });
+    expect(resolved[0]).toMatchObject({
+      foodId: beef.id,
+      foodName: beef.name,
+      carbs: 0,
+      grams: 500,
+      match: beef,
+    });
     expect(resolved[0]?.candidates?.map((c) => c.name)).toEqual(["Oksekød fra kilde"]);
     expect(resolved[1]).toEqual({ name: "salt og peber", carbs: 0, noCarb: true });
     expect(resolved[2]).toMatchObject({ foodName: pasta.name, carbs: 175, grams: 250 });
     expect(resolved[2]?.foodId).toBeUndefined();
     expect(resolved[2]?.match).toBeUndefined();
     expect(resolved[2]?.candidates?.map((c) => c.name)).toEqual([pasta.name, otherPasta.name]);
-    expect(resolved[3]).toEqual({ name: "vand", amount: 2, unit: "dl", grams: 200, carbs: 0, noCarb: true });
+    expect(resolved[3]).toEqual({
+      name: "vand",
+      amount: 2,
+      unit: "dl",
+      grams: 200,
+      carbs: 0,
+      noCarb: true,
+    });
     expect(resolved[4]).toEqual({ name: "ukendt ting", amount: 1, carbs: 0 });
   });
   it("searches the first 80 characters of a long name and survives a lookup that fails", async () => {
     const lookup = vi.fn((q: string) =>
       q.length > 80 ? Promise.reject(new Error("too long")) : Promise.reject(new Error("down")),
     );
-    const resolved = await resolveIngredients([{ name: "x".repeat(120), amount: 1, unit: "g" }], lookup);
+    const resolved = await resolveIngredients(
+      [{ name: "x".repeat(120), amount: 1, unit: "g" }],
+      lookup,
+    );
     expect(lookup.mock.calls[0]?.[0]).toHaveLength(80);
-    expect(resolved[0]).toEqual({ name: "x".repeat(120), amount: 1, unit: "g", grams: 1, carbs: 0 });
+    expect(resolved[0]).toEqual({
+      name: "x".repeat(120),
+      amount: 1,
+      unit: "g",
+      grams: 1,
+      carbs: 0,
+    });
   });
 });

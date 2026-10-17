@@ -29,7 +29,10 @@ import { PATCH as recalc } from "./[foodId]/route";
 import { GET as fromMeal } from "./meal/[mealId]/route";
 
 const fixture = (name: string) =>
-  readFileSync(path.resolve(import.meta.dirname, "../../../../../../../fixtures/recipes", name), "utf8");
+  readFileSync(
+    path.resolve(import.meta.dirname, "../../../../../../../fixtures/recipes", name),
+    "utf8",
+  );
 
 let rig: ReturnType<typeof foodTestRig>;
 let auth: FakeAuthDb;
@@ -78,7 +81,10 @@ beforeEach(() => {
   fetched = [];
   page = fixture("lasagne.jsonld.html");
   const repo = new MemoryFoodRepository([
-    libraryRow("f-rye", "Rye bread", { carbsPer100g: 40, portions: [{ label: "1 slice", grams: 45, carbs: 18 }] }),
+    libraryRow("f-rye", "Rye bread", {
+      carbsPer100g: 40,
+      portions: [{ label: "1 slice", grams: 45, carbs: 18 }],
+    }),
     libraryRow("f-pasta", "Lasagneplader", { carbsPer100g: 70 }),
     libraryRow("f-milk", "Maelk", { carbsPer100g: 5 }),
   ]);
@@ -152,7 +158,12 @@ describe("POST recipes/parse", () => {
     expect(fetched).toEqual(["https://recipes.example/lasagne"]);
     expect(fake.calls).toEqual([]);
     expect(calls.rows).toEqual([]);
-    expect(review).toMatchObject({ title: "Eksempellasagne", approx: false, yieldPortions: 6, source: { kind: "url", url: "https://recipes.example/lasagne" } });
+    expect(review).toMatchObject({
+      title: "Eksempellasagne",
+      approx: false,
+      yieldPortions: 6,
+      source: { kind: "url", url: "https://recipes.example/lasagne" },
+    });
     const lines = review.lines as Record<string, unknown>[];
     expect(lines.map((line) => line.name)).toEqual([
       "hakket oksekød",
@@ -163,7 +174,13 @@ describe("POST recipes/parse", () => {
       "salt og peber",
     ]);
     // Library first: the space's own pasta, 250 g at 70 g per 100 g.
-    expect(lines[3]).toMatchObject({ foodId: "f-pasta", foodName: "Lasagneplader", grams: 250, carbs: 175, match: { id: "f-pasta" } });
+    expect(lines[3]).toMatchObject({
+      foodId: "f-pasta",
+      foodName: "Lasagneplader",
+      grams: 250,
+      carbs: 175,
+      match: { id: "f-pasta" },
+    });
     expect(lines[5]).toEqual({ name: "salt og peber", carbs: 0, noCarb: true });
     // Nothing matched the beef in the library or the cache, so the remote source answered.
     expect(lines[0]).toMatchObject({ foodName: "Cloud pear", grams: 500 });
@@ -174,7 +191,11 @@ describe("POST recipes/parse", () => {
   it("sends pasted text and a photo to the provider, use recipe, counted, and marks the review approx", async () => {
     const text = await call(parse, { text: fixture("lasagne.txt") });
     expect(text.status).toBe(200);
-    expect(await body(text)).toMatchObject({ approx: true, title: "Example stew", source: { kind: "text" } });
+    expect(await body(text)).toMatchObject({
+      approx: true,
+      title: "Example stew",
+      source: { kind: "text" },
+    });
     const photo = await call(parse, { photoDataUrl: plate.photoDataUrl });
     expect(photo.status).toBe(200);
     expect(await body(photo)).toMatchObject({ approx: true, source: { kind: "photo" } });
@@ -209,11 +230,18 @@ describe("POST recipes/parse", () => {
     },
   );
   it("passes a fetch failure through as recipe-fetch-failed and validates the one way in", async () => {
-    configureRecipes({ fetchPage: () => Promise.reject(new HttpError(502, "recipe-fetch-failed")) });
+    configureRecipes({
+      fetchPage: () => Promise.reject(new HttpError(502, "recipe-fetch-failed")),
+    });
     const failed = await call(parse, { url: "https://recipes.example/down" });
     expect(failed.status).toBe(502);
     expect((await body(failed)).error).toMatchObject({ code: "recipe-fetch-failed" });
-    for (const bad of [{ url: "http://recipes.example/x" }, { text: "" }, { text: "a", url: "https://x.example" }, {}]) {
+    for (const bad of [
+      { url: "http://recipes.example/x" },
+      { text: "" },
+      { text: "a", url: "https://x.example" },
+      {},
+    ]) {
       expect((await call(parse, bad)).status, JSON.stringify(bad)).toBe(400);
     }
     expect((await call(parse, { photoDataUrl: "data:image/png;base64,AAAA" })).status).toBe(400);
@@ -225,8 +253,24 @@ describe("POST recipes (Gem)", () => {
   const saveBody = {
     title: "Fictional lasagne",
     ingredients: [
-      { name: "lasagneplader", amount: 250, unit: "g", grams: 250, foodId: "f-pasta", foodName: "Lasagneplader", carbs: 175 },
-      { name: "milk", amount: 5, unit: "dl", grams: 500, foodId: "f-milk", foodName: "Maelk", carbs: 25 },
+      {
+        name: "lasagneplader",
+        amount: 250,
+        unit: "g",
+        grams: 250,
+        foodId: "f-pasta",
+        foodName: "Lasagneplader",
+        carbs: 175,
+      },
+      {
+        name: "milk",
+        amount: 5,
+        unit: "dl",
+        grams: 500,
+        foodId: "f-milk",
+        foodName: "Maelk",
+        carbs: 25,
+      },
       { name: "salt og peber", carbs: 0, noCarb: true },
     ],
     yieldPortions: 4,
@@ -249,7 +293,11 @@ describe("POST recipes (Gem)", () => {
     });
     expect(food.photo).toBeDefined();
     expect(rig.rows).toHaveLength(1);
-    expect(rig.rows[0]).toMatchObject({ origin: "recipe", verified: false, createdBy: USERS.carer });
+    expect(rig.rows[0]).toMatchObject({
+      origin: "recipe",
+      verified: false,
+      createdBy: USERS.carer,
+    });
     expect(rig.rows[0]?.sourceRef).toMatch(/^recipe:/);
     expect(JSON.parse(String(rig.rows[0]?.recipe))).toMatchObject({ source: saveBody.source });
     expect((rig.deps.photos as MemoryPhotoStore).photos.size).toBe(1);
@@ -267,8 +315,15 @@ describe("POST recipes (Gem)", () => {
       portionLabels: { one: "1 tallerken", half: "½ tallerken" },
     });
     expect(response.status).toBe(201);
-    expect(await body(response)).toMatchObject({ carbsPer100g: 20, portions: [], category: "starch" });
-    const named = await call(save, { ...saveBody, portionLabels: { one: "1 tallerken", half: "½ tallerken" } });
+    expect(await body(response)).toMatchObject({
+      carbsPer100g: 20,
+      portions: [],
+      category: "starch",
+    });
+    const named = await call(save, {
+      ...saveBody,
+      portionLabels: { one: "1 tallerken", half: "½ tallerken" },
+    });
     expect((await body(named)).portions).toEqual([
       { label: "1 tallerken", grams: 188, carbs: 50 },
       { label: "½ tallerken", grams: 94, carbs: 25 },
@@ -292,7 +347,15 @@ describe("PATCH recipes/[foodId]", () => {
     const created = await call(save, {
       title: "Fictional lasagne",
       ingredients: [
-        { name: "lasagneplader", amount: 250, unit: "g", grams: 250, foodId: "f-pasta", foodName: "Lasagneplader", carbs: 175 },
+        {
+          name: "lasagneplader",
+          amount: 250,
+          unit: "g",
+          grams: 250,
+          foodId: "f-pasta",
+          foodName: "Lasagneplader",
+          carbs: 175,
+        },
         { name: "salt", carbs: 0, noCarb: true },
       ],
       yieldPortions: 4,
@@ -309,7 +372,15 @@ describe("PATCH recipes/[foodId]", () => {
       recalc,
       {
         ingredients: [
-          { name: "lasagneplader", amount: 500, unit: "g", grams: 500, foodId: "f-pasta", foodName: "Lasagneplader", carbs: 350 },
+          {
+            name: "lasagneplader",
+            amount: 500,
+            unit: "g",
+            grams: 500,
+            foodId: "f-pasta",
+            foodName: "Lasagneplader",
+            carbs: 350,
+          },
           { name: "salt", carbs: 0, noCarb: true },
         ],
         yieldPortions: 5,
@@ -331,9 +402,15 @@ describe("PATCH recipes/[foodId]", () => {
   });
   it("refuses a dish that is not from a recipe, an empty patch and a patch that clears the only yield", async () => {
     rig.seed({ id: "f-plain", origin: "family", recipe: null });
-    expect((await call(recalc, { yieldPortions: 2 }, { method: "PATCH", path: "/f-plain" })).status).toBe(400);
+    expect(
+      (await call(recalc, { yieldPortions: 2 }, { method: "PATCH", path: "/f-plain" })).status,
+    ).toBe(400);
     expect((await call(recalc, {}, { method: "PATCH", path: "/f-dish" })).status).toBe(400);
-    const response = await call(recalc, { yieldPortions: null }, { method: "PATCH", path: "/f-dish" });
+    const response = await call(
+      recalc,
+      { yieldPortions: null },
+      { method: "PATCH", path: "/f-dish" },
+    );
     expect(response.status).toBe(400);
     expect(rig.events).toEqual([]);
   });
@@ -365,23 +442,39 @@ describe("GET recipes/meal/[mealId] (Gem som opskrift)", () => {
 describe("who may", () => {
   it.each([
     ["parse", parse, { text: "500 g flour" }, "POST", ""],
-    ["save", save, { title: "x", ingredients: [{ name: "x", carbs: 1 }], yieldPortions: 1, source: { kind: "text" } }, "POST", ""],
+    [
+      "save",
+      save,
+      {
+        title: "x",
+        ingredients: [{ name: "x", carbs: 1 }],
+        yieldPortions: 1,
+        source: { kind: "text" },
+      },
+      "POST",
+      "",
+    ],
     ["recalc", recalc, { yieldPortions: 2 }, "PATCH", "/f-dish"],
     ["from meal", fromMeal, undefined, "GET", "/meal/m1"],
-  ])("%s: a viewer, a stranger and no session are refused before any provider call or write", async (_name, handler, payload, method, path) => {
-    for (const [as, spaceId, status] of [
-      ["viewer", "s1", 403],
-      ["carer", "other", 404],
-      [null, "s1", 403],
-    ] as const) {
-      expect((await call(handler, payload, { as, spaceId, method, path })).status).toBe(status);
-    }
-    Object.assign(auth.rows("user").find((u) => u.id === USERS.carer) ?? {}, { simpleMode: true });
-    const simple = await call(handler, payload, { method, path });
-    expect(simple.status).toBe(400);
-    expect((await body(simple)).error).toMatchObject({ code: "simple-mode" });
-    expect(fake.calls).toEqual([]);
-    expect(fetched).toEqual([]);
-    expect(rig.events).toEqual([]);
-  });
+  ])(
+    "%s: a viewer, a stranger and no session are refused before any provider call or write",
+    async (_name, handler, payload, method, path) => {
+      for (const [as, spaceId, status] of [
+        ["viewer", "s1", 403],
+        ["carer", "other", 404],
+        [null, "s1", 403],
+      ] as const) {
+        expect((await call(handler, payload, { as, spaceId, method, path })).status).toBe(status);
+      }
+      Object.assign(auth.rows("user").find((u) => u.id === USERS.carer) ?? {}, {
+        simpleMode: true,
+      });
+      const simple = await call(handler, payload, { method, path });
+      expect(simple.status).toBe(400);
+      expect((await body(simple)).error).toMatchObject({ code: "simple-mode" });
+      expect(fake.calls).toEqual([]);
+      expect(fetched).toEqual([]);
+      expect(rig.events).toEqual([]);
+    },
+  );
 });
