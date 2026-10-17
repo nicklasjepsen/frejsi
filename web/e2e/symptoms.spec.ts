@@ -11,7 +11,7 @@ test.use({ serviceWorkers: "block" });
 
 const KINDS = ["Ondt i maven", "Svimmel", "Kvalme", "Træt", "Hovedpine", "Rysten"];
 
-test("one tap logs the kind at now, a second screen sees it, and Fortryd removes it", async ({
+test("one tap logs the kind at now and a second screen sees it through the feed", async ({
   page,
   browser,
 }) => {
@@ -76,26 +76,37 @@ test("one tap logs the kind at now, a second screen sees it, and Fortryd removes
     expect(body.symptoms.map((s) => s.id)).toContain(saved.id);
     assertMealOnly(body);
 
-    const deleting = page.waitForResponse(
-      (r) => r.url().endsWith(`/symptoms/${saved.id}`) && r.request().method() === "DELETE",
-    );
-    await status.getByRole("button", { name: "Fortryd" }).click();
-    expect((await deleting).status()).toBe(204);
-    symptomId = null;
-    await expect(status).toContainText("Fortrudt");
-    await expect(page.getByTestId("feel-today")).toContainText("Intet logget i dag");
   } finally {
     if (symptomId) await prisma.symptom.deleteMany({ where: { id: symptomId } });
     await otherContext.close();
   }
 });
 
-test("Mere… logs a kind with severity, a note and a time through the sheet", async ({ page }) => {
+test("Fortryd within ten seconds removes the entry; Mere… logs severity, a note and a time", async ({
+  page,
+}) => {
   const space = await seededSpace();
   await registerFromInvite(page, await inviteLink("mette"));
   await page.waitForURL(/\/da\/now$/);
   await page.goto("/da/feel");
   await expect(page.getByTestId("feel-grid")).toBeVisible();
+
+  // Undo, checked inside its own window: nothing else waits in between.
+  const tapping = page.waitForResponse(
+    (r) => r.url().endsWith("/symptoms") && r.request().method() === "POST",
+  );
+  await page.getByRole("button", { name: "Svimmel", exact: true }).click();
+  const tapped = (await (await tapping).json()) as { id: string };
+  const status = page.getByTestId("feel-status");
+  await expect(status).toContainText("Svimmel er logget");
+  const deleting = page.waitForResponse(
+    (r) => r.url().endsWith(`/symptoms/${tapped.id}`) && r.request().method() === "DELETE",
+  );
+  await status.getByRole("button", { name: "Fortryd" }).click();
+  expect((await deleting).status()).toBe(204);
+  await expect(status).toContainText("Fortrudt");
+  await expect(page.getByTestId("feel-today")).not.toContainText("Svimmel");
+
   await page.getByRole("button", { name: "Mere…", exact: true }).click();
   const sheet = page.getByTestId("symptom-sheet");
   await sheet.getByRole("radio", { name: "Hovedpine", exact: true }).click();

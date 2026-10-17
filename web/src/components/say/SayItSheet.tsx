@@ -36,6 +36,8 @@ export function SayItSheet({
   const panel = useRef<HTMLElement>(null);
   const pending = useRef(false);
   const live = useRef(true);
+  /** Feelings already logged from the current answer: a retry after a failure never repeats one. */
+  const logged = useRef(new Set<string>());
   const updateText = useCallback((value: string) => {
     if (pending.current) return;
     setText(value);
@@ -71,6 +73,7 @@ export function SayItSheet({
     }
   }
   function show(answer: ParsedMeal) {
+    logged.current.clear();
     if (live.current) {
       setMeal(answer);
       setVersion((v) => v + 1);
@@ -81,12 +84,17 @@ export function SayItSheet({
    * only when there is food. "jeg har ondt i maven" alone logs a symptom and no meal (plan §5).
    */
   async function add(items: ParsedItem[], symptoms: ParsedSymptom[]) {
-    for (const symptom of symptoms)
+    for (const symptom of symptoms) {
+      const key = `${symptom.kind}\u0000${symptom.note ?? ""}`;
+      if (logged.current.has(key)) continue;
       await createSymptom(spaceId, {
         kind: symptom.kind,
         ...(symptom.note ? { note: symptom.note } : {}),
       });
+      logged.current.add(key);
+    }
     if (items.length > 0) await onAdd(items);
+    logged.current.clear();
     if (live.current) {
       setMeal(null);
       setText("");

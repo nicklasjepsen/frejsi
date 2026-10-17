@@ -32,12 +32,12 @@ type KindsLoad =
   | { status: "ready"; kinds: SpaceSymptomKind[] };
 type Toast = { id: string; kind: SymptomKind; undone: false } | { undone: true };
 const UNDO_MS = 10_000;
-const DAY_MS = 24 * 60 * 60_000;
 
 /**
  * Jeg har det… (`/feel`, plan §5): six large tiles with a picture and a name, plus the space's own
  * kinds. One tap logs the kind at now and says "Logget" with "Fortryd" for ten seconds; "Mere…"
- * opens the sheet. Below the tiles, today's entries, live.
+ * opens the sheet. Below the tiles, today's entries, live. A simpleMode member logs and does not
+ * edit afterwards (plan §12, decision 7), so Fortryd is an adult's button.
  */
 export function SymptomPicker({
   spaceId,
@@ -58,15 +58,7 @@ export function SymptomPicker({
   const live = useRef(true);
   const spaceKinds = load.status === "ready" ? load.kinds : [];
   const labelOf = useKindLabel(locale, spaceKinds);
-  // The range is fixed for the mount: the list reloads on events, not on the clock.
-  const [range] = useState(() => {
-    const at = now();
-    return {
-      from: new Date(at.getTime() - DAY_MS).toISOString(),
-      to: new Date(at.getTime() + 600_000).toISOString(),
-    };
-  });
-  const list = useSymptoms(spaceId, range.from, range.to);
+  const list = useSymptoms(spaceId, timeZone, now);
   const refresh = list.refresh;
 
   const fetchKinds = useCallback(async () => {
@@ -149,7 +141,7 @@ export function SymptomPicker({
       {toast && (
         <div className={styles.status} role="status" data-testid="feel-status">
           <span>{toast.undone ? t("undone") : t("loggedKind", { kind: labelOf(toast.kind) })}</span>
-          {!toast.undone && (
+          {!toast.undone && !simple && (
             <button type="button" className={styles.undo} disabled={busy} onClick={() => void undo()}>
               {t("undo")}
             </button>

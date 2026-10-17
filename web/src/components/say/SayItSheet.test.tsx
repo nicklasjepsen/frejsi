@@ -204,3 +204,36 @@ it("logs a feeling alone without a meal and closes; a removed feeling is not log
     { kind: "dizzy" },
   ]);
 });
+
+it("never logs a feeling twice when the meal step fails and the person retries", async () => {
+  const fake = fetchFake()
+    .on("POST /api/spaces/s1/parse", { ...meal, unmatched: [], symptoms: [{ kind: "dizzy" }] })
+    .on("POST /api/spaces/s1/symptoms", {
+      id: "y1",
+      kind: "dizzy",
+      ts: "2026-10-15T13:00:00.000Z",
+      byUserId: "u1",
+      byName: "Jonas",
+    });
+  fake.install();
+  const onAdd = vi
+    .fn<(items: unknown[]) => Promise<void>>()
+    .mockRejectedValueOnce(new Error("Fictional failure"))
+    .mockResolvedValue(undefined);
+  render(
+    <NextIntlClientProvider locale="da" messages={da}>
+      <SayItSheet spaceId="s1" locale="da" onClose={vi.fn()} onAdd={onAdd} onSearch={vi.fn()} />
+    </NextIntlClientProvider>,
+  );
+  fireEvent.change(screen.getByLabelText("Skriv hvad der spises"), { target: { value: "svimmel" } });
+  fireEvent.click(screen.getByRole("button", { name: "Find maden" }));
+  await screen.findByTestId("say-symptoms");
+  fireEvent.click(screen.getByRole("button", { name: "Tilføj til måltidet" }));
+  await screen.findByText("AI-hjælp er ikke tilgængelig lige nu");
+  expect(screen.getByTestId("say-symptoms")).toBeInTheDocument();
+  fireEvent.click(screen.getByRole("button", { name: "Tilføj til måltidet" }));
+  await waitFor(() => {
+    expect(onAdd).toHaveBeenCalledTimes(2);
+  });
+  expect(fake.calls.filter((c) => c.path.endsWith("/symptoms"))).toHaveLength(1);
+});
