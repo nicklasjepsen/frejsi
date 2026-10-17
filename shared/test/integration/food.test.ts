@@ -103,6 +103,7 @@ it("upgrades 0001_foundation to 0002_food with no schema drift", async () => {
     "0002_food",
     "0003_ai",
     "0004_theme",
+    "0005_feel",
   ]);
   expect(await schemaDiff(scratch.url, db)).not.toMatch(/CREATE|ALTER|DROP/);
 });
