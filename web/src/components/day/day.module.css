@@ -60,8 +60,12 @@
 }
 
 /* The card's body fills it and, as a link, is the whole tap target; the trailing "Ret" is its
-   sibling, never nested inside it. The padding sits on the body so the target reaches the edge. */
-.body {
+   sibling, never nested inside it. The padding sits on the body so the target reaches the edge.
+   Scoped under the variant so these beat a caller's own anchor rules (history's `.timeline a`
+   sets display, colour and radius on every link in the list). */
+.row .body,
+.card .body,
+.simple .body {
   display: flex;
   align-items: center;
   flex: 1;
@@ -71,13 +75,16 @@
   border-radius: inherit;
 }
 
-.body:focus-visible {
+.row .body:focus-visible,
+.card .body:focus-visible,
+.simple .body:focus-visible {
   outline: 2px solid var(--accent-base);
   outline-offset: -2px;
 }
 
 /* "Ret" on the row and the phone card: a 44 px control in the accent, inside the card's edge. */
-.edit {
+.row .edit,
+.card .edit {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -93,7 +100,8 @@
   text-decoration: none;
 }
 
-.edit:focus-visible {
+.row .edit:focus-visible,
+.card .edit:focus-visible {
   outline: 2px solid var(--accent-base);
   outline-offset: -2px;
 }
