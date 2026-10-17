@@ -65,6 +65,8 @@ describe("Prisma food repository", () => {
     embeddingModel: null,
     origin: "fake-remote",
     sourceRef: "fake-remote:1",
+    category: null,
+    recipe: null,
     verified: false,
     verifiedBy: null,
     verifiedAt: null,

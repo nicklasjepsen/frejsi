@@ -7,7 +7,7 @@ import { Prisma, type Food as FoodRow } from "@prisma/client";
 import { z } from "zod";
 
 import { prisma } from "../db/client";
-import { Food, FoodCandidate, Portion } from "../schemas/food";
+import { Food, FoodCandidate, Portion, Recipe } from "../schemas/food";
 import { foldForSearch } from "./search";
 import {
   CacheFoodInput,
@@ -23,6 +23,8 @@ function fromRow(row: FoodRow & { creator?: { id: string; name: string } | null 
     carbsPer100g: row.carbsPer100g?.toNumber() ?? undefined,
     portions: z.array(Portion).parse(JSON.parse(row.portions) as unknown),
     barcode: row.barcode ?? undefined,
+    category: row.category ?? undefined,
+    recipe: row.recipe ? Recipe.parse(JSON.parse(row.recipe) as unknown) : undefined,
     photoKey: row.photoKey ?? undefined,
     verifiedBy: row.verifiedBy ?? undefined,
     verifiedAt: row.verifiedAt?.toISOString(),
@@ -249,7 +251,7 @@ export class PrismaFoodRepository implements FoodRepository {
   }
   async upsertCache(input: CacheFoodInput): Promise<Food> {
     const { spaceId, verified, ...fields } = CacheFoodInput.parse(input);
-    const candidate = FoodCandidate.parse(fields);
+    const { category, ...candidate } = FoodCandidate.parse(fields);
     const data = {
       ...candidate,
       spaceId,
@@ -258,6 +260,8 @@ export class PrismaFoodRepository implements FoodRepository {
       carbsPer100g: candidate.carbsPer100g ?? null,
       barcode: candidate.barcode ?? null,
       portions: JSON.stringify(candidate.portions),
+      // A source that names no category leaves the cached one as it is.
+      ...(category !== undefined ? { category } : {}),
     };
     const where = { spaceId: null, sourceRef: candidate.sourceRef };
     // Prisma cannot use a nullable field in a composite unique selector. SQL Server still enforces
