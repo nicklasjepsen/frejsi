@@ -154,6 +154,24 @@ test("a meal of rugbrød carries the bread symbol, and a later category change l
     expect(response.ok()).toBe(true);
   };
   await setCategory("bread");
+  // The seed already stores a bread symbol on one of today's meals (its lunch); the test's meal
+  // adds one marker to whatever the day has, so the count is taken before it is logged.
+  const scope = () =>
+    desktop ? page.getByTestId("now-desktop") : page.getByTestId("history-day").first();
+  const breadMarkers = () =>
+    desktop
+      ? scope()
+          .getByRole("img", { name: /^Glukose i dag/ })
+          .locator("[data-symbol=bread]")
+      : scope().locator("svg [data-symbol=bread]");
+  const markerPage = desktop ? "/da/now" : "/da/history";
+  await page.goto(markerPage);
+  await expect(
+    scope()
+      .getByRole("button", { name: /^Måltid, / })
+      .first(),
+  ).toBeVisible();
+  const before = await breadMarkers().count();
   const logged = await page.request.post(`/api/spaces/${spaceId}/meals`, {
     data: { items: [{ foodId: rye.id, name: "Rugbrød", portionLabel: "1 skive" }] },
   });
@@ -162,23 +180,11 @@ test("a meal of rugbrød carries the bread symbol, and a later category change l
   try {
     expect(meal.symbol).toBe("bread");
     const breadMarker = async () => {
-      if (desktop) {
-        await page.goto("/da/now");
-        const chart = page.getByTestId("now-desktop").getByRole("img", { name: /^Glukose i dag/ });
-        await expect(chart.locator("[data-symbol=bread]")).toHaveCount(1);
-        await expect(
-          page
-            .getByTestId("now-desktop")
-            .getByRole("button", { name: `Måltid, Brød, kl. ${NOW_CLOCK}` }),
-        ).toBeVisible();
-      } else {
-        await page.goto("/da/history");
-        const today = page.getByTestId("history-day").first();
-        await expect(today.locator("svg [data-symbol=bread]")).toHaveCount(1);
-        await expect(
-          today.getByRole("button", { name: `Måltid, Brød, kl. ${NOW_CLOCK}` }),
-        ).toBeVisible();
-      }
+      await page.goto(markerPage);
+      await expect(breadMarkers()).toHaveCount(before + 1);
+      await expect(
+        scope().getByRole("button", { name: `Måltid, Brød, kl. ${NOW_CLOCK}` }),
+      ).toBeVisible();
     };
     await breadMarker();
     // The library changes; the past meal does not (decision 2).
