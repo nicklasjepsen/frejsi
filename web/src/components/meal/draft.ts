@@ -20,16 +20,61 @@ export interface DraftItem {
   snapshot?: { portionLabel?: string; grams?: number; carbs: number };
 }
 
+/** The "Spiser om" chips (issue #191): minutes from the save moment until eating starts. */
+export const EATING_IN_CHOICES = [0, 5, 10, 15, 20] as const;
+export type EatingIn = (typeof EATING_IN_CHOICES)[number];
+/** A meal is usually logged a little before the first bite; 15 minutes is preselected. */
+export const DEFAULT_EATING_IN: EatingIn = 15;
+
 export interface MealDraft {
   items: DraftItem[];
-  /** ISO time of the meal; null means "now" at save. */
+  /** ISO time of the meal set by hand; null means the time comes from `eatingIn`, or is "now". */
   ts: string | null;
+  /**
+   * Minutes until eating starts, resolved against the save moment in `toMealRequest`; null once
+   * a time is set by hand (`setMealTime`) or for a saved meal, whose stored time is `ts`.
+   */
+  eatingIn: EatingIn | null;
   /** The "Bolus givet nu" tap: a time and nothing else. */
   bolusTs: string | null;
   nextKey: number;
 }
 
-export const emptyDraft = (): MealDraft => ({ items: [], ts: null, bolusTs: null, nextKey: 1 });
+export const emptyDraft = (): MealDraft => ({
+  items: [],
+  ts: null,
+  eatingIn: DEFAULT_EATING_IN,
+  bolusTs: null,
+  nextKey: 1,
+});
+
+/** A time typed into "Tidspunkt" wins over the chips and deselects them. */
+export const setMealTime = (draft: MealDraft, ts: string): MealDraft => ({
+  ...draft,
+  ts,
+  eatingIn: null,
+});
+
+/** A chip replaces any hand-set time. */
+export const chooseEatingIn = (draft: MealDraft, eatingIn: EatingIn): MealDraft => ({
+  ...draft,
+  ts: null,
+  eatingIn,
+});
+
+/**
+ * The meal's time for a chip, from the moment of saving: `now + minutes`, or null for "nu" so the
+ * server stamps the save moment as it always did. Computed when saving, never when the chips render.
+ */
+export function eatingInTs(eatingIn: EatingIn, now: Date): string | null {
+  return eatingIn === 0 ? null : new Date(now.getTime() + eatingIn * 60_000).toISOString();
+}
+
+/** The time to send: the hand-set time, else the chip resolved against `now`, else nothing. */
+export function mealTs(draft: MealDraft, now: Date): string | null {
+  if (draft.ts) return draft.ts;
+  return draft.eatingIn === null ? null : eatingInTs(draft.eatingIn, now);
+}
 
 export function addFood(draft: MealDraft, food: FoodView): MealDraft {
   const single = food.carbsPer100g == null && food.portions.length === 1;
@@ -143,10 +188,18 @@ function toItemInput(item: DraftItem): MealItemInput {
   };
 }
 
-/** The body for `POST meals` (and `PATCH meals/[id]`, where `items` replaces the stored ones). */
-export function toMealRequest(draft: MealDraft, photoDataUrl: string | null): CreateMealRequest {
+/**
+ * The body for `POST meals` (and `PATCH meals/[id]`, where `items` replaces the stored ones).
+ * `now` is the save moment the "Spiser om" chip counts from.
+ */
+export function toMealRequest(
+  draft: MealDraft,
+  photoDataUrl: string | null,
+  now: Date = new Date(),
+): CreateMealRequest {
+  const ts = mealTs(draft, now);
   return {
-    ...(draft.ts ? { ts: draft.ts } : {}),
+    ...(ts ? { ts } : {}),
     items: draft.items.map(toItemInput),
     ...(draft.bolusTs ? { bolusTs: draft.bolusTs } : {}),
     ...(photoDataUrl ? { photoDataUrl } : {}),
@@ -168,6 +221,7 @@ export function draftFromMeal(meal: MealView): MealDraft {
       },
     })),
     ts: meal.ts,
+    eatingIn: null,
     bolusTs: meal.bolusTs ?? null,
     nextKey: 1,
   };

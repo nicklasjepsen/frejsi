@@ -25,7 +25,15 @@ import { useLiveFeed } from "@/lib/live/useLiveFeed";
 import { useOnline, type LogController } from "./controller";
 import type { LogScreenProps } from "./LogScreen";
 import styles from "./log.module.css";
-import { Bolus, PhotoField, SaveNotices, TimeField, useMealTime, useSlotLabel } from "./parts";
+import {
+  Bolus,
+  EatingInField,
+  PhotoField,
+  SaveNotices,
+  TimeField,
+  useMealTime,
+  useSlotLabel,
+} from "./parts";
 
 type Props = LogScreenProps & { controller: LogController };
 
@@ -267,6 +275,7 @@ export function DesktopLog({ controller, spaceId, timeZone, userName, simpleMode
             onPortion={controller.choosePortion}
             onGrams={controller.chooseGrams}
           />
+          <EatingInField controller={controller} simpleMode={simpleMode} />
           <TimeField controller={controller} at={at} timeZone={timeZone} />
           <PhotoField controller={controller} />
           <Bolus controller={controller} timeZone={timeZone} simpleMode={simpleMode} />

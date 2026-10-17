@@ -69,6 +69,11 @@
   "today": "I dag {time}",
   "onDay": "{date} {time}",
   "cancel": "Annullér",
+  "eatingIn": {
+    "label": "Spiser om",
+    "now": "nu",
+    "minutes": "{minutes} min"
+  },
   "time": "Tidspunkt",
   "portionQuestion": "Hvor meget {name}?",
   "choosePortion": "Vælg hvor meget",

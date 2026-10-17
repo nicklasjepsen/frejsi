@@ -33,9 +33,12 @@ it("copies candidates before saving, keeps library identity and sends guesses as
     },
   );
   expect(picked).toEqual([candidate]);
-  const request = toMealRequest(appendParsedItems(emptyDraft(), items), null);
+  const now = new Date("2026-10-14T10:10:00.000Z");
+  const request = toMealRequest(appendParsedItems(emptyDraft(), items), null, now);
   expect(CreateMealRequest.parse(request)).toEqual(request);
+  // The Say sheet lands in the same draft, so it gets the "Spiser om" default (15 min) for free.
   expect(request).toEqual({
+    ts: "2026-10-14T10:25:00.000Z",
     items: [
       { foodId: "f1", name: "Example bread", portionLabel: "2 slices", carbs: 36 },
       { foodId: "f1", name: "Example bread", grams: 100, carbs: 40 },

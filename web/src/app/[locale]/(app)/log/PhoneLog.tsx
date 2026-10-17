@@ -29,6 +29,7 @@ import type { LogScreenProps } from "./LogScreen";
 import styles from "./log.module.css";
 import {
   Bolus,
+  EatingInField,
   PhotoField,
   SaveNotices,
   TimeField,
@@ -366,6 +367,7 @@ function ConfirmView({ controller, phone, timeZone, simpleMode }: Props) {
             }}
           />
         )}
+        <EatingInField controller={controller} simpleMode={simpleMode} />
         <TimeField controller={controller} at={at} timeZone={timeZone} />
         <PhotoField controller={controller} />
         <Bolus controller={controller} timeZone={timeZone} simpleMode={simpleMode} />

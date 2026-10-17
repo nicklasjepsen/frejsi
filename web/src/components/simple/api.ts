@@ -6,6 +6,7 @@ import { carbsFor } from "@frejsi/shared/food/portions";
 import type { FoodView } from "@frejsi/shared/schemas/food";
 
 import { createMeal, listFoods } from "@/components/meal/api";
+import { eatingInTs, type EatingIn } from "@/components/meal/draft";
 
 /**
  * A food the picker can offer: ticked by an adult, with at least one portion. A food with only a
@@ -36,14 +37,23 @@ export function portionCarbs(food: FoodView, index: number): number | null {
 }
 
 /**
- * "Ja, det spiser jeg": one meal of one portion, now. The body never carries `bolusTs` (the route
- * refuses it from a simpleMode session, and the picker has no bolus control for anyone).
+ * "Ja, det spiser jeg": one meal of one portion, eating in `eatingIn` minutes from `now` (the save
+ * moment; "nu" sends no time and the server stamps it). The body never carries `bolusTs` (the
+ * route refuses it from a simpleMode session, and the picker has no bolus control for anyone).
  */
-export async function eatNow(spaceId: string, food: FoodView, index: number): Promise<void> {
+export async function eatNow(
+  spaceId: string,
+  food: FoodView,
+  index: number,
+  eatingIn: EatingIn,
+  now: Date = new Date(),
+): Promise<void> {
   const portion = food.portions[index];
   const carbs = portionCarbs(food, index);
   if (!portion || carbs === null) throw new Error("no portion");
+  const ts = eatingInTs(eatingIn, now);
   await createMeal(spaceId, {
+    ...(ts ? { ts } : {}),
     items: [{ foodId: food.id, name: food.name, portionLabel: portion.label, carbs }],
   });
 }

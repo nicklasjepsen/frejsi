@@ -6,27 +6,32 @@ import { useEffect, useMemo, useState } from "react";
 import { FoodPhoto } from "@/components/food/FoodPhoto";
 import { PhotoPicker } from "@/components/food/PhotoPicker";
 import { BolusTap } from "@/components/meal/BolusTap";
+import { EatingInChips } from "@/components/meal/EatingInChips";
 import { Notice } from "@/components/ui/Notice";
 
 import type { LogController } from "./controller";
 import styles from "./log.module.css";
 import { formatClock, isSameLocalDay, withLocalTime } from "./time";
 
-/** The meal's time: the draft's, or now (re-read each minute) until one is set. */
+/**
+ * The meal's time: the one set by hand, else now plus the "Spiser om" chip (re-read each minute,
+ * so the header and the time field show the time the meal will get if saved now).
+ */
 export function useMealTime(controller: LogController): Date {
+  const { ts, eatingIn } = controller.draft;
   const [now, setNow] = useState(() => new Date());
   useEffect(() => {
-    if (controller.draft.ts) return;
+    if (ts) return;
     const timer = setInterval(() => {
       setNow(new Date());
     }, 60_000);
     return () => {
       clearInterval(timer);
     };
-  }, [controller.draft.ts]);
+  }, [ts]);
   return useMemo(
-    () => (controller.draft.ts ? new Date(controller.draft.ts) : now),
-    [controller.draft.ts, now],
+    () => (ts ? new Date(ts) : new Date(now.getTime() + (eatingIn ?? 0) * 60_000)),
+    [ts, eatingIn, now],
   );
 }
 
@@ -46,6 +51,23 @@ export function useWhenLabel(at: Date, timeZone: string): string {
     at,
   );
   return t("onDay", { date, time });
+}
+
+/** "Spiser om": nu · 5 · 10 · 15 · 20 min, over the exact-time field (issue #191). */
+export function EatingInField({
+  controller,
+  simpleMode,
+}: {
+  controller: LogController;
+  simpleMode: boolean;
+}) {
+  return (
+    <EatingInChips
+      value={controller.draft.eatingIn}
+      onChange={controller.chooseEatingIn}
+      simple={simpleMode}
+    />
+  );
 }
 
 export function TimeField({

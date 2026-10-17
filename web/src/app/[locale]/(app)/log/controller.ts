@@ -25,14 +25,17 @@ import {
 } from "@/components/meal/api";
 import {
   addFood,
+  chooseEatingIn,
   chooseGrams,
   choosePortion,
   clearChoice,
   emptyDraft,
   isComplete,
   removeItem,
+  setMealTime,
   toMealRequest,
   knownTotal,
+  type EatingIn,
   type MealDraft,
 } from "@/components/meal/draft";
 import { isLibraryFood } from "@/components/meal/LookupResults";
@@ -322,7 +325,8 @@ export function useLogController({
     setSaving(true);
     setSaveFailed(false);
     try {
-      const request = toMealRequest(draft, photo ? bytesToDataUrl(photo) : null);
+      // The "Spiser om" chip counts from this moment, not from when the chips were drawn.
+      const request = toMealRequest(draft, photo ? bytesToDataUrl(photo) : null, new Date());
       await createMeal(spaceId, request);
       goNow();
     } catch {
@@ -392,8 +396,12 @@ export function useLogController({
     removeItem: (key: string) => {
       setDraft((d) => removeItem(d, key));
     },
+    /** "Tidspunkt" typed by hand: it wins over the chips and deselects them. */
     setTs: (ts: string) => {
-      setDraft((d) => ({ ...d, ts }));
+      setDraft((d) => setMealTime(d, ts));
+    },
+    chooseEatingIn: (eatingIn: EatingIn) => {
+      setDraft((d) => chooseEatingIn(d, eatingIn));
     },
     tapBolus: () => {
       setDraft((d) => ({ ...d, bolusTs: new Date().toISOString() }));

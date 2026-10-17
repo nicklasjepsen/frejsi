@@ -71,6 +71,19 @@
   border-top: 0;
 }
 
+/* "Spiser om" (issue 191) under "Hvor meget?", on the same footer surface, over the TotalBar. */
+.eatingIn {
+  padding: 14px var(--phone-gutter) 12px;
+  border-top: 1px solid var(--hairline);
+  background: var(--surface);
+}
+.portions + .eatingIn {
+  border-top: 0;
+}
+.eatingIn + [data-testid="total-bar"] {
+  border-top: 0;
+}
+
 .howMuch {
   font-size: 18px;
   font-weight: 700;

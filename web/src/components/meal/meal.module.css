@@ -400,3 +400,59 @@
 .editItems .portionSheet {
   padding: 0 16px 14px;
 }
+
+/* "Spiser om" (issue 191): a radiogroup of pill chips over the time field. 44 px on the phone,
+   48 px in simpleMode (the touch tokens), the compact 36 px of the artboards' chips from 1280 px. */
+.eatingIn {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.eatingInLabel {
+  font-size: 14px;
+  color: var(--text-muted);
+}
+.eatingInChips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.eatingInChip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--touch-min);
+  padding: 0 14px;
+  border: 2px solid var(--hairline);
+  border-radius: var(--radius-pill);
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-size: 15px;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+}
+.eatingInChip[aria-checked="true"] {
+  border-color: var(--accent-base);
+  background: color-mix(in srgb, var(--accent-base) 12%, var(--surface));
+  color: var(--accent-strong);
+  font-weight: 700;
+}
+.eatingInChip:focus-visible {
+  outline: 2px solid var(--accent-base);
+  outline-offset: 2px;
+}
+.eatingIn[data-simple="true"] .eatingInChip {
+  min-height: var(--touch-min-simple);
+  padding: 0 18px;
+  font-size: 17px;
+}
+.eatingIn[data-simple="true"] .eatingInLabel {
+  font-size: 16px;
+}
+@media (min-width: 1280px) {
+  .eatingIn:not([data-simple="true"]) .eatingInChip {
+    min-height: 36px;
+    font-size: 14px;
+  }
+}

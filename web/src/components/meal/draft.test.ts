@@ -4,19 +4,27 @@ import { describe, expect, it } from "vitest";
 
 import {
   addFood,
+  chooseEatingIn,
   chooseGrams,
   choosePortion,
   clearChoice,
+  DEFAULT_EATING_IN,
   draftFromMeal,
+  EATING_IN_CHOICES,
   emptyDraft,
   isComplete,
   itemCarbs,
   knownTotal,
+  mealTs,
   relinkFood,
   removeItem,
+  setMealTime,
   toMealRequest,
   totalCarbs,
 } from "./draft";
+
+// 12:10 in Copenhagen: the moment the meal is saved.
+const NOW = new Date("2026-10-14T10:10:00.000Z");
 
 const bread: FoodView = {
   id: "f-bread",
@@ -78,13 +86,49 @@ describe("the meal draft", () => {
     draft = choosePortion(draft, draft.items[0]?.key ?? "", 1);
     draft = chooseGrams(draft, draft.items[1]?.key ?? "", 35);
     draft = { ...draft, bolusTs: "2026-10-14T09:58:00.000Z" };
-    expect(toMealRequest(draft, null)).toEqual({
+    expect(toMealRequest(draft, null, NOW)).toEqual({
+      ts: "2026-10-14T10:25:00.000Z",
       items: [
         { foodId: "f-bread", name: "Fictional rye bread", portionLabel: "1 slice", carbs: 18 },
         { foodId: "f-apple", name: "Fictional apple", grams: 35, carbs: 14 },
       ],
       bolusTs: "2026-10-14T09:58:00.000Z",
     });
+  });
+
+  it("starts with eating in 15 minutes and stamps the meal that far from the save moment", () => {
+    expect(EATING_IN_CHOICES).toEqual([0, 5, 10, 15, 20]);
+    expect(DEFAULT_EATING_IN).toBe(15);
+    const draft = emptyDraft();
+    expect(draft.eatingIn).toBe(15);
+    expect(draft.ts).toBeNull();
+    expect(mealTs(draft, NOW)).toBe("2026-10-14T10:25:00.000Z");
+    // Resolved when saving, not when the chips were drawn.
+    const later = new Date(NOW.getTime() + 7 * 60_000);
+    expect(mealTs(draft, later)).toBe("2026-10-14T10:32:00.000Z");
+    expect(toMealRequest(addFood(draft, lunchbox), null, later).ts).toBe(
+      "2026-10-14T10:32:00.000Z",
+    );
+  });
+
+  it("sends no time for 'nu', so the server stamps the save moment as before", () => {
+    const draft = chooseEatingIn(addFood(emptyDraft(), lunchbox), 0);
+    expect(draft.eatingIn).toBe(0);
+    expect(mealTs(draft, NOW)).toBeNull();
+    expect(toMealRequest(draft, null, NOW)).not.toHaveProperty("ts");
+    expect(mealTs(chooseEatingIn(draft, 5), NOW)).toBe("2026-10-14T10:15:00.000Z");
+  });
+
+  it("lets a time set by hand win over the chips and deselects them", () => {
+    let draft = chooseEatingIn(emptyDraft(), 20);
+    draft = setMealTime(draft, "2026-10-14T11:00:00.000Z");
+    expect(draft.eatingIn).toBeNull();
+    expect(mealTs(draft, NOW)).toBe("2026-10-14T11:00:00.000Z");
+    expect(toMealRequest(draft, null, NOW).ts).toBe("2026-10-14T11:00:00.000Z");
+    // A chip after that replaces the hand-set time again.
+    draft = chooseEatingIn(draft, 10);
+    expect(draft.ts).toBeNull();
+    expect(mealTs(draft, NOW)).toBe("2026-10-14T10:20:00.000Z");
   });
 
   it("removes an item", () => {
@@ -111,8 +155,11 @@ describe("the meal draft", () => {
     const draft = draftFromMeal(meal);
     expect(totalCarbs(draft)).toBe(50);
     expect(draft.ts).toBe(meal.ts);
+    // A saved meal keeps its stored time: no chip is preselected.
+    expect(draft.eatingIn).toBeNull();
+    expect(mealTs(draft, NOW)).toBe(meal.ts);
     expect(draft.bolusTs).toBe(meal.bolusTs);
-    expect(toMealRequest(draft, "photo")).toEqual({
+    expect(toMealRequest(draft, "photo", NOW)).toEqual({
       ts: meal.ts,
       items: [
         { name: "Fictional rye bread", portionLabel: "2 slices", carbs: 36 },

@@ -10,6 +10,8 @@ import { PhotoTile } from "@/components/food/PhotoTile";
 import { PortionChips, type PortionChoice } from "@/components/food/PortionChips";
 import { SearchField } from "@/components/food/SearchField";
 import { lookupText } from "@/components/meal/api";
+import { DEFAULT_EATING_IN, type EatingIn } from "@/components/meal/draft";
+import { EatingInChips } from "@/components/meal/EatingInChips";
 import { EstimateCapture } from "@/components/estimate/EstimateCapture";
 import { useEstimateStatus } from "@/components/estimate/useEstimateStatus";
 import { setPendingEstimate } from "@/components/estimate/pending";
@@ -40,8 +42,8 @@ const defaultPortion = (food: FoodView): number | null => (food.portions.length 
  * Hvad spiser du? (Log-Simpel): the space's verified foods as photo tiles, recently eaten first,
  * the first one spanning both columns. Only verified foods with portions can be logged.
  * The capture tile asks for a fresh photo; the separate link searches the verified list.
- * "Hvor meget?" lives in the sticky footer with the chosen food, so a child who taps a tile in
- * row two never scrolls past the rest of the grid to answer it.
+ * "Hvor meget?" and "Spiser om" live in the sticky footer with the chosen food, so a child who
+ * taps a tile in row two never scrolls past the rest of the grid to answer them.
  */
 export function SimplePicker({ spaceId, locale, simple, initialFoodId }: SimplePickerProps) {
   const t = useTranslations("eat");
@@ -49,6 +51,7 @@ export function SimplePicker({ spaceId, locale, simple, initialFoodId }: SimpleP
   const [load, setLoad] = useState<Load>({ status: "loading" });
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [portion, setPortion] = useState<number | null>(null);
+  const [eatingIn, setEatingIn] = useState<EatingIn>(DEFAULT_EATING_IN);
   const [searching, setSearching] = useState(false);
   const [query, setQuery] = useState("");
   const [saving, setSaving] = useState(false);
@@ -132,7 +135,7 @@ export function SimplePicker({ spaceId, locale, simple, initialFoodId }: SimpleP
     setSaving(true);
     setSaveFailed(false);
     try {
-      await eatNow(spaceId, selected, portion);
+      await eatNow(spaceId, selected, portion, eatingIn, new Date());
       router.push(now);
     } catch {
       setSaveFailed(true);
@@ -262,6 +265,9 @@ export function SimplePicker({ spaceId, locale, simple, initialFoodId }: SimpleP
               />
             </section>
           )}
+          <div className={styles.eatingIn}>
+            <EatingInChips value={eatingIn} onChange={setEatingIn} simple={simple} />
+          </div>
           <TotalBar
             name={selected.name}
             total={carbs}

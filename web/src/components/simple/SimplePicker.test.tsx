@@ -121,9 +121,53 @@ describe("Hvad spiser du? (Log-Simpel, simpleMode)", () => {
       expect(navigation.push).toHaveBeenCalledWith("/da/now");
     });
     const post = api.calls.find((c) => c.method === "POST");
-    expect(post?.body).toEqual({
+    expect(post?.body).toMatchObject({
       items: [{ foodId: "oats", name: "Havregrød", portionLabel: "stor skål", carbs: 30 }],
     });
+  });
+
+  it("asks 'Spiser om' at the simple size, 15 min chosen, and stamps the meal from the save moment (issue #191)", async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-10-14T10:10:00.000Z"));
+    try {
+      mount();
+      fireEvent.click(await screen.findByRole("button", { name: /Min madpakke/ }));
+      const footer = screen.getByTestId("eat-footer");
+      const chips = within(footer).getByTestId("eating-in");
+      expect(chips).toHaveAttribute("data-simple", "true");
+      const group = within(chips).getByRole("radiogroup", { name: "Spiser om" });
+      expect(
+        within(group)
+          .getAllByRole("radio")
+          .map((r) => r.textContent),
+      ).toEqual(["nu", "5 min", "10 min", "15 min", "20 min"]);
+      expect(within(group).getByRole("radio", { name: "15 min" })).toBeChecked();
+      fireEvent.click(within(group).getByRole("radio", { name: "5 min" }));
+      vi.setSystemTime(new Date("2026-10-14T10:12:00.000Z"));
+      fireEvent.click(screen.getByRole("button", { name: "Ja, det spiser jeg" }));
+      await waitFor(() => {
+        expect(navigation.push).toHaveBeenCalledWith("/da/now");
+      });
+      const post = api.calls.find((c) => c.method === "POST");
+      expect(post?.body).toEqual({
+        ts: "2026-10-14T10:17:00.000Z",
+        items: [{ foodId: "pack", name: "Min madpakke", portionLabel: "1 madpakke", carbs: 42 }],
+      });
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("sends no time for 'nu', so the server stamps the save moment", async () => {
+    mount({ simple: false });
+    fireEvent.click(await screen.findByRole("button", { name: /Min madpakke/ }));
+    expect(screen.getByTestId("eating-in")).toHaveAttribute("data-simple", "false");
+    fireEvent.click(screen.getByRole("radio", { name: "nu" }));
+    fireEvent.click(screen.getByRole("button", { name: "Ja, det spiser jeg" }));
+    await waitFor(() => {
+      expect(navigation.push).toHaveBeenCalledWith("/da/now");
+    });
+    expect(api.calls.find((c) => c.method === "POST")?.body).not.toHaveProperty("ts");
   });
 
   it("saves through POST meals without a bolus time and goes back to Nu", async () => {

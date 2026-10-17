@@ -43,6 +43,8 @@ vi.mock("@/lib/live/useLiveFeed", () => ({
 
 // 12:10 in Copenhagen on a Wednesday: lunch.
 const T0 = new Date("2026-10-14T10:10:00.000Z");
+/** The "Spiser om" default: eating starts 15 minutes after the save moment. */
+const T0_PLUS_15 = "2026-10-14T10:25:00.000Z";
 
 const food = (over: Partial<FoodView> & { id: string; name: string }): FoodView => ({
   portions: [],
@@ -224,7 +226,8 @@ describe("Log-Telefon", () => {
       body: { candidate: offBread },
     });
     expect(within(confirm).getByRole("heading", { name: "Frokost" })).toBeVisible();
-    expect(within(confirm).getByText("I dag 12:10")).toBeVisible();
+    // Eating in 15 minutes by default: the header shows the time the meal will get.
+    expect(within(confirm).getByText("I dag 12:25")).toBeVisible();
     expect(within(confirm).getByRole("button", { name: "Annullér" })).toBeVisible();
     expect(within(confirm).getByRole("button", { name: "Tilbage" })).toBeVisible();
     expect(
@@ -248,6 +251,7 @@ describe("Log-Telefon", () => {
       method: "POST",
       path: "/api/spaces/s1/meals",
       body: {
+        ts: T0_PLUS_15,
         items: [
           {
             foodId: "f-bread",
@@ -302,8 +306,91 @@ describe("Log-Telefon", () => {
       expect(nav.push).toHaveBeenCalled();
     });
     expect(writes()[0]?.body).toEqual({
+      ts: T0_PLUS_15,
       items: [{ foodId: "f-box", name: "Min madpakke", portionLabel: "1 madpakke", carbs: 42 }],
       bolusTs: T0.toISOString(),
+    });
+  });
+
+  describe("Spiser om (issue #191)", () => {
+    const chips = () => within(screen.getByTestId("eating-in"));
+    const checked = () =>
+      chips()
+        .queryAllByRole("radio", { checked: true })
+        .map((radio) => radio.textContent);
+
+    it("offers nu · 5 · 10 · 15 · 20 min with 15 chosen, and stamps the meal that far from the save", async () => {
+      api({ favourites: [lunchbox] });
+      mount();
+      fireEvent.click(await screen.findByRole("button", { name: /Min madpakke/ }));
+      await screen.findByTestId("log-confirm");
+      const group = chips().getByRole("radiogroup", { name: "Spiser om" });
+      expect(
+        within(group)
+          .getAllByRole("radio")
+          .map((r) => r.textContent),
+      ).toEqual(["nu", "5 min", "10 min", "15 min", "20 min"]);
+      expect(checked()).toEqual(["15 min"]);
+      expect(screen.getByLabelText("Tidspunkt")).toHaveValue("12:25");
+      // Time passes between the chips being drawn and the save: the stamp counts from the save.
+      vi.setSystemTime(new Date(T0.getTime() + 3 * 60_000));
+      fireEvent.click(screen.getByRole("button", { name: "Gem måltid" }));
+      await waitFor(() => {
+        expect(nav.push).toHaveBeenCalledWith("/da/now");
+      });
+      expect(writes()[0]?.body).toMatchObject({ ts: "2026-10-14T10:28:00.000Z" });
+    });
+
+    it("sends no time for 'nu', so the server stamps the save moment as before", async () => {
+      api({ favourites: [lunchbox] });
+      mount();
+      fireEvent.click(await screen.findByRole("button", { name: /Min madpakke/ }));
+      await screen.findByTestId("log-confirm");
+      fireEvent.click(chips().getByRole("radio", { name: "nu" }));
+      expect(checked()).toEqual(["nu"]);
+      expect(screen.getByText("I dag 12:10")).toBeVisible();
+      fireEvent.click(chips().getByRole("radio", { name: "5 min" }));
+      expect(screen.getByText("I dag 12:15")).toBeVisible();
+      fireEvent.click(chips().getByRole("radio", { name: "nu" }));
+      fireEvent.click(screen.getByRole("button", { name: "Gem måltid" }));
+      await waitFor(() => {
+        expect(nav.push).toHaveBeenCalledWith("/da/now");
+      });
+      expect(writes()[0]?.body).not.toHaveProperty("ts");
+    });
+
+    it("lets Tidspunkt typed by hand win and deselects the chips", async () => {
+      api({ favourites: [lunchbox] });
+      mount();
+      fireEvent.click(await screen.findByRole("button", { name: /Min madpakke/ }));
+      await screen.findByTestId("log-confirm");
+      fireEvent.click(chips().getByRole("radio", { name: "20 min" }));
+      fireEvent.change(screen.getByLabelText("Tidspunkt"), { target: { value: "13:00" } });
+      expect(checked()).toEqual([]);
+      expect(screen.getByText("I dag 13:00")).toBeVisible();
+      fireEvent.click(screen.getByRole("button", { name: "Gem måltid" }));
+      await waitFor(() => {
+        expect(nav.push).toHaveBeenCalledWith("/da/now");
+      });
+      expect(writes()[0]?.body).toMatchObject({ ts: "2026-10-14T11:00:00.000Z" });
+    });
+
+    it("shows the same chips at the simpleMode touch size, with the same default", async () => {
+      api({ favourites: [lunchbox] });
+      mount({ simpleMode: true });
+      fireEvent.click(await screen.findByRole("button", { name: /Min madpakke/ }));
+      await screen.findByTestId("log-confirm");
+      expect(screen.getByTestId("eating-in")).toHaveAttribute("data-simple", "true");
+      expect(checked()).toEqual(["15 min"]);
+    });
+
+    it("has the chips on the desktop meal column too", async () => {
+      api({ favourites: [lunchbox] });
+      mount({ layout: "desktop" });
+      fireEvent.click(await screen.findByRole("button", { name: /Min madpakke/ }));
+      expect(screen.getByText("12:25 · logges af Jonas")).toBeVisible();
+      fireEvent.click(chips().getByRole("radio", { name: "10 min" }));
+      expect(screen.getByText("12:20 · logges af Jonas")).toBeVisible();
     });
   });
 
@@ -473,7 +560,8 @@ describe("Log-Desktop", () => {
     ).toBeVisible();
     fireEvent.click(screen.getByRole("button", { name: "Spist for nylig" }));
     expect(within(screen.getByTestId("chip-foods")).getByText("Æble")).toBeVisible();
-    expect(screen.getByText("12:10 · logges af Jonas")).toBeVisible();
+    // Eating in 15 minutes by default: the meal line shows the time the meal will get.
+    expect(screen.getByText("12:25 · logges af Jonas")).toBeVisible();
     expect(screen.getByRole("heading", { name: "Frokost" })).toBeVisible();
   });
 
@@ -527,6 +615,7 @@ describe("Log-Desktop", () => {
         method: "POST",
         path: "/api/spaces/s1/meals",
         body: {
+          ts: T0_PLUS_15,
           items: [
             { foodId: "f-toast", name: "Rugbrød med ost", portionLabel: "1 skive", carbs: 18 },
           ],
@@ -644,6 +733,7 @@ describe("Say entry and confirmation", () => {
         "/api/spaces/s1/meals",
       ]);
       expect(writes().at(-1)?.body).toEqual({
+        ts: T0_PLUS_15,
         items: [
           { foodId: "f-bread", name: offBread.name, portionLabel: "2 skiver", carbs: 36 },
           { name: "Example apple", carbs: 14 },

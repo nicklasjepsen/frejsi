@@ -69,6 +69,11 @@
   "today": "Today {time}",
   "onDay": "{date} {time}",
   "cancel": "Cancel",
+  "eatingIn": {
+    "label": "Eating in",
+    "now": "now",
+    "minutes": "{minutes} min"
+  },
   "time": "Time",
   "portionQuestion": "How much {name}?",
   "choosePortion": "Choose how much",

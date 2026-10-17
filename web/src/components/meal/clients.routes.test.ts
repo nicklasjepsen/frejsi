@@ -270,15 +270,18 @@ describe("the picker (eat) against the foods and meals routes", () => {
     expect((await loadPickerFoods("s1")).map((f) => f.id)).toEqual(["oats", "pack"]);
   });
 
-  it("'Ja, det spiser jeg' saves one portion now, without a bolus time, as the child", async () => {
+  it("'Ja, det spiser jeg' saves one portion, eating in 15 minutes, without a bolus time, as the child", async () => {
     seedPantry();
     routes.as("child");
     const food = (await loadPickerFoods("s1")).find((f) => f.id === "pack");
     if (!food) throw new Error("no food");
-    await eatNow("s1", food, 0);
+    const saved = new Date();
+    await eatNow("s1", food, 0, 15, saved);
     expect(routes.events).toEqual(["meal.created"]);
     const [meal] = [...routes.meals.values()];
     expect(meal).toMatchObject({ totalCarbs: 42, byUserId: "child", items: [{ foodId: "pack" }] });
+    // The route keeps the chip's time as sent (issue #191): nothing changes in the API.
+    expect(meal?.ts).toBe(new Date(saved.getTime() + 15 * 60_000).toISOString());
     expect(meal?.bolusTs).toBeUndefined();
     const day = await fetchDay("s1");
     expect(day.meals[0]).toMatchObject({
