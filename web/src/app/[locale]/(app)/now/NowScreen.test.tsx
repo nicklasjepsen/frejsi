@@ -263,16 +263,26 @@ describe("Nu · phone (Main)", () => {
     expect(phone.getByTestId("glucose-age")).toHaveTextContent("for mere end et døgn siden");
   });
 
-  it("shows the last meal from GET day as a card that opens meal detail", async () => {
+  it("shows the last meal from GET day as a card that opens meal detail, with 'Ret' for the owner", async () => {
     api.meals = [breakfast, apple, lunch];
     mount();
     const region = within(screen.getByTestId("last-meal"));
     expect(region.getByText("Sidste måltid")).toBeInTheDocument();
-    const card = await region.findByRole("link");
-    expect(card).toHaveAttribute("href", "/da/meal/m3");
-    expect(card).toHaveTextContent("Rugbrød med ost og et æble");
-    expect(card).toHaveTextContent("12:10 · 50 g kulhydrat · Jonas");
-    expect(within(card).getByTestId("meal-card")).toHaveAttribute("data-variant", "card");
+    const card = await region.findByTestId("meal-card");
+    expect(card).toHaveAttribute("data-variant", "card");
+    const link = within(card).getByRole("link", { name: /Rugbrød med ost og et æble/ });
+    expect(link).toHaveAttribute("href", "/da/meal/m3");
+    expect(link).toHaveTextContent("12:10 · 50 g kulhydrat · Jonas");
+    expect(card.closest("a")).toBeNull();
+    const edit = within(card).getByRole("link", { name: "Ret måltidet kl. 12:10" });
+    expect(edit).toHaveAttribute("href", "/da/meal/m3?edit=1");
+  });
+
+  it("gives a carer's card the 'Ret' too", async () => {
+    api.meals = [lunch];
+    mount({ role: "carer" });
+    const card = await within(screen.getByTestId("last-meal")).findByTestId("meal-card");
+    expect(within(card).getByTestId("meal-edit")).toHaveAttribute("href", "/da/meal/m3?edit=1");
   });
 
   it("says 'Ingen måltider i dag endnu' on an empty day, and offers 'Log et måltid'", async () => {
@@ -302,7 +312,7 @@ describe("Nu · phone (Main)", () => {
   it("writes nothing: Nu only reads day, history and foods", async () => {
     api.meals = [lunch];
     mount();
-    await within(screen.getByTestId("last-meal")).findByRole("link");
+    await within(screen.getByTestId("last-meal")).findByTestId("meal-card");
     expect(api.calls.every((c) => c.method === "GET")).toBe(true);
     expect(new Set(api.calls.map((c) => c.path))).toEqual(new Set(["day", "foods", "history/day"]));
   });
@@ -497,7 +507,13 @@ describe("Nu · simpleMode (Nu-Simpel, Nu-Simpel-Desktop)", () => {
     mount({ simpleMode: true });
     const card = await within(screen.getByTestId("now-simple")).findByTestId("meal-card");
     expect(card).toHaveAttribute("data-variant", "simple");
-    expect(card.closest("a")).toHaveAttribute("href", "/da/meal/m3");
+    expect(within(card).getByRole("link", { name: /Du spiste kl\. 12:10/ })).toHaveAttribute(
+      "href",
+      "/da/meal/m3",
+    );
+    // The simple card has no edit affordance, whatever the role.
+    expect(within(card).queryByTestId("meal-edit")).toBeNull();
+    expect(within(card).queryByText("Ret")).toBeNull();
     expect(api.calls.some((call) => call.path === "history/day")).toBe(false);
     expect(card).toHaveTextContent("Du spiste kl. 12:10");
     expect(card).toHaveTextContent("Rugbrød med ost og et æble");

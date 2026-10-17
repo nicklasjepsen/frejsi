@@ -9,5 +9,7 @@
   "mealCarbs": "{carbs} g carbs · {name}",
   "mealMeta": "{time} · {carbs} g carbs · {name}",
   "youAte": "You ate at {time}",
+  "edit": "Edit",
+  "editMeal": "Edit the meal at {time}",
   "listLabel": "Today's meals"
 }

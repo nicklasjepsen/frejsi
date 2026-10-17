@@ -9,5 +9,7 @@
   "mealCarbs": "{carbs} g kulhydrat · {name}",
   "mealMeta": "{time} · {carbs} g kulhydrat · {name}",
   "youAte": "Du spiste kl. {time}",
+  "edit": "Ret",
+  "editMeal": "Ret måltidet kl. {time}",
   "listLabel": "Dagens måltider"
 }

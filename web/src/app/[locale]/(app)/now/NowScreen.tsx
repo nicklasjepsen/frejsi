@@ -3,7 +3,6 @@
 import type { Role } from "@frejsi/shared/schemas/index";
 import { mealStats } from "@frejsi/shared/stats";
 import { useTranslations } from "next-intl";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 import { localDateOf } from "@/components/day/format";
@@ -160,12 +159,15 @@ export function NowScreen({
         <p className={styles.simpleLabel}>{t("simpleTitle")}</p>
         <GlucoseValue reading={latest} unit={unit} now={now} size="simple" showUnit={false} />
         {lastMeal && (
-          <Link
-            href={mealHref(locale, lastMeal.id)}
-            className={`${styles.simpleMeal} ${styles.mealLink}`}
-          >
-            <MealCard meal={lastMeal} timeZone={mealZone} variant="simple" />
-          </Link>
+          <div className={styles.simpleMeal}>
+            <MealCard
+              meal={lastMeal}
+              timeZone={mealZone}
+              variant="simple"
+              locale={locale}
+              role={role}
+            />
+          </div>
         )}
         <div className={styles.simpleActions}>
           <Button size="simple" href={localeHref(locale, "/eat")}>
@@ -369,9 +371,13 @@ export function NowScreen({
           {day.status === "failed" && <Notice tone="sunken">{meals("mealsFailed")}</Notice>}
           {day.status === "ready" &&
             (lastMeal ? (
-              <Link href={mealHref(locale, lastMeal.id)} className={styles.mealLink}>
-                <MealCard meal={lastMeal} timeZone={mealZone} variant="card" />
-              </Link>
+              <MealCard
+                meal={lastMeal}
+                timeZone={mealZone}
+                variant="card"
+                locale={locale}
+                role={role}
+              />
             ) : (
               <p className={styles.noMeals}>{meals("noMeals")}</p>
             ))}
