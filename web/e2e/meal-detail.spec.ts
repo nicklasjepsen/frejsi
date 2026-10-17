@@ -79,11 +79,22 @@ test("the last meal shows its curve and previous dishes, edits portions and dele
         );
       })
       .toBe(true);
+    // The edit keeps the stored bolus time, and the sheet has no bolus control (issue #215).
+    await expect(curve.getByTestId("bolus")).toHaveCount(1);
+    const kept = await page.request.get(`/api/spaces/${spaceId}/meals/${mealId}`);
+    expect(await kept.json()).toHaveProperty("bolusTs", original.bolusTs);
     await page.getByRole("button", { name: /^Ret(?: måltid| E)$/ }).click();
-    await page.getByRole("button", { name: "Fjern bolustidspunkt", exact: true }).click();
-    await page.getByRole("dialog").getByRole("button", { name: "Gem", exact: true }).click();
+    await expect(page.getByRole("dialog")).not.toContainText(/bolus/i);
+    await page.getByRole("dialog").getByRole("button", { name: "Tilbage", exact: true }).click();
     await expect(page.getByRole("dialog")).toHaveCount(0);
-    await expect(curve.getByTestId("bolus")).toHaveCount(0);
+    // The PATCH route still takes bolusTs (a pump import writes it); clearing it drops the marker.
+    expect(
+      (
+        await page.request.patch(`/api/spaces/${spaceId}/meals/${mealId}`, {
+          data: { bolusTs: null },
+        })
+      ).ok(),
+    ).toBe(true);
     const cleared = await page.request.get(`/api/spaces/${spaceId}/meals/${mealId}`);
     expect(await cleared.json()).not.toHaveProperty("bolusTs");
     await page.reload();
