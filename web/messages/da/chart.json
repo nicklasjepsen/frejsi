@@ -16,5 +16,6 @@
   },
   "mealAt": "Måltid kl. {time}",
   "lastReading": "sidste måling {age}",
-  "mealWithCategory": "Måltid, {category}, kl. {time}"
+  "mealWithCategory": "Måltid, {category}, kl. {time}",
+  "symptomAt": "{kind} kl. {time}"
 }

@@ -24,6 +24,10 @@
   "retry": "Prøv igen",
   "carbs": "{carbs} g",
   "peak": "top",
+  "symptomsFilter": "Symptomer",
+  "noSymptoms": "Ingen symptomer denne dag",
+  "noSymptomsWeek": "Ingen symptomer denne uge",
+  "symptomsLabel": "Symptomer",
   "observation": {
     "title": "Ugens opsummering",
     "ready": "Med spørgsmål til klinikken · klar",

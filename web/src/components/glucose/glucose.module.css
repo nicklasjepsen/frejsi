@@ -226,6 +226,23 @@
   border-radius: 8px;
 }
 
+/* The symptom diamonds' 44 px tap targets, on the axis at the bottom of the chart. */
+.symptomTap {
+  position: absolute;
+  bottom: 0;
+  transform: translateX(-50%);
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+.symptomTap:focus-visible {
+  outline: 2px solid var(--accent-base);
+  outline-offset: -2px;
+  border-radius: 50%;
+}
+
 /* The source status: a dot and one line. */
 .source {
   position: relative;

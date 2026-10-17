@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ArrowNav } from "@/components/ui/ArrowNav";
+import { Chip } from "@/components/ui/Chip";
 import { ChipGroup } from "@/components/ui/ChipGroup";
 import { Notice } from "@/components/ui/Notice";
 import { PageHeader } from "@/components/ui/PageHeader";
@@ -64,6 +65,8 @@ export function HistoryScreen({
   const previousToday = useRef(today);
   const [active, setActive] = useState(initialDate);
   const [desktop, setDesktop] = useState(false);
+  // "Symptomer" (plan §5): the day's list shows the symptom rows alone.
+  const [symptomsOnly, setSymptomsOnly] = useState(false);
   const scrollTarget = useRef<string | null>(null);
   const sections = useRef(new Map<string, HTMLElement>());
   useEffect(() => {
@@ -170,6 +173,17 @@ export function HistoryScreen({
   }, [subscribe, load, today, router, refreshAll]);
   const dates = Object.keys(days).sort().reverse();
   const oldest = dates.at(-1) ?? initialDate;
+  const symptomsChip = (
+    <Chip
+      pressed={symptomsOnly}
+      data-testid="symptoms-filter"
+      onClick={() => {
+        setSymptomsOnly((value) => !value);
+      }}
+    >
+      {t("symptomsFilter")}
+    </Chip>
+  );
   const last = days[oldest];
   const done = last?.status === "ready" && !last.day.hasOlder;
   const loadOlder = useCallback(() => {
@@ -214,6 +228,7 @@ export function HistoryScreen({
                 },
               ]}
             />
+            {symptomsChip}
             <ArrowNav
               previous={{
                 label: t("previousDay"),
@@ -260,6 +275,7 @@ export function HistoryScreen({
           >
             {entry.status === "ready" ? (
               <DaySection
+                spaceId={spaceId}
                 day={entry.day}
                 today={today}
                 locale={locale}
@@ -267,6 +283,9 @@ export function HistoryScreen({
                 desktop={desktop}
                 liveReadings={feed.readings}
                 onNavigate={navigate}
+                subscribe={subscribe}
+                symptomsOnly={symptomsOnly}
+                {...(desktop ? {} : { headerExtra: symptomsChip })}
               />
             ) : entry.status === "loading" ? (
               <DayLoading />

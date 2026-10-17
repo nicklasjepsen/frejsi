@@ -37,6 +37,46 @@ export interface ChartMeal {
 /** The symbol's size at the marker: 12 px at the phone sizes, 16 px on desktop (plan §7). */
 export const SYMBOL_SIZE = { phone: 12, desktop: 16 } as const;
 
+/**
+ * A symptom on a curve (v0.6.0 plan §5, decision 14): a diamond on the time axis at `ts`, named
+ * by the kind's label the screen resolved ("Ondt i maven"). Never a glucose value.
+ */
+export interface ChartSymptom {
+  id: string;
+  ts: string;
+  kind: string;
+  label: string;
+}
+
+/** The diamond's width and height. */
+export const SYMPTOM_SIZE = 10;
+
+export interface ChartSymptomMark {
+  id: string;
+  ts: string;
+  kind: string;
+  label: string;
+  x: number;
+  path: string;
+}
+
+/** The 10 px diamond centred on (x, y): its corners on the axis and above and below it. */
+export function diamondPath(x: number, y: number, size: number = SYMPTOM_SIZE): string {
+  const half = size / 2;
+  return `M${round(x)} ${round(y - half)} L${round(x + half)} ${round(y)} L${round(x)} ${round(y + half)} L${round(x - half)} ${round(y)} Z`;
+}
+
+function symptomMarks(
+  symptoms: readonly ChartSymptom[] | undefined,
+  inside: (ts: string) => boolean,
+  x: (ts: string) => number,
+  y: number,
+): ChartSymptomMark[] {
+  return (symptoms ?? [])
+    .filter((symptom) => inside(symptom.ts))
+    .map((symptom) => ({ ...symptom, x: x(symptom.ts), path: diamondPath(x(symptom.ts), y) }));
+}
+
 /** The curve never shows less than this range, so a quiet day is not drawn as a mountain. */
 const MIN_DOMAIN_LOW = 2;
 const MIN_DOMAIN_HIGH = 14;
@@ -56,6 +96,8 @@ export interface ChartInput {
   size?: "phone" | "desktop" | undefined;
   /** The day variant only: meal lines and bolus triangles. */
   meals?: readonly ChartMeal[] | undefined;
+  /** Symptom diamonds on the time axis (plan §5). */
+  symptoms?: readonly ChartSymptom[] | undefined;
 }
 
 export interface ChartGeometry {
@@ -81,6 +123,8 @@ export interface ChartGeometry {
   markerTop: number;
   /** The food symbol's width and height, centred on the line at `markerTop`. */
   symbolSize: number;
+  /** Symptom diamonds inside the window, centred on the baseline. */
+  symptoms: ChartSymptomMark[];
 }
 
 const round = (n: number) => Math.round(n * 10) / 10;
@@ -157,6 +201,7 @@ export function chartGeometry(input: ChartInput): ChartGeometry {
     boluses,
     markerTop,
     symbolSize,
+    symptoms: symptomMarks(input.symptoms, inside, x, size.plotHeight),
   };
 }
 
@@ -250,6 +295,8 @@ export interface MealChartInput {
   bolusTs?: string;
   /** The meal's food symbol, drawn above the plot on the meal line (plan §7). */
   symbol?: MealSymbol;
+  /** Symptoms; those within the −1 h/+4 h window are drawn on the axis (plan §5). */
+  symptoms?: readonly ChartSymptom[] | undefined;
   previous: readonly PreviousCurve[];
   /** In mmol; the labels are drawn in `unit`. */
   target: { low: number; high: number };
@@ -280,6 +327,7 @@ export interface MealChartGeometry {
   ticks: { hours: number; x: number; anchor: "start" | "middle" | "end" }[];
   axisY: number;
   labelSize: number;
+  symptoms: ChartSymptomMark[];
 }
 
 const WINDOW_MINUTES = CHART_BEFORE_MINUTES + CHART_AFTER_MINUTES;
@@ -371,6 +419,12 @@ export function mealChartGeometry(input: MealChartInput): MealChartGeometry {
     })),
     axisY: size.axisY,
     labelSize: size.labelSize,
+    symptoms: symptomMarks(
+      input.symptoms,
+      (ts) => inMealWindowAt(input.mealTs, ts),
+      x,
+      size.baseline,
+    ),
   };
 }
 
@@ -385,6 +439,8 @@ export const WEEK_TILE = {
   dotY: 58,
   /** The food symbol in place of the dot (plan §7), centred on `dotY`. */
   symbolSize: 8,
+  /** The symptom diamond's centre, on the tile's bottom edge under the meals (plan §5). */
+  symptomY: 59,
   maxPoints: 48,
 };
 
@@ -396,6 +452,7 @@ export interface WeekTileInput {
   mealTimes: readonly string[];
   /** When given, the meals are drawn as their symbols instead of dots (v0.6.0 plan §7). */
   meals?: readonly { ts: string; symbol: MealSymbol }[] | undefined;
+  symptoms?: readonly ChartSymptom[] | undefined;
   /** The local day, 00:00 to 24:00 in the space's zone. */
   from: Date;
   to: Date;
@@ -412,6 +469,7 @@ export interface WeekTileGeometry {
   /** The symbols' boxes (top-left corner), `symbolSize` wide, centred on `dotY`. */
   mealSymbols: { x: number; y: number; symbol: MealSymbol }[];
   symbolSize: number;
+  symptoms: ChartSymptomMark[];
 }
 
 export function weekTileGeometry(input: WeekTileInput): WeekTileGeometry {
@@ -452,6 +510,7 @@ export function weekTileGeometry(input: WeekTileInput): WeekTileGeometry {
         symbol: meal.symbol,
       })),
     symbolSize: WEEK_TILE.symbolSize,
+    symptoms: symptomMarks(input.symptoms, inDayAt, x, WEEK_TILE.symptomY),
   };
 }
 

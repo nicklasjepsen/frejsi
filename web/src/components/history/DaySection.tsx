@@ -5,18 +5,27 @@ import type { Role } from "@frejsi/shared/schemas/index";
 import { dayStats } from "@frejsi/shared/stats";
 import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
-import { useRef, type KeyboardEvent } from "react";
+import { useRef, useState, type KeyboardEvent, type ReactNode } from "react";
 import { MealCard } from "@/components/day/MealCard";
 import { ChartCaption } from "@/components/glucose/ChartCaption";
 import { GlucoseChart } from "@/components/glucose/GlucoseChart";
 import { formatBound } from "@/components/glucose/format";
+import { readingsAround } from "@/components/glucose/symptom-readings";
 import { PeakValue } from "@/components/stats/PeakValue";
 import { formatDuration } from "@/components/stats/format";
+import { useKindLabel } from "@/components/symptoms/kinds";
+import type { FeedEventType } from "@/lib/live/live-feed";
 import { localeHref, type AppLocale } from "@/lib/i18n/routing";
 import { DayHeader } from "./DayHeader";
+import { SymptomDetailCard } from "./SymptomDetailCard";
+import { SymptomRow } from "./SymptomRow";
+import { useSymptomRange } from "./useSymptomRange";
 import styles from "./history.module.css";
 
+type Subscribe = (type: FeedEventType, handler: () => void) => () => void;
+
 export function DaySection({
+  spaceId,
   day,
   today,
   locale,
@@ -25,7 +34,11 @@ export function DaySection({
   liveReadings,
   onNavigate,
   role = "owner",
+  subscribe,
+  symptomsOnly = false,
+  headerExtra,
 }: {
+  spaceId: string;
   day: DayHistoryView;
   today: string;
   locale: AppLocale;
@@ -38,13 +51,25 @@ export function DaySection({
    * (a viewer gets `ViewerDays`), so the default names the role the screen is for.
    */
   role?: Role;
+  /** The screen's feed: the day's symptoms are read again on every `symptom.*` event. */
+  subscribe?: Subscribe | undefined;
+  /** The "Symptomer" filter (plan §5): the list shows the symptom rows only. */
+  symptomsOnly?: boolean;
+  /** The phone's filter chip, drawn in the period header. */
+  headerExtra?: ReactNode;
 }) {
   const t = useTranslations("history");
   const stats = useTranslations("stats");
+  const glucose = useTranslations("glucose");
   const router = useRouter();
   const rows = useRef<(HTMLLIElement | null)[]>([]);
   const isToday = day.date === today;
   const now = new Date();
+  const symptomRange = useSymptomRange(spaceId, day.from, day.to, subscribe);
+  const symptoms = symptomRange.status === "ready" ? symptomRange.symptoms : [];
+  const labelOf = useKindLabel(locale, symptomRange.kinds);
+  const [activeSymptomId, setActiveSymptomId] = useState<string | null>(null);
+  const activeSymptom = symptoms.find((symptom) => symptom.id === activeSymptomId) ?? null;
   const readings = [
     ...new Map(
       [...day.readings, ...(isToday ? liveReadings : [])]
@@ -64,12 +89,22 @@ export function DaySection({
   const low = formatBound(day.target.low, unit, locale);
   const high = formatBound(day.target.high, unit, locale);
   const mealHref = (id: string) => localeHref(locale, `/meal/${encodeURIComponent(id)}`);
+  // The day's list: the meal rows and the symptom rows by time, newest first; with the filter
+  // on, the symptom rows alone.
+  type Entry = { ts: string } & (
+    | { kind: "meal"; meal: (typeof meals)[number] }
+    | { kind: "symptom"; symptom: (typeof symptoms)[number] }
+  );
+  const entries: Entry[] = [
+    ...(symptomsOnly ? [] : meals.map((meal) => ({ kind: "meal" as const, ts: meal.ts, meal }))),
+    ...symptoms.map((symptom) => ({ kind: "symptom" as const, ts: symptom.ts, symptom })),
+  ].sort((a, b) => b.ts.localeCompare(a.ts));
   const move = (event: KeyboardEvent, index: number) => {
     const step = event.key === "ArrowDown" ? 1 : event.key === "ArrowUp" ? -1 : 0;
     if (step) {
       event.preventDefault();
-      rows.current[(index + step + day.meals.length) % day.meals.length]
-        ?.querySelector("a")
+      rows.current[(index + step + entries.length) % entries.length]
+        ?.querySelector<HTMLElement>("a, button")
         ?.focus();
     }
   };
@@ -82,6 +117,7 @@ export function DaySection({
         count={day.mealCount}
         locale={locale}
         onNavigate={onNavigate}
+        {...(headerExtra ? { filter: headerExtra } : {})}
       />
       <div className={styles.dayBody}>
         <div className={styles.curveCard}>
@@ -105,6 +141,13 @@ export function DaySection({
             onMealTap={(id) => {
               router.push(mealHref(id));
             }}
+            symptoms={symptoms.map((symptom) => ({
+              id: symptom.id,
+              ts: symptom.ts,
+              kind: symptom.kind,
+              label: labelOf(symptom.kind),
+            }))}
+            onSymptomTap={setActiveSymptomId}
           />
           {readings.length === 0 && <p className={styles.muted}>{t("noReadings")}</p>}
           <div className={styles.range}>
@@ -121,14 +164,34 @@ export function DaySection({
           {isToday && (
             <ChartCaption readings={readings} from={new Date(day.from)} to={new Date(day.to)} />
           )}
+          {activeSymptom && (
+            <SymptomDetailCard
+              locale={locale}
+              timeZone={day.timezone}
+              symptom={activeSymptom}
+              spaceKinds={symptomRange.kinds}
+              readings={readingsAround(
+                activeSymptom.ts,
+                readings,
+                unit,
+                locale,
+                glucose(`unit.${unit}`),
+              )}
+              onClose={() => {
+                setActiveSymptomId(null);
+              }}
+            />
+          )}
         </div>
-        {day.meals.length === 0 ? (
-          <p className={styles.muted}>{t(isToday ? "noMealsToday" : "noMeals")}</p>
+        {entries.length === 0 ? (
+          <p className={styles.muted}>
+            {t(symptomsOnly ? "noSymptoms" : isToday ? "noMealsToday" : "noMeals")}
+          </p>
         ) : (
           <ul className={styles.timeline} aria-label={t("meals")}>
-            {meals.map((meal, index) => (
+            {entries.map((entry, index) => (
               <li
-                key={meal.id}
+                key={entry.kind === "meal" ? entry.meal.id : entry.symptom.id}
                 ref={(el) => {
                   rows.current[index] = el;
                 }}
@@ -136,38 +199,48 @@ export function DaySection({
                   move(event, index);
                 }}
               >
-                <MealCard
-                  meal={meal}
-                  timeZone={day.timezone}
-                  variant="row"
-                  locale={locale}
-                  role={role}
-                  detail={
-                    <>
-                      {t("carbs", { carbs: meal.totalCarbs })}
-                      {meal.stats.peak && (
-                        <>
-                          {" "}
-                          · {t("peak")}{" "}
-                          <PeakValue
-                            peak={{ ...meal.stats.peak, mealTs: meal.ts }}
-                            unit={unit}
-                            timeZone={day.timezone}
-                            layout="value"
-                          />{" "}
-                          {stats("after", {
-                            duration: formatDuration(
-                              stats,
-                              meal.stats.peak.minutesAfterMeal,
-                              "short",
-                            ),
-                          })}
-                        </>
-                      )}{" "}
-                      · {meal.byUser.name}
-                    </>
-                  }
-                />
+                {entry.kind === "symptom" ? (
+                  <SymptomRow
+                    symptom={entry.symptom}
+                    locale={locale}
+                    timeZone={day.timezone}
+                    spaceKinds={symptomRange.kinds}
+                    onOpen={setActiveSymptomId}
+                  />
+                ) : (
+                  <MealCard
+                    meal={entry.meal}
+                    timeZone={day.timezone}
+                    variant="row"
+                    locale={locale}
+                    role={role}
+                    detail={
+                      <>
+                        {t("carbs", { carbs: entry.meal.totalCarbs })}
+                        {entry.meal.stats.peak && (
+                          <>
+                            {" "}
+                            · {t("peak")}{" "}
+                            <PeakValue
+                              peak={{ ...entry.meal.stats.peak, mealTs: entry.meal.ts }}
+                              unit={unit}
+                              timeZone={day.timezone}
+                              layout="value"
+                            />{" "}
+                            {stats("after", {
+                              duration: formatDuration(
+                                stats,
+                                entry.meal.stats.peak.minutesAfterMeal,
+                                "short",
+                              ),
+                            })}
+                          </>
+                        )}{" "}
+                        · {entry.meal.byUser.name}
+                      </>
+                    }
+                  />
+                )}
               </li>
             ))}
           </ul>

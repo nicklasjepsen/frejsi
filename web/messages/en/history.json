@@ -24,6 +24,10 @@
   "retry": "Try again",
   "carbs": "{carbs} g",
   "peak": "peak",
+  "symptomsFilter": "Symptoms",
+  "noSymptoms": "No symptoms this day",
+  "noSymptomsWeek": "No symptoms this week",
+  "symptomsLabel": "Symptoms",
   "observation": {
     "title": "Weekly summary",
     "ready": "With questions for the clinic · ready",
