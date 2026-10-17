@@ -1,6 +1,7 @@
 import { HttpError } from "../../schemas/api";
 import { WeekInsight, WeekInsightInput } from "../../schemas/ai";
 import { assertNoDosing } from "../guard";
+import { assertNoSymptomExplanation } from "./guard";
 import type { AiProvider } from "../types";
 import { assertKnownNumbers, narrationInput, numerals } from "./numbers";
 import { weekPrompt } from "./prompt-week";
@@ -17,6 +18,7 @@ export async function narrateWeek(provider: AiProvider, raw: WeekInsightInput) {
       const safe = value.questions.filter((question) => {
         try {
           assertNoDosing(question, "question");
+          assertNoSymptomExplanation(question, "question");
           assertKnownNumbers(question, allowed);
           return true;
         } catch {
@@ -41,6 +43,7 @@ export async function narrateWeek(provider: AiProvider, raw: WeekInsightInput) {
       const parsed = output.safeParse(result.json);
       if (!parsed.success) throw new HttpError(502, "ai-rejected");
       assertNoDosing(parsed.data.summary, "summary");
+      assertNoSymptomExplanation(parsed.data.summary, "summary");
       assertKnownNumbers(parsed.data.summary, allowed);
       return { ...parsed.data, rejectedCount, model: result.model };
     } catch (error) {

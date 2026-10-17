@@ -1,6 +1,7 @@
 import { HttpError } from "../../schemas/api";
 import { InsightInput, MealInsight } from "../../schemas/ai";
 import { guardOutput } from "../guard";
+import { assertNoSymptomExplanation } from "./guard";
 import type { AiProvider } from "../types";
 import { assertKnownNumbers, narrationInput, numerals } from "./numbers";
 import { mealPrompt } from "./prompt-meal";
@@ -24,6 +25,7 @@ export async function narrateMeal(provider: AiProvider, raw: InsightInput) {
       const parsed = MealInsight.safeParse(result.json);
       if (!parsed.success) throw new HttpError(502, "ai-rejected");
       guardOutput(parsed.data);
+      assertNoSymptomExplanation(parsed.data.text, "text");
       assertKnownNumbers(parsed.data.text, allowed);
       return { ...parsed.data, model: result.model };
     } catch (error) {

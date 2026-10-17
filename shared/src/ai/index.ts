@@ -31,3 +31,8 @@ export {
   type ResolvedLine,
 } from "./recipe/ingredients";
 export { computeRecipe, type PortionLabels, type RecipeTotals } from "./recipe/compute";
+export {
+  SYMPTOM_EXPLANATION_PHRASES,
+  assertNoSymptomExplanation,
+  findSymptomExplanation,
+} from "./insight/guard";
