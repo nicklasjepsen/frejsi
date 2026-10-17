@@ -122,3 +122,9 @@ export {
 } from "./glucose/import/index";
 export { Prisma } from "@prisma/client";
 export { mealSymbol, storedSymbol, type SymbolItem } from "./meals/symbol";
+export {
+  DEFAULT_KIND_LABELS,
+  isKnownKind,
+  parseSpaceKinds,
+  symptomKindLabel,
+} from "./symptoms/index";
