@@ -24,6 +24,8 @@ import { curveView, MEAL_TS, mealView, previousMeal, shift } from "./test-suppor
 let fake: FetchFake;
 let view: ReturnType<typeof curveView>;
 const writes = () => fake.calls.filter((c) => c.method !== "GET");
+/** The meal reads, without the curve card's symptom reads (v0.6.0 plan §5). */
+const reads = () => fake.calls.filter((c) => c.method === "GET" && !c.path.includes("/symptoms"));
 function mount(layout: "phone" | "desktop" = "phone") {
   return render(
     <I18nProvider locale="da" messages={getMessages("da")}>
@@ -125,7 +127,7 @@ describe("edit and delete inside meal detail", () => {
           },
         },
       ]);
-      expect(fake.calls.filter((c) => c.method === "GET").map((c) => c.path)).toEqual([
+      expect(reads().map((c) => c.path)).toEqual([
         "/api/spaces/s1/meals/m1/curve",
         "/api/spaces/s1/meals/m1/curve",
       ]);
@@ -142,7 +144,7 @@ describe("edit and delete inside meal detail", () => {
       expect(status).toHaveAttribute("role", "status");
       expect(sheet.getByRole("button", { name: "Hent måltidet igen" })).toBeDisabled();
       expect(writes()).toHaveLength(1);
-      expect(fake.calls.filter((c) => c.method === "GET")).toHaveLength(2);
+      expect(reads()).toHaveLength(2);
       await waitFor(
         () => {
           expect(screen.queryByRole("dialog")).toBeNull();
@@ -535,4 +537,18 @@ describe("save as own dish", () => {
     expect(new Uint8Array(buffer)).toEqual(bytes);
     expect(save).toBeDisabled();
   });
+});
+
+describe("the header's second action: 'Gem som opskrift' (v0.6.0 plan §6, task 5 mounts it)", () => {
+  it.each(["phone", "desktop"] as const)(
+    "%s: sits next to 'Gem som egen ret' and opens the recipe form with the meal",
+    async (layout) => {
+      mount(layout);
+      const actions = within(await screen.findByTestId("meal-actions"));
+      const recipe = actions.getByRole("link", { name: "Gem som opskrift" });
+      expect(recipe).toHaveAttribute("href", "/da/recipe/new?meal=m1");
+      const dish = actions.getByRole("button", { name: "Gem som egen ret" });
+      expect(dish.compareDocumentPosition(recipe)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+    },
+  );
 });

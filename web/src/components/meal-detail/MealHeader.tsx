@@ -11,6 +11,7 @@ import { resolveLocale } from "@/lib/i18n/routing";
 
 import { desktopMeta, phoneMeta } from "./format";
 import styles from "./meal-detail.module.css";
+import { SaveAsRecipe } from "./SaveAsRecipe";
 
 interface HeaderProps {
   meal: MealView;
@@ -19,8 +20,8 @@ interface HeaderProps {
   /** `SaveAsDish`, mounted by `MealDetail`. */
   saveDish?: ReactNode;
   /**
-   * The second action of the row, after `SaveAsDish`: the recipe lane's `SaveAsRecipe` (#200,
-   * mounted by #202 once both have merged). The header draws whatever it is given here.
+   * The second action of the row, after `SaveAsDish`: `SaveAsRecipe` (#200) unless the caller
+   * gives something else here (v0.6.0 task 5 mounts it on both layouts).
    */
   saveRecipe?: ReactNode;
 }
@@ -69,7 +70,7 @@ export function PhoneMealHeader({
           {t("editMeal")}
         </Button>
         {saveDish}
-        {saveRecipe}
+        {saveRecipe ?? <SaveAsRecipe meal={meal} locale={locale} />}
       </div>
     </>
   );
@@ -98,7 +99,7 @@ export function DesktopMealHeader({ meal, timeZone, onEdit, saveDish, saveRecipe
             <Kbd>{t("editKey")}</Kbd>
           </Button>
           {saveDish}
-          {saveRecipe}
+          {saveRecipe ?? <SaveAsRecipe meal={meal} locale={locale} />}
         </div>
       </div>
     </div>
