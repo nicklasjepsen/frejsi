@@ -663,6 +663,34 @@ describe("Nu · meal history on the day curve", () => {
     ).toEqual([{ readings: "0" }, { readings: "0", date: "2026-10-14" }]);
   });
 
+  // Codex on #217: before 06:00 the markers hold all of yesterday, but the curve starts at 06:00.
+  it("names 'Bolus givet' only for a bolus time inside the drawn day, not one before 06:00", async () => {
+    vi.setSystemTime(new Date("2026-10-15T02:00:00.000Z")); // 04:00 Copenhagen
+    api.date = "2026-10-15";
+    api.meals = [];
+    historyMeals = [];
+    previousMeals = [
+      {
+        ...lunch,
+        ts: "2026-10-14T04:10:00.000Z", // 06:10, on the curve
+        bolusTs: "2026-10-14T03:50:00.000Z", // 05:50, before it
+        stats: emptyStats,
+      },
+    ];
+    mount();
+    const desktop = within(screen.getByTestId("now-desktop"));
+    expect(await desktop.findByRole("button", { name: "Måltid kl. 06:10" })).toBeInTheDocument();
+    expect(
+      desktop.getByRole("img", { name: /Glukose i dag/ }).querySelector("[data-testid=bolus]"),
+    ).toBeNull();
+    expect(desktop.queryByText("Bolus givet")).toBeNull();
+    cleanup();
+    previousMeals = [{ ...lunch, bolusTs: "2026-10-14T09:58:00.000Z", stats: emptyStats }];
+    mount();
+    const again = within(screen.getByTestId("now-desktop"));
+    expect(await again.findByText("Bolus givet")).toBeInTheDocument();
+  });
+
   it("keeps the day curve's age visible when a nested clock is ahead of its parent's clock", () => {
     // Model the milliseconds between the parent render and a child mounting/ticking.
     let clock = T0.getTime();
