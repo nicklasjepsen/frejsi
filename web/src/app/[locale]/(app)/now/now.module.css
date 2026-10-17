@@ -84,6 +84,7 @@
   margin-top: 8px;
   display: flex;
   flex-direction: column;
+  gap: 10px;
 }
 
 .phoneReview {
@@ -326,4 +327,19 @@
   .simpleActions > a[data-variant="secondary"] {
     min-height: 72px;
   }
+}
+
+/* The last meal's food symbol on the simpleMode card (v0.6.0 plan §7), in the meal colour. */
+.simpleMeal {
+  position: relative;
+}
+
+.simpleSymbol {
+  position: absolute;
+  top: 10px;
+  right: 14px;
+  z-index: 1;
+  display: inline-flex;
+  color: var(--meal-marker);
+  pointer-events: none;
 }

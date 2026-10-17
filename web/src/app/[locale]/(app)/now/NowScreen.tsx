@@ -4,9 +4,11 @@ import type { Role } from "@frejsi/shared/schemas/index";
 import { mealStats } from "@frejsi/shared/stats";
 import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
+import { useState } from "react";
 
 import { localDateOf } from "@/components/day/format";
 import { MealCard, useDay } from "@/components/day";
+import { FoodSymbol } from "@/components/food/FoodSymbol";
 import { PhotoTile } from "@/components/food/PhotoTile";
 import {
   ChartLegend,
@@ -15,11 +17,16 @@ import {
   formatDayTitle,
   GlucoseChart,
   GlucoseValue,
+  readingsAround,
   SourcePill,
   useNow,
   useAgeText,
 } from "@/components/glucose";
+import { SymptomDetailCard } from "@/components/history/SymptomDetailCard";
+import { useSymptomRange } from "@/components/history/useSymptomRange";
 import { ManualReadingButton, ManualReadingSheet, useManualReading } from "@/components/manual";
+import { FeelButton } from "@/components/symptoms/FeelButton";
+import { useKindLabel } from "@/components/symptoms/kinds";
 import { HeaderSlot } from "@/components/shell/HeaderSlot";
 import { SourceStatusBanner } from "@/components/shell/SourceStatusBanner";
 import { Button } from "@/components/ui/Button";
@@ -74,6 +81,7 @@ export function NowScreen({
   const t = useTranslations("now");
   const g = useTranslations("glucose");
   const chart = useTranslations("chart");
+  const categories = useTranslations("foodCategory");
   const ageText = useAgeText();
   const errors = useTranslations("errors.api");
   const meals = useTranslations("eat.now");
@@ -124,6 +132,21 @@ export function NowScreen({
   const foods = useNowFoods(spaceId, simpleMode, feed.subscribe, feed.loaded);
   const lastMeal = day.status === "ready" ? (day.day.meals[0] ?? null) : null;
   const mealZone = day.status === "ready" ? day.day.timezone : timeZone;
+  // The day's symptoms for the desktop curve (v0.6.0 plan §5): the curve's day, read again on
+  // every symptom event. A viewer never mounts this screen; the route refuses it anyway.
+  const symptomsFrom = dayFrom.toISOString();
+  const symptomsTo = new Date(dayFrom.getTime() + WINDOW_HOURS * 60 * 60 * 1000).toISOString();
+  const symptomRange = useSymptomRange(
+    spaceId,
+    symptomsFrom,
+    symptomsTo,
+    feed.subscribe,
+    feed.loaded && !simpleMode && role !== "viewer",
+  );
+  const symptoms = symptomRange.status === "ready" ? symptomRange.symptoms : [];
+  const kindLabel = useKindLabel(locale, symptomRange.kinds);
+  const [activeSymptomId, setActiveSymptomId] = useState<string | null>(null);
+  const activeSymptom = symptoms.find((symptom) => symptom.id === activeSymptomId) ?? null;
 
   // From the feed, not the window: a reading older than 24 hours still shows, with its age.
   const latest = feed.latest;
@@ -160,6 +183,17 @@ export function NowScreen({
         <GlucoseValue reading={latest} unit={unit} now={now} size="simple" showUnit={false} />
         {lastMeal && (
           <div className={styles.simpleMeal}>
+            {/* The meal's symbol on the card (plan §7, decision 5: no curve in simpleMode). */}
+            {lastMeal.symbol !== undefined && (
+              <span
+                className={styles.simpleSymbol}
+                {...(lastMeal.symbol === "unknown"
+                  ? { "aria-hidden": true }
+                  : { role: "img", "aria-label": categories(`names.${lastMeal.symbol}`) })}
+              >
+                <FoodSymbol symbol={lastMeal.symbol} size={32} strokeWidth={2} />
+              </span>
+            )}
             <MealCard
               meal={lastMeal}
               timeZone={mealZone}
@@ -173,6 +207,7 @@ export function NowScreen({
           <Button size="simple" href={localeHref(locale, "/eat")}>
             {t("eatingNow")}
           </Button>
+          <FeelButton locale={locale} simple />
           {ai.enabled && (
             <Button size="simple" variant="secondary" href={localeHref(locale, "/ask")}>
               {t("askAdult")}
@@ -318,11 +353,36 @@ export function NowScreen({
                 onMealTap={(id) => {
                   router.push(mealHref(locale, id));
                 }}
+                symptoms={symptoms.map((symptom) => ({
+                  id: symptom.id,
+                  ts: symptom.ts,
+                  kind: symptom.kind,
+                  label: kindLabel(symptom.kind),
+                }))}
+                onSymptomTap={setActiveSymptomId}
               />
               {latestDayReading && (
                 <p className={styles.chartCaption} data-testid="chart-caption">
                   {chart("lastReading", { age: ageText(latestDayReading.ts, now) })}
                 </p>
+              )}
+              {activeSymptom && (
+                <SymptomDetailCard
+                  locale={locale}
+                  timeZone={zone}
+                  symptom={activeSymptom}
+                  spaceKinds={symptomRange.kinds}
+                  readings={readingsAround(
+                    activeSymptom.ts,
+                    feed.readings,
+                    unit,
+                    locale,
+                    g(`unit.${unit}`),
+                  )}
+                  onClose={() => {
+                    setActiveSymptomId(null);
+                  }}
+                />
               )}
             </Card>
           </div>
@@ -388,6 +448,8 @@ export function NowScreen({
           <Button size="phone" href={localeHref(locale, "/log")}>
             {meals("logMeal")}
           </Button>
+          {/* "Jeg har det…" under the primary action (plan §5); a viewer has no way to log. */}
+          {role !== "viewer" && <FeelButton locale={locale} />}
         </div>
         {/* After the primary action, so "Log et måltid" is on the first screen of an iPhone. */}
         {ai.enabled && foods.askedBy && (

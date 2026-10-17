@@ -66,6 +66,8 @@ beforeEach(() => {
         now: now.toISOString(),
       }),
     "/day": () => jsonResponse(day),
+    "/symptoms/kinds": () => jsonResponse({ kinds: [] }),
+    "/symptoms": () => jsonResponse({ symptoms: [] }),
     "/foods": () =>
       jsonResponse({
         foods: [],
@@ -122,7 +124,19 @@ it.each(["owner", "carer"] as const)(
           new URL(url, "https://example.invalid").pathname.replace("/api/spaces/s1/", ""),
         ),
       ),
-    ).toEqual(new Set(["day", "history/day", "foods", "negotiate", "events", "readings"]));
+    ).toEqual(
+      new Set([
+        "day",
+        "history/day",
+        "foods",
+        "negotiate",
+        "events",
+        "readings",
+        // The desktop curve's symptoms (v0.6.0 plan §5): kinds, times and names, never a reading.
+        "symptoms",
+        "symptoms/kinds",
+      ]),
+    );
     expect(net.calls.filter((url) => url.includes("/history/"))).toEqual([
       "/api/spaces/s1/history/day?readings=0",
     ]);

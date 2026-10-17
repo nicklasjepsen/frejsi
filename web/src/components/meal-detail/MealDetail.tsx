@@ -222,6 +222,8 @@ function Ready({
       size={size}
       together={together}
       onTogetherChange={setTogether}
+      spaceId={spaceId}
+      subscribe={feed.subscribe}
     />
   );
   const observation = aiEnabled ? (
