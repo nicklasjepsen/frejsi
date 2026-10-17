@@ -30,6 +30,7 @@ import shell from "./shell.json";
 import soon from "./soon.json";
 import source from "./source.json";
 import stats from "./stats.json";
+import symptoms from "./symptoms.json";
 import today from "./today.json";
 import viewer from "./viewer.json";
 import welcome from "./welcome.json";
@@ -64,6 +65,7 @@ const messages = {
   soon,
   source,
   stats,
+  symptoms,
   today,
   viewer,
   welcome,
