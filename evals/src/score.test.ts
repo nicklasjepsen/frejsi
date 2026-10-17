@@ -1,5 +1,5 @@
 import { expect, it } from "vitest";
-import { scoreParse, checkStrings, checkInsight, enforceThresholds } from "./score";
+import { scoreParse, scoreRecipe, checkStrings, checkInsight, enforceThresholds } from "./score";
 import { ParsedMeal } from "@frejsi/shared/schemas/ai";
 
 const meal = ParsedMeal.parse({
@@ -83,9 +83,17 @@ it("fails below fixed thresholds and only enforces photo accuracy at twenty eval
     photoCount: 19,
     normaliseAccuracy: 1,
     unmatchedAccuracy: 1,
+    recipeAccuracy: 0.8,
+    recipeCount: 5,
   };
   expect(() => {
     enforceThresholds(scores);
+  }).not.toThrow();
+  expect(() => {
+    enforceThresholds({ ...scores, recipeAccuracy: 0.79 });
+  }).toThrow("recipeAccuracy");
+  expect(() => {
+    enforceThresholds({ ...scores, recipeAccuracy: 0, recipeCount: 0 });
   }).not.toThrow();
   expect(() => {
     enforceThresholds({ ...scores, parseRecall: 0.79 });
@@ -96,4 +104,15 @@ it("fails below fixed thresholds and only enforces photo accuracy at twenty eval
   expect(() => {
     enforceThresholds({ ...scores, photoCount: 10 }, 20);
   }).toThrow();
+});
+it("scores a recipe on its line count and carbs per portion within the tolerance", () => {
+  const expected = { ingredients: 6, carbsPerPortion: 33 };
+  expect(scoreRecipe(expected, { ingredients: 6, carbsPerPortion: 33 })).toBe(true);
+  expect(scoreRecipe(expected, { ingredients: 6, carbsPerPortion: 42 })).toBe(true);
+  expect(scoreRecipe(expected, { ingredients: 6, carbsPerPortion: 44 })).toBe(false);
+  expect(scoreRecipe(expected, { ingredients: 5, carbsPerPortion: 33 })).toBe(false);
+  expect(scoreRecipe(expected, { ingredients: 6, carbsPerPortion: undefined })).toBe(false);
+  expect(
+    scoreRecipe({ ingredients: 2, carbsPerPortion: 0 }, { ingredients: 2, carbsPerPortion: 1 }),
+  ).toBe(false);
 });

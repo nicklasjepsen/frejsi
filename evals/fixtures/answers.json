@@ -2207,5 +2207,154 @@
         "approx": true
       }
     }
+  ],
+  "recipe-01": [
+    {
+      "kind": "json",
+      "model": "fixture",
+      "json": {
+        "title": "Eksempellasagne",
+        "ingredients": [
+          {
+            "name": "hakket oksekød",
+            "amount": 500,
+            "unit": "g"
+          },
+          {
+            "name": "flåede tomater",
+            "amount": 2,
+            "unit": "dåse"
+          },
+          {
+            "name": "løg",
+            "amount": 1
+          },
+          {
+            "name": "lasagneplader",
+            "amount": 250,
+            "unit": "g"
+          },
+          {
+            "name": "mælk",
+            "amount": 5,
+            "unit": "dl"
+          },
+          {
+            "name": "salt og peber"
+          }
+        ],
+        "yieldPortions": 6
+      }
+    }
+  ],
+  "recipe-02": [
+    {
+      "kind": "json",
+      "model": "fixture",
+      "json": {
+        "title": "Eksempelboller",
+        "ingredients": [
+          {
+            "name": "mælk",
+            "amount": 5,
+            "unit": "dl"
+          },
+          {
+            "name": "gær",
+            "amount": 50,
+            "unit": "g"
+          },
+          {
+            "name": "sukker",
+            "amount": 2,
+            "unit": "spsk"
+          },
+          {
+            "name": "salt",
+            "amount": 1,
+            "unit": "tsk"
+          },
+          {
+            "name": "hvedemel",
+            "amount": 600,
+            "unit": "g"
+          },
+          {
+            "name": "æg",
+            "amount": 2,
+            "unit": "stk"
+          }
+        ],
+        "yieldPortions": 12
+      }
+    }
+  ],
+  "recipe-03": [
+    {
+      "kind": "json",
+      "model": "fixture",
+      "json": {
+        "title": "Kartoffelsalat",
+        "ingredients": [
+          {
+            "name": "kartofler",
+            "amount": 1,
+            "unit": "kg"
+          },
+          {
+            "name": "æbler",
+            "amount": 2
+          },
+          {
+            "name": "olie",
+            "amount": 1,
+            "unit": "dl"
+          },
+          {
+            "name": "salt og peber"
+          }
+        ],
+        "yieldPortions": 4
+      }
+    }
+  ],
+  "recipe-06": [
+    {
+      "kind": "json",
+      "model": "fixture",
+      "json": {
+        "title": "Eksempellasagne",
+        "ingredients": [
+          {
+            "name": "hakket oksekød",
+            "amount": 500,
+            "unit": "g"
+          },
+          {
+            "name": "flåede tomater",
+            "amount": 2,
+            "unit": "dåse"
+          },
+          {
+            "name": "løg",
+            "amount": 1
+          },
+          {
+            "name": "lasagneplader",
+            "amount": 250,
+            "unit": "g"
+          },
+          {
+            "name": "mælk",
+            "amount": 5,
+            "unit": "dl"
+          },
+          {
+            "name": "salt og peber"
+          }
+        ],
+        "yieldPortions": 6
+      }
+    }
   ]
 }

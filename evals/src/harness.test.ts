@@ -16,13 +16,45 @@ it("runs the entire recorded fake corpus, scores it and prints the missing-key a
   expect(live).not.toHaveBeenCalled();
   expect(log).toHaveBeenCalledWith("live evals skipped: no ANTHROPIC_API_KEY");
   expect(log).toHaveBeenCalledWith("5 photo cases pending an image");
+  expect(log).toHaveBeenCalledWith("1 recipe photo case pending an image");
   expect(result.fake.scores).toMatchObject({
     parseRecall: 1,
     parsePortions: 1,
     normaliseAccuracy: 1,
     photoCount: 0,
+    recipeAccuracy: 1,
+    recipeCount: 5,
   });
-  expect(result.fake.completed).toBe(55);
+  expect(result.fake.completed).toBe(60);
+  expect(result.fake.pendingRecipes).toBe(1);
+});
+it("runs a JSON-LD recipe case through no provider at all, and a text case through one counted call", async () => {
+  const cases = await loadCases();
+  const page = cases.find((c) => c.kind === "recipe" && c.html !== undefined);
+  const text = cases.find((c) => c.kind === "recipe" && c.text !== undefined);
+  if (!page || !text) throw new Error("missing recipe cases");
+  const factory = vi.fn(fake);
+  const result = await runSet([page], factory);
+  expect(factory).not.toHaveBeenCalled();
+  expect(result).toMatchObject({
+    completed: 1,
+    calls: 0,
+    scores: { recipeAccuracy: 1, recipeCount: 1 },
+  });
+  const typed = await runSet([text], factory);
+  expect(factory).toHaveBeenCalledOnce();
+  expect(typed).toMatchObject({ completed: 1, calls: 1, scores: { recipeAccuracy: 1 } });
+  const wrong = {
+    ...text,
+    recorded: [
+      {
+        kind: "json" as const,
+        model: "fixture",
+        json: { title: "Nothing", ingredients: [], yieldPortions: 1 },
+      },
+    ],
+  };
+  await expect(runSet([wrong], fake)).rejects.toThrow("recipeAccuracy");
 });
 it("uses the keyed factory only after fake success, respects scope and accepts the evals secret alias", async () => {
   const live = vi.fn((_key: string, _budget: RunBudget) => fake);
@@ -32,7 +64,7 @@ it("uses the keyed factory only after fake success, respects scope and accepts t
     live,
   );
   expect(live).toHaveBeenCalledOnce();
-  expect(result.live?.completed).toBe(50);
+  expect(result.live?.completed).toBe(55);
   await expect(execute({ EVALS_SCOPE: "typo" }, () => undefined, live)).rejects.toThrow("scope");
 });
 it("fails malformed output, missing items, a swallowed cap error, and rejected raw insight before retries hide it", async () => {

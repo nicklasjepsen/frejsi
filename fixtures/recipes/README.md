@@ -8,6 +8,8 @@ Hand-written, fictional recipes with round numbers for the recipe parser tests a
   model call. Six ingredient lines in the amount-unit-name grammar and `recipeYield: "6 portioner"`.
 - `lasagne.txt`: the same recipe as pasted text, for the model path and the text eval case.
 - `boller.txt`: a sweet bun recipe as pasted text with dl, spsk, tsk and stk units.
+- `boller.jsonld.html`: the same buns as a JSON-LD page (`recipeYield: "12 stk"`), the second
+  no-model eval case.
 
 The amounts are chosen so the expected carbs are easy to check by hand against
 `evals/fixtures/library.json`.

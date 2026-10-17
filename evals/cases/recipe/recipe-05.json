@@ -1,0 +1,8 @@
+{
+  "locale": "da",
+  "id": "recipe-05",
+  "kind": "recipe",
+  "html": "boller.jsonld.html",
+  "expectedIngredients": 6,
+  "expectedCarbsPerPortion": 39
+}

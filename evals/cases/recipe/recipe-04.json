@@ -1,0 +1,8 @@
+{
+  "locale": "da",
+  "id": "recipe-04",
+  "kind": "recipe",
+  "html": "lasagne.jsonld.html",
+  "expectedIngredients": 6,
+  "expectedCarbsPerPortion": 33
+}

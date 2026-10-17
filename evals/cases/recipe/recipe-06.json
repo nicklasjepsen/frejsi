@@ -1,0 +1,9 @@
+{
+  "locale": "da",
+  "id": "recipe-06",
+  "kind": "recipe",
+  "description": "A photographed page of the fictional lasagne. The owner supplies the image (plan task 7); the case is skipped by name until evals/fixtures/recipe-page.jpg exists.",
+  "photo": "recipe-page.jpg",
+  "expectedIngredients": 6,
+  "expectedCarbsPerPortion": 33
+}
