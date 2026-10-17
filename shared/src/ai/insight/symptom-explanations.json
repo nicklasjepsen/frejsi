@@ -13,7 +13,18 @@
     "symptom of",
     "explained by",
     "the reason for",
-    "diagnos"
+    "diagnos",
+    "result from",
+    "results from",
+    "resulting from",
+    "due to",
+    "stems from",
+    "stem from",
+    "triggered by",
+    "brought on by",
+    "comes from",
+    "linked to",
+    "related to"
   ],
   "da": [
     "fordi dit blodsukker",
@@ -29,6 +40,12 @@
     "et symptom på",
     "symptom på",
     "forklares af",
-    "diagnose"
+    "diagnose",
+    "kommer af",
+    "som følge af",
+    "udløst af",
+    "hænger sammen med",
+    "på grund af",
+    "pga."
   ]
 }
