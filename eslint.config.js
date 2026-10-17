@@ -96,7 +96,7 @@ const aiBoundaryRule = {
       file.includes("/evals/") ||
       /\/web\/src\/ai\/provider\.ts$/.test(file) ||
       /\/poller\/src\/functions\/(enrich-foods|weekly-insight)\.ts$/.test(file);
-    const service = /\/shared\/src\/ai\/(search|parse|estimate|insight)\//.test(file);
+    const service = /\/shared\/src\/ai\/(search|parse|estimate|insight|recipe)\//.test(file);
     const infrastructure =
       /\/shared\/src\/ai\/(capped|tool-loop)\.ts$/.test(file) ||
       /\/shared\/src\/ai\/(anthropic|voyage|azure-openai|ollama)\//.test(file);
