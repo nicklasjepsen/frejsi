@@ -292,25 +292,23 @@ describe("Log-Telefon", () => {
     expect(nav.push).not.toHaveBeenCalled();
   });
 
-  it("taps the bolus as a time only and sends it with the meal", async () => {
-    api({ favourites: [lunchbox] });
-    mount();
-    fireEvent.click(await screen.findByRole("button", { name: /Min madpakke/ }));
-    await screen.findByTestId("log-confirm");
-    fireEvent.click(screen.getByRole("button", { name: "Bolus givet nu" }));
-    expect(screen.getByText("Bolus 12:10")).toBeVisible();
-    fireEvent.click(screen.getByRole("button", { name: "Fortryd" }));
-    fireEvent.click(screen.getByRole("button", { name: "Bolus givet nu" }));
-    fireEvent.click(screen.getByRole("button", { name: "Gem måltid" }));
-    await waitFor(() => {
-      expect(nav.push).toHaveBeenCalled();
-    });
-    expect(writes()[0]?.body).toEqual({
-      ts: T0_PLUS_15,
-      items: [{ foodId: "f-box", name: "Min madpakke", portionLabel: "1 madpakke", carbs: 42 }],
-      bolusTs: T0.toISOString(),
-    });
-  });
+  // Issue #215: the bolus time comes from an imported pump record, later; nobody taps it here.
+  it.each(["phone", "desktop"] as const)(
+    "%s: has no bolus control, nothing says Bolus, and the meal is saved without a bolus time",
+    async (layout) => {
+      api({ favourites: [lunchbox] });
+      const { container } = mount({ layout });
+      fireEvent.click(await screen.findByRole("button", { name: /Min madpakke/ }));
+      expect(await screen.findByTestId("total-bar")).toHaveTextContent("42 g");
+      expect(screen.queryByRole("button", { name: /bolus/i })).toBeNull();
+      expect(container.textContent).not.toMatch(/bolus|insulin/i);
+      fireEvent.click(screen.getByRole("button", { name: /Gem måltid/ }));
+      await waitFor(() => {
+        expect(nav.push).toHaveBeenCalled();
+      });
+      expect(writes()[0]?.body).not.toHaveProperty("bolusTs");
+    },
+  );
 
   describe("Spiser om (issue #191)", () => {
     const chips = () => within(screen.getByTestId("eating-in"));
@@ -394,13 +392,12 @@ describe("Log-Telefon", () => {
     });
   });
 
-  it("has no bolus tap for a simpleMode session", async () => {
+  it("has no bolus control for a simpleMode session either", async () => {
     api({ favourites: [lunchbox] });
-    mount({ simpleMode: true });
+    const { container } = mount({ simpleMode: true });
     fireEvent.click(await screen.findByRole("button", { name: /Min madpakke/ }));
     await screen.findByTestId("log-confirm");
-    expect(screen.queryByRole("button", { name: "Bolus givet nu" })).toBeNull();
-    expect(screen.queryByText(/regner aldrig insulin/)).toBeNull();
+    expect(container.textContent).not.toMatch(/bolus|insulin/i);
   });
 
   it("shows the offline notice", () => {

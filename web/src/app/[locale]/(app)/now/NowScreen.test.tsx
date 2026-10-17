@@ -607,6 +607,23 @@ describe("Nu · meal history on the day curve", () => {
     expect(api.calls.find((c) => c.path === "history/day")?.query).toEqual({ readings: "0" });
   });
 
+  // Issue #215: new meals carry no bolus time until a pump import adds one.
+  it("draws no triangle and no bolus time for meals without a stored one", async () => {
+    api.meals = [lunch, apple];
+    historyMeals = [
+      { ...lunch, stats: emptyStats },
+      { ...apple, stats: emptyStats },
+    ];
+    mount();
+    const desktop = within(screen.getByTestId("now-desktop"));
+    const chart = await desktop.findByRole("img", {
+      name: "Glukose i dag fra 06:00 til 15:13 med 2 måltider",
+    });
+    expect(within(chart).getAllByTestId("meal-line")).toHaveLength(2);
+    expect(within(chart).queryByTestId("bolus")).toBeNull();
+    expect(desktop.queryByText(/Bolus \d/)).toBeNull();
+  });
+
   it.each(["meal.created", "meal.updated", "meal.deleted"])(
     "refetches history on %s, updating markers and peaks",
     async (type) => {

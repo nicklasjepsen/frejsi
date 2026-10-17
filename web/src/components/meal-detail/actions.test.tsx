@@ -94,7 +94,8 @@ describe("edit and delete inside meal detail", () => {
     async (layout) => {
       const sheet = await edit(layout);
       expect(sheet.getByRole("button", { name: "Tilbage" })).toBeVisible();
-      expect(sheet.getByText("Bolus 11:48")).toBeVisible();
+      // The stored bolus time is not edited here (issue #215); the sheet does not show it.
+      expect(sheet.queryByText(/bolus/i)).toBeNull();
       fireEvent.click(sheet.getByRole("button", { name: "½ medium · 7 g" }));
       fireEvent.change(sheet.getByLabelText("Kulhydrat · Cheese"), { target: { value: "2" } });
       fireEvent.change(sheet.getByLabelText("Tidspunkt"), { target: { value: "11:45" } });
@@ -117,7 +118,6 @@ describe("edit and delete inside meal detail", () => {
           path: "/api/spaces/s1/meals/m1",
           body: {
             ts: shift(MEAL_TS, -15),
-            bolusTs: view.meal.bolusTs,
             note: "At the park",
             items: [
               { name: "Rye bread", foodId: "bread", portionLabel: "2 slices", carbs: 36 },
@@ -204,8 +204,7 @@ describe("edit and delete inside meal detail", () => {
     });
   });
 
-  it("uploads a changed photo only on Save and includes a newly recorded timestamp", async () => {
-    view.meal = mealView({ bolusTs: undefined });
+  it("uploads a changed photo only on Save", async () => {
     const sheet = await edit();
     fireEvent.change(sheet.getByLabelText("Vedhæft billede"), {
       target: { files: [new File(["fictional"], "meal.png", { type: "image/png" })] },
@@ -217,15 +216,12 @@ describe("edit and delete inside meal detail", () => {
       ),
     );
     expect(writes()).toEqual([]);
-    fireEvent.click(sheet.getByRole("button", { name: "Bolus givet nu" }));
     fireEvent.click(sheet.getByRole("button", { name: "Gem" }));
     await waitFor(() => {
       expect(writes()).toHaveLength(1);
     });
-    expect(writes()[0]?.body).toMatchObject({
-      photoDataUrl: "data:image/jpeg;base64,AQID",
-      bolusTs: shift(MEAL_TS, 360),
-    });
+    expect(writes()[0]?.body).toMatchObject({ photoDataUrl: "data:image/jpeg;base64,AQID" });
+    expect(writes()[0]?.body).not.toHaveProperty("bolusTs");
   });
 
   it("waits for selected-photo processing before Save, including failed processing", async () => {
@@ -347,18 +343,6 @@ describe("edit and delete inside meal detail", () => {
       },
       { timeout: 3000 },
     );
-  });
-  it("records a new tap, undoes it and omits an unchanged absent timestamp", async () => {
-    view.meal = mealView({ bolusTs: undefined });
-    const sheet = await edit();
-    fireEvent.click(sheet.getByRole("button", { name: "Bolus givet nu" }));
-    expect(sheet.getByText("Bolus 18:00")).toBeVisible();
-    fireEvent.click(sheet.getByRole("button", { name: "Fortryd" }));
-    fireEvent.click(sheet.getByRole("button", { name: "Gem" }));
-    await waitFor(() => {
-      expect(writes()).toHaveLength(1);
-    });
-    expect(writes()[0]?.body).not.toHaveProperty("bolusTs");
   });
   it("asks before deleting, cancels safely, reports failure and goes to Now after success", async () => {
     const sheet = await edit();

@@ -403,13 +403,6 @@ export function useLogController({
     chooseEatingIn: (eatingIn: EatingIn) => {
       setDraft((d) => chooseEatingIn(d, eatingIn));
     },
-    tapBolus: () => {
-      setDraft((d) => ({ ...d, bolusTs: new Date().toISOString() }));
-    },
-    undoBolus: () => {
-      setDraft((d) => ({ ...d, bolusTs: null }));
-    },
-    canUndoBolus: draft.bolusTs !== null,
     photo,
     setPhoto,
     save,

@@ -8,7 +8,6 @@ import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import da from "../../../messages/da";
 import en from "../../../messages/en";
 import { BarcodeScanner } from "./BarcodeScanner";
-import { BolusTap } from "./BolusTap";
 import { addFood, emptyDraft } from "./draft";
 import { EntryTiles } from "./EntryTiles";
 import { LookupResults } from "./LookupResults";
@@ -181,42 +180,6 @@ describe("PortionSheet", () => {
       target: { value: "9000" },
     });
     expect(grams).toHaveBeenLastCalledWith(null);
-  });
-});
-
-describe("BolusTap", () => {
-  it("records only a time, shows Bolus HH:MM with an undo, and carries the drawn sentence", () => {
-    const tap = vi.fn();
-    const undo = vi.fn();
-    const view = mount(
-      <BolusTap bolusTs={null} timeZone="Europe/Copenhagen" onTap={tap} onUndo={undo} />,
-    );
-    expect(
-      screen.getByText(
-        '"Bolus givet nu" gemmer kun tidspunktet, så det kan ses på kurven. Frejsi regner aldrig insulin.',
-      ),
-    ).toBeVisible();
-    fireEvent.click(screen.getByRole("button", { name: "Bolus givet nu" }));
-    expect(tap).toHaveBeenCalledWith();
-    view.unmount();
-    mount(
-      <BolusTap
-        bolusTs="2026-10-14T09:58:00.000Z"
-        timeZone="Europe/Copenhagen"
-        onTap={tap}
-        onUndo={undo}
-      />,
-    );
-    expect(screen.getByText("Bolus 11:58")).toBeVisible();
-    fireEvent.click(screen.getByRole("button", { name: "Fortryd" }));
-    expect(undo).toHaveBeenCalledOnce();
-    // No amount, unit or ratio can be entered anywhere.
-    expect(document.querySelectorAll("input, select, textarea")).toHaveLength(0);
-  });
-
-  it("uses the allowed English label", () => {
-    mount(<BolusTap bolusTs={null} timeZone="UTC" onTap={vi.fn()} onUndo={vi.fn()} />, "en");
-    expect(screen.getByRole("button", { name: "bolus given now" })).toBeVisible();
   });
 });
 

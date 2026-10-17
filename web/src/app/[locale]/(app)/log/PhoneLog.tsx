@@ -28,7 +28,6 @@ import { useOnline, type LogController } from "./controller";
 import type { LogScreenProps } from "./LogScreen";
 import styles from "./log.module.css";
 import {
-  Bolus,
   EatingInField,
   PhotoField,
   SaveNotices,
@@ -370,8 +369,7 @@ function ConfirmView({ controller, phone, timeZone, simpleMode }: Props) {
         <EatingInField controller={controller} simpleMode={simpleMode} />
         <TimeField controller={controller} at={at} timeZone={timeZone} />
         <PhotoField controller={controller} />
-        <Bolus controller={controller} timeZone={timeZone} simpleMode={simpleMode} />
-      </div>
+              </div>
       <div className={styles.confirmFooter}>
         <TotalBar
           total={controller.total}

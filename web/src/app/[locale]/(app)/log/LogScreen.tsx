@@ -13,7 +13,7 @@ export interface LogScreenProps {
   locale: AppLocale;
   timeZone: string;
   userName: string;
-  /** simpleMode sessions are redirected to `eat` by the page; the bolus tap is never shown to one. */
+  /** simpleMode sessions are redirected to `eat` by the page. */
   simpleMode: boolean;
   initialQuery?: string | undefined;
   initialBarcode?: string | undefined;
