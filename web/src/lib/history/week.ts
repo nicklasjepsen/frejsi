@@ -66,7 +66,7 @@ export async function loadHistoryWeek(
         30,
         from,
       ),
-      mealTimes: mealsInRange(rows, { from, to }, now).map((m) => m.ts),
+      mealTimes: mealsInRange(rows, { from, to }).map((m) => m.ts),
     };
   });
   return WeekHistoryView.parse({
@@ -86,7 +86,7 @@ export async function loadHistoryWeek(
       timezone: space.timezone,
       now,
     }),
-    meals: mealsInRange(rows, range, now).map((meal) => {
+    meals: mealsInRange(rows, range).map((meal) => {
       const row = rows.find((r) => r.id === meal.id);
       if (!row) throw new Error("History meal missing");
       const stats = mealStats(readings, meal, space.target, now);

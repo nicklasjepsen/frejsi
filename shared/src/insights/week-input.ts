@@ -91,7 +91,7 @@ export async function buildWeekInsightInput(
         : undefined,
     };
   });
-  const meals = mealsInRange(rows, range, now).map((m) => ({
+  const meals = mealsInRange(rows, range).map((m) => ({
     mealId: m.id,
     ts: new Date(m.ts).toISOString(),
     title: rows.find((r) => r.id === m.id)?.title ?? "",

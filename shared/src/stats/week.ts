@@ -63,7 +63,7 @@ export function weekStats({
   timezone: string;
   now: Timestamp;
 }): WeekNumbers {
-  const inside = mealsInRange(meals, range, now);
+  const inside = mealsInRange(meals, range);
   const current = timeInRange(readings, range, target, now);
   const previousStart = dateAfter(localDate(range.from, timezone), -7);
   const previous = timeInRange(

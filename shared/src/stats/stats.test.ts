@@ -217,6 +217,25 @@ describe("day and week aggregation", () => {
     expect(result.meals[0]?.stats.peak?.mmol).toBe(12);
     expect(result.inRange.aboveMinutes).toBe(0);
   });
+  it("counts a meal whose time is still ahead, with statistics that cover nothing yet", () => {
+    // "Spiser om 15 min" stamps the meal ahead of the save moment; it is still today's meal.
+    const now = at(0);
+    const meals = [{ id: "soon", ts: at(15), totalCarbs: 30 }];
+    const result = dayStats(
+      [r(-10), r(-5), r(0)],
+      meals,
+      target,
+      { from: at(-60), to: at(1380) },
+      now,
+    );
+    expect(result.mealCount).toBe(1);
+    expect(result.totalCarbs).toBe(30);
+    expect(result.meals[0]?.stats).toMatchObject({
+      readingCount: 0,
+      inRange: { coveredMinutes: 0 },
+    });
+    expect(result.meals[0]?.stats.peak).toBeUndefined();
+  });
   it("computes a deterministic week and previous week with only registered taps in the mean", () => {
     const from = at(0),
       to = at(7 * 1440);
