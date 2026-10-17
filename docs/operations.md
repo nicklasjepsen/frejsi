@@ -268,7 +268,11 @@ artboards ("Almas rum": Jonas and Mette as owners, Birthe as a carer, Alma as a 
 Lærke as a viewer, fourteen local dates of fake readings) and a second space, "Arnes rum" (Arne, a
 grandfather without a sensor, as owner; Mette as a carer; source Manuelt with three finger-prick
 readings from the last day, written through `addManualReading`), and prints one add-a-device link
-per person. Today stops at the seed clock. The fake returns at most 24 hours per daily cycle, so a
+per person. Since v0.6.0 the space also holds a category on every food, four symptoms over the two
+days before the seed clock (Alma's through her simpleMode picker, one of Jonas's resolved later;
+none on the clock's own day, so the e2e logs today's first), and "Lasagne", a dish of six portions
+saved through `saveRecipe` with its lines resolved to the family's own ingredient foods. Today stops
+at the seed clock. The fake returns at most 24 hours per daily cycle, so a
 25-hour autumn date can have an uncovered hour. It refuses to run with `NODE_ENV=production` and on a database that already has a space.
 
 ## Dependency alerts
@@ -417,6 +421,33 @@ apple (`unknown`). The snapshot `shared/prisma/theme.prisma` freezes the schema 
 `prisma:check`, and `shared/test/integration/database.test.ts` applies 0005 to a database at 0004
 and checks that every row survives.
 
+**The share target.** The phone's share sheet posts a page, text or image to `POST /api/share`
+(`share_target` in the manifest). The route keeps the share in the web process's memory for ten
+minutes under a random id bound to the session that posted it (`web/src/lib/recipes/share-store.ts`,
+at most 200 entries, the oldest dropped first) and redirects to `/{locale}/recipe/new?share=<id>`,
+where the form fetches it once. Nothing is written to the database or the blob store; a restart or a
+second web instance loses the share, and the person shares again. A signed-out share goes to the
+welcome page and keeps nothing. The log carries the id, never the content.
+
+**The category pass.** The `enrich-foods` timer has a third pass after normalisation and
+embeddings: up to 50 foods per run with no category and an origin other than `recipe`, shared cache
+first, go to the provider's small role one name at a time (`categoriseFood`), and the answer is
+written to the row and to every space copy of the same source reference, under the same daily cap
+as normalisation. A space's own foods are placed only by the chip row in the food form, never by
+the timer. The pass changes nothing about verification: a food stays `verified: false` as it was.
+`enrich-foods` logs `categorised` with the count and no name.
+
+**Symptoms on the curve and in the push.** A symptom marker is a diamond in the text colour on
+desktop Now, history day and the meal curve; the viewer reads kinds, times and names, never the
+readings around them. The push for a child's symptom is described under browser push below.
+
+**The release e2e.** `symptoms.spec.ts` (two taps on the phone, the entry on a second screen's
+feed, Fortryd, Mere…, Alma's tiles-only picker), `recipe.spec.ts` (pasted text against the fake
+provider, a changed match, Gem, the recalc, "Gem som opskrift" from a logged meal, the share
+receiver driven directly) and `symbols.spec.ts` (the bread symbol on a rugbrød meal, the chip row,
+a past meal keeping its symbol) run at both widths with `FAKE_AI_PROVIDER=1` and
+`FAKE_GLUCOSE_SOURCE=1` like the other flows; nothing contacts a provider, a recipe site or Dexcom.
+
 ## AI foundation (v0.4.0)
 
 The shared AI contracts and migration `0003_ai` reserve food vectors (1024 dimensions), cached
@@ -491,6 +522,12 @@ unsupported browser shows a message; the in-app review cards remain available. O
 an installed PWA and iOS 16.4 or later. The service worker shows the notification and focuses or
 opens the recipient's language-specific library page. It does not cache personal pages or API data.
 
+The `symptom.created` event takes the same path (v0.6.0): when the person who logged it is in
+simpleMode, every other owner or carer with a live subscription gets "{child}: {kind}" with the local
+time and a link to that day in history, so a parent hears from the child like "Spørg en voksen". An
+adult's own entry tells nobody; the other adults see it on the curve. The notification carries the
+kind and the time only: no note, no severity, no glucose.
+
 The `estimate.asked` event reaches the push sink through `emit()`, after the food transaction commits.
 The sink looks up current owner/carer memberships and unexpired sessions, excluding the asker.
 The notification contains the asker's display name, dish name, approximate carbs and link; no photo,
@@ -528,7 +565,8 @@ use their separate 500-attempt space cap; shared-cache backfill defaults to 2000
 family reaches a cap, use the verified picker or enter known food values manually until the next
 local day. Check content-free `AiCall` usage before changing limits: raising a cap increases the
 possible provider spend. A provider switch leaves keyword search working while the enrichment timer
-re-embeds up to 100 library/cache rows per quarter hour. Normalisation runs first, up to 50 rows.
+re-embeds up to 100 library/cache rows per quarter hour. Normalisation runs first, up to 50 rows,
+and since v0.6.0 a third pass places up to 50 foods without a category (see the v0.6.0 section).
 A space using another embedding provider searches the shared cache by keyword only, because vectors
 from different providers cannot be compared.
 
@@ -540,8 +578,9 @@ local. Full live evals cost approximately $2 per run, use the dedicated eval key
 complete corpus with `EVALS_SCOPE=release`. Without that key only the recorded fake corpus runs.
 
 For local fictional data, `pnpm --filter ./web seed` enables the registry fake with
-`FAKE_AI_PROVIDER=1`, enables Anthropic as the space's fixture provider id, and stores ten foods,
-including Alma's unverified "Pasta med kødsovs", and a stored lunch observation. Foods, meals,
+`FAKE_AI_PROVIDER=1`, enables Anthropic as the space's fixture provider id, and stores seventeen
+foods, including Alma's unverified "Pasta med kødsovs" and the "Lasagne" recipe dish, four symptoms
+and a stored lunch observation. Foods, meals,
 settings and insights use their emitting services; the seed refuses production and nonempty
 spaces. `web/scripts/import-glucose.ts` remains the separate owner-only import command.
 

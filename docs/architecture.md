@@ -103,8 +103,13 @@ calls only the endpoints on its own allow-list.
 ### `AiProvider`: where the optional AI help comes from
 
 - The interface: `shared/src/ai/types.ts`. A provider declares what it can do (`complete`, `vision`,
-  `embed`); the use cases (`shared/src/ai/parse/`, `estimate/`, `insight/`, `search/`) are written
-  against it.
+  `embed`); the use cases (`shared/src/ai/parse/`, `estimate/`, `insight/`, `recipe/`, `search/`)
+  are written against it.
+- The recipe reader (`shared/src/ai/recipe/`, v0.6.0) is a user of both interfaces: a
+  `schema.org/Recipe` page is read from its JSON-LD with no provider at all, pasted text or a fetched
+  page goes to `complete` and a photo to `vision`, and every ingredient line is then resolved through
+  `lookup()` (`shared/src/food/lookup.ts`) in the normal order, library first, then the cache and the
+  `FoodSource` plugins. With AI off the URL way still works and the other two answer `ai-disabled`.
 - Adapters: `shared/src/ai/anthropic/`, `azure-openai/`, `ollama/` and `voyage/` (embeddings).
 - The registry: `aiProviders(env)` in `shared/src/ai/registry.ts` builds only the providers whose
   settings are present. `shared/src/ai/capped.ts` wraps each one with the per-space daily cap.
