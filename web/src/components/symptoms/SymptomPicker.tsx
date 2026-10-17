@@ -13,7 +13,7 @@ import { SymptomIcon } from "./icons";
 import { ALL_KINDS, useKindLabel } from "./kinds";
 import { SymptomSheet } from "./SymptomSheet";
 import styles from "./symptoms.module.css";
-import { useSymptoms } from "./useSymptoms";
+import { DEFAULT_NOW, useSymptoms } from "./useSymptoms";
 
 export interface SymptomPickerProps {
   spaceId: string;
@@ -44,7 +44,7 @@ export function SymptomPicker({
   locale,
   simple,
   timeZone,
-  now = () => new Date(),
+  now = DEFAULT_NOW,
   undoMs = UNDO_MS,
 }: SymptomPickerProps) {
   const t = useTranslations("symptoms");

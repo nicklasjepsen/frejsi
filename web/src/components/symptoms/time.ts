@@ -20,10 +20,38 @@ function offsetMinutes(at: Date, timeZone: string): number {
   return Math.round((asUtc - at.getTime()) / MINUTE_MS);
 }
 
+interface LocalDate {
+  year: number;
+  month: number;
+  day: number;
+}
+function localDate(at: Date, timeZone: string): LocalDate {
+  const parts = new Intl.DateTimeFormat("en-GB", {
+    timeZone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(at);
+  const p = (type: string) => Number(parts.find((part) => part.type === type)?.value ?? "0");
+  return { year: p("year"), month: p("month"), day: p("day") };
+}
+/** The calendar date before `date`, by the calendar alone. */
+function dayBefore(date: LocalDate): LocalDate {
+  const previous = new Date(Date.UTC(date.year, date.month - 1, date.day) - DAY_MS);
+  return { year: previous.getUTCFullYear(), month: previous.getUTCMonth() + 1, day: previous.getUTCDate() };
+}
+/** `HH:MM` on `date` in the zone; two passes settle the offset on a day with a clock change. */
+function resolve(date: LocalDate, hours: number, minutes: number, timeZone: string): number {
+  const wall = Date.UTC(date.year, date.month - 1, date.day, hours, minutes);
+  let guess = wall;
+  for (let i = 0; i < 2; i++) guess = wall - offsetMinutes(new Date(guess), timeZone) * MINUTE_MS;
+  return guess;
+}
+
 /**
  * The instant of `HH:MM` on today's date in the space's zone, as the time field means it: the
  * most recent one not more than ten minutes ahead of `now`, so "23:50" typed at 00:10 is last
- * night, not tonight.
+ * night, not tonight. Yesterday is resolved on its own date, with its own offset.
  */
 export function instantOfLocalTime(hhmm: string, timeZone: string, now: Date): Date | null {
   const match = /^(\d{2}):(\d{2})$/.exec(hhmm);
@@ -31,21 +59,10 @@ export function instantOfLocalTime(hhmm: string, timeZone: string, now: Date): D
   const hours = Number(match[1]);
   const minutes = Number(match[2]);
   if (hours > 23 || minutes > 59) return null;
-  const local = new Intl.DateTimeFormat("en-GB", {
-    timeZone,
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  }).formatToParts(now);
-  const p = (type: string) => Number(local.find((part) => part.type === type)?.value ?? "0");
-  let guess = Date.UTC(p("year"), p("month") - 1, p("day"), hours, minutes);
-  // Two passes settle the offset on a day with a clock change.
-  for (let i = 0; i < 2; i++) {
-    const offset = offsetMinutes(new Date(guess), timeZone);
-    guess = Date.UTC(p("year"), p("month") - 1, p("day"), hours, minutes) - offset * MINUTE_MS;
-  }
-  if (guess > now.getTime() + AHEAD_MS) guess -= DAY_MS;
-  return new Date(guess);
+  const today = localDate(now, timeZone);
+  let instant = resolve(today, hours, minutes, timeZone);
+  if (instant > now.getTime() + AHEAD_MS) instant = resolve(dayBefore(today), hours, minutes, timeZone);
+  return new Date(instant);
 }
 
 /** `HH:MM` of `at` in the zone, for the time field's value. */

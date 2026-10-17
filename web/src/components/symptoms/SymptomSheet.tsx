@@ -9,6 +9,7 @@ import type { AppLocale } from "@/lib/i18n/routing";
 import { ALL_KINDS, useKindLabel } from "./kinds";
 import styles from "./symptoms.module.css";
 import { instantOfLocalTime, localClock } from "./time";
+import { DEFAULT_NOW } from "./useSymptoms";
 
 export interface SymptomSheetProps {
   locale: AppLocale;
@@ -36,7 +37,7 @@ export function SymptomSheet({
   initialKind,
   busy,
   failed,
-  now = () => new Date(),
+  now = DEFAULT_NOW,
   onSave,
   onClose,
 }: SymptomSheetProps) {
