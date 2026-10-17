@@ -1,26 +1,46 @@
 import { createHash } from "node:crypto";
-import { emit, HttpError, type EmitFn, type SessionContext } from "@frejsi/shared";
+import { emit, HttpError, log, type EmitFn, type SessionContext } from "@frejsi/shared";
 import { type AiProvider } from "@frejsi/shared/ai";
-import type { InsightInput, MealInsightView } from "@frejsi/shared/schemas/ai";
+import { InsightInput, type MealInsightView } from "@frejsi/shared/schemas/ai";
+import { symptomsAround, type LoggedSymptom } from "@frejsi/shared/ai/insight/input";
 import { narrateMeal } from "@frejsi/shared/ai/insight/meal";
 import { createInsight, PrismaInsightRepository } from "@frejsi/shared/insights/store";
 import type { InsightRepository } from "@frejsi/shared/insights/types";
+import { mealSymptomWindow } from "@/lib/symptoms/service";
 import { aiForSpace } from "../provider";
 export interface InsightDeps {
   repo: InsightRepository;
   providerName?: string;
   emit: EmitFn;
   provider: (spaceId: string, session: SessionContext) => AiProvider | Promise<AiProvider>;
+  /** The symptoms around the meal (v0.6.0 plan §5): kind and instant, never a note or a reading. */
+  symptomsAround: (
+    spaceId: string,
+    mealId: string,
+  ) => Promise<{ mealTs: string; symptoms: LoggedSymptom[] } | null>;
 }
 let overrides: Partial<InsightDeps> = {};
 export function configureInsights(deps: Partial<InsightDeps>) {
   overrides = deps;
+}
+/**
+ * The observation of the numbers stands on its own: when the symptoms cannot be read, it is
+ * narrated without them and one no-PII line says so, rather than failing the request.
+ */
+export async function symptomWindowOrNone(spaceId: string, mealId: string) {
+  try {
+    return await mealSymptomWindow(spaceId, mealId);
+  } catch {
+    log.warn("insight.symptoms-unavailable", { spaceId, code: "symptoms-unavailable" });
+    return null;
+  }
 }
 export function insightDeps(): InsightDeps {
   return {
     repo: overrides.repo ?? new PrismaInsightRepository(),
     emit: overrides.emit ?? emit,
     provider: overrides.provider ?? aiForSpace,
+    symptomsAround: overrides.symptomsAround ?? symptomWindowOrNone,
   };
 }
 export function insightState(error: unknown): MealInsightView["state"] | null {
@@ -36,9 +56,14 @@ export async function mealInsight(
   spaceId: string,
   mealId: string,
   session: SessionContext,
-  input: InsightInput,
+  raw: InsightInput,
   deps = insightDeps(),
 ): Promise<MealInsightView> {
+  // The symptoms join the input before the hash, so a new one regenerates the observation.
+  const window = await deps.symptomsAround(spaceId, mealId);
+  const placed = window ? symptomsAround(window.mealTs, window.symptoms) : [];
+  const input =
+    placed.length > 0 ? InsightInput.parse({ ...raw, symptoms: placed }) : raw;
   const hash = createHash("sha256").update(JSON.stringify(input)).digest("hex");
   const subjectKey = `${mealId}:${input.locale}`;
   const key = `${spaceId}:${subjectKey}:${hash}`;
