@@ -80,6 +80,52 @@ describe("MealCard (design README MealCard)", () => {
     mount(<MealCard meal={lunch} timeZone={ZONE} variant="card" />, "en");
     expect(screen.getByText("12:10 · 50 g carbs · Jonas")).toBeVisible();
   });
+
+  it.each(["row", "card"] as const)(
+    "%s: the whole card links to the meal and an owner's or carer's carries a trailing 'Ret' to ?edit=1",
+    (variant) => {
+      for (const role of ["owner", "carer"] as const) {
+        cleanup();
+        mount(<MealCard meal={lunch} timeZone={ZONE} variant={variant} locale="da" role={role} />);
+        const card = screen.getByTestId("meal-card");
+        const link = within(card).getByRole("link", { name: /Rugbrød med ost og et æble/ });
+        expect(link).toHaveAttribute("href", "/da/meal/m3");
+        expect(link).toHaveTextContent("12:10");
+        expect(within(link).getByRole("img", { name: lunch.title })).toBeVisible();
+        const edit = within(card).getByRole("link", { name: "Ret måltidet kl. 12:10" });
+        expect(edit).toHaveAttribute("href", "/da/meal/m3?edit=1");
+        expect(edit).toHaveTextContent("Ret");
+        expect(edit).toHaveAttribute("data-testid", "meal-edit");
+        // The link and the control are siblings: nothing interactive is nested.
+        expect(link.contains(edit)).toBe(false);
+      }
+    },
+  );
+
+  it("gives a viewer's row the link but no 'Ret', and a row without a locale neither", () => {
+    mount(<MealCard meal={lunch} timeZone={ZONE} variant="row" locale="da" role="viewer" />);
+    expect(screen.getByRole("link", { name: /Rugbrød/ })).toHaveAttribute("href", "/da/meal/m3");
+    expect(screen.queryByTestId("meal-edit")).toBeNull();
+    cleanup();
+    mount(<MealCard meal={lunch} timeZone={ZONE} variant="row" role="owner" />);
+    expect(screen.queryByRole("link")).toBeNull();
+    expect(screen.queryByTestId("meal-edit")).toBeNull();
+  });
+
+  it("links the simple card to the meal with no edit affordance, whatever the role", () => {
+    mount(<MealCard meal={apple} timeZone={ZONE} variant="simple" locale="da" role="owner" />);
+    const link = screen.getByRole("link", { name: /Du spiste kl\. 09:50/ });
+    expect(link).toHaveAttribute("href", "/da/meal/m2");
+    expect(screen.queryByTestId("meal-edit")).toBeNull();
+    expect(screen.queryByText("Ret")).toBeNull();
+  });
+
+  it("says 'Edit the meal at 12:10' in English", () => {
+    mount(<MealCard meal={lunch} timeZone={ZONE} variant="row" locale="en" role="owner" />, "en");
+    const edit = screen.getByRole("link", { name: "Edit the meal at 12:10" });
+    expect(edit).toHaveAttribute("href", "/en/meal/m3?edit=1");
+    expect(edit).toHaveTextContent("Edit");
+  });
 });
 
 describe("DayList and DayTotal", () => {
@@ -92,6 +138,17 @@ describe("DayList and DayTotal", () => {
     cleanup();
     mount(<DayList meals={[]} timeZone={ZONE} />);
     expect(screen.getByText("Ingen måltider i dag endnu")).toBeVisible();
+  });
+
+  it("passes the locale and the role to every row, so a carer's list links and edits", () => {
+    mount(<DayList meals={[lunch, apple]} timeZone={ZONE} locale="da" role="carer" />);
+    const list = within(screen.getByTestId("day-list"));
+    expect(
+      list.getAllByRole("link", { name: /Ret måltidet/ }).map((a) => a.getAttribute("href")),
+    ).toEqual(["/da/meal/m3?edit=1", "/da/meal/m2?edit=1"]);
+    cleanup();
+    mount(<DayList meals={[lunch]} timeZone={ZONE} />);
+    expect(screen.queryByRole("link")).toBeNull();
   });
 
   it("draws the total at 72 px with its words", () => {

@@ -1,9 +1,9 @@
 "use client";
 import type { DayHistoryView } from "@frejsi/shared/schemas/history";
 import type { GlucoseUnit, Reading } from "@frejsi/shared/schemas/glucose";
+import type { Role } from "@frejsi/shared/schemas/index";
 import { dayStats } from "@frejsi/shared/stats";
 import { useTranslations } from "next-intl";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useRef, type KeyboardEvent } from "react";
 import { MealCard } from "@/components/day/MealCard";
@@ -24,6 +24,7 @@ export function DaySection({
   desktop,
   liveReadings,
   onNavigate,
+  role = "owner",
 }: {
   day: DayHistoryView;
   today: string;
@@ -32,11 +33,16 @@ export function DaySection({
   desktop: boolean;
   liveReadings: readonly Reading[];
   onNavigate: (date: string) => void;
+  /**
+   * Passed to every row for its "Ret". The history day is mounted for owners and carers only
+   * (a viewer gets `ViewerDays`), so the default names the role the screen is for.
+   */
+  role?: Role;
 }) {
   const t = useTranslations("history");
   const stats = useTranslations("stats");
   const router = useRouter();
-  const links = useRef<(HTMLAnchorElement | null)[]>([]);
+  const rows = useRef<(HTMLLIElement | null)[]>([]);
   const isToday = day.date === today;
   const now = new Date();
   const readings = [
@@ -62,7 +68,9 @@ export function DaySection({
     const step = event.key === "ArrowDown" ? 1 : event.key === "ArrowUp" ? -1 : 0;
     if (step) {
       event.preventDefault();
-      links.current[(index + step + day.meals.length) % day.meals.length]?.focus();
+      rows.current[(index + step + day.meals.length) % day.meals.length]
+        ?.querySelector("a")
+        ?.focus();
     }
   };
   return (
@@ -118,47 +126,47 @@ export function DaySection({
         ) : (
           <ul className={styles.timeline} aria-label={t("meals")}>
             {meals.map((meal, index) => (
-              <li key={meal.id}>
-                <Link
-                  href={mealHref(meal.id)}
-                  ref={(el) => {
-                    links.current[index] = el;
-                  }}
-                  onKeyDown={(event) => {
-                    move(event, index);
-                  }}
-                >
-                  <MealCard
-                    meal={meal}
-                    timeZone={day.timezone}
-                    variant="row"
-                    detail={
-                      <>
-                        {t("carbs", { carbs: meal.totalCarbs })}
-                        {meal.stats.peak && (
-                          <>
-                            {" "}
-                            · {t("peak")}{" "}
-                            <PeakValue
-                              peak={{ ...meal.stats.peak, mealTs: meal.ts }}
-                              unit={unit}
-                              timeZone={day.timezone}
-                              layout="value"
-                            />{" "}
-                            {stats("after", {
-                              duration: formatDuration(
-                                stats,
-                                meal.stats.peak.minutesAfterMeal,
-                                "short",
-                              ),
-                            })}
-                          </>
-                        )}{" "}
-                        · {meal.byUser.name}
-                      </>
-                    }
-                  />
-                </Link>
+              <li
+                key={meal.id}
+                ref={(el) => {
+                  rows.current[index] = el;
+                }}
+                onKeyDown={(event) => {
+                  move(event, index);
+                }}
+              >
+                <MealCard
+                  meal={meal}
+                  timeZone={day.timezone}
+                  variant="row"
+                  locale={locale}
+                  role={role}
+                  detail={
+                    <>
+                      {t("carbs", { carbs: meal.totalCarbs })}
+                      {meal.stats.peak && (
+                        <>
+                          {" "}
+                          · {t("peak")}{" "}
+                          <PeakValue
+                            peak={{ ...meal.stats.peak, mealTs: meal.ts }}
+                            unit={unit}
+                            timeZone={day.timezone}
+                            layout="value"
+                          />{" "}
+                          {stats("after", {
+                            duration: formatDuration(
+                              stats,
+                              meal.stats.peak.minutesAfterMeal,
+                              "short",
+                            ),
+                          })}
+                        </>
+                      )}{" "}
+                      · {meal.byUser.name}
+                    </>
+                  }
+                />
               </li>
             ))}
           </ul>

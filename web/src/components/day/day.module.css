@@ -59,16 +59,58 @@
   border-radius: 12px;
 }
 
+/* The card's body fills it and, as a link, is the whole tap target; the trailing "Ret" is its
+   sibling, never nested inside it. The padding sits on the body so the target reaches the edge. */
+.body {
+  display: flex;
+  align-items: center;
+  flex: 1;
+  min-width: 0;
+  color: inherit;
+  text-decoration: none;
+  border-radius: inherit;
+}
+
+.body:focus-visible {
+  outline: 2px solid var(--accent-base);
+  outline-offset: -2px;
+}
+
+/* "Ret" on the row and the phone card: a 44 px control in the accent, inside the card's edge. */
+.edit {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  min-width: 44px;
+  min-height: 44px;
+  margin-right: 6px;
+  padding: 0 10px;
+  border-radius: 12px;
+  color: var(--accent-base);
+  font-size: 15px;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.edit:focus-visible {
+  outline: 2px solid var(--accent-base);
+  outline-offset: -2px;
+}
+
 /* The timeline row: 48 px time column, 48 px photo, title and meta. */
 .row {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 12px;
   border-radius: 18px;
   background: var(--surface);
   box-shadow: var(--card-shadow);
   border: var(--card-border);
+}
+
+.row .body {
+  gap: 12px;
+  padding: 12px;
 }
 
 .time {
@@ -84,12 +126,15 @@
 .card {
   display: flex;
   align-items: center;
-  gap: 14px;
-  padding: 12px;
   border-radius: var(--radius-card);
   background: var(--surface);
   box-shadow: var(--card-shadow);
   border: var(--card-border);
+}
+
+.card .body {
+  gap: 14px;
+  padding: 12px;
 }
 
 .card .title {
@@ -104,12 +149,15 @@
 .simple {
   display: flex;
   align-items: center;
-  gap: 16px;
-  padding: 16px;
   border-radius: var(--radius-card-simple);
   background: var(--surface);
   box-shadow: var(--card-shadow);
   border: var(--card-border);
+}
+
+.simple .body {
+  gap: 16px;
+  padding: 16px;
 }
 
 .simple .title {
