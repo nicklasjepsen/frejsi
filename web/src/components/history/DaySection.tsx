@@ -100,6 +100,7 @@ export function DaySection({
               mealId: meal.id,
               ts: meal.ts,
               ...(meal.bolusTs ? { bolusTs: meal.bolusTs } : {}),
+              ...(meal.symbol !== undefined ? { symbol: meal.symbol } : {}),
             }))}
             onMealTap={(id) => {
               router.push(mealHref(id));

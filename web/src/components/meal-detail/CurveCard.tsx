@@ -77,6 +77,7 @@ export function CurveCard({
         readings={readings}
         mealTs={view.meal.ts}
         {...(view.meal.bolusTs !== undefined ? { bolusTs: view.meal.bolusTs } : {})}
+        {...(view.meal.symbol !== undefined ? { symbol: view.meal.symbol } : {})}
         previous={drawn.map((p) => ({ mealTs: p.ts, readings: p.readings }))}
         target={view.target}
         unit={unit}

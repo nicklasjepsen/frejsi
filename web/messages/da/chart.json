@@ -15,5 +15,6 @@
     "previous": "Tidligere gange"
   },
   "mealAt": "Måltid kl. {time}",
-  "lastReading": "sidste måling {age}"
+  "lastReading": "sidste måling {age}",
+  "mealWithCategory": "Måltid, {category}, kl. {time}"
 }

@@ -15,5 +15,6 @@
     "previous": "Earlier times"
   },
   "mealAt": "Meal at {time}",
-  "lastReading": "last reading {age}"
+  "lastReading": "last reading {age}",
+  "mealWithCategory": "Meal, {category}, at {time}"
 }

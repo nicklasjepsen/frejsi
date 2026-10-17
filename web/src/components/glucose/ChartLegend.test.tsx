@@ -39,7 +39,14 @@ describe("ChartLegend (plan §7)", () => {
     expect(container.querySelectorAll("li [data-swatch]")).toHaveLength(3);
     expect(
       [...container.querySelectorAll("[data-swatch]")].map((s) => s.getAttribute("data-swatch")),
-    ).toEqual(["meal-bar", "triangle", "previous-bar"]);
+    ).toEqual(["meal-plate", "triangle", "previous-bar"]);
+    // The meal entry draws the plate (v0.6.0 plan §7), in the meal colour.
+    const plate = container.querySelector("[data-swatch=meal-plate]");
+    expect(plate?.querySelector("svg[data-testid=food-symbol]")).toHaveAttribute(
+      "data-symbol",
+      "mixed",
+    );
+    expect(plate?.className).toContain("swatchMealPlate");
   });
 
   it("meal: leaves out the bolus without a tap and the previous curves when there are none", () => {
@@ -61,7 +68,10 @@ describe("ChartLegend (plan §7)", () => {
     ]);
     expect(
       [...container.querySelectorAll("[data-swatch]")].map((s) => s.getAttribute("data-swatch")),
-    ).toEqual(["meal-dot", "triangle"]);
+    ).toEqual(["meal-plate", "triangle"]);
+    expect(
+      container.querySelector("[data-swatch=meal-plate] svg[data-testid=food-symbol]"),
+    ).toHaveAttribute("data-symbol", "mixed");
   });
 
   it("day: a mg/dL space shows its bounds in mg/dL", () => {

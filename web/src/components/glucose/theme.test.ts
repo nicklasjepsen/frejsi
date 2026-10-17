@@ -121,6 +121,11 @@ describe("the meal and week curves in dark mode and the five accents (v0.3.0 pla
     }
     expect(block(glucoseCss, ".mealLine {")).toContain("var(--meal-marker)");
     expect(block(glucoseCss, ".mealDot {")).toContain("var(--meal-marker)");
+    // v0.6.0: the food symbol is terracotta like the line; the symptom marker is the text colour.
+    expect(block(glucoseCss, ".mealSymbol {")).toContain("var(--meal-marker)");
+    expect(block(glucoseCss, ".swatchMealPlate {")).toContain("var(--meal-marker)");
+    expect(block(glucoseCss, ".symptomMarker {")).toContain("var(--text)");
+    expect(block(glucoseCss, ".symptomMarker {")).not.toContain("meal");
     expect(block(glucoseCss, ".bolus {")).toContain("var(--meal-bolus-marker)");
     expect(block(glucoseCss, ".tickMeal {")).toContain("var(--meal-bolus-marker)");
     expect(block(glucoseCss, ".band {")).toContain("var(--accent-band)");

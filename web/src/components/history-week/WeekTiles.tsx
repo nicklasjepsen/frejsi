@@ -48,6 +48,7 @@ export function WeekTiles({
               {...(desktop ? {} : { width: PHONE_TILE_WIDTH })}
               curve={day.curve}
               mealTimes={day.mealTimes}
+              {...(day.meals.length > 0 ? { meals: day.meals } : {})}
               from={from}
               to={to}
               target={week.target}

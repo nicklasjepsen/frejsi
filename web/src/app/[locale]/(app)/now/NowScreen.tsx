@@ -308,10 +308,11 @@ export function NowScreen({
                 timeZone={zone}
                 variant="day"
                 meals={(history.status === "ready" ? history.markers : []).map(
-                  ({ id: mealId, ts, bolusTs }) => ({
+                  ({ id: mealId, ts, bolusTs, symbol }) => ({
                     mealId,
                     ts,
                     ...(bolusTs ? { bolusTs } : {}),
+                    ...(symbol !== undefined ? { symbol } : {}),
                   }),
                 )}
                 onMealTap={(id) => {
