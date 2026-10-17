@@ -4,7 +4,7 @@ import type { GlucoseUnit } from "@frejsi/shared/schemas/glucose";
 import type { MealCurveView } from "@frejsi/shared/schemas/history";
 import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useLayoutEffect, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 
 import { Observation } from "@/components/observation/Observation";
 import type { LiveFeedView } from "@/lib/live/useLiveFeed";
@@ -37,11 +37,25 @@ export interface MealDetailProps {
   /** Forces a layout (tests); otherwise 1280 px and up is desktop, as in the shell. */
   layout?: "phone" | "desktop";
   aiEnabled?: boolean;
+  /** Arrived on `?edit=1`: the sheet opens as soon as the meal is read, and closing it drops the flag. */
+  edit?: boolean;
 }
 
 const typing = (target: EventTarget | null) =>
   target instanceof HTMLElement &&
   (target.isContentEditable || ["INPUT", "TEXTAREA", "SELECT"].includes(target.tagName));
+
+/**
+ * Takes `edit` out of the address in place: no navigation, no server round trip, and the
+ * browser's back still leads to the row the person came from. Next keeps `useSearchParams`
+ * in step with the native call.
+ */
+function dropEditParam() {
+  const url = new URL(window.location.href);
+  if (!url.searchParams.has("edit")) return;
+  url.searchParams.delete("edit");
+  window.history.replaceState(window.history.state, "", url);
+}
 
 /**
  * Måltid for an owner or carer (Maaltid-Telefon, Maaltid-Desktop): the meal on top, the curve
@@ -59,6 +73,7 @@ export function MealDetail({
   unit,
   layout,
   aiEnabled = false,
+  edit = false,
 }: MealDetailProps) {
   const router = useRouter();
   const feed = useLiveFeed(spaceId, { readings: false });
@@ -70,7 +85,11 @@ export function MealDetail({
     (signal: AbortSignal) => fetchMealCurve(spaceId, mealId, signal),
     [spaceId, mealId],
   );
-  const [editing, setEditing] = useState(false);
+  const [editing, setEditing] = useState(edit);
+  const closeSheet = useCallback(() => {
+    setEditing(false);
+    dropEditParam();
+  }, []);
   const openMeal = useCallback(
     (id: string) => {
       router.push(localeHref(locale, `/meal/${encodeURIComponent(id)}`));
@@ -84,7 +103,11 @@ export function MealDetail({
       router.refresh();
     },
   });
+  // Another meal closes the sheet; the first render keeps what the address asked for.
+  const shownMealId = useRef(mealId);
   useEffect(() => {
+    if (shownMealId.current === mealId) return;
+    shownMealId.current = mealId;
     setEditing(false);
   }, [mealId]);
 
@@ -142,9 +165,7 @@ export function MealDetail({
           view={state.data}
           timeZone={timeZone}
           size={size}
-          onClose={() => {
-            setEditing(false);
-          }}
+          onClose={closeSheet}
           onSaved={refresh}
           onDeleted={toNow}
         />

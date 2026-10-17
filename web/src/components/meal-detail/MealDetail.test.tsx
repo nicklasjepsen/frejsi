@@ -288,6 +288,42 @@ describe("Måltid · phone (Maaltid-Telefon)", () => {
   });
 });
 
+describe("Måltid · opened on ?edit=1", () => {
+  it.each(["phone", "desktop"] as const)(
+    "%s: arrives with the sheet open, and closing it drops the parameter without a reload",
+    async (layout) => {
+      window.history.replaceState(null, "", "/da/meal/m1?edit=1");
+      mount({ layout, edit: true });
+      await ready();
+      const sheet = screen.getByRole("dialog", { name: "Ret måltid" });
+      expect(sheet).toBeVisible();
+      fireEvent.click(within(sheet).getByRole("button", { name: "Tilbage" }));
+      expect(screen.queryByRole("dialog")).toBeNull();
+      expect(window.location.pathname).toBe("/da/meal/m1");
+      expect(window.location.search).toBe("");
+      expect(navigation.push).not.toHaveBeenCalled();
+      expect(navigation.refresh).not.toHaveBeenCalled();
+      // Opening it again from the header leaves the address alone.
+      fireEvent.click(screen.getByRole("button", { name: layout === "phone" ? /^Ret/ : "Ret E" }));
+      expect(screen.getByRole("dialog", { name: "Ret måltid" })).toBeVisible();
+      expect(window.location.search).toBe("");
+    },
+  );
+
+  it("keeps other parameters when it drops edit, and shows no sheet without the flag", async () => {
+    window.history.replaceState(null, "", "/da/meal/m1?edit=1&from=history");
+    mount({ edit: true });
+    await ready();
+    fireEvent.click(screen.getByRole("button", { name: "Tilbage" }));
+    expect(window.location.search).toBe("?from=history");
+    cleanup();
+    window.history.replaceState(null, "", "/da/meal/m1");
+    mount();
+    await ready();
+    expect(screen.queryByRole("dialog")).toBeNull();
+  });
+});
+
 describe("Måltid · desktop (Maaltid-Desktop)", () => {
   it("draws the banner, the 26 px title, 'Onsdag 14. oktober · 12:00 · logget af Jonas' and 'Ret' with E", async () => {
     mount({ layout: "desktop" });
