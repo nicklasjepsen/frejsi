@@ -17,8 +17,9 @@ test("the last meal shows its curve and previous dishes, edits portions and dele
       .click();
   } else {
     await page
-      .getByRole("link")
-      .filter({ has: page.getByTestId("meal-card") })
+      .getByTestId("last-meal")
+      .getByTestId("meal-card")
+      .getByRole("link", { name: /Rugbrød/ })
       .click();
   }
   await page.waitForURL(/\/da\/meal\//);
@@ -54,7 +55,7 @@ test("the last meal shows its curve and previous dishes, edits portions and dele
   });
   const updatedTitle = `${SEED_DISH} · mindre æble`;
   try {
-    await page.getByRole("button", { name: /^Ret(?: E)?$/ }).click();
+    await page.getByRole("button", { name: /^Ret(?: måltid| E)$/ }).click();
     const sheet = page.getByRole("dialog", { name: "Ret måltid" });
     await sheet.getByRole("button", { name: /^½ mellem/ }).click();
     await sheet.getByRole("textbox", { name: "Note" }).fill(updatedTitle);
@@ -78,7 +79,7 @@ test("the last meal shows its curve and previous dishes, edits portions and dele
         );
       })
       .toBe(true);
-    await page.getByRole("button", { name: /^Ret(?: E)?$/ }).click();
+    await page.getByRole("button", { name: /^Ret(?: måltid| E)$/ }).click();
     await page.getByRole("button", { name: "Fjern bolustidspunkt", exact: true }).click();
     await page.getByRole("dialog").getByRole("button", { name: "Gem", exact: true }).click();
     await expect(page.getByRole("dialog")).toHaveCount(0);
@@ -117,7 +118,7 @@ test("the last meal shows its curve and previous dishes, edits portions and dele
     include: { items: { orderBy: { position: "asc" } } },
   });
   await page.goto(`/da/meal/${earlier.id}`);
-  await page.getByRole("button", { name: /^Ret(?: E)?$/ }).click();
+  await page.getByRole("button", { name: /^Ret(?: måltid| E)$/ }).click();
   const sheet = page.getByRole("dialog", { name: "Ret måltid" });
   await sheet.getByRole("button", { name: "Slet måltid", exact: true }).click();
   await expect(sheet).toContainText("Slet måltidet? Det kan ikke fortrydes.");
@@ -163,4 +164,92 @@ test("simpleMode opens the last meal's items and total without curve or editing"
   await expect(meal.getByRole("listitem")).toHaveCount(2);
   await expect(meal.getByTestId("curve")).toHaveCount(0);
   await expect(meal.getByRole("button", { name: /^Ret/ })).toHaveCount(0);
+});
+
+// The owner's request of 2026-10-17 (v0.6.0 task 8): a logged meal is edited from where it is
+// shown. On the phone the Now card's "Ret" opens the detail with the sheet already open; on
+// desktop the same address does. A second tab on Now sees the change through the live feed.
+test("edits a logged meal from the Now row and sees the change on Now and in the day", async ({
+  page,
+}) => {
+  test.setTimeout(120_000);
+  const { spaceId } = await seededSpace();
+  const desktop = (page.viewportSize()?.width ?? 0) >= 1280;
+  const now = new Date(process.env.E2E_NOW ?? "");
+  const bread = await prisma.food.findFirstOrThrow({ where: { spaceId, name: "Rugbrød med ost" } });
+  const apple = await prisma.food.findFirstOrThrow({ where: { spaceId, name: "Æble" } });
+  await registerFromInvite(page, await inviteLink("jonas"));
+  await page.waitForURL(/\/da\/now$/);
+  const title = "Eftermiddagsmad til e2e";
+  const logged = await page.request.post(`/api/spaces/${spaceId}/meals`, {
+    data: {
+      ts: new Date(now.getTime() - 40 * 60_000).toISOString(), // 14:33, the newest meal
+      note: title,
+      items: [
+        { foodId: bread.id, name: bread.name, portionLabel: "2 skiver" },
+        { foodId: apple.id, name: apple.name, portionLabel: "1 mellem" },
+      ],
+    },
+  });
+  expect(logged.status()).toBe(201);
+  const { id: mealId } = (await logged.json()) as { id: string };
+  const watcher = await page.context().newPage();
+  try {
+    await watcher.clock.setFixedTime(now);
+    await watcher.goto("/da/now");
+    await expect(watcher.getByTestId(desktop ? "meals-table" : "last-meal")).toContainText("50 g");
+    if (desktop) {
+      await page.goto(`/da/meal/${mealId}?edit=1`);
+    } else {
+      const card = page.getByTestId("last-meal").getByTestId("meal-card");
+      await expect(card).toContainText("14:33 · 50 g kulhydrat · Jonas");
+      const edit = card.getByRole("link", { name: "Ret måltidet kl. 14:33" });
+      await expect(edit).toHaveAttribute("href", `/da/meal/${mealId}?edit=1`);
+      await edit.click();
+    }
+    await page.waitForURL(new RegExp(`/da/meal/${mealId}\\?edit=1$`));
+    const sheet = page.getByRole("dialog", { name: "Ret måltid" });
+    await expect(sheet).toBeVisible();
+    await sheet.getByRole("button", { name: /^½ mellem/ }).click();
+    await sheet.getByLabel("Tidspunkt").fill("14:45");
+    await expect(sheet.getByTestId("total-bar")).toContainText("43 g");
+    await sheet.getByRole("button", { name: "Gem", exact: true }).click();
+    await expect(sheet.getByTestId("sheet-saved")).toHaveText("Gemt");
+    await expect(sheet).toHaveCount(0);
+    await expect(page).toHaveURL(new RegExp(`/da/meal/${mealId}$`));
+    await expect(page.getByRole("heading", { name: title, exact: true })).toBeVisible();
+    if (desktop) {
+      await expect(page.getByTestId("meal-items").locator('[data-total="true"]')).toHaveText(
+        /I alt\s*43 g/,
+      );
+      await expect(page.getByText(/· 14:45 · logget af Jonas/)).toBeVisible();
+    } else {
+      await expect(page.getByText("43 g kulhydrat · 2 ting", { exact: true })).toBeVisible();
+      await expect(page.getByText("I dag 14:45 · Jonas", { exact: true })).toBeVisible();
+    }
+    // The other tab was never reloaded: the feed brings the edit within its poll interval.
+    await expect(watcher.getByTestId(desktop ? "meals-table" : "last-meal")).toContainText(
+      desktop ? "14:45" : "14:45 · 43 g kulhydrat · Jonas",
+      { timeout: 45_000 },
+    );
+    if (desktop) await expect(watcher.getByTestId("meals-table")).toContainText("43 g");
+    await page.goto("/da/history");
+    if (desktop) await page.getByRole("radio", { name: "Dag", exact: true }).click();
+    // The day names a meal by its items, not its note: the row is the one at the new time.
+    const row = page
+      .getByTestId("history-day")
+      .first()
+      .getByTestId("meal-card")
+      .filter({ hasText: "14:45" });
+    await expect(row).toContainText("Rugbrød med ost og Æble");
+    await expect(row).toContainText("43 g");
+    await expect(row.getByRole("link", { name: "Ret måltidet kl. 14:45" })).toHaveAttribute(
+      "href",
+      `/da/meal/${mealId}?edit=1`,
+    );
+  } finally {
+    await watcher.close();
+    // The seeded day keeps its three meals for the specs that follow.
+    expect((await page.request.delete(`/api/spaces/${spaceId}/meals/${mealId}`)).ok()).toBe(true);
+  }
 });
