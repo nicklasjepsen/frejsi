@@ -26,15 +26,22 @@
   display: none;
 }
 
-/* The 20 px under the phone header's space name is drawn here, once, so no screen can miss it or
-   draw its own (issue 214). Chromeless screens (/eat, /feel) get the same 20 px to the top of the
-   screen, where their own `.page` drew it before. */
 .main {
   flex: 1;
   min-width: 0;
   display: flex;
   flex-direction: column;
-  padding: 20px var(--phone-gutter) calc(24px + var(--phone-tabs-height));
+  padding: 0 var(--phone-gutter) calc(24px + var(--phone-tabs-height));
+}
+
+/* The 20 px between the phone header's space name and the page, drawn once here, on the `main`
+   under the header, so no screen can miss it or draw its own (issue 214). Chromeless screens
+   (/eat, /feel) and the no-space page get the same 20 px to the top of the screen, which their own
+   root drew before. From 1280 px the column's own padding is the only one. */
+@media (max-width: 1279.98px) {
+  .shell main {
+    padding-top: 20px;
+  }
 }
 
 .phoneHeader {
