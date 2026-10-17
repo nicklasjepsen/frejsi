@@ -11,9 +11,12 @@ import { expect, test } from "./test";
 test.use({ serviceWorkers: "block" });
 
 const GAP = 20;
-const DESKTOP_MAIN_TOP = "28px";
+/** The desktop main column's own top padding: 28 px, 40 px in simpleMode (shell.module.css). */
+const DESKTOP_MAIN_TOP = { normal: "28px", viewer: "28px", simple: "40px" } as const;
 
 interface Measure {
+  /** The shell's variant: normal, simple or viewer. */
+  variant: keyof typeof DESKTOP_MAIN_TOP;
   /** The bottom of the phone header (the space-name row), or null where none is drawn. */
   headerBottom: number | null;
   /** The top of the first thing the page draws: the lowest top of any visible box in `main`. */
@@ -54,6 +57,7 @@ async function measure(page: Page): Promise<Measure> {
       if (rect.width > 1 && rect.height > 1) contentTop = Math.min(contentTop, rect.top);
     }
     return {
+      variant: (shell?.getAttribute("data-variant") ?? "normal") as Measure["variant"],
       headerBottom: headerRect && headerRect.height > 0 ? headerRect.bottom : null,
       contentTop,
       columnPadding: getComputedStyle(main.parentElement).paddingTop,
@@ -72,7 +76,9 @@ async function expectGap(page: Page, name: string): Promise<void> {
     expect(m.rootPadding, `${label}: the page draws no top padding of its own`).toBe("0px");
     if (desktop) {
       expect(m.headerBottom, label).toBeNull();
-      expect(m.columnPadding, `${label}: the desktop column keeps its own`).toBe(DESKTOP_MAIN_TOP);
+      expect(m.columnPadding, `${label}: the desktop column keeps its own`).toBe(
+        DESKTOP_MAIN_TOP[m.variant],
+      );
       expect(m.mainPadding, label).toBe("0px");
       continue;
     }
@@ -96,7 +102,7 @@ async function expectChromeless(page: Page, name: string): Promise<void> {
     expect(m.headerBottom, `${label}: no space-name row`).toBeNull();
     expect(m.rootPadding, label).toBe("0px");
     if (desktop) {
-      expect(m.columnPadding, label).toBe(DESKTOP_MAIN_TOP);
+      expect(m.columnPadding, label).toBe(DESKTOP_MAIN_TOP[m.variant]);
       expect(m.mainPadding, label).toBe("0px");
       continue;
     }
