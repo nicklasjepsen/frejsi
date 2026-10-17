@@ -375,6 +375,18 @@ describe("Nu · desktop (Nu-Desktop)", () => {
     ).toBeInTheDocument();
   });
 
+  it("draws each meal's food symbol on the day curve and names the tap with its category", async () => {
+    historyMeals = [{ ...lunch, symbol: "bread", stats: emptyStats }];
+    mount();
+    const desktop = within(screen.getByTestId("now-desktop"));
+    expect(
+      await desktop.findByRole("button", { name: "Måltid, Brød, kl. 12:10" }),
+    ).toBeInTheDocument();
+    expect(
+      desktop.getByRole("img", { name: /^Glukose i dag/ }).querySelector("[data-symbol=bread]"),
+    ).not.toBeNull();
+  });
+
   it("puts 'Søg mad eller skriv en stregkode' with kbd / in the header, and Enter opens the log screen", () => {
     mount();
     const desktop = within(screen.getByTestId("now-desktop"));

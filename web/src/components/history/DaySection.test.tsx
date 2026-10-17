@@ -121,3 +121,16 @@ describe("DaySection rows (the owner's and the carer's day)", () => {
     expect(screen.getByRole("link", { name: /Havregryn/ })).toHaveFocus();
   });
 });
+
+describe("the food symbol on the day curve (v0.6.0 plan §7)", () => {
+  it("passes each meal's symbol to the curve and names the tap target with its category", () => {
+    const first = day.meals[0];
+    if (!first) throw new Error("fixture");
+    mount({ day: { ...day, meals: [{ ...first, symbol: "bread" }, ...day.meals.slice(1)] } });
+    expect(
+      document.querySelector("svg[data-testid=food-symbol][data-symbol=bread]"),
+    ).not.toBeNull();
+    expect(screen.getByRole("button", { name: "Måltid, Brød, kl. 12:10" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Måltid kl. 08:30" })).toBeInTheDocument();
+  });
+});

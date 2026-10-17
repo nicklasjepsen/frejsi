@@ -179,6 +179,16 @@
   fill: var(--meal-marker);
 }
 
+/* v0.6.0 (plan §7): the food symbol at the meal marker is terracotta like the line; the symptom
+   marker, a diamond on the time axis, is the text colour and never the meal colour. */
+.mealSymbol {
+  color: var(--meal-marker);
+}
+
+.symptomMarker {
+  fill: var(--text);
+}
+
 .previousPoint {
   fill: var(--text);
 }
@@ -321,25 +331,17 @@
   gap: 6px;
 }
 
-.swatchMealBar,
 .swatchPreviousBar {
   display: inline-block;
   width: 10px;
   height: 2px;
-  background: var(--meal-marker);
-}
-
-.swatchPreviousBar {
   background: var(--text);
   opacity: 0.25;
 }
 
-.swatchMealDot {
-  display: inline-block;
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  background: var(--meal-marker);
+.swatchMealPlate {
+  display: inline-flex;
+  color: var(--meal-marker);
 }
 
 .caption {

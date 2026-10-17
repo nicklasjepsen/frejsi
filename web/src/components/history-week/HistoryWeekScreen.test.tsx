@@ -391,3 +391,19 @@ it("reloads targets and server display preferences on a space change", async () 
   expect(screen.getAllByRole("img", { name: /Top 173 kl. 13:15/ })).toHaveLength(2);
   expect(request).toHaveBeenCalledTimes(2);
 });
+
+it("draws a day's meals as their food symbols at 8 px, and the dots where a tile has none", async () => {
+  const monday = data.days[0];
+  if (!monday) throw new Error("fixture");
+  monday.meals = [{ ts: "2025-10-06T10:10:00Z", symbol: "bread" }];
+  mount();
+  const days = await screen.findByRole("region", { name: "Ugens dage" });
+  const tiles = days.querySelectorAll('[data-variant="week-tile"]');
+  const first = tiles[0];
+  if (!first) throw new Error("tile");
+  const symbol = first.querySelector("svg[data-testid=food-symbol]");
+  expect(symbol).toHaveAttribute("data-symbol", "bread");
+  expect(symbol).toHaveAttribute("width", "8");
+  expect(first.querySelector("[data-testid=meal-dot]")).toBeNull();
+  expect(tiles[1]?.querySelector("[data-testid=meal-dot]")).not.toBeNull();
+});

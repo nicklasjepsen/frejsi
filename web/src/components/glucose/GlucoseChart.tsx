@@ -1,8 +1,10 @@
 "use client";
 
 import type { GlucoseUnit, Reading } from "@frejsi/shared";
+import type { MealSymbol } from "@frejsi/shared/schemas/food";
 import { useLocale, useTranslations } from "next-intl";
 
+import { FoodSymbol } from "@/components/food/FoodSymbol";
 import { resolveLocale, type AppLocale } from "@/lib/i18n/routing";
 import { formatClock } from "@/lib/i18n/time";
 
@@ -58,6 +60,8 @@ export interface MealChartProps {
   mealTs: string;
   /** The time of the bolus tap: a time marker only, never an amount. */
   bolusTs?: string;
+  /** The meal's food symbol, above the plot on the meal line (v0.6.0 plan §7). */
+  symbol?: MealSymbol;
   /** The same dish's earlier occurrences, drawn faintly behind, each relative to its own meal. */
   previous: readonly PreviousCurve[];
   target: { low: number; high: number };
@@ -74,6 +78,8 @@ export interface WeekTileChartProps {
   /** The day downsampled to 30-minute buckets, at most 48 points. */
   curve: readonly { ts: string; mmol: number }[];
   mealTimes: readonly string[];
+  /** The same meals with their symbols: drawn at 8 px in place of the dots when given. */
+  meals?: readonly { ts: string; symbol: MealSymbol }[];
   /** The local day, 00:00 to 24:00; its weekday is the accessible name ("Mandag"). */
   from: Date;
   to: Date;
@@ -89,9 +95,9 @@ const NUMBER_LOCALE: Record<AppLocale, string> = { da: "da-DK", en: "en-GB" };
 /**
  * The curves of the artboards (tokens.json#chart), hand-written SVG (v0.3.0 plan §7): the target
  * band at the accent's band colour, dashed gridlines at both bounds with the labels right of the
- * plot, the line in the text colour with a dot at the end, meal lines in `meal.marker`, bolus
- * triangles in `meal.bolusMarker` (a time, never an amount) and the time axis. Gaps in the readings
- * are gaps in the line.
+ * plot, the line in the text colour with a dot at the end, meal lines in `meal.marker` with the
+ * meal's food symbol at the top (v0.6.0 plan §7), bolus triangles in `meal.bolusMarker` (a time,
+ * never an amount) and the time axis. Gaps in the readings are gaps in the line.
  */
 export function GlucoseChart(props: GlucoseChartProps) {
   switch (props.variant) {
@@ -153,6 +159,25 @@ function withBoluses(label: string, boluses: readonly string[]): string {
   return boluses.length === 0 ? label : `${label}. ${boluses.join(". ")}`;
 }
 
+/** A food symbol nested in the chart's SVG, in the meal colour (`.mealSymbol`). */
+function MealSymbolGlyph({
+  symbol,
+  x,
+  y,
+  size,
+}: {
+  symbol: MealSymbol;
+  x: number;
+  y: number;
+  size: number;
+}) {
+  return (
+    <g className={styles.mealSymbol}>
+      <FoodSymbol symbol={symbol} size={size} x={x} y={y} strokeWidth={2.2} />
+    </g>
+  );
+}
+
 function Segments({ segments }: { segments: readonly string[] }) {
   return segments.map((points, index) =>
     points.includes(" ") ? (
@@ -174,6 +199,7 @@ function CurveChart(props: SparklineChartProps | DayChartProps) {
   const locale = resolveLocale(useLocale());
   const t = useTranslations("chart");
   const log = useTranslations("log");
+  const categories = useTranslations("foodCategory");
   const day = props.variant === "day" ? props : null;
   const g = chartGeometry({
     readings: props.readings,
@@ -213,12 +239,24 @@ function CurveChart(props: SparklineChartProps | DayChartProps) {
           key={meal.mealId}
           className={styles.mealLine}
           x1={meal.x}
-          y1={g.markerTop}
+          y1={meal.lineTop}
           x2={meal.x}
           y2={g.plotHeight}
           data-testid="meal-line"
         />
       ))}
+      {g.meals.map(
+        (meal) =>
+          meal.symbol !== undefined && (
+            <MealSymbolGlyph
+              key={`${meal.mealId}-symbol`}
+              symbol={meal.symbol}
+              x={meal.x - g.symbolSize / 2}
+              y={g.markerTop - g.symbolSize / 2}
+              size={g.symbolSize}
+            />
+          ),
+      )}
       {g.boluses.map((bolus) => (
         <path
           key={bolus.mealId}
@@ -248,6 +286,11 @@ function CurveChart(props: SparklineChartProps | DayChartProps) {
   );
   if (!day?.onMealTap || g.meals.length === 0) return svg;
   const onMealTap = day.onMealTap;
+  // "Måltid, Brød, kl. 12:10" for a known symbol; "Måltid kl. 12:10" for unknown or none.
+  const mealName = (symbol: MealSymbol | undefined, time: string) =>
+    symbol !== undefined && symbol !== "unknown"
+      ? t("mealWithCategory", { category: categories(`names.${symbol}`), time })
+      : t("mealAt", { time });
   return (
     <div className={styles.tapLayer}>
       {svg}
@@ -261,7 +304,7 @@ function CurveChart(props: SparklineChartProps | DayChartProps) {
             width: "44px",
             height: `${(g.plotHeight / g.height) * 100}%`,
           }}
-          aria-label={t("mealAt", { time: formatClock(new Date(meal.ts), props.timeZone) })}
+          aria-label={mealName(meal.symbol, formatClock(new Date(meal.ts), props.timeZone))}
           onClick={() => {
             onMealTap(meal.mealId);
           }}
@@ -324,6 +367,14 @@ function MealChart(props: MealChartProps) {
         y2={g.meal.bottom}
         data-testid="meal-line"
       />
+      {g.symbol && (
+        <MealSymbolGlyph
+          symbol={g.symbol.symbol}
+          x={g.symbol.x}
+          y={g.symbol.y}
+          size={g.symbol.size}
+        />
+      )}
       {g.bolus && (
         <path className={styles.bolus} d={g.bolus.path} aria-hidden="true" data-testid="bolus" />
       )}
@@ -404,6 +455,15 @@ function WeekTile(props: WeekTileChartProps) {
           cy={dot.y}
           r="2.5"
           data-testid="meal-dot"
+        />
+      ))}
+      {g.mealSymbols.map((meal, index) => (
+        <MealSymbolGlyph
+          key={index}
+          symbol={meal.symbol}
+          x={meal.x}
+          y={meal.y}
+          size={g.symbolSize}
         />
       ))}
     </svg>

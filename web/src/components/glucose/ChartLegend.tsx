@@ -3,6 +3,7 @@
 import type { GlucoseUnit } from "@frejsi/shared";
 import { useLocale, useTranslations } from "next-intl";
 
+import { FoodSymbol } from "@/components/food/FoodSymbol";
 import { resolveLocale } from "@/lib/i18n/routing";
 import { formatClock } from "@/lib/i18n/time";
 
@@ -26,6 +27,15 @@ export type ChartLegendProps =
       unit: GlucoseUnit;
     };
 
+/** The meal entry's swatch: the plate, in the meal colour (v0.6.0 plan §7). */
+function Plate({ size }: { size: number }) {
+  return (
+    <span className={styles.swatchMealPlate} aria-hidden="true" data-swatch="meal-plate">
+      <FoodSymbol symbol="mixed" size={size} strokeWidth={2.2} />
+    </span>
+  );
+}
+
 function Triangle({ size }: { size: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 10 10" aria-hidden="true" data-swatch="triangle">
@@ -37,6 +47,7 @@ function Triangle({ size }: { size: number }) {
 /**
  * The two drawn chart legends (plan §7), composed from one message key per entry so the dosing
  * test sees each whole string. "Bolus 11:58" is v0.2.0's BolusTap key; the triangle is a time.
+ * The meal entry draws the plate, the symbol of a mixed dish (v0.6.0 plan §7).
  */
 export function ChartLegend(props: ChartLegendProps) {
   const t = useTranslations("chart");
@@ -47,7 +58,7 @@ export function ChartLegend(props: ChartLegendProps) {
     return (
       <ul className={styles.legend} data-variant="meal">
         <li>
-          <span className={styles.swatchMealBar} aria-hidden="true" data-swatch="meal-bar" />
+          <Plate size={10} />
           {t("legend.meal")}
         </li>
         {props.bolusTs !== undefined && (
@@ -72,7 +83,7 @@ export function ChartLegend(props: ChartLegendProps) {
   return (
     <ul className={styles.legend} data-variant="day">
       <li>
-        <span className={styles.swatchMealDot} aria-hidden="true" data-swatch="meal-dot" />
+        <Plate size={12} />
         {t("legend.meal")}
       </li>
       <li>

@@ -1,6 +1,7 @@
 // The geometry of the glucose curve (tokens.json#chart): time → x across the plot, mmol → y, the
 // target band, the curve split at gaps, the end dot and the time ticks. Pure, so the sparkline
 // and the day curve are tested as numbers.
+import type { MealSymbol } from "@frejsi/shared/schemas/food";
 import type { GlucoseUnit, Reading } from "@frejsi/shared/schemas/index";
 
 import type { AppLocale } from "@/lib/i18n/routing";
@@ -22,12 +23,19 @@ export const CHART_SIZES: Record<
 /** The phone day curve (Historik-Telefon) in the curvePhone viewBox, 326×118. */
 const DAY_PHONE = { width: 326, plotWidth: 296, plotHeight: 98, axisHeight: 20, labelSize: 11 };
 
-/** A meal on the day curve: its line at `ts`, and a triangle at `bolusTs` when the tap exists. */
+/**
+ * A meal on the day curve: its line at `ts`, a triangle at `bolusTs` when the tap exists, and
+ * its food symbol (v0.6.0 plan §7) when the view carries one; without it the line is drawn bare.
+ */
 export interface ChartMeal {
   mealId: string;
   ts: string;
   bolusTs?: string;
+  symbol?: MealSymbol;
 }
+
+/** The symbol's size at the marker: 12 px at the phone sizes, 16 px on desktop (plan §7). */
+export const SYMBOL_SIZE = { phone: 12, desktop: 16 } as const;
 
 /** The curve never shows less than this range, so a quiet day is not drawn as a mountain. */
 const MIN_DOMAIN_LOW = 2;
@@ -63,11 +71,16 @@ export interface ChartGeometry {
   ticks: { x: number; label: string; strong: boolean; anchor: "start" | "middle" | "end" }[];
   axisY: number;
   labelSize: number;
-  /** Meal lines inside the window, from `markerTop` to the baseline (`plotHeight`). */
-  meals: { mealId: string; ts: string; x: number }[];
+  /**
+   * Meal lines inside the window, from `lineTop` to the baseline (`plotHeight`): `markerTop`
+   * when the line is bare, just under the symbol when there is one.
+   */
+  meals: { mealId: string; ts: string; x: number; symbol?: MealSymbol; lineTop: number }[];
   /** Bolus triangles inside the window, on the baseline. */
   boluses: { mealId: string; x: number; path: string; clock: string }[];
   markerTop: number;
+  /** The food symbol's width and height, centred on the line at `markerTop`. */
+  symbolSize: number;
 }
 
 const round = (n: number) => Math.round(n * 10) / 10;
@@ -95,9 +108,18 @@ export function chartGeometry(input: ChartInput): ChartGeometry {
     const t = new Date(ts).getTime();
     return t >= fromMs && t <= toMs;
   };
+  const markerTop = round(size.plotHeight * 0.1);
+  const symbolSize =
+    input.variant === "day" && input.size !== "phone" ? SYMBOL_SIZE.desktop : SYMBOL_SIZE.phone;
   const meals = (input.meals ?? [])
     .filter((meal) => inside(meal.ts))
-    .map((meal) => ({ mealId: meal.mealId, ts: meal.ts, x: x(meal.ts) }));
+    .map((meal) => ({
+      mealId: meal.mealId,
+      ts: meal.ts,
+      x: x(meal.ts),
+      ...(meal.symbol !== undefined ? { symbol: meal.symbol } : {}),
+      lineTop: meal.symbol !== undefined ? round(markerTop + symbolSize / 2 + 2) : markerTop,
+    }));
   const boluses = (input.meals ?? []).flatMap((meal) =>
     meal.bolusTs !== undefined && inside(meal.bolusTs)
       ? [
@@ -133,7 +155,8 @@ export function chartGeometry(input: ChartInput): ChartGeometry {
     labelSize: size.labelSize,
     meals,
     boluses,
-    markerTop: round(size.plotHeight * 0.1),
+    markerTop,
+    symbolSize,
   };
 }
 
@@ -225,6 +248,8 @@ export interface MealChartInput {
   readings: readonly Reading[];
   mealTs: string;
   bolusTs?: string;
+  /** The meal's food symbol, drawn above the plot on the meal line (plan §7). */
+  symbol?: MealSymbol;
   previous: readonly PreviousCurve[];
   /** In mmol; the labels are drawn in `unit`. */
   target: { low: number; high: number };
@@ -247,6 +272,8 @@ export interface MealChartGeometry {
   previous: string[][];
   previousOpacity: number;
   meal: { x: number; top: number; bottom: number };
+  /** The symbol's box, its bottom at `plotTop` (clamped to the top edge on the phone). */
+  symbol: { symbol: MealSymbol; x: number; y: number; size: number } | null;
   mealClock: string;
   bolus: { x: number; path: string; clock: string } | null;
   /** Hours relative to the meal, −1 to +4; 0 is the meal time. */
@@ -319,6 +346,15 @@ export function mealChartGeometry(input: MealChartInput): MealChartGeometry {
     ),
     previousOpacity: size.previousOpacity,
     meal: { x: x(input.mealTs), top: size.plotTop, bottom: size.baseline },
+    symbol:
+      input.symbol === undefined
+        ? null
+        : {
+            symbol: input.symbol,
+            x: round(x(input.mealTs) - SYMBOL_SIZE[input.size] / 2),
+            y: Math.max(0, size.plotTop - SYMBOL_SIZE[input.size]),
+            size: SYMBOL_SIZE[input.size],
+          },
     mealClock: formatClock(new Date(input.mealTs), input.timeZone),
     bolus:
       bolusX === null || input.bolusTs === undefined
@@ -347,6 +383,8 @@ export const WEEK_TILE = {
   plotTop: 2,
   baseline: 52,
   dotY: 58,
+  /** The food symbol in place of the dot (plan §7), centred on `dotY`. */
+  symbolSize: 8,
   maxPoints: 48,
 };
 
@@ -356,6 +394,8 @@ export interface WeekTileInput {
   /** The day downsampled to 30-minute buckets (plan §5), at most 48 points. */
   curve: readonly { ts: string; mmol: number }[];
   mealTimes: readonly string[];
+  /** When given, the meals are drawn as their symbols instead of dots (v0.6.0 plan §7). */
+  meals?: readonly { ts: string; symbol: MealSymbol }[] | undefined;
   /** The local day, 00:00 to 24:00 in the space's zone. */
   from: Date;
   to: Date;
@@ -367,7 +407,11 @@ export interface WeekTileGeometry {
   height: number;
   band: { top: number; bottom: number };
   segments: string[];
+  /** The meal dots: empty when `meals` was given. */
   mealDots: { x: number; y: number }[];
+  /** The symbols' boxes (top-left corner), `symbolSize` wide, centred on `dotY`. */
+  mealSymbols: { x: number; y: number; symbol: MealSymbol }[];
+  symbolSize: number;
 }
 
 export function weekTileGeometry(input: WeekTileInput): WeekTileGeometry {
@@ -387,17 +431,27 @@ export function weekTileGeometry(input: WeekTileInput): WeekTileGeometry {
   // Buckets are 30 minutes apart (plan §5): a missing bucket is a gap in the line.
   const bucketMinutes = span / 60_000 / WEEK_TILE.maxPoints;
   const gapMinutes = Math.max(GAP_MINUTES, bucketMinutes * 1.5);
+  const inDayAt = (ts: string) => {
+    const t = new Date(ts).getTime();
+    return t >= fromMs && t <= input.to.getTime();
+  };
+  const half = WEEK_TILE.symbolSize / 2;
   return {
     width,
     height: WEEK_TILE.height,
     band: { top: y(input.target.high), bottom: y(input.target.low) },
     segments: segmentsOf(points, x, y, gapMinutes * Math.max(1, step)),
-    mealDots: input.mealTimes
-      .filter((ts) => {
-        const t = new Date(ts).getTime();
-        return t >= fromMs && t <= input.to.getTime();
-      })
-      .map((ts) => ({ x: x(ts), y: WEEK_TILE.dotY })),
+    mealDots: input.meals
+      ? []
+      : input.mealTimes.filter(inDayAt).map((ts) => ({ x: x(ts), y: WEEK_TILE.dotY })),
+    mealSymbols: (input.meals ?? [])
+      .filter((meal) => inDayAt(meal.ts))
+      .map((meal) => ({
+        x: round(x(meal.ts) - half),
+        y: WEEK_TILE.dotY - half,
+        symbol: meal.symbol,
+      })),
+    symbolSize: WEEK_TILE.symbolSize,
   };
 }
 
