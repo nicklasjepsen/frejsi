@@ -720,7 +720,7 @@ async function seedArnesRoom(
 
 /** A single-use add-a-device link for a seeded person, made by Jonas as People would. */
 export function deviceInvite(
-  space: SeededSpace,
+  space: Pick<SeededSpace, "spaceId" | "people">,
   key: SeedPersonKey,
   options: Pick<SeedOptions, "db" | "now"> = {},
 ): Promise<CreatedInvite> {

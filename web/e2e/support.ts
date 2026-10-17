@@ -14,7 +14,8 @@ import {
 } from "../scripts/seed";
 
 /** The space the global setup seeded, read back from the database. */
-export async function seededSpace(): Promise<SeededSpace> {
+/** Without `arnesRoom`, which `seededArnesRoom` reads on its own. */
+export async function seededSpace(): Promise<Omit<SeededSpace, "arnesRoom">> {
   const space = await prisma.space.findFirstOrThrow({
     where: { name: SEED_SPACE.name },
     include: { memberships: { include: { user: true } } },
