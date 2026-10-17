@@ -255,7 +255,6 @@
   .simple {
     align-items: flex-start;
     gap: 10px;
-    padding-top: 0;
   }
 
   .simpleLabel {
