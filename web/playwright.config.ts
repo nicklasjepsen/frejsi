@@ -41,6 +41,10 @@ const appProjects = [
   "now-theme.spec.ts",
   "manual-readings.spec.ts",
   "source-settings.spec.ts",
+  // v0.6.0: symbols.spec.ts arrives with the curve lane; a name without a file matches nothing.
+  "symptoms.spec.ts",
+  "recipe.spec.ts",
+  "symbols.spec.ts",
 ];
 
 export default defineConfig({

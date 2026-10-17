@@ -50,7 +50,8 @@ test("Jonas pastes a recipe, corrects a match, saves the dish unverified and edi
   await expect(rows.first()).toContainText("Fundet som Rugbrød");
   await expect(rows.first()).toContainText("80 g"); // 200 g at 40 g per 100 g
   await expect(rows.first()).not.toContainText("ca.");
-  expect(await prisma.food.count({ where: { spaceId, origin: "recipe" } })).toBe(0);
+  // Nothing is saved before the tap: only the seed's own recipe dish is there.
+  expect(await prisma.food.count({ where: { spaceId, origin: "recipe" } })).toBe(1);
 
   await page.getByRole("textbox", { name: "Rettens navn" }).fill("Eksempelgryde");
   const saving = page.waitForResponse(
