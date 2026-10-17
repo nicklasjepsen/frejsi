@@ -196,6 +196,18 @@ describe("Jeg har det… (the picker, plan §5)", () => {
       expect(screen.getByTestId("feel-today")).toHaveTextContent("Hovedpine kl. 12:05 · Alma");
     });
   });
+  it("fetches today's list once when mounted without a clock, as the page mounts it", async () => {
+    const { now: _now, ...withoutClock } = base;
+    render(
+      <I18nProvider locale="da" messages={getMessages("da")}>
+        <SymptomPicker {...withoutClock} />
+      </I18nProvider>,
+    );
+    await tiles();
+    await screen.findByText("Intet logget i dag");
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    expect(fake.calls.filter((c) => c.path.startsWith("/api/spaces/s1/symptoms?"))).toHaveLength(1);
+  });
   it("says it could not be saved and keeps the tiles when the route refuses", async () => {
     fake.on("POST /api/spaces/s1/symptoms", { error: { code: "symptom-kind-unknown" } }, 400);
     mount();

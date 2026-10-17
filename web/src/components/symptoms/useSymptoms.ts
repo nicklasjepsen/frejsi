@@ -11,6 +11,9 @@ export type SymptomsLoad =
   | { status: "failed" }
   | { status: "ready"; symptoms: SymptomView[] };
 
+/** One clock for every mount: a fresh arrow function per render would refetch without end. */
+export const DEFAULT_NOW = (): Date => new Date();
+
 /** Today's bounds in the space's zone, decided at each load so the list follows the calendar. */
 export function todayBounds(now: Date, timeZone: string): { from: string; to: string } {
   const [from, to] = dayRange(localDateOf(now, timeZone), timeZone);
@@ -25,7 +28,7 @@ export function todayBounds(now: Date, timeZone: string): { from: string; to: st
 export function useSymptoms(
   spaceId: string,
   timeZone: string,
-  now: () => Date = () => new Date(),
+  now: () => Date = DEFAULT_NOW,
 ): SymptomsLoad & { refresh: () => void } {
   const { subscribe } = useLiveFeed(spaceId, { readings: false });
   const [load, setLoad] = useState<SymptomsLoad>({ status: "loading" });
