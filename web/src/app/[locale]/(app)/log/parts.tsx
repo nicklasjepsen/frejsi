@@ -5,7 +5,6 @@ import { useEffect, useMemo, useState } from "react";
 
 import { FoodPhoto } from "@/components/food/FoodPhoto";
 import { PhotoPicker } from "@/components/food/PhotoPicker";
-import { BolusTap } from "@/components/meal/BolusTap";
 import { EatingInChips } from "@/components/meal/EatingInChips";
 import { Notice } from "@/components/ui/Notice";
 
@@ -118,27 +117,6 @@ export function PhotoField({ controller }: { controller: LogController }) {
       )}
       <PhotoPicker onPhoto={controller.setPhoto} />
     </div>
-  );
-}
-
-export function Bolus({
-  controller,
-  timeZone,
-  simpleMode,
-}: {
-  controller: LogController;
-  timeZone: string;
-  simpleMode: boolean;
-}) {
-  if (simpleMode) return null;
-  return (
-    <BolusTap
-      bolusTs={controller.draft.bolusTs}
-      timeZone={timeZone}
-      onTap={controller.tapBolus}
-      onUndo={controller.undoBolus}
-      canUndo={controller.canUndoBolus}
-    />
   );
 }
 

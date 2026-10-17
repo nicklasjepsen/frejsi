@@ -8,7 +8,6 @@ import { formatClock, withLocalTime } from "@/app/[locale]/(app)/log/time";
 import { FoodPhoto } from "@/components/food/FoodPhoto";
 import { EditPhotoPicker } from "@/components/meal/EditPhotoPicker";
 import { deleteMeal, updateMeal } from "@/components/meal/api";
-import { BolusTap } from "@/components/meal/BolusTap";
 import { editableItems, EditMealItems, refreshNutrition } from "@/components/meal/EditMealItems";
 import { TotalBar } from "@/components/meal/TotalBar";
 import { BackButton, Button } from "@/components/ui";
@@ -48,7 +47,6 @@ export function EditMealSheet({
   const [items, setItems] = useState(() => editableItems(view.editItems));
   const [itemsChanged, setItemsChanged] = useState(false);
   const [ts, setTs] = useState(view.meal.ts);
-  const [bolusTs, setBolusTs] = useState(view.meal.bolusTs ?? null);
   const [note, setNote] = useState(view.meal.note ?? "");
   const [photo, setPhoto] = useState<string | null>(null);
   const [photoBusy, setPhotoBusy] = useState(false);
@@ -88,7 +86,6 @@ export function EditMealSheet({
           ts,
           ...(itemsChanged ? { items: items.map((item) => item.input) } : {}),
           note,
-          ...(bolusTs || view.meal.bolusTs ? { bolusTs } : {}),
           ...(photo ? { photoDataUrl: photo } : {}),
         });
         setWritten(true);
@@ -192,24 +189,6 @@ export function EditMealSheet({
           onBusyChange={setPhotoBusy}
           onPhoto={(bytes) => {
             setPhoto(dataUrl(bytes));
-          }}
-        />
-        <BolusTap
-          bolusTs={bolusTs}
-          timeZone={timeZone}
-          canUndo={bolusTs !== (view.meal.bolusTs ?? null)}
-          {...(view.meal.bolusTs && bolusTs === view.meal.bolusTs
-            ? {
-                onRemove: () => {
-                  setBolusTs(null);
-                },
-              }
-            : {})}
-          onTap={() => {
-            setBolusTs(new Date().toISOString());
-          }}
-          onUndo={() => {
-            setBolusTs(view.meal.bolusTs ?? null);
           }}
         />
         {failed && <p role="alert">{t("failed")}</p>}

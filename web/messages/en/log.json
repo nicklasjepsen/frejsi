@@ -82,11 +82,7 @@
   "showMeal": "See the meal",
   "mealMeta": "{time} · logged by {name}",
   "bolus": {
-    "button": "bolus given now",
-    "at": "Bolus {time}",
-    "remove": "Remove bolus time",
-    "undo": "Undo",
-    "note": "\"Bolus given now\" saves only the time so it can be seen on the curve. Frejsi never calculates insulin."
+    "at": "Bolus {time}"
   },
   "total": "Total",
   "totalAmount": "{amount} g",

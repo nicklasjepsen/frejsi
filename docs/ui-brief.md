@@ -35,8 +35,8 @@ Deliver both layouts for every screen below. A desktop layout is not the phone l
 ## Screens (v1)
 
 1. **Now** — current glucose with trend arrow and age ("6.2 ↗ · 3 min ago"); last meal; a short sparkline of the last 3 hours. In `simpleMode`: the number, the arrow, and one big button "I'm eating".
-2. **Log a meal** — three entry points of equal weight: **scan** (barcode), **say it** (voice/text), **pick** (own library with photos, favourites, "my lunchbox"). Then: portions as chips ("1 slice", "½ slice", "weigh it"), running carb total, confirm. Optional photo. Optional "bolus given now" tap (carers only).
-3. **Meal detail** — the meal on top, the glucose curve for −1 h to +4 h below with the meal and bolus marked; the same dish's previous curves faintly behind. AI insight as one sentence, clearly labelled as observation.
+2. **Log a meal** — three entry points of equal weight: **scan** (barcode), **say it** (voice/text), **pick** (own library with photos, favourites, "my lunchbox"). Then: portions as chips ("1 slice", "½ slice", "weigh it"), running carb total, confirm. Optional photo. No bolus tap: the bolus time comes from an imported pump record, later.
+3. **Meal detail** — the meal on top, the glucose curve for −1 h to +4 h below with the meal marked, and the bolus time when an imported pump record holds one; the same dish's previous curves faintly behind. AI insight as one sentence, clearly labelled as observation.
 4. **Library** — the space's foods with photos; search (semantic); unverified items marked; tick to verify. Edit portions. "Send correction to Open Food Facts".
 5. **History** — days as a scrollable timeline of meals over the glucose curve; weekly summary with the generated "questions for the clinic".
 6. **People** — members and roles; invite (QR + link); devices per person; remove.
@@ -48,7 +48,7 @@ Deliver both layouts for every screen below. A desktop layout is not the phone l
 - A glucose value is never shown without its age.
 - Viewers never see glucose anywhere — not in history, not in meal detail.
 - AI estimates are always labelled "approx." and visibly unverified.
-- There is no insulin anywhere in the UI except the single "bolus given now" timestamp tap for carers. No units, no suggestions.
+- There is no insulin anywhere in the UI; the bolus time on the curve comes from an imported pump record, later. No units, no suggestions.
 - On the phone everything must work one-handed; the child's flow must work in a school corridor in under 20 seconds.
 - On desktop everything must be reachable by keyboard; the "verify a batch of foods" and "compare this dish's last five curves" flows are desktop-first and must not feel like a phone screen.
 - `simpleMode` exists on both devices and is the same shell — large, picture-first — not a different app.

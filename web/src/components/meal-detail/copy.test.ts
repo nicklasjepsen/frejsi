@@ -1,6 +1,6 @@
 // The copy test of plan §9 on `mealDetail.*`: the screen describes what happened and never tells
 // anyone what to do, and no string of its own contains "bolus" (the bolus tile, legend and marker
-// reuse the allowed `stats.*`, `chart.*` and BolusTap keys). Word-bounded, case-insensitive.
+// reuse the allowed `stats.*`, `chart.*` and `log.bolus.at` keys). Word-bounded, case-insensitive.
 import { describe, expect, it } from "vitest";
 
 import { getMessages } from "@/lib/i18n/messages";

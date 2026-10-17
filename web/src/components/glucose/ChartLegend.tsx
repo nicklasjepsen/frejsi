@@ -14,7 +14,7 @@ export type ChartLegendProps =
   | {
       /** Maaltid-Telefon: 12 px muted, "Måltid", "Bolus 11:58", "Tidligere gange". */
       variant: "meal";
-      /** The bolus tap's time; without one the triangle entry is left out. */
+      /** The stored bolus time; without one the triangle entry is left out. */
       bolusTs?: string;
       /** Whether previous curves are drawn behind. */
       previous: boolean;
@@ -46,7 +46,7 @@ function Triangle({ size }: { size: number }) {
 
 /**
  * The two drawn chart legends (plan §7), composed from one message key per entry so the dosing
- * test sees each whole string. "Bolus 11:58" is v0.2.0's BolusTap key; the triangle is a time.
+ * test sees each whole string. "Bolus 11:58" is the `log.bolus.at` key; the triangle is a time.
  * The meal entry draws the plate, the symbol of a mixed dish (v0.6.0 plan §7).
  */
 export function ChartLegend(props: ChartLegendProps) {

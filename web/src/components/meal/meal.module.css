@@ -28,7 +28,6 @@
 }
 .entryTile:focus-visible,
 .saveButton:focus-visible,
-.bolusButton:focus-visible,
 .manualRow:focus-visible {
   outline: 2px solid var(--accent-base);
   outline-offset: 2px;
@@ -164,57 +163,6 @@
 }
 .item .portionSheet {
   padding: 0 16px 12px 72px;
-}
-
-.bolus {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-.bolusButton,
-.bolusDone {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  min-height: 48px;
-  padding: 0 16px;
-  border: 1px solid var(--hairline);
-  border-radius: 14px;
-  background: var(--surface);
-  color: var(--text);
-  font: inherit;
-  font-size: 14px;
-}
-.bolusButton {
-  cursor: pointer;
-}
-/* The allowed English label is lower case ("bolus given now"); the button starts with a capital. */
-.bolusLabel {
-  display: inline-block;
-}
-.bolusLabel::first-letter {
-  text-transform: uppercase;
-}
-.bolusDone {
-  justify-content: flex-start;
-  font-weight: 700;
-}
-.bolusNote {
-  margin: 0;
-  font-size: 12px;
-  color: var(--text-muted);
-}
-.linkButton {
-  margin-inline-start: auto;
-  min-height: var(--touch-min);
-  border: 0;
-  background: none;
-  color: var(--accent-strong);
-  font: inherit;
-  font-weight: 400;
-  text-decoration: underline;
-  cursor: pointer;
 }
 
 .totalBar {

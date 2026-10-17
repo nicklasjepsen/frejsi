@@ -26,7 +26,6 @@ import { useOnline, type LogController } from "./controller";
 import type { LogScreenProps } from "./LogScreen";
 import styles from "./log.module.css";
 import {
-  Bolus,
   EatingInField,
   PhotoField,
   SaveNotices,
@@ -278,8 +277,7 @@ export function DesktopLog({ controller, spaceId, timeZone, userName, simpleMode
           <EatingInField controller={controller} simpleMode={simpleMode} />
           <TimeField controller={controller} at={at} timeZone={timeZone} />
           <PhotoField controller={controller} />
-          <Bolus controller={controller} timeZone={timeZone} simpleMode={simpleMode} />
-          <TotalBar
+                    <TotalBar
             total={controller.total}
             actionLabel={t("save")}
             shortcut={t("saveShortcut")}

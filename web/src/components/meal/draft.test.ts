@@ -85,14 +85,12 @@ describe("the meal draft", () => {
     let draft = addFood(addFood(emptyDraft(), bread), apple);
     draft = choosePortion(draft, draft.items[0]?.key ?? "", 1);
     draft = chooseGrams(draft, draft.items[1]?.key ?? "", 35);
-    draft = { ...draft, bolusTs: "2026-10-14T09:58:00.000Z" };
     expect(toMealRequest(draft, null, NOW)).toEqual({
       ts: "2026-10-14T10:25:00.000Z",
       items: [
         { foodId: "f-bread", name: "Fictional rye bread", portionLabel: "1 slice", carbs: 18 },
         { foodId: "f-apple", name: "Fictional apple", grams: 35, carbs: 14 },
       ],
-      bolusTs: "2026-10-14T09:58:00.000Z",
     });
   });
 
@@ -158,20 +156,22 @@ describe("the meal draft", () => {
     // A saved meal keeps its stored time: no chip is preselected.
     expect(draft.eatingIn).toBeNull();
     expect(mealTs(draft, NOW)).toBe(meal.ts);
-    expect(draft.bolusTs).toBe(meal.bolusTs);
+    // The stored bolus time is not part of the draft (issue #215): leaving it out of the PATCH
+    // body keeps it as stored.
+    expect(draft).not.toHaveProperty("bolusTs");
     expect(toMealRequest(draft, "photo", NOW)).toEqual({
       ts: meal.ts,
       items: [
         { name: "Fictional rye bread", portionLabel: "2 slices", carbs: 36 },
         { name: "Fictional apple", grams: 35, carbs: 14 },
       ],
-      bolusTs: meal.bolusTs,
       photoDataUrl: "photo",
     });
   });
 
-  it("sends a cleared bolus tap on an edit as no bolusTs", () => {
-    const draft = { ...addFood(emptyDraft(), lunchbox), bolusTs: null };
+  it("has no bolus time to send: a new meal's body never carries bolusTs", () => {
+    const draft = addFood(emptyDraft(), lunchbox);
+    expect(draft).not.toHaveProperty("bolusTs");
     expect(toMealRequest(draft, null)).not.toHaveProperty("bolusTs");
   });
 

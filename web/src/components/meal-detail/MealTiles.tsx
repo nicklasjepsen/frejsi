@@ -23,7 +23,7 @@ export interface MealTilesProps {
 /**
  * The three tiles (plan §5): the peak with its time ("Top · 9,6 · efter 1 t 05 min"), time in
  * range over the three hours ("I mål 4–10 · 3 t · af 3 t", "indtil nu" while the window is open)
- * and the gap between the bolus tap and the meal as a number with a position word. Desktop uses
+ * and the gap between the stored bolus time and the meal as a number with a position word. Desktop uses
  * the short footnotes ("efter 1 t 05", "før"). Nothing here is an amount.
  */
 export function MealTiles({ stats, mealTs, target, unit, timeZone, size }: MealTilesProps) {

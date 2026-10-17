@@ -42,7 +42,7 @@ For the owner of an installation, once the site is deployed. Your own address re
 2. **Open `inviteUrl` on your phone** and create a passkey. The link works once and expires after seven days. Add the site to your home screen to install it as an app.
 3. **Try it out:**
    - **Bibliotek:** search foods, scan a barcode, save your own foods and tick them verified.
-   - **Log a meal:** pick foods and portions, check the carb total, add a photo, tap the time you gave the bolus.
+   - **Log a meal:** pick foods and portions, check the carb total, add a photo.
    - **Jeg har det…:** one tap logs how you feel; the entry shows on the curve next to the meals.
    - **I dag and Historik:** today's meals, the day and week views, and a meal's curve.
    - **Personer:** invite people by link or QR code as carer or viewer; a viewer never sees glucose.

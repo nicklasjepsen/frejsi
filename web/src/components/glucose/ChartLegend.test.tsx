@@ -49,7 +49,7 @@ describe("ChartLegend (plan §7)", () => {
     expect(plate?.className).toContain("swatchMealPlate");
   });
 
-  it("meal: leaves out the bolus without a tap and the previous curves when there are none", () => {
+  it("meal: leaves out the bolus without a stored time and the previous curves when there are none", () => {
     const { container } = mount(
       <ChartLegend variant="meal" previous={false} timeZone="Europe/Copenhagen" />,
       "en",

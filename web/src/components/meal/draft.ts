@@ -35,8 +35,6 @@ export interface MealDraft {
    * a time is set by hand (`setMealTime`) or for a saved meal, whose stored time is `ts`.
    */
   eatingIn: EatingIn | null;
-  /** The "Bolus givet nu" tap: a time and nothing else. */
-  bolusTs: string | null;
   nextKey: number;
 }
 
@@ -44,7 +42,6 @@ export const emptyDraft = (): MealDraft => ({
   items: [],
   ts: null,
   eatingIn: DEFAULT_EATING_IN,
-  bolusTs: null,
   nextKey: 1,
 });
 
@@ -201,7 +198,6 @@ export function toMealRequest(
   return {
     ...(ts ? { ts } : {}),
     items: draft.items.map(toItemInput),
-    ...(draft.bolusTs ? { bolusTs: draft.bolusTs } : {}),
     ...(photoDataUrl ? { photoDataUrl } : {}),
   };
 }
@@ -222,7 +218,6 @@ export function draftFromMeal(meal: MealView): MealDraft {
     })),
     ts: meal.ts,
     eatingIn: null,
-    bolusTs: meal.bolusTs ?? null,
     nextKey: 1,
   };
 }
