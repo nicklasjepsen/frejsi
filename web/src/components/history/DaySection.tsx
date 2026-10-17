@@ -21,7 +21,8 @@ import { localeHref, type AppLocale } from "@/lib/i18n/routing";
 import { DayHeader } from "./DayHeader";
 import { SymptomDetailCard } from "./SymptomDetailCard";
 import { SymptomRow } from "./SymptomRow";
-import { useSymptomRange } from "./useSymptomRange";
+import { SymptomsFailed } from "./SymptomsFailed";
+import { beforeInstant, useSymptomRange } from "./useSymptomRange";
 import styles from "./history.module.css";
 
 type Subscribe = (type: FeedEventType, handler: () => void) => () => void;
@@ -69,7 +70,7 @@ export function DaySection({
   const isToday = day.date === today;
   // The 30-second clock the ages are read at, so an open detail does not freeze on "lige nu".
   const now = useNow();
-  const symptomRange = useSymptomRange(spaceId, day.from, day.to, subscribe);
+  const symptomRange = useSymptomRange(spaceId, day.from, beforeInstant(day.to), subscribe);
   const symptoms = symptomRange.status === "ready" ? symptomRange.symptoms : [];
   const labelOf = useKindLabel(locale, symptomRange.kinds);
   const [activeSymptomId, setActiveSymptomId] = useState<string | null>(null);
@@ -188,10 +189,13 @@ export function DaySection({
             />
           )}
         </div>
+        {symptomRange.status === "failed" && <SymptomsFailed onRetry={symptomRange.refresh} />}
         {entries.length === 0 ? (
-          <p className={styles.muted}>
-            {t(symptomsOnly ? "noSymptoms" : isToday ? "noMealsToday" : "noMeals")}
-          </p>
+          symptomsOnly && symptomRange.status !== "ready" ? null : (
+            <p className={styles.muted}>
+              {t(symptomsOnly ? "noSymptoms" : isToday ? "noMealsToday" : "noMeals")}
+            </p>
+          )
         ) : (
           <ul className={styles.timeline} aria-label={t("meals")}>
             {entries.map((entry, index) => (

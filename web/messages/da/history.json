@@ -28,6 +28,7 @@
   "noSymptoms": "Ingen symptomer denne dag",
   "noSymptomsWeek": "Ingen symptomer denne uge",
   "symptomsLabel": "Symptomer",
+  "symptomsFailed": "Symptomerne kunne ikke hentes lige nu.",
   "observation": {
     "title": "Ugens opsummering",
     "ready": "Med spørgsmål til klinikken · klar",

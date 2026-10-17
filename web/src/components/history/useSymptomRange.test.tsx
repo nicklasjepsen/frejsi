@@ -5,7 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { FeedEventType } from "@/lib/live/live-feed";
 
-import { SYMPTOM_REFRESH_ON, useSymptomRange } from "./useSymptomRange";
+import { SYMPTOM_REFRESH_ON, beforeInstant, useSymptomRange } from "./useSymptomRange";
 
 const FROM = "2026-10-13T22:00:00.000Z";
 const TO = "2026-10-14T22:00:00.000Z";
@@ -105,5 +105,11 @@ describe("useSymptomRange (v0.6.0 plan §5)", () => {
     await Promise.resolve();
     expect(calls).toEqual([]);
     expect(screen.getByTestId("probe")).toHaveAttribute("data-status", "loading");
+  });
+});
+
+describe("beforeInstant", () => {
+  it("is the last millisecond before the next day's midnight", () => {
+    expect(beforeInstant("2026-10-14T22:00:00.000Z")).toBe("2026-10-14T21:59:59.999Z");
   });
 });
