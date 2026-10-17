@@ -67,6 +67,10 @@ export async function loadHistoryWeek(
         from,
       ),
       mealTimes: mealsInRange(rows, { from, to }).map((m) => m.ts),
+      meals: mealsInRange(rows, { from, to }).map((m) => ({
+        ts: m.ts,
+        symbol: rows.find((r) => r.id === m.id)?.symbol ?? "unknown",
+      })),
     };
   });
   return WeekHistoryView.parse({

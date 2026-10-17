@@ -256,3 +256,64 @@ describe("meal services", () => {
     expect(events).toHaveLength(1);
   });
 });
+
+describe("the meal symbol (v0.6.0 task 1)", () => {
+  it("stores mealSymbol() of the snapshotted items, which carry the food's category, and shows it", async () => {
+    food.category = "bread";
+    const view = await createMeal(
+      "s1",
+      session,
+      {
+        items: [
+          { foodId: "f1", name: "ignored", grams: 50 },
+          { name: "Fictional berries", carbs: 7 },
+        ],
+      },
+      deps,
+    );
+    expect(view.symbol).toBe("bread");
+    expect(rows.get(view.id)?.symbol).toBe("bread");
+    expect(rows.get(view.id)?.items.map((item) => item.category)).toEqual(["bread", undefined]);
+    expect(JSON.stringify(view.items)).not.toContain("category");
+    expect((await getMeal("s1", view.id, session.locale, deps)).symbol).toBe("bread");
+    const manual = await createMeal("s1", session, { items: [{ name: "Manual", carbs: 5 }] }, deps);
+    expect(manual.symbol).toBe("unknown");
+    expect(rows.get(manual.id)?.symbol).toBe("unknown");
+  });
+  it("recomputes the symbol only when the items change, never from a later library edit", async () => {
+    food.category = "bread";
+    const created = await createMeal(
+      "s1",
+      session,
+      { items: [{ foodId: "f1", name: "ignored", grams: 50 }] },
+      deps,
+    );
+    food.category = "dairy";
+    const noted = await updateMeal("s1", created.id, session, { note: "Fictional note" }, deps);
+    expect(noted.symbol).toBe("bread");
+    expect(rows.get(created.id)?.symbol).toBe("bread");
+    const replaced = await updateMeal(
+      "s1",
+      created.id,
+      session,
+      { items: [{ foodId: "f1", name: "ignored", grams: 50 }] },
+      deps,
+    );
+    expect(replaced.symbol).toBe("dairy");
+    expect(rows.get(created.id)?.symbol).toBe("dairy");
+    const typed = await updateMeal(
+      "s1",
+      created.id,
+      session,
+      { items: [{ name: "Typed", carbs: 5 }] },
+      deps,
+    );
+    expect(typed.symbol).toBe("unknown");
+    expect(events.map((e) => e.type)).toEqual([
+      "meal.created",
+      "meal.updated",
+      "meal.updated",
+      "meal.updated",
+    ]);
+  });
+});

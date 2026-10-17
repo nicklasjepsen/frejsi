@@ -1,4 +1,11 @@
-import type { MealItemView, Neighbours, Portion, Reading, Target } from "@frejsi/shared";
+import type {
+  MealItemView,
+  MealSymbol,
+  Neighbours,
+  Portion,
+  Reading,
+  Target,
+} from "@frejsi/shared";
 import type { PhotoStore } from "@frejsi/shared/photos";
 export interface HistoryItem extends MealItemView {
   foodId?: string | undefined;
@@ -14,6 +21,8 @@ export interface HistoryMeal {
   note?: string | undefined;
   bolusTs?: string | undefined;
   photoKey?: string | undefined;
+  /** The stored symbol; absent (a row from before 0005) is shown as `unknown`. */
+  symbol?: MealSymbol | undefined;
 }
 export interface HistorySpace {
   timezone: string;

@@ -1,4 +1,4 @@
-import { prisma, Portion, type PrismaClient, type Reading } from "@frejsi/shared";
+import { prisma, Portion, storedSymbol, type PrismaClient, type Reading } from "@frejsi/shared";
 import { z } from "zod";
 import type { HistoryMeal, HistoryRepository } from "./types";
 const include = {
@@ -19,6 +19,7 @@ function meal(row: Row): HistoryMeal {
     note: row.note ?? undefined,
     bolusTs: row.bolusTs?.toISOString(),
     photoKey: row.photoKey ?? undefined,
+    symbol: storedSymbol(row.symbol),
     items: row.items.map((item) => ({
       name: item.name,
       carbs: item.carbs,
