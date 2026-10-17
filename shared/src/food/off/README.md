@@ -18,8 +18,10 @@ argument. Without a country the source queries the world host once.
   Fewer than five country rows triggers the world host. Country results precede
   world results, normalized codes deduplicate them, and only ten are returned.
   If the optional world request fails, existing country matches are retained.
-- Fields: code, localized/default product name, brands, nutriments,
-  serving_size, serving_quantity, serving_quantity_unit. The displayed name is
+- Fields: code, localized/default product name, brands, categories_tags, nutriments,
+  serving_size, serving_quantity, serving_quantity_unit. The food category (v0.6.0) is
+  the most specific `categories_tags` entry the table in `shared/src/food/category/off-tags.ts`
+  knows (OFF lists tags general to specific); a product without a known tag has none. The displayed name is
   `{localized name or default name}, {brands}` (brand suffix omitted if absent).
   Carbohydrates come only from `carbohydrates_100g`, rounded to one decimal.
   Missing/invalid carbohydrates stay null. A serving needs known carbohydrates

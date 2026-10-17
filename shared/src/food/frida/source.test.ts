@@ -16,10 +16,15 @@ const entries = [
     id: 1,
     name: { da: "Fiktivt rugbrød, kogt", en: "Fictional rye bread, cooked" },
     carbsPer100g: 32.5,
-    group: "Cereals",
+    group: "Bread",
   },
-  { id: 2, name: { da: "", en: "Fictional crème porridge" }, carbsPer100g: 12, group: "Cereals" },
-  { id: 3, name: { da: "Fiktiv grød", en: "" }, carbsPer100g: 15, group: "Cereals" },
+  {
+    id: 2,
+    name: { da: "", en: "Fictional crème porridge" },
+    carbsPer100g: 12,
+    group: "Grain and groats",
+  },
+  { id: 3, name: { da: "Fiktiv grød", en: "" }, carbsPer100g: 15, group: "Not a Frida group" },
 ];
 it("lazily loads once, folds all words and falls back to the other locale", async () => {
   const directory = await mkdtemp(join(tmpdir(), "frejsi-frida-"));
@@ -43,13 +48,21 @@ it("lazily loads once, folds all words and falls back to the other locale", asyn
         sourceRef: "frida:1",
         carbsPer100g: 32.5,
         portions: [],
+        category: "bread",
       },
     ],
   });
   expect((await source.search("creme", "da", signal())).candidates[0]?.name).toBe(
     "Fictional crème porridge",
   );
-  expect((await source.search("grod", "en", signal())).candidates[0]?.name).toBe("Fiktiv grød");
+  expect((await source.search("grod", "en", signal())).candidates[0]).toMatchObject({
+    name: "Fiktiv grød",
+  });
+  // A group the table does not know gives no category rather than a wrong one.
+  expect((await source.search("grod", "en", signal())).candidates[0]).not.toHaveProperty(
+    "category",
+  );
+  expect((await source.search("creme", "da", signal())).candidates[0]?.category).toBe("starch");
   expect((await source.search("kogt rye", "da", signal())).candidates).toEqual([]);
   expect(load).toHaveBeenCalledTimes(1);
   expect(await source.byBarcode("2000000000008", signal())).toEqual({
@@ -80,4 +93,31 @@ it("the committed dataset conforms to FridaEntry[] with unique sorted ids", asyn
   );
   expect(data.length).toBeGreaterThan(1000);
   expect(data.map((e) => e.id)).toEqual([...new Set(data.map((e) => e.id))].sort((a, b) => a - b));
+});
+it("answers a pick by reference from the dataset, with the group's category (plan §7)", async () => {
+  const source = new FridaSource(() => Promise.resolve(entries));
+  expect(await source.byRef("frida:1", "da", signal())).toEqual({
+    name: "Fiktivt rugbrød, kogt",
+    origin: "frida",
+    sourceRef: "frida:1",
+    carbsPer100g: 32.5,
+    portions: [],
+    category: "bread",
+  });
+  expect((await source.byRef("frida:2", "da", signal()))?.name).toBe("Fictional crème porridge");
+  expect(await source.byRef("frida:9", "da", signal())).toBeNull();
+  expect(await source.byRef("off:1", "da", signal())).toBeNull();
+  expect(await source.byRef("frida:x", "da", signal())).toBeNull();
+  const abort = new AbortController();
+  abort.abort();
+  expect(await source.byRef("frida:1", "da", abort.signal)).toBeNull();
+});
+it("the committed dataset places rugbrød under bread and every hit in a category", async () => {
+  const result = await new FridaSource().search("rugbrød", "da", signal());
+  expect(result.status).toBe("ok");
+  expect(result.candidates.length).toBeGreaterThanOrEqual(5);
+  for (const candidate of result.candidates) expect(candidate.category).toBeDefined();
+  expect(result.candidates.filter((candidate) => candidate.category === "bread").length).toBe(
+    result.candidates.length - 1,
+  );
 });

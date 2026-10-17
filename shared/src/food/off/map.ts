@@ -2,6 +2,7 @@ import { z } from "zod";
 import { FoodCandidate, Portion } from "../../schemas/food";
 import type { Locale } from "../../schemas/settings";
 import { normaliseBarcode } from "../barcode";
+import { offCategory } from "../category/index";
 import { carbsFor } from "../portions";
 
 const Product = z.looseObject({
@@ -10,6 +11,8 @@ const Product = z.looseObject({
   product_name_da: z.string().optional(),
   product_name_en: z.string().optional(),
   brands: z.string().optional(),
+  // A string or anything else than a list of tags is ignored, never a reason to drop the product.
+  categories_tags: z.array(z.string()).catch([]),
   nutriments: z.looseObject({ carbohydrates_100g: z.unknown().optional() }).optional(),
   serving_size: z.string().optional(),
   serving_quantity: z.unknown().optional(),
@@ -49,6 +52,7 @@ export function mapProduct(raw: unknown, locale: Locale): FoodCandidate | null {
     const portion = Portion.safeParse({ label, grams, carbs: carbsFor({ carbsPer100g }, grams) });
     if (portion.success) portions.push(portion.data);
   }
+  const category = offCategory(p.categories_tags);
   const candidate = FoodCandidate.safeParse({
     name: brand ? `${name}, ${brand}` : name,
     origin: "off",
@@ -56,6 +60,7 @@ export function mapProduct(raw: unknown, locale: Locale): FoodCandidate | null {
     barcode,
     carbsPer100g,
     portions,
+    ...(category ? { category } : {}),
   });
   return candidate.success ? candidate.data : null;
 }

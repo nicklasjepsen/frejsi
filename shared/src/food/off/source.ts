@@ -57,7 +57,7 @@ export class OffSource implements FoodSource {
     return body;
   }
   private fields(locale: Locale): string {
-    return `code,product_name,product_name_${locale},brands,nutriments,serving_size,serving_quantity,serving_quantity_unit`;
+    return `code,product_name,product_name_${locale},brands,categories_tags,nutriments,serving_size,serving_quantity,serving_quantity_unit`;
   }
   async byBarcode(barcode: string, signal: AbortSignal): Promise<FoodSourceResult> {
     const code = normaliseBarcode(barcode);
