@@ -9,6 +9,7 @@ import {
   Prisma,
   PrismaFoodRepository,
   HttpError,
+  Recipe,
   UpdateFoodRequest,
   VerifyFoodsRequest,
   carbsFor,
@@ -39,12 +40,16 @@ function authorize(spaceId: string, session: SessionContext, verify = false) {
   if (verify && session.simpleMode) throw new HttpError(400, "simple-mode");
 }
 type FoodRow = Awaited<ReturnType<FoodTx["food"]["findFirst"]>> & {};
+/** Foods a person made here: never renamed by a source, counted as "own" in the library. */
+const OWN_ORIGINS = ["family", "manual", "recipe"];
 function foodOf(row: FoodRow): Food {
   return Food.parse({
     ...row,
     carbsPer100g: row.carbsPer100g == null ? undefined : Number(row.carbsPer100g),
     portions: JSON.parse(row.portions) as unknown,
     barcode: row.barcode ?? undefined,
+    category: row.category ?? undefined,
+    recipe: row.recipe ? Recipe.parse(JSON.parse(row.recipe) as unknown) : undefined,
     photoKey: row.photoKey ?? undefined,
     verifiedBy: row.verifiedBy ?? undefined,
     verifiedAt: row.verifiedAt?.toISOString(),
@@ -92,6 +97,8 @@ async function viewOf(
     createdAt: food.createdAt,
     sourceName: food.sourceName ?? undefined,
     createdBy: creator ?? undefined,
+    category: food.category,
+    recipe: food.recipe,
     photo,
   });
 }
@@ -156,7 +163,7 @@ export async function listFoods(
       case "unverified":
         return !row.verified;
       case "own":
-        return row.origin === "family" || row.origin === "manual";
+        return OWN_ORIGINS.includes(row.origin);
       case "favourites":
         return row.favourite;
       case "recent":
@@ -227,10 +234,12 @@ export async function createFood(
   authorize(spaceId, session);
   const fields = parse(createRequest, value);
   authorize(spaceId, session, fields.verify);
+  // A dish from a recipe is made from the library, never from the log's manual path.
+  if (fields.origin === "recipe" && fields.from !== "library") throw new HttpError(400, "validation");
   const deps = resolveFoods(input);
   const row = await foodTransaction(deps, async (tx, emit) => {
     const id = randomUUID();
-    const origin = fields.from === "library" ? "family" : "manual";
+    const origin = fields.origin ?? (fields.from === "library" ? "family" : "manual");
     let food = await tx.food.create({
       data: {
         id,
@@ -240,6 +249,8 @@ export async function createFood(
         carbsPer100g: fields.carbsPer100g ?? null,
         portions: JSON.stringify(fields.portions),
         barcode: fields.barcode ?? null,
+        category: fields.category ?? null,
+        recipe: fields.recipe ? JSON.stringify(fields.recipe) : null,
         favourite: fields.favourite ?? false,
         origin,
         sourceRef: `${origin}:${id}`,
@@ -290,6 +301,7 @@ export async function addCandidate(
         barcode: food.barcode,
         origin: food.origin,
         sourceRef: food.sourceRef,
+        category: food.category,
       },
     }).candidate;
   } else {
@@ -320,6 +332,7 @@ export async function addCandidate(
         carbsPer100g: candidate.carbsPer100g ?? null,
         portions: JSON.stringify(candidate.portions),
         barcode: candidate.barcode ?? null,
+        category: candidate.category ?? null,
         verified: false,
         createdBy: session.userId,
       },
@@ -393,10 +406,13 @@ export async function updateFood(
     const food = await tx.food.update({
       where: { id, spaceId },
       data: {
-        ...(fields.name !== current.name && !["family", "manual", "ai"].includes(current.origin)
+        ...(fields.name !== current.name && ![...OWN_ORIGINS, "ai"].includes(current.origin)
           ? { sourceName: current.sourceName ?? current.name }
           : {}),
         ...(contentChanged ? { verified: false, verifiedBy: null, verifiedAt: null } : {}),
+        // A category or a recipe is not nutrition: neither touches verification.
+        ...(patch.category !== undefined ? { category: patch.category } : {}),
+        ...(patch.recipe !== undefined ? { recipe: JSON.stringify(patch.recipe) } : {}),
         name: fields.name,
         favourite: fields.favourite ?? false,
         barcode: fields.barcode ?? null,

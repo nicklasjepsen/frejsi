@@ -128,3 +128,79 @@ it.each([false, true])(
     }
   },
 );
+
+it("persists a candidate's category in the cache and reads category and recipe back (v0.6.0)", async () => {
+  const at = new Date("2026-10-15T12:00:00Z");
+  const recipe = {
+    ingredients: [{ name: "Fictional flour", carbs: 360 }],
+    yieldPortions: 4,
+    source: { kind: "text", text: "flour" },
+  };
+  const base = {
+    id: "cache-1",
+    spaceId: null,
+    name: "Fictional loaf",
+    nameSearch: "fictional loaf",
+    embeddingModel: null,
+    sourceName: null,
+    carbsPer100g: null,
+    portions: "[]",
+    barcode: null,
+    photoKey: null,
+    origin: "remote-test",
+    sourceRef: "remote-test:loaf",
+    category: null,
+    recipe: null,
+    verified: false,
+    verifiedBy: null,
+    verifiedAt: null,
+    favourite: false,
+    createdBy: null,
+    createdAt: at,
+    updatedAt: at,
+  };
+  const created: unknown[] = [];
+  const db = {
+    food: {
+      findFirst: () => Promise.resolve(null),
+      findMany: () =>
+        Promise.resolve([
+          { ...base, id: "f-null" },
+          { ...base, id: "f-full", category: "bread", recipe: JSON.stringify(recipe) },
+        ]),
+      create: (args: { data: Record<string, unknown> }) => {
+        created.push(args.data);
+        return Promise.resolve({
+          ...base,
+          category: (args.data.category as string | undefined) ?? null,
+        });
+      },
+      update: () => Promise.reject(new Error("unexpected")),
+    },
+  } as unknown as FoodDb;
+  const repo = new PrismaFoodRepository(db);
+  const withCategory = await repo.upsertCache({
+    name: "Fictional loaf",
+    portions: [],
+    origin: "remote-test",
+    sourceRef: "remote-test:loaf",
+    category: "bread",
+    spaceId: null,
+    verified: false,
+  });
+  expect(withCategory.category).toBe("bread");
+  expect(created[0]).toMatchObject({ category: "bread" });
+  await repo.upsertCache({
+    name: "Fictional loaf",
+    portions: [],
+    origin: "remote-test",
+    sourceRef: "remote-test:loaf",
+    spaceId: null,
+    verified: false,
+  });
+  expect(created[1]).not.toHaveProperty("category");
+  const [plain, full] = await repo.searchCache("loaf");
+  expect(plain?.category).toBeUndefined();
+  expect(plain?.recipe).toBeUndefined();
+  expect(full).toMatchObject({ category: "bread", recipe });
+});

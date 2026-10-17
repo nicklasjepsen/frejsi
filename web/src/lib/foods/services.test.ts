@@ -629,3 +629,104 @@ it("keeps keyword hits before semantic hits in the recent-food filter", async ()
   );
   expect(result.foods.map((food) => food.id)).toEqual(["keyword", "near"]);
 });
+
+describe("food categories and recipes (v0.6.0 task 1)", () => {
+  const recipe = {
+    ingredients: [{ name: "Fictional flour", amount: 500, unit: "g", grams: 500, carbs: 360 }],
+    yieldPortions: 4,
+    source: { kind: "text" as const, text: "500 g flour" },
+  };
+  it("creates a food with a category and reads it back; a row without one stays null-safe", async () => {
+    const food = await createFood(
+      "s1",
+      actor,
+      { ...fields, category: "fruit", from: "library" },
+      rig.deps,
+    );
+    expect(food.category).toBe("fruit");
+    expect(rig.rows[0]).toMatchObject({ category: "fruit", recipe: null });
+    expect((await getFood("s1", actor, food.id, rig.deps)).category).toBe("fruit");
+    const plain = await create();
+    expect(plain.category).toBeUndefined();
+    expect(plain.recipe).toBeUndefined();
+    rig.seed({ id: "legacy", category: undefined, recipe: undefined });
+    const legacy = await getFood("s1", actor, "legacy", rig.deps);
+    expect(legacy.category).toBeUndefined();
+    expect(legacy.recipe).toBeUndefined();
+  });
+  it("creates a dish from a recipe with origin recipe, counted among own foods", async () => {
+    const dish = await createFood(
+      "s1",
+      actor,
+      { ...fields, origin: "recipe", category: "bread", recipe, from: "library" },
+      rig.deps,
+    );
+    expect(dish).toMatchObject({ origin: "recipe", category: "bread", recipe, verified: false });
+    expect(rig.rows[0]).toMatchObject({
+      origin: "recipe",
+      sourceRef: `recipe:${dish.id}`,
+      recipe: JSON.stringify(recipe),
+    });
+    expect(rig.events.map((e) => e.payload)).toEqual([{ foodId: dish.id, origin: "recipe" }]);
+    const list = await listFoods("s1", actor, { filter: "own" }, rig.deps);
+    expect(list.foods.map((f) => f.id)).toEqual([dish.id]);
+    expect(list.counts).toMatchObject({ own: 1, recipe: 1 });
+    // The log's manual path never makes a recipe.
+    await expect(
+      createFood("s1", actor, { ...fields, origin: "recipe", from: "log" }, rig.deps),
+    ).rejects.toMatchObject({ status: 400 });
+  });
+  it("updates and clears the category and replaces the recipe without touching verification", async () => {
+    const food = await create("library", true);
+    const categorised = await updateFood("s1", actor, food.id, { category: "sweets" }, rig.deps);
+    expect(categorised).toMatchObject({ category: "sweets", verified: true });
+    expect(rig.rows[0]).toMatchObject({ category: "sweets", verified: true });
+    const renamed = await updateFood("s1", actor, food.id, { name: "Cloud plum" }, rig.deps);
+    expect(renamed).toMatchObject({ category: "sweets", verified: false });
+    expect((await updateFood("s1", actor, food.id, { category: null }, rig.deps)).category).toBe(
+      undefined,
+    );
+    expect(rig.rows[0]?.category).toBeNull();
+    const withRecipe = await updateFood("s1", actor, food.id, { recipe }, rig.deps);
+    expect(withRecipe.recipe).toEqual(recipe);
+    expect(rig.rows[0]?.recipe).toBe(JSON.stringify(recipe));
+    expect(
+      (await updateFood("s1", actor, food.id, { favourite: true }, rig.deps)).recipe,
+    ).toEqual(recipe);
+    await expect(
+      updateFood("s1", actor, food.id, { category: "loaf" }, rig.deps),
+    ).rejects.toMatchObject({ status: 400 });
+    expect(rig.events.map((e) => e.type)).toEqual([
+      "food.created",
+      "food.verified",
+      "food.updated",
+      "food.updated",
+      "food.updated",
+      "food.updated",
+      "food.updated",
+    ]);
+  });
+  it.each(["remote", "local"] as const)(
+    "keeps a %s candidate's category on the space copy and, for a barcode pick, in the cache",
+    async (kind) => {
+      rig.sourceKind = kind;
+      rig.remoteCandidates = [{ ...candidate, category: "dairy" }];
+      const food = await addCandidate("s1", actor, { ...candidate, category: "dairy" }, rig.deps);
+      expect(food.category).toBe("dairy");
+      expect(rig.rows.find((row) => row.spaceId === "s1")).toMatchObject({ category: "dairy" });
+      const cache = rig.rows.find((row) => row.spaceId === null);
+      if (kind === "remote") expect(cache).toMatchObject({ category: "dairy" });
+      else expect(cache).toBeUndefined();
+    },
+  );
+  it("copies the cached category rather than the client's when the cache already has the food", async () => {
+    rig.seed({
+      spaceId: null,
+      origin: candidate.origin,
+      sourceRef: candidate.sourceRef,
+      category: "snack",
+    });
+    const food = await addCandidate("s1", actor, { ...candidate, category: "sweets" }, rig.deps);
+    expect(food.category).toBe("snack");
+  });
+});
