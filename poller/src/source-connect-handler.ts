@@ -121,7 +121,7 @@ function adapterOptions(deps: SourceConnectDeps, log: Logger): AdapterOptions {
   };
 }
 
-/** The credential as it is stored under `glucose-<spaceId>`, per type. */
+/** The credential as it is stored as a version of `glucose-<spaceId>`, per type. */
 function serializeSecret(request: ProbeRequest): string {
   switch (request.type) {
     case "dexcom-share":
@@ -143,9 +143,16 @@ const validation = (): HttpResponseInit => {
 };
 
 /**
- * `POST /api/source-connect` (function key): the Settings route forwards the owner's login,
- * this probes it and, when it works, writes it to Key Vault as `glucose-<spaceId>` (a Dexcom login or a Nightscout address with its token or secret). The credential
- * is in the request body and the secret value, and nowhere else: not in the database, not in a log.
+ * `POST /api/source-connect` (function key): the Settings route forwards the owner's login, this
+ * probes it and, when it works, writes it to Key Vault as a new version of `glucose-<spaceId>` (a
+ * Dexcom login or a Nightscout address with its token or secret). The credential is in the request
+ * body and the secret value, and nowhere else: not in the database, not in a log.
+ *
+ * The answer's `secretRef` names that version, `glucose-<spaceId>/<version>`, and the poller reads
+ * exactly it (#78). The space switches credential only when the Settings route commits the config
+ * that carries the reference: a connect whose database write fails leaves the previous reference
+ * and its credential in place, and two owners connecting at once each get their own reference, so
+ * one request's region can never be saved with the other's credential.
  */
 export function createSourceConnectHandler(deps: SourceConnectDeps) {
   const log = deps.log ?? defaultLog;
@@ -186,8 +193,10 @@ export function createSourceConnectHandler(deps: SourceConnectDeps) {
       return { status: 200, jsonBody: result };
     }
 
-    const secretRef = glucoseSecretName(spaceId);
-    await deps.secrets.set(secretRef, serializeSecret(probeRequest));
+    const secretRef = await deps.secrets.set(
+      glucoseSecretName(spaceId),
+      serializeSecret(probeRequest),
+    );
     const recent =
       outcome.recentReadings === undefined ? {} : { recentReadings: outcome.recentReadings };
     // `count` is the logger's key for it (the allow-list), as on the poll lines.

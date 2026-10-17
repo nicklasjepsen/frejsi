@@ -5,6 +5,10 @@ import {
   NightscoutSource,
   parseCredential,
   parseNightscoutCredential,
+  parseSecretRef,
+  type ConnectSourceResult,
+  type FetchLike,
+  type GlucoseSourceConfig,
   type ProbeResult,
 } from "@frejsi/shared";
 import { fakeDexcom } from "@frejsi/shared/glucose/dexcom-share/test-server";
@@ -16,6 +20,7 @@ import {
   probeSourceFor,
   type ProbeOutcome,
 } from "./source-connect-handler";
+import { createSourceFactory } from "./sources";
 
 const body = {
   spaceId: "s1",
@@ -24,6 +29,12 @@ const body = {
   username: "publisher@example.invalid",
   password: "<fixture-password>",
 };
+
+/**
+ * The reference the first connect in a harness answers: the secret's name and the version written,
+ * which `MemorySecrets` numbers from 1 (#78).
+ */
+const REF = `${glucoseSecretName("s1")}/1`;
 
 function harness(probeResult: ProbeResult | Error, recentReadings?: number) {
   const secrets = new MemorySecrets();
@@ -89,11 +100,11 @@ describe("source-connect with nightscout", () => {
     token: "<fixture-token>",
   };
 
-  it("probes with the Nightscout request and stores the credential as glucose-<spaceId>", async () => {
+  it("probes with the Nightscout request and stores the credential as a version of glucose-<spaceId>", async () => {
     const h = harness("ok");
     expect(await h.call(nightscout)).toEqual({
       status: 200,
-      jsonBody: { result: "ok", secretRef: glucoseSecretName("s1") },
+      jsonBody: { result: "ok", secretRef: REF },
     });
     expect(h.probes).toEqual([
       { type: "nightscout", url: nightscout.url, token: nightscout.token },
@@ -151,13 +162,14 @@ describe("source-connect with nightscout", () => {
 });
 
 describe("source-connect", () => {
-  it("probes the credential and stores it in Key Vault as glucose-<spaceId> when it works", async () => {
+  it("probes the credential and stores it in Key Vault as a version of glucose-<spaceId> when it works", async () => {
     const h = harness("ok");
     const response = await h.call(body);
     expect(response).toEqual({
       status: 200,
-      jsonBody: { result: "ok", secretRef: glucoseSecretName("s1") },
+      jsonBody: { result: "ok", secretRef: REF },
     });
+    expect(parseSecretRef(REF)).toEqual({ name: glucoseSecretName("s1"), version: "1" });
     // The source type travels with the credential: the probe dispatches on it, not on a default.
     expect(h.probes).toEqual([
       { type: "dexcom-share", region: "eu", username: body.username, password: body.password },
@@ -223,7 +235,7 @@ describe("source-connect and the last day's readings", () => {
     const some = harness("ok", 6);
     expect(await some.call(body)).toEqual({
       status: 200,
-      jsonBody: { result: "ok", secretRef: glucoseSecretName("s1"), recentReadings: 6 },
+      jsonBody: { result: "ok", secretRef: REF, recentReadings: 6 },
     });
     expect(some.lines.join("\n")).toContain(
       '"msg":"source-connect.ok","spaceId":"s1","count":6,"code":"ok"',
@@ -234,7 +246,7 @@ describe("source-connect and the last day's readings", () => {
     const none = harness("ok", 0);
     expect(await none.call(body)).toEqual({
       status: 200,
-      jsonBody: { result: "ok", secretRef: glucoseSecretName("s1"), recentReadings: 0 },
+      jsonBody: { result: "ok", secretRef: REF, recentReadings: 0 },
     });
     expect(parseCredential((await none.secrets.get("glucose-s1")) ?? "")).toEqual({
       username: body.username,
@@ -248,7 +260,7 @@ describe("source-connect and the last day's readings", () => {
     const h = harness("ok");
     expect(await h.call(body)).toEqual({
       status: 200,
-      jsonBody: { result: "ok", secretRef: glucoseSecretName("s1") },
+      jsonBody: { result: "ok", secretRef: REF },
     });
     expect(h.lines.join("\n")).not.toContain('"count"');
   });
@@ -260,7 +272,7 @@ describe("source-connect and the last day's readings", () => {
     const h = defaultHarness(dexcom.fetch, now);
     expect(await h.call(body)).toEqual({
       status: 200,
-      jsonBody: { result: "ok", secretRef: glucoseSecretName("s1"), recentReadings: 6 },
+      jsonBody: { result: "ok", secretRef: REF, recentReadings: 6 },
     });
     expect(dexcom.count("authenticate")).toBe(1);
     expect(dexcom.count("login")).toBe(1);
@@ -278,5 +290,95 @@ describe("source-connect and the last day's readings", () => {
     expect(output).not.toContain(body.password);
     expect(output).not.toContain(body.username);
     await expect(h.secrets.get("glucose-s1")).resolves.toBeUndefined();
+  });
+});
+
+/**
+ * The two acceptance cases of #78, end to end through the pieces the poller owns: the handler
+ * writes and answers a reference, the factory reads by it. The database write between them is
+ * the Settings route's, so here it is a variable: the config the web committed, or did not.
+ */
+describe("source-connect answers an immutable reference (#78)", () => {
+  const space = {
+    id: "s1",
+    glucoseSource: "{}",
+    sourceStatus: "connected",
+    sourceFailures: 0,
+    lastReadingAt: null,
+  };
+  type Region = "eu" | "us";
+  const eu = { ...body, region: "eu" as Region };
+
+  /** The host the adapter logs in to for a region, learned from the adapter, not named here. */
+  async function hostFor(region: Region): Promise<string> {
+    const { fetch, logins } = recordingFetch();
+    await new DexcomShareSource({ region, username: "u", password: "p", fetch }).probe();
+    return logins[0]?.host ?? "";
+  }
+
+  /** Records which host each login went to and with which password; answers a session id. */
+  function recordingFetch() {
+    const logins: { host: string; password: unknown }[] = [];
+    const fetch: FetchLike = (input, init) => {
+      const url = new URL(String(input));
+      if (url.pathname.endsWith("AuthenticatePublisherAccount")) {
+        const parsed = JSON.parse(String(init?.body)) as { password?: unknown };
+        logins.push({ host: url.host, password: parsed.password });
+      }
+      return Promise.resolve(
+        new Response('"11111111-2222-4333-8444-555555555555"', { status: 200 }),
+      );
+    };
+    return { fetch, logins };
+  }
+
+  async function connect(
+    h: ReturnType<typeof harness>,
+    request: typeof eu,
+  ): Promise<Extract<GlucoseSourceConfig, { type: "dexcom-share" }>> {
+    const response = await h.call(request);
+    const result = response.jsonBody as ConnectSourceResult;
+    if (result.result !== "ok") throw new Error(result.result);
+    // What the Settings route saves on the space when its database write succeeds.
+    return { type: "dexcom-share", region: request.region, secretRef: result.secretRef };
+  }
+
+  it("leaves the poller on the previous credential and config when the database write fails", async () => {
+    const h = harness("ok");
+    const committed = await connect(h, eu);
+    // The owner connects again with another password and region; the function writes the new
+    // credential and answers, but the Settings route's write of the config fails.
+    const answered = await connect(h, { ...eu, region: "us", password: "<newer-password>" });
+    expect(answered.secretRef).not.toBe(committed.secretRef);
+    // The latest version under the name is now the newer credential, which no config refers to.
+    expect(parseCredential((await h.secrets.get(glucoseSecretName("s1"))) ?? "").password).toBe(
+      "<newer-password>",
+    );
+
+    const { fetch, logins } = recordingFetch();
+    const sources = createSourceFactory({ secrets: h.secrets, fetch });
+    await expect((await sources(space, committed)).probe()).resolves.toBe("ok");
+    expect(logins).toEqual([{ host: await hostFor("eu"), password: body.password }]);
+  });
+
+  it("gives two overlapping connects their own references, so neither can pair with the other's region", async () => {
+    const h = harness("ok");
+    const a = { ...eu, password: "<password-a>" };
+    const b = { ...eu, region: "us" as Region, password: "<password-b>" };
+    // Both requests are in flight at once; the secret is written twice under one name.
+    const [configA, configB] = await Promise.all([connect(h, a), connect(h, b)]);
+    expect(configA.secretRef).not.toBe(configB.secretRef);
+
+    // Whichever config the Settings route commits, the poller reads the credential that came with
+    // that request's region.
+    for (const [config, request] of [
+      [configA, a],
+      [configB, b],
+    ] as const) {
+      const { fetch, logins } = recordingFetch();
+      const sources = createSourceFactory({ secrets: h.secrets, fetch });
+      await expect((await sources(space, config)).probe()).resolves.toBe("ok");
+      expect(logins).toEqual([{ host: await hostFor(request.region), password: request.password }]);
+    }
   });
 });

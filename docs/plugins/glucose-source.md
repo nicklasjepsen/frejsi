@@ -55,7 +55,8 @@ database and never calls `emit()`.
    - `poller/src/sources.ts`: the branch in `createSourceFactory` that builds your adapter from the
      credential in Key Vault.
    - `poller/src/source-connect-handler.ts`: one entry in `ADAPTERS` (the probe at connect time) and
-     one case in `serializeSecret` (what is stored as `glucose-<spaceId>`).
+     one case in `serializeSecret` (what is stored as a version of `glucose-<spaceId>`; the handler
+     answers the versioned `secretRef`, and your adapter never sees the reference).
      These two files are the only places the real `fetch` reaches a glucose adapter.
 5. **Add the lint rule.** In `eslint.config.js`, put the vendor's host and path strings into a
    `no-restricted-syntax` selector like `dexcomHost` and `nightscoutProtocol`, add it to the rules

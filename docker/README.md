@@ -59,7 +59,9 @@ On the claude-agents VM: Docker 29.1.3, Compose v2.40.3, no BuildKit plugin.
    Nightscout at `nightscout.fixture.test` with a throwaway certificate the poller trusts through
    `NODE_EXTRA_CA_CERTS`. A request from inside the `web` container to `http://poller/api/source-connect`
    with `SOURCE_CONNECT_KEY` answered 200 `{"result":"ok",...}` (401 without the key or with a wrong
-   one) and the poller wrote `/credentials/glucose-<spaceId>`, mode 600, through `FileSecrets`. With
+   one) and the poller wrote `/credentials/glucose-<spaceId>` and `/credentials/glucose-<spaceId>.<version>`,
+   mode 600, through `FileSecrets` (the versioned file is what the answered `secretRef` names;
+   the plain one is the latest, for a space saved before v0.5.4). With
    the space's `glucoseSource` set to that source by SQL, the next cycle stored three readings with
    `source: nightscout` and the health answer turned `fresh`.
 6. A photo pair put through `BlobPhotoStore` with `BLOB_PUBLIC_ENDPOINT` answered 200 on the signed

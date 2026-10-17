@@ -39,10 +39,14 @@ interface Cached {
 
 /**
  * The production source factory: the credential comes from Key Vault by `secretRef` and the
- * config's `type` picks the adapter. One Dexcom instance per space lives for the process so the
- * session is reused across cycles; a changed credential or region replaces it, which logs in
- * afresh. A Nightscout source holds no session, so it is built from the secret on each call.
- * With `FAKE_GLUCOSE_SOURCE=1` every space gets `FakeGlucoseSource` and no secret is read.
+ * config's `type` picks the adapter. The reference names one version of the secret
+ * (`glucose-<spaceId>/<version>`, what `source-connect` answered and the Settings route saved), so
+ * the poller reads the credential that was committed with this config and never a newer one that
+ * no config refers to yet (#78); a reference without a version, from before v0.5.4, reads the
+ * latest. One Dexcom instance per space lives for the process so the session is reused across
+ * cycles; a changed credential or region replaces it, which logs in afresh. A Nightscout source
+ * holds no session, so it is built from the secret on each call. With `FAKE_GLUCOSE_SOURCE=1`
+ * every space gets `FakeGlucoseSource` and no secret is read.
  */
 export function createSourceFactory(options: SourceFactoryOptions): SourceFactory {
   let secrets: Secrets | undefined;

@@ -176,6 +176,27 @@ describe("POST /api/spaces/:id/source (plan task 9: connect a glucose source)", 
     ]);
   });
 
+  it("stores the secretRef exactly as the function answered it, version and all (#78)", async () => {
+    // The function names the version it wrote; the route saves that reference unchanged, so the
+    // poller reads the credential this config was committed with and never a later one.
+    const versioned = "glucose-s1/0123456789abcdef0123456789abcdef";
+    upstream.answer = () => Response.json({ result: "ok", secretRef: versioned });
+    expect((await post("owner")).status).toBe(200);
+    expect(JSON.parse(String(space().glucoseSource))).toEqual({
+      type: "dexcom-share",
+      region: "eu",
+      secretRef: versioned,
+    });
+    upstream.answer = () => Response.json({ result: "ok", secretRef: `${versioned}0` });
+    expect((await post("owner", NS_BODY)).status).toBe(200);
+    expect(JSON.parse(String(space().glucoseSource))).toEqual({
+      type: "nightscout",
+      secretRef: `${versioned}0`,
+    });
+    // Neither the reference nor the version is a secret, but the view never shows it either.
+    expect(JSON.stringify(await (await get("owner")).json())).not.toContain("0123456789abcdef");
+  });
+
   it("passes the function's recentReadings through to the answer, and leaves it out when there is none", async () => {
     upstream.answer = () =>
       Response.json({ result: "ok", secretRef: "glucose-s1", recentReadings: 0 });

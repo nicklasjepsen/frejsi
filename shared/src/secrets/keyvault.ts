@@ -2,12 +2,15 @@ import { DefaultAzureCredential } from "@azure/identity";
 import { SecretClient } from "@azure/keyvault-secrets";
 
 import { FileSecrets } from "./file";
-import type { Secrets } from "./types";
+import { assertSecretName, formatSecretRef, parseSecretRef, type Secrets } from "./types";
 
 /** The slice of `SecretClient` the adapter uses; tests pass a fake. */
 export interface SecretClientLike {
-  getSecret(name: string): Promise<{ value?: string | undefined }>;
-  setSecret(name: string, value: string): Promise<unknown>;
+  getSecret(
+    name: string,
+    options?: { version?: string | undefined },
+  ): Promise<{ value?: string | undefined }>;
+  setSecret(name: string, value: string): Promise<{ properties: { version?: string | undefined } }>;
 }
 
 function isNotFound(error: unknown): boolean {
@@ -19,13 +22,19 @@ function isNotFound(error: unknown): boolean {
   );
 }
 
-/** Key Vault through the Function App's managed identity (plan §7). */
+/**
+ * Key Vault through the Function App's managed identity (plan §7). Every `setSecret` makes a new
+ * version and Key Vault answers its id; `set` hands that back as `<name>/<version>`, and `get`
+ * asks for that version by name, or for the latest when the reference has none. Key Vault Secrets
+ * User reads any version, so the poller needs no further right.
+ */
 export class KeyVaultSecrets implements Secrets {
   constructor(private readonly client: SecretClientLike) {}
 
-  async get(name: string): Promise<string | undefined> {
+  async get(ref: string): Promise<string | undefined> {
+    const { name, version } = parseSecretRef(ref);
     try {
-      const secret = await this.client.getSecret(name);
+      const secret = await this.client.getSecret(name, version === undefined ? {} : { version });
       return secret.value;
     } catch (error) {
       if (isNotFound(error)) return undefined;
@@ -33,8 +42,12 @@ export class KeyVaultSecrets implements Secrets {
     }
   }
 
-  async set(name: string, value: string): Promise<void> {
-    await this.client.setSecret(name, value);
+  async set(name: string, value: string): Promise<string> {
+    assertSecretName(name);
+    const { properties } = await this.client.setSecret(name, value);
+    // A version is what makes the reference immutable; without one the write is not usable.
+    if (!properties.version) throw new Error("Key Vault answered a secret without a version");
+    return formatSecretRef(name, properties.version);
   }
 }
 

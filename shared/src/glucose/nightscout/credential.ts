@@ -3,8 +3,8 @@ import { NightscoutCredential } from "../../schemas/glucose";
 export { NightscoutCredential };
 
 /**
- * What `source-connect` stores in Key Vault under `glucose-<spaceId>` for a Nightscout space and
- * what the poller reads back by `secretRef` (plan §4). The URL is in it: the database keeps
+ * What `source-connect` stores in Key Vault as a version of `glucose-<spaceId>` for a Nightscout
+ * space and what the poller reads back by `secretRef`, which names that version (plan §4, #78). The URL is in it: the database keeps
  * nothing that locates a person's site.
  */
 export function serializeNightscoutCredential(credential: NightscoutCredential): string {

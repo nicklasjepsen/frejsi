@@ -18,17 +18,17 @@ infra/
 
 ## Resources
 
-| Resource | Tier | Purpose |
-|---|---|---|
-| Static Web App | Standard | hybrid Next.js (UI + API routes), custom domain, preview environments |
-| Function App | Linux Consumption (Y1), Node 22 | the poller, every 5 minutes |
-| Storage account | Standard LRS | the Function App's own storage (not photos) |
-| Azure SQL | Basic, 5 DTU, 2 GB | all data; always on, so the poller never has to wake it |
-| Web PubSub | Free (F1) | live push, hub `frejsi`, 20 connections, 20k messages/day |
-| Key Vault | Standard, RBAC | `database-url`, `web-pubsub-connection-string`, `bootstrap-token`, `glucose-<spaceId>` |
-| Log Analytics + Application Insights | Pay-as-you-go, 1 GB/day cap, 30 days | telemetry and the one alert |
-| Action group + scheduled query alert | none | "no reading for 35 minutes" to `ALERT_EMAIL` |
-| Photo storage account | Standard LRS | private originals + thumbnails, seven-day soft delete |
+| Resource                             | Tier                                 | Purpose                                                                                                          |
+| ------------------------------------ | ------------------------------------ | ---------------------------------------------------------------------------------------------------------------- |
+| Static Web App                       | Standard                             | hybrid Next.js (UI + API routes), custom domain, preview environments                                            |
+| Function App                         | Linux Consumption (Y1), Node 22      | the poller, every 5 minutes                                                                                      |
+| Storage account                      | Standard LRS                         | the Function App's own storage (not photos)                                                                      |
+| Azure SQL                            | Basic, 5 DTU, 2 GB                   | all data; always on, so the poller never has to wake it                                                          |
+| Web PubSub                           | Free (F1)                            | live push, hub `frejsi`, 20 connections, 20k messages/day                                                        |
+| Key Vault                            | Standard, RBAC                       | `database-url`, `web-pubsub-connection-string`, `bootstrap-token`, `glucose-<spaceId>` (one version per connect) |
+| Log Analytics + Application Insights | Pay-as-you-go, 1 GB/day cap, 30 days | telemetry and the one alert                                                                                      |
+| Action group + scheduled query alert | none                                 | "no reading for 35 minutes" to `ALERT_EMAIL`                                                                     |
+| Photo storage account                | Standard LRS                         | private originals + thumbnails, seven-day soft delete                                                            |
 
 What it costs per month, and what the Free Static Web App plan would change, is in
 [docs/deploy-your-own.md](../docs/deploy-your-own.md#what-it-costs). With the repository variable
@@ -62,14 +62,14 @@ Never log an account key, connection string, signed photo URL or uploaded image.
 
 No secret is ever in this repository, in a parameter file, in a log or on a command line.
 
-| Secret | Created by | Lives in | Read by |
-|---|---|---|---|
-| SQL application user password (a contained database user, `frejsi_app`) | `deploy.sh`, once, as the deploy principal (the dedicated server's Entra admin, or `db_owner` in the database on an existing server) | Key Vault `database-url` | the web app (app setting written by `deploy.sh`) and the migration step in `deploy.sh`. **Not the poller** since v0.5.0: it signs in as its managed identity and holds no database password |
-| Web PubSub connection string | `deploy.sh`, once, from the resource's keys | Key Vault `web-pubsub-connection-string` | web app (app setting) |
-| `bootstrap-token` | Bicep, `newGuid()` parameter default; rotates on every infra deploy | Key Vault | web app (app setting); the owner reads it once (step 9) |
-| `glucose-<spaceId>` (glucose source credential: Dexcom or Nightscout) | the Function App's `source-connect` trigger from Settings | Key Vault | the poller, through its managed identity |
-| `off-contribute-user`, `off-contribute-password` (optional) | the owner, by hand (below) | Key Vault | web app (app settings `OFF_CONTRIBUTE_USER`, `OFF_CONTRIBUTE_PASSWORD`, written by `deploy.sh` only when the secret exists) |
-| Function App storage key, App Insights connection string | Azure | app settings | the Function App (the Functions host on a Consumption plan needs a key-based `AzureWebJobsStorage`; the key never leaves Azure) |
+| Secret                                                                                                                                                                                                        | Created by                                                                                                                           | Lives in                                 | Read by                                                                                                                                                                                                                 |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| SQL application user password (a contained database user, `frejsi_app`)                                                                                                                                       | `deploy.sh`, once, as the deploy principal (the dedicated server's Entra admin, or `db_owner` in the database on an existing server) | Key Vault `database-url`                 | the web app (app setting written by `deploy.sh`) and the migration step in `deploy.sh`. **Not the poller** since v0.5.0: it signs in as its managed identity and holds no database password                             |
+| Web PubSub connection string                                                                                                                                                                                  | `deploy.sh`, once, from the resource's keys                                                                                          | Key Vault `web-pubsub-connection-string` | web app (app setting)                                                                                                                                                                                                   |
+| `bootstrap-token`                                                                                                                                                                                             | Bicep, `newGuid()` parameter default; rotates on every infra deploy                                                                  | Key Vault                                | web app (app setting); the owner reads it once (step 9)                                                                                                                                                                 |
+| `glucose-<spaceId>` (glucose source credential: Dexcom or Nightscout; every connect writes a new version, and the space stores the reference `glucose-<spaceId>/<version>` to the one it was saved with, #78) | the Function App's `source-connect` trigger from Settings                                                                            | Key Vault                                | the poller, through its managed identity, by that exact version (Key Vault Secrets User reads any version). Old versions stay until a housekeeping sweep removes them (`docs/operations.md`, "Change the Dexcom login") |
+| `off-contribute-user`, `off-contribute-password` (optional)                                                                                                                                                   | the owner, by hand (below)                                                                                                           | Key Vault                                | web app (app settings `OFF_CONTRIBUTE_USER`, `OFF_CONTRIBUTE_PASSWORD`, written by `deploy.sh` only when the secret exists)                                                                                             |
+| Function App storage key, App Insights connection string                                                                                                                                                      | Azure                                                                                                                                | app settings                             | the Function App (the Functions host on a Consumption plan needs a key-based `AzureWebJobsStorage`; the key never leaves Azure)                                                                                         |
 
 Why the web app still has a database password: Static Web Apps gives hybrid Next.js no usable
 managed identity, so the web app (and `prisma migrate deploy`, which runs in the pipeline) cannot
@@ -86,7 +86,7 @@ resource.
 
 The Function App has one user-assigned managed identity, `id-<baseName>-<suffix>` (for example
 `id-frejsi-<13 characters>`; it is the only identity on the app). It holds Key Vault Secrets Officer
-(it writes `glucose-<spaceId>`), Web PubSub Service Owner (it publishes without a key) and a contained
+(it writes the versions of `glucose-<spaceId>`), Web PubSub Service Owner (it publishes without a key) and a contained
 database user in SQL with `db_datareader` and `db_datawriter` only. The app setting `AZURE_CLIENT_ID`
 makes `DefaultAzureCredential` use it for Key Vault, Web PubSub and SQL. The deploy principal holds Key
 Vault Secrets Officer. The web app's settings are written by `deploy.sh` from Key Vault on every
@@ -183,7 +183,7 @@ for a later version (spec section 9).
 4. Opens a SQL firewall rule for the runner's IP and runs `prisma migrate deploy`. While the rule is
    still open it runs, as the Entra admin, an idempotent script that creates the contained user
    named after the poller's identity (`CREATE USER [id-...] WITH SID = <its client id as
-   varbinary(16)>, TYPE = E`, the client id read with `az identity show` and checked) and adds it
+varbinary(16)>, TYPE = E`, the client id read with `az identity show` and checked) and adds it
    to `db_datareader` and `db_datawriter`; then the compatibility-level statement for AI vector
    storage (`ALTER DATABASE` needs the Entra admin, not `frejsi_app`). The rule is removed on exit
    even if something failed (a `trap`).
@@ -224,13 +224,13 @@ server read Microsoft Graph with its own identity, which needs a tenant-level gr
 fork should need. `CREATE USER ... WITH SID = <application id>, TYPE = E` needs only the identity's
 client id, and ARM exposes that only for a user-assigned identity.
 
-| | |
-|---|---|
-| Name in Azure | `id-<baseName>-<suffix>` (resource type Managed Identity, in the resource group; `baseName` is `frejsi` unless a fork changed it) |
-| Name in SQL | the same string, a contained database user in the `frejsi` database, created by `deploy.sh` |
-| SQL permissions | `db_datareader`, `db_datawriter`. No DDL: the poller reads and writes rows |
-| Function App settings | `AZURE_CLIENT_ID` (its client id), `SQL_SERVER_FQDN`, `SQL_DATABASE`; no `DATABASE_URL` |
-| Bicep output | `functionIdentityClientId` and `functionIdentityName` |
+|                       |                                                                                                                                   |
+| --------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| Name in Azure         | `id-<baseName>-<suffix>` (resource type Managed Identity, in the resource group; `baseName` is `frejsi` unless a fork changed it) |
+| Name in SQL           | the same string, a contained database user in the `frejsi` database, created by `deploy.sh`                                       |
+| SQL permissions       | `db_datareader`, `db_datawriter`. No DDL: the poller reads and writes rows                                                        |
+| Function App settings | `AZURE_CLIENT_ID` (its client id), `SQL_SERVER_FQDN`, `SQL_DATABASE`; no `DATABASE_URL`                                           |
+| Bicep output          | `functionIdentityClientId` and `functionIdentityName`                                                                             |
 
 `createPrismaFromEnv` in `shared/src/db/` picks the connection: `DATABASE_URL` set gives the usual
 engine-backed client (the web app, local development, tests); otherwise `SQL_SERVER_FQDN` and
@@ -277,12 +277,12 @@ az keyvault secret set --vault-name <vault> -n off-contribute-password --file <f
 Four repository variables are optional deployment settings. `release.yml` hands them to `deploy.sh`,
 which writes each to the web app's settings only when it is set (an unset or empty one is left out):
 
-| Repository variable | App setting | Meaning |
-|---|---|---|
-| `DEFAULT_LOCALE` | `DEFAULT_LOCALE` | `da` or `en`: the first language for a visitor with no cookie and no `Accept-Language`, and the locale of a new user. Unset or anything else means `da` |
-| `FOOD_SOURCES` | `FOOD_SOURCES` (web app and Function App) | the food source plugins switched on, comma separated by id (`off`, `frida`) |
-| `OFF_COUNTRY` | `OFF_COUNTRY` (web app and Function App) | the Open Food Facts country, a two-letter code such as `dk`; unset means `world` |
-| `OFF_CONTRIBUTE_HOST` | `OFF_CONTRIBUTE_HOST` | optional: the Open Food Facts host contributions go to, for example `world.openfoodfacts.net` for a first try on staging; unset means the production host |
+| Repository variable   | App setting                               | Meaning                                                                                                                                                   |
+| --------------------- | ----------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `DEFAULT_LOCALE`      | `DEFAULT_LOCALE`                          | `da` or `en`: the first language for a visitor with no cookie and no `Accept-Language`, and the locale of a new user. Unset or anything else means `da`   |
+| `FOOD_SOURCES`        | `FOOD_SOURCES` (web app and Function App) | the food source plugins switched on, comma separated by id (`off`, `frida`)                                                                               |
+| `OFF_COUNTRY`         | `OFF_COUNTRY` (web app and Function App)  | the Open Food Facts country, a two-letter code such as `dk`; unset means `world`                                                                          |
+| `OFF_CONTRIBUTE_HOST` | `OFF_CONTRIBUTE_HOST`                     | optional: the Open Food Facts host contributions go to, for example `world.openfoodfacts.net` for a first try on staging; unset means the production host |
 
 `AZURE_RESOURCE_GROUP` is a fourth optional repository variable: `release.yml` and `preview.yml`
 read it as `vars.AZURE_RESOURCE_GROUP || 'frejsi'`, so a fork can name its resource group. Create the
@@ -341,14 +341,14 @@ the database down) is a non-2xx answer, and Web PubSub then refuses the socket; 
 
 **Handler authentication: the hub's own access key, not a managed identity.**
 
-- *Abuse protection:* the app answers the CloudEvents `OPTIONS` handshake with
+- _Abuse protection:_ the app answers the CloudEvents `OPTIONS` handshake with
   `WebHook-Allowed-Origin` only for its own Web PubSub host, and checks `WebHook-Request-Origin` on
   every request.
-- *Shared key:* Web PubSub signs every upstream request: `ce-signature` holds
+- _Shared key:_ Web PubSub signs every upstream request: `ce-signature` holds
   `sha256=HMAC_SHA256(accessKey, connectionId)` for its primary and secondary key. The app checks it
   with the `AccessKey` in `WEB_PUBSUB_CONNECTION_STRING`, which `deploy.sh` already copies from Key
   Vault (`web-pubsub-connection-string`). Nothing new to store or rotate.
-- *Why not a managed identity:* the handler's `ManagedIdentity` auth makes the service send an Entra
+- _Why not a managed identity:_ the handler's `ManagedIdentity` auth makes the service send an Entra
   token whose audience is an app registration. That needs a second app registration the pipeline
   cannot create with its role, and code in the web app to validate Entra tokens; Static Web Apps
   gives hybrid Next.js no built-in check for it. The signature gives the same assurance (only the
@@ -382,22 +382,22 @@ unreadable or empty existing secrets stop the deploy. Values never
 reach command lines or output. The script also raises SQL compatibility to 170 after migrations if
 it is lower, for the `vector(1024)` column; higher levels are preserved.
 
-| App setting | Optional Key Vault secret |
-|---|---|
-| `ANTHROPIC_API_KEY` | `anthropic-api-key` |
-| `VOYAGE_API_KEY` | `voyage-api-key` |
-| `AZURE_OPENAI_ENDPOINT` | `azure-openai-endpoint` |
-| `AZURE_OPENAI_API_KEY` | `azure-openai-api-key` |
-| `AZURE_OPENAI_DEPLOYMENT_SMALL` | `azure-openai-deployment-small` |
+| App setting                        | Optional Key Vault secret          |
+| ---------------------------------- | ---------------------------------- |
+| `ANTHROPIC_API_KEY`                | `anthropic-api-key`                |
+| `VOYAGE_API_KEY`                   | `voyage-api-key`                   |
+| `AZURE_OPENAI_ENDPOINT`            | `azure-openai-endpoint`            |
+| `AZURE_OPENAI_API_KEY`             | `azure-openai-api-key`             |
+| `AZURE_OPENAI_DEPLOYMENT_SMALL`    | `azure-openai-deployment-small`    |
 | `AZURE_OPENAI_DEPLOYMENT_EVERYDAY` | `azure-openai-deployment-everyday` |
-| `AZURE_OPENAI_DEPLOYMENT_INSIGHT` | `azure-openai-deployment-insight` |
-| `AZURE_OPENAI_DEPLOYMENT_EMBED` | `azure-openai-deployment-embed` |
-| `OLLAMA_URL` | `ollama-url` |
-| `OLLAMA_MODEL_SMALL` | `ollama-model-small` |
-| `OLLAMA_MODEL_EVERYDAY` | `ollama-model-everyday` |
-| `OLLAMA_MODEL_INSIGHT` | `ollama-model-insight` |
-| `OLLAMA_MODEL_EMBED` | `ollama-model-embed` |
-| `AI_CACHE_EMBED_PROVIDER` | `ai-cache-embed-provider` |
+| `AZURE_OPENAI_DEPLOYMENT_INSIGHT`  | `azure-openai-deployment-insight`  |
+| `AZURE_OPENAI_DEPLOYMENT_EMBED`    | `azure-openai-deployment-embed`    |
+| `OLLAMA_URL`                       | `ollama-url`                       |
+| `OLLAMA_MODEL_SMALL`               | `ollama-model-small`               |
+| `OLLAMA_MODEL_EVERYDAY`            | `ollama-model-everyday`            |
+| `OLLAMA_MODEL_INSIGHT`             | `ollama-model-insight`             |
+| `OLLAMA_MODEL_EMBED`               | `ollama-model-embed`               |
+| `AI_CACHE_EMBED_PROVIDER`          | `ai-cache-embed-provider`          |
 
 The owner creates the secrets (issue #72), using a protected UTF-8 file rather than putting a value
 in shell history. For example, with a fictional vault name:

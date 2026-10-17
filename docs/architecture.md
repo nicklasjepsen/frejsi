@@ -74,8 +74,11 @@ registry that decides what is switched on, and a fake for tests.
   `poller/src/sources.ts` (`createSourceFactory`) and the connect function does the same in
   `poller/src/source-connect-handler.ts` (`ADAPTERS`, typed over every polled type, so a new type
   without an adapter fails to compile).
-- Settings: the credential is stored in Key Vault as `glucose-<spaceId>` through the `Secrets`
-  interface (`shared/src/secrets/types.ts`); the database holds only `{ type, secretRef }`. The
+- Settings: the credential is stored in Key Vault as a version of `glucose-<spaceId>` through the
+  `Secrets` interface (`shared/src/secrets/types.ts`); the database holds only `{ type, secretRef }`,
+  where `secretRef` is `glucose-<spaceId>/<version>`, the one version that connect wrote, so the
+  poller reads the credential the config was saved with and a failed or racing connect cannot pair
+  a credential with another request's region (#78). The
   Settings screen renders one `SourceCard` per `GlucoseSourceType` value
   (`web/src/components/settings/SourceCards.tsx`).
 - The fake: `shared/src/glucose/fake.ts`, chosen with `FAKE_GLUCOSE_SOURCE=1`.

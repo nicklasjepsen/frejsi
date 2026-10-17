@@ -33,6 +33,18 @@ function countingFetch() {
   return { fetch, urls };
 }
 
+/** Like `countingFetch`, and keeps the password each Dexcom login was made with. */
+function loginRecordingFetch() {
+  const logins: unknown[] = [];
+  const fetch: FetchLike = (input, init) => {
+    if (String(input).endsWith("AuthenticatePublisherAccount")) {
+      logins.push((JSON.parse(String(init?.body)) as { password?: unknown }).password);
+    }
+    return Promise.resolve(new Response('"11111111-2222-4333-8444-555555555555"', { status: 200 }));
+  };
+  return { fetch, logins };
+}
+
 describe("createSourceFactory", () => {
   it("reads the credential by secretRef and builds a Dexcom Share source", async () => {
     const secrets = new MemorySecrets({ [config.secretRef]: serializeCredential(credential) });
@@ -66,6 +78,30 @@ describe("createSourceFactory", () => {
     expect(second).not.toBe(first);
     const third = await sources(space, { ...config, region: "us" });
     expect(third).not.toBe(second);
+  });
+
+  it("reads exactly the version the reference names, not the latest under the name (#78)", async () => {
+    const secrets = new MemorySecrets();
+    const older = await secrets.set(config.secretRef, serializeCredential(credential));
+    await secrets.set(
+      config.secretRef,
+      serializeCredential({ ...credential, password: "<newer>" }),
+    );
+    const { fetch, logins } = loginRecordingFetch();
+    const sources = createSourceFactory({ secrets, fetch });
+    await (await sources(space, { ...config, secretRef: older })).probe();
+    expect(logins).toEqual([credential.password]);
+  });
+
+  it("reads the latest version for a reference stored before versions existed: the plain name", async () => {
+    const secrets = new MemorySecrets();
+    await secrets.set(config.secretRef, serializeCredential({ ...credential, password: "<old>" }));
+    await secrets.set(config.secretRef, serializeCredential(credential));
+    const { fetch, logins } = loginRecordingFetch();
+    const sources = createSourceFactory({ secrets, fetch });
+    expect(config.secretRef).toBe("glucose-s1");
+    await (await sources(space, config)).probe();
+    expect(logins).toEqual([credential.password]);
   });
 
   it("throws when the secret is missing or is not a credential, without leaking the secret", async () => {

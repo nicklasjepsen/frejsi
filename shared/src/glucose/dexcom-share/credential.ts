@@ -1,8 +1,8 @@
 import { z } from "zod";
 
 /**
- * What `source-connect` stores in Key Vault under `glucose-<spaceId>` and what the poller reads
- * back by `secretRef` (spec §3). The database never sees it.
+ * What `source-connect` stores in Key Vault as a version of `glucose-<spaceId>` and what the poller
+ * reads back by `secretRef`, which names that version (spec §3, #78). The database never sees it.
  */
 export const DexcomShareCredential = z.object({
   username: z.string().min(1),

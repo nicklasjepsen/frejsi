@@ -25,7 +25,8 @@ export {
 } from "./events/pubsub";
 
 export type { Secrets } from "./secrets/types";
-export { glucoseSecretName } from "./secrets/types";
+export { formatSecretRef, glucoseSecretName, parseSecretRef } from "./secrets/types";
+export type { SecretRef } from "./secrets/types";
 export { KeyVaultSecrets, createSecretsFromEnv } from "./secrets/keyvault";
 export { FileSecrets } from "./secrets/file";
 

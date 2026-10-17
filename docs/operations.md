@@ -114,8 +114,17 @@ Check in this order and stop at the first thing that is wrong:
 
 The Dexcom Share credential is entered on the site and nowhere else. It goes from the browser to the
 Function App's `source-connect` endpoint, which tries it against Dexcom and only then writes it to Key
-Vault as `glucose-<spaceId>`. The database holds the source type, the region and the secret's name,
-never the login. Frejsi only reads with that login: it never uploads readings or changes followers,
+Vault as a new version of `glucose-<spaceId>`. The database holds the source type, the region and a
+reference to that one version (`glucose-<spaceId>/<version>`), never the login; the poller reads
+exactly the version the space refers to, so the space switches login only when Settings has saved
+the new reference, and a saved login is never paired with a region from another request (#78).
+Every connect leaves the previous version behind in Key Vault. Nothing deletes old versions yet: a
+later housekeeping sweep will disable the versions no space refers to. Until then, a version that
+should stop working now (a login that was changed because it leaked) is disabled by hand: in the
+portal, Key Vault → Secrets → `glucose-<spaceId>` → that version → Enabled: No, or
+`az keyvault secret set-attributes --vault-name <vault> --name glucose-<spaceId> --version <version> --enabled false`.
+Key Vault has no per-version delete, and deleting the secret removes every version including the
+one the space refers to. Frejsi only reads with that login: it never uploads readings or changes followers,
 invitations or alert settings on the Dexcom account, and the adapter refuses any such call in code.
 
 1. Sign in as an **owner** and open **Indstillinger → Glukosekilde → Skift login** (on the phone,
