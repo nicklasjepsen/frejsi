@@ -8,7 +8,12 @@ import { describe, expect, it } from "vitest";
 // the e2e (phone-header-gap.spec.ts) measures the result in a browser.
 
 const components = path.join(import.meta.dirname, "..");
-const read = (file: string): string => readFileSync(path.join(components, file), "utf8");
+const app = path.join(components, "..", "app", "[locale]", "(app)");
+const read = (file: string): string =>
+  readFileSync(
+    file.startsWith("app/") ? path.join(app, file.slice(4)) : path.join(components, file),
+    "utf8",
+  );
 
 /** The stylesheet without its `@media` blocks: the rules that apply on the phone. */
 function outsideMedia(css: string): string {
@@ -67,7 +72,9 @@ describe("the gap under the phone header", () => {
 
   it("keeps the desktop main column's own padding from 1280 px, and nothing on top of it", () => {
     expect(desktopRule(shell, ".main")).toMatch(/padding: 28px 32px 40px;/);
-    expect(shell.split("@media (min-width: 1280px)").slice(1).join("")).not.toContain(".shell main");
+    expect(shell.split("@media (min-width: 1280px)").slice(1).join("")).not.toContain(
+      ".shell main",
+    );
   });
 
   // /eat and /feel draw no phone header; the same 20 px is their gap to the top of the screen,
@@ -86,6 +93,13 @@ describe("the gap under the phone header", () => {
     ["history-week/history-week.module.css", ".page"],
     ["recipes/recipes.module.css", ".screen"],
     ["shell/shell.module.css", ".calmPage"],
+    // The owner's call on #218: one 20 px everywhere, so Nu (28), Nu-Simpel (36), I dag (28),
+    // Spørg (20) and Personer (12) drop the hand-in gaps they drew themselves.
+    ["app/now/now.module.css", ".page"],
+    ["app/now/now.module.css", ".simple"],
+    ["app/today/today.module.css", ".page"],
+    ["estimate/estimate.module.css", ".page"],
+    ["people/people.module.css", ".page"],
   ])("is not drawn again by %s %s", (file, selector) => {
     expect(topPadding(rule(outsideMedia(read(file)), selector))).toMatch(/^0(px)?$/);
   });

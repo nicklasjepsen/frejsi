@@ -4,7 +4,7 @@
   gap: 16px;
   width: 100%;
   max-width: 720px;
-  padding: 20px 0 36px;
+  padding: 0 0 36px;
 }
 /* The BackButton (48 px, 56 in simpleMode) and an empty cell of the same width centre the title. */
 .header {
@@ -94,11 +94,6 @@
   .card {
     border: 1px solid var(--hairline);
     box-shadow: none;
-  }
-}
-@media (min-width: 1280px) {
-  .page {
-    padding-top: 0;
   }
 }
 

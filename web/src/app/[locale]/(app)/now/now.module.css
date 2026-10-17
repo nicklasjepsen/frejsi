@@ -4,7 +4,6 @@
   display: flex;
   flex-direction: column;
   gap: 16px;
-  padding-top: 28px;
 }
 
 .label {
@@ -149,7 +148,6 @@
   flex-direction: column;
   align-items: center;
   gap: 8px;
-  padding-top: 36px;
 }
 
 .simpleLabel {
@@ -168,7 +166,6 @@
 @media (min-width: 1280px) {
   .page {
     gap: 20px;
-    padding-top: 0;
   }
 
   .phone,

@@ -1,9 +1,9 @@
 // Issue 214: on the phone every page sits 20 px under the space name, and the gap is the shell's
-// alone (its `main`, under the header), so no screen draws its own or forgets it. Measured, not snapshotted: a runner's
-// font rasteriser differs from a workstation's by a few pixels, which is no finding. From 1280 px
-// the phone header is hidden and the desktop main column keeps its own 28 px.
+// alone (its `main`, under the header), so no screen draws its own or forgets it. Measured, not
+// snapshotted: a runner's font rasteriser differs from a workstation's by a few pixels, which is no
+// finding. From 1280 px the phone header is hidden and the desktop main column keeps its own 28 px.
 import { prisma } from "@frejsi/shared";
-import type { Page } from "@playwright/test";
+import type { Locator, Page } from "@playwright/test";
 
 import { inviteLink, registerFromInvite, seededSpace } from "./support";
 import { expect, test } from "./test";
@@ -24,10 +24,16 @@ interface Measure {
   rootPadding: string;
 }
 
-async function open(page: Page, path: string, url: RegExp): Promise<void> {
+/** Opens a screen and waits until it has drawn: its visible `h1`, or `ready` where it has none. */
+async function open(
+  page: Page,
+  path: string,
+  url: RegExp,
+  ready: (page: Page) => Locator = (p) => p.locator("main h1").filter({ visible: true }).first(),
+): Promise<void> {
   await page.goto(path);
   await page.waitForURL(url);
-  await expect(page.locator("main h1").filter({ visible: true }).first()).toBeVisible();
+  await expect(ready(page)).toBeVisible();
 }
 
 async function measure(page: Page): Promise<Measure> {
@@ -120,11 +126,20 @@ test("Jonas's screens sit 20 px under the space name, and /eat and /feel stay pu
     ["import", "/da/settings/import", /\/da\/settings\/import$/],
     ["history day", "/da/history", /\/da\/history$/],
     ["history week", "/da/history/week", /\/da\/history\/week$/],
+    ["people", "/da/people", /\/da\/people$/],
   ];
   for (const [name, path, url] of screens) {
     await open(page, path, url);
     await expectGap(page, name);
   }
+
+  // Nu and Spørg drew their own 28 and 20 px before the owner chose one gap everywhere (#218).
+  await open(page, "/da/now", /\/da\/now$/, (p) => p.getByTestId("now"));
+  await expectGap(page, "now");
+  await open(page, "/da/ask", /\/da\/ask$/, (p) =>
+    p.getByRole("button", { name: "Tag et billede", exact: true }),
+  );
+  await expectGap(page, "ask");
 
   await open(page, "/da/eat", /\/da\/eat$/);
   await expectChromeless(page, "eat");
@@ -132,10 +147,25 @@ test("Jonas's screens sit 20 px under the space name, and /eat and /feel stay pu
   await expectChromeless(page, "feel");
 });
 
-test("the viewer's earlier days sit 20 px under the space name", async ({ page }) => {
+test("the viewer's today and earlier days sit 20 px under the space name", async ({ page }) => {
   await registerFromInvite(page, await inviteLink("laerke"));
   await page.waitForURL(/\/da\/today$/);
+  // I dag drew its own 28 px before (#218).
+  await expect(page.getByTestId("today").locator("h1")).toBeVisible();
+  await expectGap(page, "today");
   await open(page, "/da/history", /\/da\/history$/);
   await expect(page.getByTestId("viewer-days")).toBeVisible();
   await expectGap(page, "viewer days");
+});
+
+// Nu-Simpel drew its own 36 px and Spørg its own 20 before the owner chose one gap (#218).
+test("simpleMode's Nu and Spørg sit 20 px under the space name", async ({ page }) => {
+  await registerFromInvite(page, await inviteLink("alma"));
+  await page.waitForURL(/\/da\/now$/);
+  await expect(page.getByTestId("now-simple")).toBeVisible();
+  await expectGap(page, "now simple");
+  await open(page, "/da/ask", /\/da\/ask$/, (p) =>
+    p.getByRole("button", { name: "Tag et billede", exact: true }),
+  );
+  await expectGap(page, "ask simple");
 });
