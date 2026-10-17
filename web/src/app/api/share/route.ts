@@ -19,7 +19,9 @@ const text = (value: FormDataEntryValue | null, max: number) =>
  * phone's POST is not redirected to a page. The share is kept ten minutes in process memory under
  * a random id bound to the session, and the browser is sent to the recipe form, which loads it
  * once. A signed-out share goes to welcome and keeps nothing. The log carries the id, never the
- * title, text, URL or image.
+ * title, text, URL or image. The redirect is a relative Location: behind the Static Web Apps proxy
+ * and in the standalone server `request.url` carries the bind address, not the public host, and
+ * an absolute URL built from it would send the phone to an origin without its session cookie.
  */
 export const POST = route("share.receive", async (request) => {
   const sessionId = sessionIdFrom(request);
@@ -27,9 +29,9 @@ export const POST = route("share.receive", async (request) => {
   const locale = resolveLocale(session?.locale);
   if (!session || !sessionId) {
     log.warn("share.rejected", { route: "share.receive", code: "forbidden" });
-    return redirect(request, localeHref(locale, "/welcome"));
+    return redirect(localeHref(locale, "/welcome"));
   }
-  if (session.simpleMode) return redirect(request, localeHref(locale, "/now"));
+  if (session.simpleMode) return redirect(localeHref(locale, "/now"));
   if (Number(request.headers.get("content-length")) > BODY_LIMIT)
     throw new HttpError(400, "photo-too-large");
   let form: FormData;
@@ -63,9 +65,9 @@ export const POST = route("share.receive", async (request) => {
     throw new HttpError(400, "validation");
   const id = shareStore().put(sessionId, parsed.data);
   log.info("share.received", { route: "share.receive", code: "ok", userId: session.userId });
-  return redirect(request, `${localeHref(locale, "/recipe/new")}?share=${encodeURIComponent(id)}`);
+  return redirect(`${localeHref(locale, "/recipe/new")}?share=${encodeURIComponent(id)}`);
 });
 
-function redirect(request: Request, path: string): Response {
-  return Response.redirect(new URL(path, request.url), SEE_OTHER);
+function redirect(path: string): Response {
+  return new Response(null, { status: SEE_OTHER, headers: { Location: path } });
 }
