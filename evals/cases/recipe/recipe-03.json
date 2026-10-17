@@ -1,0 +1,8 @@
+{
+  "locale": "da",
+  "id": "recipe-03",
+  "kind": "recipe",
+  "text": "Kartoffelsalat til 4 personer\n\n1 kg kartofler\n2 æbler\n1 dl olie\nsalt og peber\n",
+  "expectedIngredients": 4,
+  "expectedCarbsPerPortion": 50
+}

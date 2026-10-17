@@ -1,8 +1,17 @@
 import { expect, it } from "vitest";
 import { loadCases, selectCases } from "./cases";
 import { checkInsight, checkStrings } from "./score";
-it("loads thirty fictional parses, ten normalisations, meal/week statistics and five pending plates", async () => {
+it("loads thirty fictional parses, ten normalisations, meal/week statistics, five pending plates and the recipe cases", async () => {
   const cases = await loadCases();
+  const recipes = cases.filter((c) => c.kind === "recipe");
+  expect(recipes.filter((c) => c.text !== undefined).length).toBeGreaterThanOrEqual(3);
+  expect(recipes.filter((c) => c.html !== undefined).length).toBeGreaterThanOrEqual(2);
+  expect(recipes.filter((c) => c.photo !== undefined)).toHaveLength(1);
+  for (const c of recipes) {
+    expect([c.text, c.html, c.photo].filter((way) => way !== undefined)).toHaveLength(1);
+    if (c.html !== undefined) expect(c.recorded).toEqual([]);
+    else expect(c.recorded.length).toBeGreaterThan(0);
+  }
   expect(cases.filter((c) => c.kind === "parse").length).toBeGreaterThanOrEqual(30);
   expect(cases.filter((c) => c.kind === "normalise")).toHaveLength(10);
   expect(cases.filter((c) => c.kind === "meal")).toHaveLength(10);

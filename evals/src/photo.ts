@@ -5,6 +5,11 @@ export function photoPath(name: string): string {
   if (!/^[a-zA-Z0-9][a-zA-Z0-9_-]*\.jpe?g$/.test(name)) throw new Error("invalid photo filename");
   return path.resolve(import.meta.dirname, "../cases/photo/images", name);
 }
+/** A recipe page photo the owner supplies, under evals/fixtures (plan task 7). */
+export function recipePhotoPath(name: string): string {
+  if (!/^[a-zA-Z0-9][a-zA-Z0-9_-]*\.jpe?g$/.test(name)) throw new Error("invalid photo filename");
+  return path.resolve(import.meta.dirname, "../fixtures", name);
+}
 export async function validatePhoto(bytes: Uint8Array): Promise<void> {
   const m = await sharp(bytes, { limitInputPixels: 40_000_000 }).metadata();
   if (

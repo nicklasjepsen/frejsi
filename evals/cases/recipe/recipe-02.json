@@ -1,0 +1,8 @@
+{
+  "locale": "da",
+  "id": "recipe-02",
+  "kind": "recipe",
+  "text": "Eksempelboller, 12 stk\n\n5 dl mælk\n50 g gær\n2 spsk sukker\n1 tsk salt\n600 g hvedemel\n2 stk æg\n\nRør dejen sammen, lad den hæve og bag bollerne.\n",
+  "expectedIngredients": 6,
+  "expectedCarbsPerPortion": 39
+}

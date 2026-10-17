@@ -1,0 +1,8 @@
+{
+  "locale": "da",
+  "id": "recipe-01",
+  "kind": "recipe",
+  "text": "Eksempellasagne, 6 portioner\n\n500 g hakket oksekød\n2 dåser flåede tomater\n1 løg\n250 g lasagneplader\n5 dl mælk\nsalt og peber\n\nBrun kødet, tilsæt tomater og løg, lav sovsen med mælken og læg lasagnen i lag.\n",
+  "expectedIngredients": 6,
+  "expectedCarbsPerPortion": 33
+}

@@ -7,5 +7,7 @@
   "normaliseAccuracy": 0.8,
   "unmatchedAccuracy": 1,
   "dosingHits": 0,
-  "insightViolations": 0
+  "insightViolations": 0,
+  "recipeAccuracy": 0.8,
+  "recipeTolerance": 0.3
 }

@@ -67,6 +67,19 @@ export interface Scores {
   photoCount: number;
   normaliseAccuracy: number;
   unmatchedAccuracy: number;
+  /** Recipe cases whose line count matched and whose carbs per portion fell within the tolerance. */
+  recipeAccuracy: number;
+  recipeCount: number;
+}
+/** A recipe case scores when every line was read and the carbs per portion are close enough. */
+export function scoreRecipe(
+  expected: { ingredients: number; carbsPerPortion: number },
+  actual: { ingredients: number; carbsPerPortion: number | undefined },
+): boolean {
+  return (
+    actual.ingredients === expected.ingredients &&
+    within(actual.carbsPerPortion, expected.carbsPerPortion, thresholds.recipeTolerance)
+  );
 }
 export function enforceThresholds(scores: Scores, availablePhotos = scores.photoCount): void {
   for (const key of [
@@ -78,4 +91,6 @@ export function enforceThresholds(scores: Scores, availablePhotos = scores.photo
     if (scores[key] < thresholds[key]) throw new Error(`threshold missed: ${key}`);
   if (availablePhotos >= thresholds.photoMinimum && scores.photoAccuracy < thresholds.photoAccuracy)
     throw new Error("threshold missed: photoAccuracy");
+  if (scores.recipeCount > 0 && scores.recipeAccuracy < thresholds.recipeAccuracy)
+    throw new Error("threshold missed: recipeAccuracy");
 }

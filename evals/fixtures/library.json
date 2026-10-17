@@ -190,5 +190,105 @@
         }
       ]
     }
+  },
+  {
+    "source": "library",
+    "verified": false,
+    "food": {
+      "id": "fictional-food-9",
+      "name": "Lasagneplader",
+      "origin": "family",
+      "verified": false,
+      "favourite": false,
+      "createdAt": "2026-10-12T10:00:00.000Z",
+      "updatedAt": "2026-10-12T10:00:00.000Z",
+      "portions": [],
+      "carbsPer100g": 70
+    }
+  },
+  {
+    "source": "library",
+    "verified": false,
+    "food": {
+      "id": "fictional-food-10",
+      "name": "Hakket oksekød",
+      "origin": "family",
+      "verified": false,
+      "favourite": false,
+      "createdAt": "2026-10-12T10:00:00.000Z",
+      "updatedAt": "2026-10-12T10:00:00.000Z",
+      "portions": [],
+      "carbsPer100g": 0
+    }
+  },
+  {
+    "source": "library",
+    "verified": false,
+    "food": {
+      "id": "fictional-food-11",
+      "name": "Flåede tomater",
+      "origin": "family",
+      "verified": false,
+      "favourite": false,
+      "createdAt": "2026-10-12T10:00:00.000Z",
+      "updatedAt": "2026-10-12T10:00:00.000Z",
+      "portions": [
+        {
+          "label": "1 dåse",
+          "carbs": 12,
+          "grams": 400
+        }
+      ]
+    }
+  },
+  {
+    "source": "library",
+    "verified": false,
+    "food": {
+      "id": "fictional-food-12",
+      "name": "Hvedemel",
+      "origin": "family",
+      "verified": false,
+      "favourite": false,
+      "createdAt": "2026-10-12T10:00:00.000Z",
+      "updatedAt": "2026-10-12T10:00:00.000Z",
+      "portions": [],
+      "carbsPer100g": 72
+    }
+  },
+  {
+    "source": "library",
+    "verified": false,
+    "food": {
+      "id": "fictional-food-13",
+      "name": "Sukker",
+      "origin": "family",
+      "verified": false,
+      "favourite": false,
+      "createdAt": "2026-10-12T10:00:00.000Z",
+      "updatedAt": "2026-10-12T10:00:00.000Z",
+      "portions": [],
+      "carbsPer100g": 100
+    }
+  },
+  {
+    "source": "library",
+    "verified": false,
+    "food": {
+      "id": "fictional-food-14",
+      "name": "Æg",
+      "origin": "family",
+      "verified": false,
+      "favourite": false,
+      "createdAt": "2026-10-12T10:00:00.000Z",
+      "updatedAt": "2026-10-12T10:00:00.000Z",
+      "portions": [
+        {
+          "label": "1 stk",
+          "carbs": 0,
+          "grams": 55
+        }
+      ]
+    }
   }
 ]
