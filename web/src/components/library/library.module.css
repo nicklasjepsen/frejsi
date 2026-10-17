@@ -6,7 +6,6 @@
   --library-tint-border: var(--accent-tint-border);
   display: flex;
   flex-direction: column;
-  padding-top: 20px;
 }
 :global([data-accent="sea"]) .page,
 :global([data-accent="forest"]) .page,

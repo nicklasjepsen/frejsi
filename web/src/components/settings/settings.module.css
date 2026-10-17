@@ -6,7 +6,6 @@
   display: flex;
   flex-direction: column;
   gap: 20px;
-  padding: 20px 0 0;
 }
 
 .head {
@@ -607,7 +606,6 @@
 
 @media (min-width: 1280px) {
   .page {
-    padding-top: 0;
     gap: 24px;
   }
 

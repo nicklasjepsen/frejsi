@@ -1,10 +1,10 @@
 /* Historik-Desktop and the plan's derived phone week. All colour comes from shell tokens. */
-/* As the day view: 16 px under the space header, the shell's gutter the only one on the phone. */
+/* As the day view: the shell draws the gap under the space header and the only phone gutter. */
 .page {
   display: flex;
   flex-direction: column;
   gap: 20px;
-  padding: 16px 0 32px;
+  padding: 0 0 32px;
   min-width: 0;
   color: var(--text);
 }
