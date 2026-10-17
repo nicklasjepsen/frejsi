@@ -13,7 +13,8 @@ describe("fetchRecipePage (https only, 2 MB and 10 s caps, no redirects off the 
     ).resolves.toBe("<p>fictional</p>");
     expect(fetch).toHaveBeenCalledTimes(1);
     const [url, init] = fetch.mock.calls[0] ?? [];
-    expect(String(url)).toBe("https://recipes.example/lasagne?print=1");
+    expect(url).toBeInstanceOf(URL);
+    expect((url as URL).href).toBe("https://recipes.example/lasagne?print=1");
     expect(init).toMatchObject({
       redirect: "manual",
       credentials: "omit",
@@ -47,7 +48,7 @@ describe("fetchRecipePage (https only, 2 MB and 10 s caps, no redirects off the 
     await expect(fetchRecipePage("https://recipes.example/lasagne", { fetch: same })).resolves.toBe(
       "<p>moved</p>",
     );
-    expect(String(same.mock.calls[1]?.[0])).toBe("https://recipes.example/lasagne-2");
+    expect((same.mock.calls[1]?.[0] as URL).href).toBe("https://recipes.example/lasagne-2");
     const other = vi.fn<Fetch>(() => Promise.resolve(redirect("https://elsewhere.example/x")));
     await expect(
       fetchRecipePage("https://recipes.example/lasagne", { fetch: other }),

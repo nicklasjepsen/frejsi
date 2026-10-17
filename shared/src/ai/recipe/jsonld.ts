@@ -1,5 +1,6 @@
 import type { RecipeParse } from "../../schemas/ai";
 import { RecipeParse as RecipeParseSchema } from "../../schemas/ai";
+import entities from "./data/entities.json";
 import units from "./data/units.json";
 
 /** The stripped page the model reads when there is no JSON-LD (plan §6): at most this long. */
@@ -143,24 +144,7 @@ export function readJsonLd(html: string): RecipeParse | null {
   return null;
 }
 
-const ENTITIES: Record<string, string> = {
-  amp: "&",
-  lt: "<",
-  gt: ">",
-  quot: '"',
-  apos: "'",
-  nbsp: " ",
-  aelig: "æ",
-  oslash: "ø",
-  aring: "å",
-  AElig: "Æ",
-  Oslash: "Ø",
-  Aring: "Å",
-  eacute: "é",
-  uuml: "ü",
-  ouml: "ö",
-  auml: "ä",
-};
+const ENTITIES: Record<string, string> = entities;
 function decodeEntities(text: string): string {
   return text.replace(/&(#x[0-9a-f]+|#\d+|[a-z]+);/gi, (whole, entity: string) => {
     if (entity.startsWith("#x") || entity.startsWith("#X"))

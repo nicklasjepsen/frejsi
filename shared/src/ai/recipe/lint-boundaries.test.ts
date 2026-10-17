@@ -1,4 +1,4 @@
-import { readdirSync, readFileSync } from "node:fs";
+import { readdirSync, readFileSync, type Dirent } from "node:fs";
 import path from "node:path";
 import { ESLint, type Linter } from "eslint";
 import { beforeAll, describe, expect, it } from "vitest";
@@ -25,7 +25,7 @@ async function errors(filePath: string, code: string) {
 
 /** Every source file under a folder, tests left out. */
 function sources(dir: string): string[] {
-  let entries: ReturnType<typeof readdirSync>;
+  let entries: Dirent[];
   try {
     entries = readdirSync(dir, { withFileTypes: true });
   } catch {
@@ -40,7 +40,7 @@ function sources(dir: string): string[] {
     .sort();
 }
 const relative = (file: string) => path.relative(root, file).replaceAll("\\", "/");
-const read = (file: string) => readFileSync(file, "utf8");
+const read = (file: string): string => readFileSync(file, { encoding: "utf8" });
 
 describe("the recipe boundaries (plan task 4 hard rules)", () => {
   it("lets the recipe service call the provider, and keeps the web side on aiForSpace", async () => {
@@ -98,7 +98,7 @@ describe("the recipe boundaries (plan task 4 hard rules)", () => {
     ].map((file) => [relative(file), read(file)] as const);
     expect(web.length).toBeGreaterThan(5);
     const providerUsers = web.filter(
-      ([, code]) => /provider/i.test(code) && /parseRecipe/.test(code),
+      ([, code]) => /provider/i.test(code) && code.includes("parseRecipe"),
     );
     expect(providerUsers.map(([file]) => file)).toEqual(["web/src/ai/recipe/service.ts"]);
     for (const [file, code] of web) {

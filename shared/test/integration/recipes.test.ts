@@ -67,7 +67,7 @@ beforeAll(async () => {
   recipes = (await import(RECIPES)) as RecipeServices;
   // AI is off for this space: the JSON-LD page must still read, text must not.
   const { configureRecipeReader } = (await import(READER)) as {
-    configureRecipeReader(deps: { provider: () => Promise<never> }): void;
+    configureRecipeReader: (deps: { provider: () => Promise<never> }) => void;
   };
   configureRecipeReader({ provider: () => Promise.reject(new HttpError(409, "ai-disabled")) });
 });
@@ -180,12 +180,12 @@ it("reads a JSON-LD page with AI off, resolves the lines through the SQL library
     createMealWriter: (db: PrismaClient, sink: MemoryEventSink) => unknown;
   };
   const { createMeal } = (await import(MEALS)) as {
-    createMeal(
+    createMeal: (
       spaceId: string,
       session: SessionContext,
       data: CreateMealRequest,
       deps: object,
-    ): Promise<MealView>;
+    ) => Promise<MealView>;
   };
   const meal = await createMeal(
     spaceId,
