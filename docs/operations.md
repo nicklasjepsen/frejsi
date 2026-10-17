@@ -271,6 +271,17 @@ readings from the last day, written through `addManualReading`), and prints one 
 per person. Today stops at the seed clock. The fake returns at most 24 hours per daily cycle, so a
 25-hour autumn date can have an uncovered hour. It refuses to run with `NODE_ENV=production` and on a database that already has a space.
 
+## Dependency alerts
+
+Dependabot opens pull requests for direct dependencies; a transitive package with a patched version
+is pinned in the root `package.json` under `pnpm.overrides` (postcss, deepmerge-ts, and mssql 12 with
+tedious 20, which dropped sprintf-js, under `@prisma/adapter-mssql`). After changing an override, run
+the suites above locally, including the Prisma integration tests and the e2e, before tagging: the
+database driver is exercised only there. An alert with no patched version is dismissed on GitHub
+with the reason written out (why the code path is unreachable, which issue records it) and comes
+back on its own when a fix is published; braces, reached only through the ESLint plugin at lint
+time, is the one such case (#193).
+
 ## Food sources and refreshing Frida
 
 `FOOD_SOURCES=off,frida` enables the registered plugins in that order. Empty or missing means no

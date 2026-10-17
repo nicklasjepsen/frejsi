@@ -41,7 +41,9 @@
     ],
     "overrides": {
       "postcss": ">=8.5.23",
-      "deepmerge-ts": ">=8.0.0"
+      "deepmerge-ts": ">=8.0.0",
+      "mssql": ">=12.7.9",
+      "tedious": ">=20.3.7"
     }
   }
 }
