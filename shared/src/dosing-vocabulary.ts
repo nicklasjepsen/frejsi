@@ -42,22 +42,12 @@ export const DOSING_ALLOW_LIST = [
 ] as const;
 
 /**
- * v0.2.0 (plan §8, task 7): the sentence drawn under "Bolus givet nu" on Log-Portioner and its
- * English counterpart, exactly as quoted in the plan. Kept apart from the v0.1.0 list above so that
- * list stays as its own test pins it.
- */
-export const BOLUS_TAP_ALLOW_LIST = [
-  '"Bolus givet nu" gemmer kun tidspunktet, så det kan ses på kurven. Frejsi regner aldrig insulin.',
-  '"Bolus given now" saves only the time so it can be seen on the curve. Frejsi never calculates insulin.',
-] as const;
-
-/**
  * v0.3.0 (plan §9, task 3): the labels the meal curve, the stat tiles and the tables draw, each its
  * own message key and matched as a whole string. In order: `da` "Bolus" (the tile label), "Bolus
  * før" (the table header), "Bolus givet" (the day-curve legend); `en` "Bolus", "Bolus before",
  * "Bolus given", "Bolus before meal" (the week tile; the lowercase v0.1.0 entry does not match it).
  * "Bolus" appears once per locale on purpose, so the list reads as the plan enumerates it.
- * "Bolus 11:58" stays the BolusTap template below; "Bolus før måltid" is already on the v0.1.0 list.
+ * "Bolus 11:58" is the `Bolus {time}` pattern below; "Bolus før måltid" is already on the v0.1.0 list.
  */
 export const MEAL_CURVE_ALLOW_LIST = [
   "Bolus",
@@ -69,10 +59,7 @@ export const MEAL_CURVE_ALLOW_LIST = [
   "Bolus before meal",
 ] as const;
 
-/** Issue #143: remove a timestamp, with no other meaning. */
-const CLEAR_BOLUS_TIME_ALLOW_LIST = ["Fjern bolustidspunkt", "Remove bolus time"] as const;
-
-/** `Bolus HH:MM`, rendered or as its message template `Bolus {time}` (the BolusTap key). */
+/** `Bolus HH:MM`, rendered or as its message template `Bolus {time}` (the `log.bolus.at` key). */
 const BOLUS_TIME = /^Bolus (?:\d{2}:\d{2}|\{time\})$/;
 
 export interface DosingFinding {
@@ -91,9 +78,7 @@ const patterns = DOSING_WORDS.map((term) => ({
 function isAllowed(text: string): boolean {
   return (
     (DOSING_ALLOW_LIST as readonly string[]).includes(text) ||
-    (BOLUS_TAP_ALLOW_LIST as readonly string[]).includes(text) ||
     (MEAL_CURVE_ALLOW_LIST as readonly string[]).includes(text) ||
-    (CLEAR_BOLUS_TIME_ALLOW_LIST as readonly string[]).includes(text) ||
     BOLUS_TIME.test(text)
   );
 }

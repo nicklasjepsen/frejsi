@@ -4,7 +4,6 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 
 import {
-  BOLUS_TAP_ALLOW_LIST,
   DOSING_ALLOW_LIST,
   MEAL_CURVE_ALLOW_LIST,
   findDosingVocabulary,
@@ -13,12 +12,13 @@ import {
 
 const messagesDir = path.resolve(import.meta.dirname, "../../web/messages");
 
-// The allow-list as #38 left it: the v0.1.0 list plus the two v0.2.0 BolusTap sentences.
-const BEFORE_V030 = DOSING_ALLOW_LIST.length + BOLUS_TAP_ALLOW_LIST.length;
+// The allow-list before v0.3.0: the v0.1.0 list. The two v0.2.0 BolusTap sentences left with the
+// tap (issue #215).
+const BEFORE_V030 = DOSING_ALLOW_LIST.length;
 
 describe("dosing allow-list, v0.3.0 (plan §9, task 3)", () => {
   it("grows by exactly the seven enumerated strings and nothing else", () => {
-    expect(BEFORE_V030).toBe(12);
+    expect(BEFORE_V030).toBe(10);
     expect([...MEAL_CURVE_ALLOW_LIST]).toEqual([
       "Bolus",
       "Bolus før",
@@ -28,7 +28,7 @@ describe("dosing allow-list, v0.3.0 (plan §9, task 3)", () => {
       "Bolus given",
       "Bolus before meal",
     ]);
-    expect(BEFORE_V030 + MEAL_CURVE_ALLOW_LIST.length).toBe(19);
+    expect(BEFORE_V030 + MEAL_CURVE_ALLOW_LIST.length).toBe(17);
   });
 
   it("passes the seven strings and matches them exactly and case-sensitively", () => {
@@ -43,6 +43,18 @@ describe("dosing allow-list, v0.3.0 (plan §9, task 3)", () => {
       "Bolus Before Meal",
     ]) {
       expect(findDosingVocabulary([["k", text]]), text).toHaveLength(1);
+    }
+  });
+
+  // Issue #215: the tap, its note and its "remove" are gone, and so are their allow-list entries.
+  // ("Fjern bolustidspunkt" needs no test: the compound never matched the whole word "bolus".)
+  it("no longer passes the removed bolus tap's note or its 'remove bolus time'", () => {
+    for (const text of [
+      '"Bolus givet nu" gemmer kun tidspunktet, så det kan ses på kurven. Frejsi regner aldrig insulin.',
+      '"Bolus given now" saves only the time so it can be seen on the curve. Frejsi never calculates insulin.',
+      "Remove bolus time",
+    ]) {
+      expect(findDosingVocabulary([["k", text]]), text).not.toEqual([]);
     }
   });
 
