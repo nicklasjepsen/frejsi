@@ -15,6 +15,9 @@ let seeded: Seeded;
 const NOW = new Date("2026-10-15T13:00:00Z");
 beforeAll(async () => {
   vi.stubEnv("APP_ORIGIN", "http://localhost:3100");
+  // The symptom window (10 min ahead, 7 days back) is checked against the wall clock; the e2e
+  // fixes it with `e2e/clock.cjs`, this suite with a fake `Date` and real timers.
+  vi.useFakeTimers({ toFake: ["Date"], now: NOW });
   scratch = await createEmptyDatabase("frejsi_seed_it");
   migrate(scratch.url);
   db = new PrismaClient({ datasourceUrl: scratch.url });
@@ -22,17 +25,18 @@ beforeAll(async () => {
 afterAll(async () => {
   await db.$disconnect();
   await scratch.drop();
+  vi.useRealTimers();
   vi.unstubAllEnvs();
 });
 
-it("seeds ten foods, fourteen reading days and seven meals through the emitting services", async () => {
+it("seeds seventeen foods, fourteen reading days and seven meals through the emitting services", async () => {
   const { seed } = (await import(SEED)) as {
     seed: (options: { db: PrismaClient; now: () => Date }) => Promise<Seeded>;
   };
   seeded = await seed({ db, now: () => NOW });
   const { spaceId } = seeded;
   const foods = await db.food.findMany({ where: { spaceId } });
-  expect(foods).toHaveLength(10);
+  expect(foods).toHaveLength(17);
   expect(await db.space.findUniqueOrThrow({ where: { id: spaceId } })).toMatchObject({
     aiEnabled: true,
     aiProvider: "anthropic",
@@ -66,6 +70,12 @@ it("seeds ten foods, fourteen reading days and seven meals through the emitting 
       "Æble",
       "Banan",
       "Mælk",
+      "Havregrød med æble",
+      "Lasagneplader",
+      "Hakket oksekød",
+      "Løg",
+      "Hakkede tomater",
+      "Revet ost",
     ].sort(),
   );
   expect(foods.find((food) => food.name === "Rugbrød")).toMatchObject({
@@ -204,4 +214,153 @@ it("seeds Arnes rum: a manual source, Mette as carer, three finger-pricks each w
   const rows = await db.invite.findMany({ where: { spaceId: room.spaceId } });
   expect(rows).toHaveLength(1);
   expect(rows[0]).toMatchObject({ role: "owner", name: "Arne", forUserId: room.arneUserId });
+});
+
+it("gives every seeded food a category and every meal the symbol derived from its items", async () => {
+  const { spaceId } = seeded;
+  const foods = await db.food.findMany({ where: { spaceId } });
+  const CATEGORIES = [
+    "bread",
+    "fruit",
+    "vegetables",
+    "dairy",
+    "starch",
+    "protein",
+    "sweets",
+    "snack",
+    "drink",
+    "mixed",
+  ];
+  for (const food of foods) expect(CATEGORIES, food.name).toContain(food.category);
+  expect(foods.find((food) => food.name === "Rugbrød")?.category).toBe("bread");
+  expect(foods.find((food) => food.name === "Kartoffel kogt")?.category).toBe("starch");
+  expect(foods.find((food) => food.name === "Pasta med kødsovs")?.category).toBe("mixed");
+  const meals = await db.meal.findMany({ where: { spaceId }, orderBy: { ts: "asc" } });
+  // The symbol is decided when the meal is saved: oats, an apple, and bread over the apple.
+  expect(meals.slice(-3).map((meal) => meal.symbol)).toEqual(["starch", "fruit", "bread"]);
+  expect(meals.slice(0, 4).map((meal) => meal.symbol)).toEqual([
+    "bread",
+    "bread",
+    "bread",
+    "bread",
+  ]);
+});
+
+it("logs four symptoms across the two days before the seed clock, one by Alma in simpleMode, each with its event", async () => {
+  const { spaceId } = seeded;
+  const symptoms = await db.symptom.findMany({
+    where: { spaceId },
+    orderBy: { ts: "asc" },
+    include: { byUser: true },
+  });
+  expect(
+    symptoms.map((row) => [
+      row.ts.toISOString(),
+      row.kind,
+      row.byUser.name,
+      row.severity,
+      row.note,
+      row.resolvedTs?.toISOString() ?? null,
+    ]),
+  ).toEqual([
+    [
+      "2026-10-13T14:40:00.000Z",
+      "headache",
+      "Jonas",
+      "light",
+      "Efter skole",
+      "2026-10-13T16:00:00.000Z",
+    ],
+    ["2026-10-13T18:05:00.000Z", "tired", "Mette", null, null, null],
+    ["2026-10-14T09:20:00.000Z", "shaky", "Birthe", "medium", "Lige før frokost", null],
+    ["2026-10-14T13:40:00.000Z", "stomach-ache", "Alma", null, null, null],
+  ]);
+  // The child's entry: kind and time only, as her picker sends it.
+  expect(symptoms[3]?.byUser.simpleMode).toBe(true);
+  // Two local days, and none on the seed clock's own day: the e2e logs today's first symptom itself.
+  const days = new Set(
+    symptoms.map((row) =>
+      new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Copenhagen" }).format(row.ts),
+    ),
+  );
+  expect([...days].sort()).toEqual(["2026-10-13", "2026-10-14"]);
+  const created = await db.event.findMany({ where: { spaceId, type: "symptom.created" } });
+  expect(
+    new Set(created.map((event) => (JSON.parse(event.payload) as { symptomId: string }).symptomId)),
+  ).toEqual(new Set(symptoms.map((row) => row.id)));
+  expect(
+    created.map((event) => (JSON.parse(event.payload) as { kind: string }).kind).sort(),
+  ).toEqual(["headache", "shaky", "stomach-ache", "tired"]);
+  const updated = await db.event.findMany({ where: { spaceId, type: "symptom.updated" } });
+  expect(
+    updated.map((event) => (JSON.parse(event.payload) as { symptomId: string }).symptomId),
+  ).toEqual([symptoms[0]?.id]);
+});
+
+it("saves Lasagne as a recipe dish of six portions whose lines resolve to seeded foods", async () => {
+  const { spaceId } = seeded;
+  const dish = await db.food.findFirstOrThrow({ where: { spaceId, name: "Lasagne" } });
+  expect(dish).toMatchObject({ origin: "recipe", verified: false, category: "mixed" });
+  expect(Number(dish.carbsPer100g)).toBeCloseTo(12.3, 1);
+  const portions = JSON.parse(dish.portions) as { label: string; grams?: number; carbs: number }[];
+  expect(portions.map((portion) => portion.label)).toEqual(["1 portion", "½ portion"]);
+  expect(portions[0]).toMatchObject({ carbs: 38 });
+  expect(portions[1]).toMatchObject({ carbs: 19 });
+  expect(Math.round(portions[0]?.grams ?? 0)).toBe(308);
+  const recipe = JSON.parse(dish.recipe ?? "null") as {
+    ingredients: {
+      name: string;
+      foodId?: string;
+      foodName?: string;
+      carbs: number;
+      noCarb?: boolean;
+    }[];
+    yieldPortions?: number;
+    source: { kind: string; text?: string };
+  };
+  expect(recipe.yieldPortions).toBe(6);
+  expect(recipe.source.kind).toBe("text");
+  expect(recipe.source.text).toContain("lasagneplader");
+  expect(recipe.ingredients).toHaveLength(8);
+  expect(recipe.ingredients.reduce((sum, line) => sum + line.carbs, 0)).toBe(228);
+  const foods = await db.food.findMany({ where: { spaceId }, select: { id: true, name: true } });
+  const byId = new Map(foods.map((food) => [food.id, food.name]));
+  for (const line of recipe.ingredients) {
+    if (line.noCarb) {
+      expect(line.foodId, line.name).toBeUndefined();
+      expect(line.carbs).toBe(0);
+    } else {
+      expect(line.foodId, line.name).toBeDefined();
+      expect(byId.get(line.foodId ?? ""), line.name).toBe(line.foodName);
+    }
+  }
+  expect(recipe.ingredients.filter((line) => line.noCarb).map((line) => line.name)).toEqual([
+    "olivenolie",
+    "salt og peber",
+  ]);
+  const events = await db.event.findMany({ where: { spaceId, type: "food.created" } });
+  expect(
+    events.filter((event) => (JSON.parse(event.payload) as { foodId: string }).foodId === dish.id),
+  ).toHaveLength(1);
+});
+
+it("is idempotent: a second run refuses the filled database and adds nothing", async () => {
+  const { seed } = (await import(SEED)) as {
+    seed: (options: { db: PrismaClient; now: () => Date }) => Promise<Seeded>;
+  };
+  const before = {
+    spaces: await db.space.count(),
+    foods: await db.food.count(),
+    meals: await db.meal.count(),
+    symptoms: await db.symptom.count(),
+    events: await db.event.count(),
+  };
+  await expect(seed({ db, now: () => NOW })).rejects.toThrow(/already has a space/);
+  expect({
+    spaces: await db.space.count(),
+    foods: await db.food.count(),
+    meals: await db.meal.count(),
+    symptoms: await db.symptom.count(),
+    events: await db.event.count(),
+  }).toEqual(before);
 });

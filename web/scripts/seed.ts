@@ -1,20 +1,26 @@
 // `pnpm --filter ./web seed`: the fictional space of the artboards (plan §8, task 10) for local
 // development and the release e2e. Every row goes through the code the routes and the poller
 // use: the space and its first owner through the bootstrap, the others' memberships through
-// `addMember`, the source through the Settings route's `saveConnectedSource`, and fourteen days of
-// readings through `runPollCycle` with `FakeGlucoseSource`. So every write has its event, and the
-// `events` table is exactly what a real space with that history would hold.
+// `addMember`, the source through the Settings route's `saveConnectedSource`, fourteen days of
+// readings through `runPollCycle` with `FakeGlucoseSource`, the symptoms through the symptoms
+// service and the recipe dish through `saveRecipe` (v0.6.0). So every write has its event, and
+// the `events` table is exactly what a real space with that history would hold.
 //
 // The people are the design's fixtures (docs/design/README.md: fictional, reusable in seed data).
-// Refuses to run when NODE_ENV=production, and on a database that already has a space.
+// Refuses to run when NODE_ENV=production, and on a database that already has a space, so a
+// second run adds nothing.
 import { createHash, randomBytes } from "node:crypto";
 import path from "node:path";
 
 import {
   createEmit,
   dayRange,
+  type FoodCategory,
   type FoodView,
+  type RecipeIngredient,
   type SessionContext,
+  type Severity,
+  type SymptomKind,
   glucoseSecretName,
   HttpError,
   prisma,
@@ -45,6 +51,10 @@ import { transact, type AuthDeps } from "../src/lib/auth/core";
 import { createInvite, type CreatedInvite } from "../src/lib/auth/invites";
 import { addMember } from "../src/lib/auth/members";
 import { addManualReading } from "../src/lib/readings/service";
+import { saveRecipe } from "../src/lib/recipes/service";
+import { PrismaSymptomRepository } from "../src/lib/symptoms/repository";
+import { createSymptom, updateSymptom } from "../src/lib/symptoms/service";
+import { createSymptomWriter } from "../src/lib/symptoms/transaction";
 
 export const SEED_SPACE = { name: "Almas rum", timezone: "Europe/Copenhagen" } as const;
 
@@ -78,11 +88,15 @@ export const SEED_ARNES_READINGS = [
   { minutesAgo: 3 * 60 + 15, mmol: 5.9 },
 ] as const;
 
-/** Hand-written artboard foods: fictional nutrition, restricted-circulation barcode, no photos. */
+/**
+ * Hand-written artboard foods: fictional nutrition, restricted-circulation barcode, no photos.
+ * Every food carries a category (v0.6.0 plan §7), so each seeded meal gets a symbol.
+ */
 export const SEED_AI_FOOD = "Pasta med kødsovs";
 export const SEED_INSIGHT = "Toppen kom omkring en time efter måltidet.";
 export const SEED_TRANSCRIPT = "to skiver rugbrød med ost";
 export const SEED_DISH = "Rugbrød med ost og et æble";
+export const SEED_BREAKFAST = "Havregrød med æble";
 export const SEED_BARCODE = "2000000000015";
 export const SEED_FOODS = [
   {
@@ -91,6 +105,7 @@ export const SEED_FOODS = [
     sourceRef: `off:${SEED_BARCODE}`,
     barcode: SEED_BARCODE,
     carbsPer100g: 40,
+    category: "bread",
     portions: [{ label: "1 skive", grams: 45, carbs: 18 }],
   },
   {
@@ -98,13 +113,15 @@ export const SEED_FOODS = [
     origin: "frida",
     sourceRef: "frida:fictional-seed",
     carbsPer100g: 17,
+    category: "starch",
     portions: [{ label: "1 portion", grams: 100, carbs: 17 }],
   },
-  { name: "Pasta bolognese", portions: [{ label: "1 portion", carbs: 55 }] },
-  { name: "Min madpakke", portions: [{ label: "1 madpakke", carbs: 42 }] },
-  { name: "Havregrød", portions: [{ label: "1 skål", carbs: 24 }] },
+  { name: "Pasta bolognese", category: "mixed", portions: [{ label: "1 portion", carbs: 55 }] },
+  { name: "Min madpakke", category: "mixed", portions: [{ label: "1 madpakke", carbs: 42 }] },
+  { name: "Havregrød", category: "starch", portions: [{ label: "1 skål", carbs: 24 }] },
   {
     name: "Rugbrød med ost",
+    category: "bread",
     portions: [
       { label: "1 skive", carbs: 18 },
       { label: "2 skiver", carbs: 36 },
@@ -112,15 +129,132 @@ export const SEED_FOODS = [
   },
   {
     name: "Æble",
+    category: "fruit",
     portions: [
       { label: "1 stk", carbs: 14 },
       { label: "1 mellem", carbs: 14 },
       { label: "½ mellem", carbs: 7 },
     ],
   },
-  { name: "Banan", portions: [{ label: "1 stk", carbs: 23 }] },
-  { name: "Mælk", portions: [{ label: "1 glas", carbs: 10 }] },
-] as const;
+  { name: "Banan", category: "fruit", portions: [{ label: "1 stk", carbs: 23 }] },
+  { name: "Mælk", category: "dairy", carbsPer100g: 5, portions: [{ label: "1 glas", carbs: 10 }] },
+  { name: SEED_BREAKFAST, category: "starch", portions: [{ label: "1 skål", carbs: 38 }] },
+] as const satisfies readonly { name: string; category: FoodCategory; [key: string]: unknown }[];
+
+/** The family's own entries for the lasagne, verified like their other foods but not favourites. */
+export const SEED_INGREDIENTS = [
+  {
+    name: "Lasagneplader",
+    category: "starch",
+    carbsPer100g: 72,
+    portions: [{ label: "1 plade", grams: 20, carbs: 14 }],
+  },
+  {
+    name: "Hakket oksekød",
+    category: "protein",
+    carbsPer100g: 0,
+    portions: [{ label: "100 g", grams: 100, carbs: 0 }],
+  },
+  {
+    name: "Løg",
+    category: "vegetables",
+    carbsPer100g: 7,
+    portions: [{ label: "1 stk", grams: 100, carbs: 7 }],
+  },
+  {
+    name: "Hakkede tomater",
+    category: "vegetables",
+    carbsPer100g: 4,
+    portions: [{ label: "1 dåse", grams: 400, carbs: 16 }],
+  },
+  {
+    name: "Revet ost",
+    category: "dairy",
+    carbsPer100g: 0,
+    portions: [{ label: "1 håndfuld", grams: 30, carbs: 0 }],
+  },
+] as const satisfies readonly { name: string; category: FoodCategory; [key: string]: unknown }[];
+
+/**
+ * The recipe dish (v0.6.0 plan §6): the lines as Jonas reviewed them from pasted text, each
+ * resolved to one of the family's foods, the two staples at 0 without a food, six portions.
+ */
+export const SEED_RECIPE_DISH = "Lasagne";
+export const SEED_RECIPE_PORTIONS = 6;
+export const SEED_RECIPE_TEXT = [
+  "250 g lasagneplader",
+  "500 g hakket oksekød",
+  "1 løg",
+  "400 g hakkede tomater",
+  "5 dl mælk",
+  "100 g revet ost",
+  "2 spsk olivenolie",
+  "salt og peber",
+].join("\n");
+interface SeedRecipeLine {
+  name: string;
+  amount?: number;
+  unit?: string;
+  grams?: number;
+  /** The seeded food the line resolved to; absent for a no-carb staple. */
+  food?: string;
+  carbs: number;
+}
+export const SEED_RECIPE_LINES: readonly SeedRecipeLine[] = [
+  { name: "lasagneplader", amount: 250, unit: "g", grams: 250, food: "Lasagneplader", carbs: 180 },
+  { name: "hakket oksekød", amount: 500, unit: "g", grams: 500, food: "Hakket oksekød", carbs: 0 },
+  { name: "løg", amount: 1, unit: "stk", grams: 100, food: "Løg", carbs: 7 },
+  {
+    name: "hakkede tomater",
+    amount: 400,
+    unit: "g",
+    grams: 400,
+    food: "Hakkede tomater",
+    carbs: 16,
+  },
+  { name: "mælk", amount: 5, unit: "dl", grams: 500, food: "Mælk", carbs: 25 },
+  { name: "revet ost", amount: 100, unit: "g", grams: 100, food: "Revet ost", carbs: 0 },
+  { name: "olivenolie", amount: 2, unit: "spsk", carbs: 0 },
+  { name: "salt og peber", carbs: 0 },
+];
+
+/**
+ * How the family felt (v0.6.0 plan §5): four entries over the two days before the seed clock,
+ * never on its own day, so the e2e's first symptom of today is the one it logs. Alma's is the
+ * child's: her simpleMode picker sends the kind alone and the server stamps the time.
+ */
+export const SEED_SYMPTOMS = [
+  {
+    by: "jonas",
+    daysAgo: 2,
+    hour: 16,
+    minute: 40,
+    kind: "headache",
+    severity: "light",
+    note: "Efter skole",
+    resolvedAt: { hour: 18, minute: 0 },
+  },
+  { by: "mette", daysAgo: 2, hour: 20, minute: 5, kind: "tired" },
+  {
+    by: "birthe",
+    daysAgo: 1,
+    hour: 11,
+    minute: 20,
+    kind: "shaky",
+    severity: "medium",
+    note: "Lige før frokost",
+  },
+  { by: "alma", daysAgo: 1, hour: 15, minute: 40, kind: "stomach-ache" },
+] as const satisfies readonly {
+  by: SeedPersonKey;
+  daysAgo: number;
+  hour: number;
+  minute: number;
+  kind: SymptomKind;
+  severity?: Severity;
+  note?: string;
+  resolvedAt?: { hour: number; minute: number };
+}[];
 
 /** A wall-clock time on the seed's local day, including days when the UTC offset changes. */
 export function seedTime(at: Date, hour: number, minute: number): string {
@@ -152,7 +286,9 @@ export const SEED_NAMES: readonly string[] = [
   "The peak followed the meal by about an hour.",
   ...Object.values(SEED_PEOPLE).map((person) => person.name),
   ...SEED_FOODS.map((food) => food.name),
-  "Havregrød med æble",
+  ...SEED_INGREDIENTS.map((food) => food.name),
+  SEED_RECIPE_DISH,
+  ...SEED_SYMPTOMS.flatMap((symptom) => ("note" in symptom ? [symptom.note] : [])),
   "et æble",
   SEED_DISH,
   SEED_BARCODE,
@@ -254,11 +390,16 @@ export async function seed(options: SeedOptions = {}): Promise<SeededSpace> {
   let readings = 0;
   const at = now();
   const today = localDate(at, SEED_SPACE.timezone);
+  /** Noon UTC on the local date `daysAgo` days before the seed clock's day. */
+  const daysBefore = (daysAgo: number): Date => {
+    const date = new Date(`${today}T12:00:00Z`);
+    date.setUTCDate(date.getUTCDate() - daysAgo);
+    return date;
+  };
   // One cycle per local date, as specified. The fake's 24-hour cap can leave an
   // uncovered hour on an autumn 25-hour date; sequence continuity is about events.
   for (let daysAgo = 13; daysAgo >= 0; daysAgo--) {
-    const date = new Date(`${today}T12:00:00Z`);
-    date.setUTCDate(date.getUTCDate() - daysAgo);
+    const date = daysBefore(daysAgo);
     const [, end] = dayRange(date.toISOString().slice(0, 10), SEED_SPACE.timezone);
     const dayNow = () => new Date(Math.min(+end - 1, +at));
     const [outcome] = await runPollCycle(
@@ -309,10 +450,20 @@ export async function seed(options: SeedOptions = {}): Promise<SeededSpace> {
           );
     foods.set(food.name, saved);
   }
+  for (const food of SEED_INGREDIENTS) {
+    const saved = await createFood(
+      spaceId,
+      session("jonas"),
+      { ...food, portions: [...food.portions], from: "library", favourite: false, verify: true },
+      { db, sink, now, sources: [], photos: null },
+    );
+    foods.set(food.name, saved);
+  }
   const aiCandidate = {
     name: SEED_AI_FOOD,
     origin: "ai",
     sourceRef: "ai:fictional-seed",
+    category: "mixed" as const,
     portions: [{ label: "1 tallerken", grams: 300, carbs: 55 }],
   };
   const askedFood = await addCandidate(spaceId, session("alma"), aiCandidate, {
@@ -339,9 +490,7 @@ export async function seed(options: SeedOptions = {}): Promise<SeededSpace> {
   };
   // Earlier occurrences vary portions and timing, using exactly the route's emitting writer.
   for (const [index, lead] of [15, 5, 0, 10].entries()) {
-    const earlier = new Date(`${today}T12:00:00Z`);
-    earlier.setUTCDate(earlier.getUTCDate() - (4 - index));
-    const ts = seedTime(earlier, 12, 10);
+    const ts = seedTime(daysBefore(4 - index), 12, 10);
     await createMeal(
       spaceId,
       session("jonas"),
@@ -370,7 +519,7 @@ export async function seed(options: SeedOptions = {}): Promise<SeededSpace> {
     session("mette"),
     {
       ts: seedTime(at, 7, 15),
-      items: [{ name: "Havregrød med æble", carbs: 38 }],
+      items: [{ foodId: foodId(SEED_BREAKFAST), name: SEED_BREAKFAST, portionLabel: "1 skål" }],
     },
     mealDeps,
   );
@@ -442,8 +591,78 @@ export async function seed(options: SeedOptions = {}): Promise<SeededSpace> {
       lunch.id,
     ),
   );
+  await seedSymptoms({ db, sink, session, daysBefore });
+  await saveRecipe(
+    spaceId,
+    session("jonas"),
+    {
+      title: SEED_RECIPE_DISH,
+      ingredients: SEED_RECIPE_LINES.map(({ food, ...line }): RecipeIngredient => ({
+        ...line,
+        ...(food ? { foodId: foodId(food), foodName: food } : { noCarb: true }),
+      })),
+      yieldPortions: SEED_RECIPE_PORTIONS,
+      source: { kind: "text", text: SEED_RECIPE_TEXT },
+      category: "mixed",
+    },
+    { db, sink, now, sources: [], photos: null },
+  );
   const arnesRoom = await seedArnesRoom({ db, sink, now }, people.mette.userId);
   return { spaceId, arnesRoom, people, ownerInviteUrl: boot.inviteUrl, readings };
+}
+
+/**
+ * The symptoms through the service the routes call, so each write is one transaction with its
+ * `symptom.created` and the kind is checked against the space. A carer's entry carries its time;
+ * Alma's goes in as her picker sends it (the kind alone, a simpleMode session) with the service
+ * clock set to that afternoon, as the server stamps a child's entry at the moment of the tap.
+ */
+async function seedSymptoms(deps: {
+  db: PrismaClient;
+  sink: MemoryEventSink;
+  session: (key: SeedPersonKey) => SessionContext;
+  daysBefore: (daysAgo: number) => Date;
+}): Promise<void> {
+  const { db, sink, session, daysBefore } = deps;
+  const spaceId = session("jonas").memberships[0]?.spaceId;
+  if (!spaceId) throw new Error("the seed session has no space");
+  const repo = new PrismaSymptomRepository(db);
+  for (const entry of SEED_SYMPTOMS) {
+    const ts = seedTime(daysBefore(entry.daysAgo), entry.hour, entry.minute);
+    const by = session(entry.by);
+    const clock = () => new Date(ts);
+    const symptomDeps = { repo, write: createSymptomWriter(db, sink, clock), now: clock };
+    const saved = await createSymptom(
+      spaceId,
+      by,
+      by.simpleMode
+        ? { kind: entry.kind }
+        : {
+            kind: entry.kind,
+            ts,
+            ...("severity" in entry ? { severity: entry.severity } : {}),
+            ...("note" in entry ? { note: entry.note } : {}),
+          },
+      symptomDeps,
+    );
+    if ("resolvedAt" in entry) {
+      const resolvedTs = seedTime(
+        daysBefore(entry.daysAgo),
+        entry.resolvedAt.hour,
+        entry.resolvedAt.minute,
+      );
+      await updateSymptom(
+        spaceId,
+        saved.id,
+        by,
+        { resolvedTs },
+        {
+          ...symptomDeps,
+          write: createSymptomWriter(db, sink, () => new Date(resolvedTs)),
+        },
+      );
+    }
+  }
 }
 
 /**
@@ -534,7 +753,7 @@ async function main(): Promise<void> {
   process.env.APP_ORIGIN ??= "http://localhost:3000";
   const space = await seed();
   const lines = [
-    `Seeded "${SEED_SPACE.name}" (${space.spaceId}) with ${String(space.readings)} readings.`,
+    `Seeded "${SEED_SPACE.name}" (${space.spaceId}) with ${String(space.readings)} readings, ${String(SEED_SYMPTOMS.length)} symptoms and the recipe dish "${SEED_RECIPE_DISH}".`,
     `Seeded "${SEED_ARNES_ROOM.name}" (${space.arnesRoom.spaceId}) with ${String(space.arnesRoom.readings)} finger-prick readings; Mette is a carer there.`,
     "Add-a-device links, one per person, each good once for seven days:",
   ];
