@@ -1,5 +1,6 @@
 {
   "edit": "Edit",
+  "editMeal": "Edit meal",
   "editKey": "E",
   "summary": "{carbs} g carbs · {count, plural, one {# item} other {# items}}",
   "metaPhone": "{day} {time} · {name}",
@@ -35,6 +36,7 @@
     "title": "Edit meal",
     "back": "Back",
     "save": "Save",
+    "saved": "Saved",
     "note": "Note",
     "carbs": "Carbs · {name}",
     "failed": "The meal was not saved – try again",

@@ -2,6 +2,7 @@ import "@testing-library/jest-dom/vitest";
 
 import type { Reading } from "@frejsi/shared/schemas/glucose";
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import type { ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { I18nProvider } from "@/lib/i18n/Provider";
@@ -46,6 +47,7 @@ vi.mock("next/navigation", () => ({
 }));
 
 import { MealDetail, type MealDetailProps } from "./MealDetail";
+import { DesktopMealHeader, PhoneMealHeader } from "./MealHeader";
 import {
   MEAL_TS,
   TYPICAL,
@@ -113,7 +115,7 @@ afterEach(() => {
 });
 
 describe("Måltid · phone (Maaltid-Telefon)", () => {
-  it("draws the meta header: back 'Tilbage', 'I dag 12:00 · Jonas' and the 'Ret' action", async () => {
+  it("draws the meta header: back 'Tilbage', 'I dag 12:00 · Jonas', and the 'Ret måltid' button below the hero", async () => {
     mount();
     await ready();
     const header = screen.getByRole("banner");
@@ -122,7 +124,13 @@ describe("Måltid · phone (Maaltid-Telefon)", () => {
       "/da/now",
     );
     expect(within(header).getByText("I dag 12:00 · Jonas")).toBeInTheDocument();
-    fireEvent.click(within(header).getByRole("button", { name: "Ret" }));
+    // No text link in the header any more: the button sits in the action row (task 8).
+    expect(within(header).queryByRole("button")).toBeNull();
+    const actions = screen.getByTestId("meal-actions");
+    const edit = within(actions).getByRole("button", { name: "Ret måltid" });
+    expect(edit).toHaveAttribute("data-variant", "secondary");
+    expect(within(actions).getByRole("button", { name: "Gem som egen ret" })).toBeVisible();
+    fireEvent.click(edit);
     expect(screen.getByRole("dialog", { name: "Ret måltid" })).toBeVisible();
   });
 
@@ -282,6 +290,7 @@ describe("Måltid · phone (Maaltid-Telefon)", () => {
     mount({}, "en");
     await ready();
     expect(screen.getByText("Today 12:00 · Jonas")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Edit meal" })).toBeVisible();
     expect(screen.getByText("50 g carbs · 3 items")).toBeInTheDocument();
     expect(tile("Peak")).toHaveTextContent("Peak9.6after 1 h 05 min");
     expect(tile("Bolus")).toHaveTextContent("Bolus12 minbefore the meal");
@@ -322,6 +331,52 @@ describe("Måltid · opened on ?edit=1", () => {
     await ready();
     expect(screen.queryByRole("dialog")).toBeNull();
   });
+});
+
+describe("Måltid · the header's action row", () => {
+  const header = (size: "phone" | "desktop", extra?: ReactNode) =>
+    render(
+      <I18nProvider locale="da" messages={getMessages("da")}>
+        {size === "phone" ? (
+          <PhoneMealHeader
+            meal={mealView()}
+            timeZone="Europe/Copenhagen"
+            onEdit={vi.fn()}
+            backHref="/da/now"
+            saveDish={<button type="button">Gem som egen ret</button>}
+            saveRecipe={extra}
+          />
+        ) : (
+          <DesktopMealHeader
+            meal={mealView()}
+            timeZone="Europe/Copenhagen"
+            onEdit={vi.fn()}
+            saveDish={<button type="button">Gem som egen ret</button>}
+            saveRecipe={extra}
+          />
+        )}
+      </I18nProvider>,
+    );
+
+  it.each(["phone", "desktop"] as const)(
+    "%s: takes 'Ret', SaveAsDish and a second optional action, in that order",
+    (size) => {
+      header(size, <button type="button">Gem som opskrift</button>);
+      const actions = within(screen.getByTestId("meal-actions"));
+      expect(actions.getAllByRole("button").map((b) => b.textContent)).toEqual([
+        size === "phone" ? "Ret måltid" : "RetE",
+        "Gem som egen ret",
+        "Gem som opskrift",
+      ]);
+      cleanup();
+      header(size);
+      expect(
+        within(screen.getByTestId("meal-actions"))
+          .getAllByRole("button")
+          .map((b) => b.textContent),
+      ).toEqual([size === "phone" ? "Ret måltid" : "RetE", "Gem som egen ret"]);
+    },
+  );
 });
 
 describe("Måltid · desktop (Maaltid-Desktop)", () => {

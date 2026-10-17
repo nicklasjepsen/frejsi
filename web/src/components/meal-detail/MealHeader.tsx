@@ -16,18 +16,27 @@ interface HeaderProps {
   meal: MealView;
   timeZone: string;
   onEdit: () => void;
+  /** `SaveAsDish`, mounted by `MealDetail`. */
   saveDish?: ReactNode;
+  /**
+   * The second action of the row, after `SaveAsDish`: the recipe lane's `SaveAsRecipe` (#200,
+   * mounted by #202 once both have merged). The header draws whatever it is given here.
+   */
+  saveRecipe?: ReactNode;
 }
 
 /**
- * Maaltid-Telefon: the "meta" header (back, "I dag 12:10 · Jonas", "Ret"), then the 72 px photo,
- * the serif title and "50 g kulhydrat · 3 ting".
+ * Maaltid-Telefon: the "meta" header (back, "I dag 12:10 · Jonas"), then the 72 px photo, the
+ * serif title and "50 g kulhydrat · 3 ting", and the action row: the 44 px "Ret måltid" button,
+ * "Gem som egen ret" and the optional second action (v0.6.0 task 8).
  */
 export function PhoneMealHeader({
   meal,
   timeZone,
   onEdit,
   backHref,
+  saveDish,
+  saveRecipe,
 }: HeaderProps & {
   backHref: string;
 }) {
@@ -42,11 +51,6 @@ export function PhoneMealHeader({
           variant="meta"
           meta={phoneMeta(t, stats, meal, now, timeZone, locale)}
           backHref={backHref}
-          trailing={
-            <button type="button" className={styles.editLink} onClick={onEdit}>
-              {t("edit")}
-            </button>
-          }
         />
       </div>
       <div className={styles.hero}>
@@ -60,6 +64,13 @@ export function PhoneMealHeader({
           </p>
         </div>
       </div>
+      <div className={styles.phoneActions} data-testid="meal-actions">
+        <Button variant="secondary" onClick={onEdit}>
+          {t("editMeal")}
+        </Button>
+        {saveDish}
+        {saveRecipe}
+      </div>
     </>
   );
 }
@@ -68,7 +79,7 @@ export function PhoneMealHeader({
  * Maaltid-Desktop: the 180 px photo banner, the 26 px serif title, "Onsdag 14. oktober · 12:10 ·
  * logget af Jonas" and the 36 px "Ret" with its key.
  */
-export function DesktopMealHeader({ meal, timeZone, onEdit, saveDish }: HeaderProps) {
+export function DesktopMealHeader({ meal, timeZone, onEdit, saveDish, saveRecipe }: HeaderProps) {
   const t = useTranslations("mealDetail");
   const locale = resolveLocale(useLocale());
   return (
@@ -81,12 +92,13 @@ export function DesktopMealHeader({ meal, timeZone, onEdit, saveDish }: HeaderPr
           {meal.title}
         </h1>
         <p className={styles.meta}>{desktopMeta(t, meal, timeZone, locale)}</p>
-        <div className={styles.actions}>
+        <div className={styles.actions} data-testid="meal-actions">
           <Button variant="secondary" onClick={onEdit}>
             {t("edit")}
             <Kbd>{t("editKey")}</Kbd>
           </Button>
           {saveDish}
+          {saveRecipe}
         </div>
       </div>
     </div>

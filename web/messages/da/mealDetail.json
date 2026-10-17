@@ -1,5 +1,6 @@
 {
   "edit": "Ret",
+  "editMeal": "Ret måltid",
   "editKey": "E",
   "summary": "{carbs} g kulhydrat · {count} ting",
   "metaPhone": "{day} {time} · {name}",
@@ -35,6 +36,7 @@
     "title": "Ret måltid",
     "back": "Tilbage",
     "save": "Gem",
+    "saved": "Gemt",
     "note": "Note",
     "carbs": "Kulhydrat · {name}",
     "failed": "Måltidet blev ikke gemt – prøv igen",

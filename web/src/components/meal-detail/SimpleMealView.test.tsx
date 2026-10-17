@@ -102,6 +102,9 @@ describe("Måltid · simpleMode (Maaltid-Simpel, the non-AI part)", () => {
     expect(screen.queryByTestId("meal-tiles")).toBeNull();
     expect(screen.queryByText(/Top|I mål|Bolus|mmol/)).toBeNull();
     expect(screen.queryByRole("link", { name: /Ret/ })).toBeNull();
+    expect(screen.queryByRole("button", { name: /Ret/ })).toBeNull();
+    expect(screen.queryByTestId("meal-edit")).toBeNull();
+    expect(screen.queryByText(/edit=1/)).toBeNull();
     expect(screen.queryByRole("button", { name: /Slet/ })).toBeNull();
   });
 
