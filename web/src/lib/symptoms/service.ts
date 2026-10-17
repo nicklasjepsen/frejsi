@@ -152,17 +152,24 @@ export async function deleteSymptom(
  * The symptoms within an hour before and four hours after a meal, as the narration input takes
  * them: kind and instant, never the note. Empty when the meal is not in the space.
  */
+export async function mealSymptomWindow(
+  spaceId: string,
+  mealId: string,
+  overrides: Partial<SymptomDeps> = {},
+): Promise<{ mealTs: string; symptoms: LoggedSymptom[] } | null> {
+  const deps = symptomDeps(overrides);
+  const mealTs = await deps.repo.mealTs(spaceId, mealId);
+  if (!mealTs) return null;
+  const meal = Date.parse(mealTs);
+  const from = new Date(meal - SYMPTOM_WINDOW_MINUTES.before * 60_000).toISOString();
+  const to = new Date(meal + SYMPTOM_WINDOW_MINUTES.after * 60_000).toISOString();
+  const rows = await deps.repo.range(spaceId, from, to);
+  return { mealTs, symptoms: rows.map(({ kind, ts }) => ({ kind, ts })) };
+}
 export async function symptomsAroundMeal(
   spaceId: string,
   mealId: string,
   overrides: Partial<SymptomDeps> = {},
 ): Promise<LoggedSymptom[]> {
-  const deps = symptomDeps(overrides);
-  const mealTs = await deps.repo.mealTs(spaceId, mealId);
-  if (!mealTs) return [];
-  const meal = Date.parse(mealTs);
-  const from = new Date(meal - SYMPTOM_WINDOW_MINUTES.before * 60_000).toISOString();
-  const to = new Date(meal + SYMPTOM_WINDOW_MINUTES.after * 60_000).toISOString();
-  const rows = await deps.repo.range(spaceId, from, to);
-  return rows.map(({ kind, ts }) => ({ kind, ts }));
+  return (await mealSymptomWindow(spaceId, mealId, overrides))?.symptoms ?? [];
 }

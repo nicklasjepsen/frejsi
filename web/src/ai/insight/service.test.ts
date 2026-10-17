@@ -6,7 +6,7 @@ import { CappedAiProvider } from "@frejsi/shared/ai/capped";
 import { MemoryAiCallRepository } from "@frejsi/shared/ai/calls";
 import { MemoryInsightRepository } from "@frejsi/shared/insights/memory";
 import { buildMealInput } from "@frejsi/shared/ai/insight/input";
-import { mealInsight } from "./service";
+import { mealInsight, symptomWindowOrNone } from "./service";
 const session = SessionContext.parse({
   userId: "fictional",
   name: "Fictional member",
@@ -45,7 +45,12 @@ function setup() {
   });
   return {
     fake,
-    deps: { repo: new MemoryInsightRepository(), emit: vi.fn<EmitFn>(), provider: () => provider },
+    deps: {
+      repo: new MemoryInsightRepository(),
+      emit: vi.fn<EmitFn>(),
+      provider: () => provider,
+      symptomsAround: () => Promise.resolve(null),
+    },
   };
 }
 it("caches per projected stats hash, shares concurrent reads, and regenerates after edits", async () => {
@@ -111,4 +116,46 @@ it("persists the configured provider instead of the capped wrapper identity", as
   const { deps } = setup();
   await mealInsight("space", "meal", session, input, { ...deps, providerName: "anthropic" });
   expect(deps.repo.rows[0]?.provider).toBe("anthropic");
+});
+
+it("places the symptoms around the meal in the input, as kind and minutes only, and regenerates when one is added", async () => {
+  const { fake, deps } = setup();
+  const mealTs = "2026-10-15T10:00:00.000Z";
+  let logged = [{ kind: "dizzy", ts: "2026-10-15T11:00:00.000Z", note: "Fictional note" }];
+  const withSymptoms = {
+    ...deps,
+    symptomsAround: () =>
+      Promise.resolve({ mealTs, symptoms: logged.map(({ kind, ts }) => ({ kind, ts })) }),
+  };
+  await mealInsight("space", "meal", session, input, withSymptoms);
+  const call = fake.calls[0];
+  const content = call?.kind === "complete" ? call.request.messages[0]?.content[0] : undefined;
+  if (content?.type !== "text") throw new Error("Expected the narration input");
+  const sent = JSON.parse(content.text) as { symptoms?: unknown };
+  expect(sent.symptoms).toEqual([{ kind: "dizzy", minutesAfterMeal: 60 }]);
+  expect(JSON.stringify(sent.symptoms)).not.toMatch(/mmol|readings|glucose|note|ts"/);
+  expect(content.text).not.toMatch(/Fictional|note|2026-10-15T/);
+  await mealInsight("space", "meal", session, input, withSymptoms);
+  expect(fake.calls).toHaveLength(1);
+  logged = [...logged, { kind: "tired", ts: "2026-10-15T12:30:00.000Z", note: "" }];
+  await mealInsight("space", "meal", session, input, withSymptoms);
+  expect(fake.calls).toHaveLength(2);
+  // A symptom outside the window leaves the input, and the hash, as it was without any.
+  logged = [{ kind: "tired", ts: "2026-10-15T15:00:00.000Z", note: "" }];
+  await mealInsight("space", "meal", session, input, withSymptoms);
+  expect(fake.calls).toHaveLength(3);
+  await mealInsight("space", "meal", session, input, deps);
+  expect(fake.calls).toHaveLength(3);
+});
+
+it("narrates without symptoms when they cannot be read, instead of failing the request", async () => {
+  // No database behind this test: the default lookup throws inside and answers null.
+  expect(await symptomWindowOrNone("space", "meal")).toBeNull();
+  const { fake, deps } = setup();
+  const result = await mealInsight("space", "meal", session, input, {
+    ...deps,
+    symptomsAround: symptomWindowOrNone,
+  });
+  expect(result).toMatchObject({ state: "ready" });
+  expect(fake.calls).toHaveLength(1);
 });
