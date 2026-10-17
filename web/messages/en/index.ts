@@ -21,6 +21,7 @@ import nav from "./nav.json";
 import now from "./now.json";
 import passkey from "./passkey.json";
 import people from "./people.json";
+import recipe from "./recipe.json";
 import roles from "./roles.json";
 import say from "./say.json";
 import settings from "./settings.json";
@@ -53,6 +54,7 @@ const messages = {
   now,
   passkey,
   people,
+  recipe,
   roles,
   say,
   settings,
