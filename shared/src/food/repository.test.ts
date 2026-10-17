@@ -257,7 +257,7 @@ it("keeps a cache row's category on upsert unless the new candidate names one (v
   expect(updates[1]).toMatchObject({ category: "snack", verified: false });
 });
 
-it("lists foods without a category, cache first, never a recipe, bounded (v0.6.0 plan §7)", async () => {
+it("lists foods without a category, cache first, never one a person typed or made, bounded (v0.6.0 plan §7)", async () => {
   const args: unknown[] = [];
   const db = {
     food: {
@@ -272,7 +272,7 @@ it("lists foods without a category, cache first, never a recipe, bounded (v0.6.0
   expect(args[0]).toEqual({
     where: {
       category: null,
-      origin: { notIn: ["recipe"] },
+      origin: { notIn: ["family", "manual", "recipe"] },
       OR: [{ spaceId: null }, { spaceId: { in: ["s1", "s2"] } }],
     },
     orderBy: [{ spaceId: "asc" }, { id: "asc" }],
@@ -373,7 +373,7 @@ it.each([false, true])(
       origin: input.origin,
       sourceRef: input.sourceRef,
       category: null,
-      OR: [{ id: input.id }, { spaceId: { in: ["s1"] } }],
+      OR: [{ id: input.id }, { spaceId: null }, { spaceId: { in: ["s1"] } }],
     });
     for (const sql of statements) {
       const set = sql.sql.split("WHERE")[0] ?? "";

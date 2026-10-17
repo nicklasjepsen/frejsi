@@ -82,6 +82,13 @@ export interface FoodRepository {
   upsertCache(food: CacheFoodInput): Promise<Food>;
 }
 
+/**
+ * Origins a person authored here: a food typed in the library or the log, or a dish from a
+ * recipe. Their names are the person's own text and never leave for a model on a timer
+ * (CLAUDE.md: text reaches a model only on an explicit action); the library counts them as own.
+ */
+export const OWN_FOOD_ORIGINS: readonly string[] = ["family", "manual", "recipe"];
+
 export interface NormalisedName {
   name: string;
   portions: Portion[];
@@ -102,8 +109,9 @@ export interface EnrichmentRepository {
   embeddingCandidates(spaceId: string | null, revision: string, limit: number): Promise<Food[]>;
   setEmbeddings(rows: FoodEmbedding[]): Promise<void>;
   /**
-   * Foods with no category yet and an origin other than `recipe`, cache first (v0.6.0 plan §7).
-   * Verified rows are included: a category is not nutrition and never touches verification.
+   * Foods with no category yet whose name did not come from a person (`OWN_FOOD_ORIGINS` are
+   * left out), cache first (v0.6.0 plan §7). Verified rows are included: a category is not
+   * nutrition and never touches verification.
    */
   categoryCandidates(spaceIds: string[], limit: number, includeCache: boolean): Promise<Food[]>;
   /**

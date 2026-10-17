@@ -11,6 +11,7 @@ import { Food, FoodCandidate, Portion, Recipe, type FoodCategory } from "../sche
 import { foldForSearch } from "./search";
 import {
   CacheFoodInput,
+  OWN_FOOD_ORIGINS,
   type FoodRepository,
   type NormalisedName,
   type FoodEmbedding,
@@ -133,7 +134,7 @@ export class PrismaFoodRepository implements FoodRepository {
       await this.db.food.findMany({
         where: {
           category: null,
-          origin: { notIn: ["recipe"] },
+          origin: { notIn: [...OWN_FOOD_ORIGINS] },
           OR: [...(includeCache ? [{ spaceId: null }] : []), { spaceId: { in: spaceIds } }],
         },
         orderBy: [{ spaceId: "asc" }, { id: "asc" }],
@@ -148,12 +149,13 @@ export class PrismaFoodRepository implements FoodRepository {
     _emit: EmitFn,
   ): Promise<void> {
     if (!this.db.$executeRaw) throw new Error("Vector writes unavailable");
+    // The cache copy too, whichever copy was asked about: the source food is the same.
     const copies = await this.db.food.findMany({
       where: {
         origin: row.origin,
         sourceRef: row.sourceRef,
         category: null,
-        OR: [{ id: row.id }, { spaceId: { in: spaceIds } }],
+        OR: [{ id: row.id }, { spaceId: null }, { spaceId: { in: spaceIds } }],
       },
     });
     for (const copy of copies) {
