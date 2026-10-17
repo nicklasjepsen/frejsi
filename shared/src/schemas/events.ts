@@ -3,6 +3,7 @@ import { z } from "zod";
 import { Role } from "./auth";
 import { Reading, SourceStatus } from "./glucose";
 import { FoodOrigin } from "./food";
+import { SymptomKind } from "./symptom";
 
 /** Later milestones append `meal.*` and `food.*` here; never reorder. */
 export const EventType = z.enum([
@@ -30,6 +31,9 @@ export const EventType = z.enum([
   "push.subscribed",
   "push.unsubscribed",
   "food.contributed",
+  "symptom.created",
+  "symptom.updated",
+  "symptom.deleted",
 ]);
 export type EventType = z.infer<typeof EventType>;
 
@@ -87,6 +91,17 @@ export const PushSubscriptionPayload = z.strictObject({
   userId: z.string().min(1),
   spaceId: z.string().min(1),
 });
+/**
+ * A symptom was logged (v0.6.0 plan §4): the id, the time, the kind and who. Never the note or the
+ * severity, and nothing of glucose, so it travels to every member, viewers included.
+ */
+export const SymptomCreatedPayload = z.strictObject({
+  symptomId: z.string().min(1),
+  ts: z.iso.datetime(),
+  kind: SymptomKind,
+  byUserId: z.string().min(1),
+});
+export const SymptomIdPayload = z.strictObject({ symptomId: z.string().min(1) });
 
 /** One payload schema per type. `emit()` validates against this map before it writes. */
 export const EventPayloads = {
@@ -114,6 +129,9 @@ export const EventPayloads = {
   "push.subscribed": PushSubscriptionPayload,
   "push.unsubscribed": PushSubscriptionPayload,
   "food.contributed": FoodContributedPayload,
+  "symptom.created": SymptomCreatedPayload,
+  "symptom.updated": SymptomIdPayload,
+  "symptom.deleted": SymptomIdPayload,
 } as const satisfies Record<EventType, z.ZodType>;
 
 export type EventPayload<T extends EventType> = z.infer<(typeof EventPayloads)[T]>;
@@ -153,6 +171,9 @@ export const EventEnvelope = z.discriminatedUnion("type", [
   envelope("push.subscribed"),
   envelope("push.unsubscribed"),
   envelope("food.contributed"),
+  envelope("symptom.created"),
+  envelope("symptom.updated"),
+  envelope("symptom.deleted"),
 ]);
 export type EventEnvelope = z.infer<typeof EventEnvelope>;
 export type EventEnvelopeOf<T extends EventType> = Extract<EventEnvelope, { type: T }>;

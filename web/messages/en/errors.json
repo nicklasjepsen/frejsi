@@ -40,6 +40,11 @@
     "reading-out-of-window": "The time must be within the last day.",
     "source-url-invalid": "The address must start with https:// and must not contain ? or #. Check it and try again.",
     "contribution-unavailable": "That isn't possible right now. Try again in a little while.",
-    "contribution-rejected": "Open Food Facts didn't accept the change. Try again later."
+    "contribution-rejected": "Open Food Facts didn't accept the change. Try again later.",
+    "symptom-kind-unknown": "That kind of symptom isn't in this space. Choose one from the list.",
+    "symptom-not-found": "That symptom no longer exists – it may already have been deleted.",
+    "recipe-fetch-failed": "We couldn't fetch the page. Check the address, or paste the recipe as text.",
+    "recipe-unreadable": "We couldn't find a recipe on that page. Try pasting the ingredients as text.",
+    "share-expired": "The shared content has expired. Share it again from the app you came from."
   }
 }

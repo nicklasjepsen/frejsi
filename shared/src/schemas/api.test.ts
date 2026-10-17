@@ -38,6 +38,11 @@ describe("ApiError", () => {
       "source-url-invalid",
       "contribution-unavailable",
       "contribution-rejected",
+      "symptom-kind-unknown",
+      "symptom-not-found",
+      "recipe-fetch-failed",
+      "recipe-unreadable",
+      "share-expired",
     ]);
   });
 

@@ -1,6 +1,13 @@
 import { describe, expect, it } from "vitest";
 
-import { EventEnvelope, EventPayloads, EventType, type EventPayload } from "./events";
+import {
+  EventEnvelope,
+  EventPayloads,
+  EventType,
+  GLUCOSE_EVENT_TYPES,
+  isGlucoseEvent,
+  type EventPayload,
+} from "./events";
 
 const ts = "2026-10-15T08:00:00.000Z";
 
@@ -30,6 +37,9 @@ export const samplePayloads: { [T in EventType]: EventPayload<T> } = {
   "push.subscribed": { userId: "u1", spaceId: "s1" },
   "push.unsubscribed": { userId: "u1", spaceId: "s1" },
   "food.contributed": { foodId: "f1", source: "off" },
+  "symptom.created": { symptomId: "sy1", ts, kind: "tired", byUserId: "u1" },
+  "symptom.updated": { symptomId: "sy1" },
+  "symptom.deleted": { symptomId: "sy1" },
 };
 
 describe("EventEnvelope", () => {
@@ -59,6 +69,9 @@ describe("EventEnvelope", () => {
       "push.subscribed",
       "push.unsubscribed",
       "food.contributed",
+      "symptom.created",
+      "symptom.updated",
+      "symptom.deleted",
     ]);
     expect(Object.keys(EventPayloads).sort()).toEqual([...EventType.options].sort());
   });
@@ -167,5 +180,40 @@ describe("food.contributed", () => {
       EventPayloads["food.contributed"].safeParse({ foodId: "f1", source: "off", mmol: 6 }).success,
     ).toBe(false);
     expect(EventPayloads["food.contributed"].safeParse({ foodId: "f1" }).success).toBe(false);
+  });
+});
+
+describe("symptom.* (v0.6.0 plan §4)", () => {
+  it("narrows each envelope, carries ids, a kind and a time only, and is not a glucose event", () => {
+    const created = EventEnvelope.parse({
+      spaceId: "s1",
+      seq: 4,
+      ts,
+      type: "symptom.created",
+      payload: samplePayloads["symptom.created"],
+    });
+    if (created.type !== "symptom.created") throw new Error("expected symptom.created");
+    expect(Object.keys(created.payload).sort()).toEqual(["byUserId", "kind", "symptomId", "ts"]);
+    for (const type of ["symptom.updated", "symptom.deleted"] as const) {
+      const parsed = EventEnvelope.parse({ spaceId: "s1", seq: 5, ts, type, payload: { symptomId: "sy1" } });
+      if (parsed.type !== type) throw new Error(`expected ${type}`);
+      expect(Object.keys(parsed.payload)).toEqual(["symptomId"]);
+    }
+    for (const key of ["note", "severity", "mmol", "trend", "readings", "text"]) {
+      expect(
+        EventPayloads["symptom.created"].safeParse({
+          ...samplePayloads["symptom.created"],
+          [key]: "private",
+        }).success,
+      ).toBe(false);
+    }
+    expect(
+      EventPayloads["symptom.created"].safeParse({ ...samplePayloads["symptom.created"], kind: "sad" })
+        .success,
+    ).toBe(false);
+    // Viewers receive them: a symptom carries no glucose.
+    expect(GLUCOSE_EVENT_TYPES).toEqual(["reading", "readings.imported"]);
+    for (const type of ["symptom.created", "symptom.updated", "symptom.deleted"] as const)
+      expect(isGlucoseEvent(type)).toBe(false);
   });
 });

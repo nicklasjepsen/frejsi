@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { Portion } from "./food";
+import { MealSymbol, Portion } from "./food";
 import { Reading } from "./glucose";
 import { DayMealView, DayView, MealItemView, MealView } from "./meal";
 
@@ -94,6 +94,8 @@ export const WeekDayTile = z.strictObject({
   inRangePercent: percent.optional(),
   curve: z.array(point).max(48),
   mealTimes: z.array(timestamp),
+  /** The same meals as `mealTimes` with their symbol (v0.6.0); `mealTimes` stays, append-only. */
+  meals: z.array(z.strictObject({ ts: timestamp, symbol: MealSymbol })).default([]),
 });
 export type WeekDayTile = z.infer<typeof WeekDayTile>;
 export const WeekNumbers = z.strictObject({

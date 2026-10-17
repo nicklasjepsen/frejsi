@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { FoodPhoto } from "./food";
+import { FoodPhoto, MealSymbol } from "./food";
 
 const itemFields = {
   name: z.string().trim().min(1).max(200),
@@ -50,6 +50,12 @@ const viewFields = {
   byUser: z.strictObject({ id: z.string().min(1), name: z.string().min(1) }),
   items: z.array(MealItemView).min(1).max(30),
   photo: FoodPhoto.optional(),
+  /**
+   * `mealSymbol()` of the items when the meal was saved, stored on the row and never recomputed
+   * from the library (v0.6.0 decision 2). The server always sends it (`unknown` for a row from
+   * before 0005); optional so views from before v0.6.0 still parse.
+   */
+  symbol: MealSymbol.optional(),
 };
 export const MealView = z.strictObject({
   ...viewFields,
