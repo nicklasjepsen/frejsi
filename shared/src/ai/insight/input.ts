@@ -5,6 +5,45 @@ import {
   type InsightNumbers,
 } from "../../schemas/ai";
 import type { MealStats, MealStatsRow, WeekNumbers } from "../../schemas/history";
+import type { SymptomKind } from "../../schemas/symptom";
+
+/** A logged symptom as the builders take it: the kind and when. Never the note, never a reading. */
+export interface LoggedSymptom {
+  kind: SymptomKind;
+  ts: string;
+}
+const MINUTE_MS = 60_000;
+/** Symptoms from an hour before the meal to four hours after it belong to its narration. */
+export const SYMPTOM_WINDOW_MINUTES = { before: 60, after: 240 } as const;
+
+/** The symptoms in the window as kind and minutes after the meal, earliest first. */
+export function symptomsAround(
+  mealTs: string,
+  symptoms: readonly LoggedSymptom[],
+): { kind: SymptomKind; minutesAfterMeal: number }[] {
+  const meal = Date.parse(mealTs);
+  return symptoms
+    .map((s) => ({ kind: s.kind, minutesAfterMeal: Math.round((Date.parse(s.ts) - meal) / MINUTE_MS) }))
+    .filter(
+      (s) =>
+        s.minutesAfterMeal >= -SYMPTOM_WINDOW_MINUTES.before &&
+        s.minutesAfterMeal <= SYMPTOM_WINDOW_MINUTES.after,
+    )
+    .sort((a, b) => a.minutesAfterMeal - b.minutesAfterMeal)
+    .slice(0, 20);
+}
+
+/** How often each kind occurs, most frequent first, then by kind. */
+export function symptomCounts(
+  symptoms: readonly { kind: SymptomKind }[],
+): { kind: SymptomKind; count: number }[] {
+  const counts = new Map<SymptomKind, number>();
+  for (const { kind } of symptoms) counts.set(kind, (counts.get(kind) ?? 0) + 1);
+  return [...counts]
+    .map(([kind, count]) => ({ kind, count }))
+    .sort((a, b) => b.count - a.count || a.kind.localeCompare(b.kind))
+    .slice(0, 40);
+}
 
 export function insightStats(stats: MealStats): InsightStats {
   return InsightStats.parse({
@@ -22,8 +61,15 @@ export function buildMealInput(input: {
   meal: InsightInput["meal"];
   stats: MealStats;
   previous: { localDate: string; totalCarbs: number; stats: MealStats }[];
+  /** The meal's instant; needed only to place `loggedSymptoms`. */
+  mealTs?: string;
+  loggedSymptoms?: readonly LoggedSymptom[];
 }): InsightInput {
   const lead = input.stats.bolusLeadMinutes;
+  const symptoms =
+    input.mealTs && input.loggedSymptoms && input.loggedSymptoms.length > 0
+      ? symptomsAround(input.mealTs, input.loggedSymptoms)
+      : [];
   return InsightInput.parse({
     locale: input.locale,
     glucoseUnit: input.glucoseUnit,
@@ -40,6 +86,7 @@ export function buildMealInput(input: {
       stats: insightStats(p.stats),
     })),
     leadLabel: lead === undefined ? "none" : lead >= 0 ? "before" : "after",
+    ...(symptoms.length > 0 ? { symptoms } : {}),
   });
 }
 export function localParts(ts: string | Date, timezone: string) {
@@ -67,6 +114,7 @@ export function buildWeekInput(input: {
   numbers: WeekNumbers;
   days: WeekInsightInput["days"];
   meals: MealStatsRow[];
+  symptoms?: readonly { kind: SymptomKind }[];
 }): WeekInsightInput {
   const n = input.numbers;
   const numbers: InsightNumbers = {
@@ -100,5 +148,8 @@ export function buildWeekInput(input: {
         : undefined,
       leadMinutes: m.stats.bolusLeadMinutes,
     })),
+    ...(input.symptoms && input.symptoms.length > 0
+      ? { symptomCounts: symptomCounts(input.symptoms) }
+      : {}),
   });
 }
