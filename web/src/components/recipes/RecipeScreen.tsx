@@ -1,7 +1,7 @@
 "use client";
 import type { RecipeParseRequest } from "@frejsi/shared/schemas/ai";
 import type { ApiErrorCode } from "@frejsi/shared/schemas/api";
-import type { RecipeReview as Review } from "@frejsi/shared/schemas/food";
+import type { FoodView, RecipeReview as Review } from "@frejsi/shared/schemas/food";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
@@ -63,9 +63,27 @@ export function RecipeScreen({
       if (foodId) {
         const food = await libraryApi.get(spaceId, foodId);
         if (!food.recipe) throw new RecipeApiError(400, "validation");
+        // The library foods behind the lines, so an edited amount recomputes from today's numbers;
+        // a food that is gone leaves its line on the snapshot.
+        const ids = [
+          ...new Set(food.recipe.ingredients.flatMap((line) => (line.foodId ? [line.foodId] : []))),
+        ];
+        const matches = new Map<string, FoodView>();
+        await Promise.all(
+          ids.map(async (id) => {
+            try {
+              matches.set(id, await libraryApi.get(spaceId, id));
+            } catch {
+              /* the snapshot stands */
+            }
+          }),
+        );
         const review: Review = {
           title: food.name.slice(0, 120),
-          lines: food.recipe.ingredients,
+          lines: food.recipe.ingredients.map((line) => {
+            const match = line.foodId ? matches.get(line.foodId) : undefined;
+            return match ? { ...line, match } : line;
+          }),
           totalCarbs: food.recipe.ingredients.reduce((sum, line) => sum + line.carbs, 0),
           ...(food.recipe.yieldPortions === undefined
             ? {}

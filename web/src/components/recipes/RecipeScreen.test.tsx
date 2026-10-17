@@ -279,11 +279,30 @@ describe("RecipeScreen (/recipe/new)", () => {
     expect(screen.queryByRole("button", { name: "Prøv igen" })).toBeNull();
   });
 
-  it("edits a saved dish: its lines and portion names load, and Gem patches the recipe", async () => {
+  it("edits a saved dish: its lines and portion names load, an amount recomputes from the library food or scales the snapshot, and Gem patches the recipe", async () => {
+    const pasta = review.lines[0]?.match;
+    if (!pasta) throw new Error("fixture");
+    fake.on("GET /api/spaces/s1/foods/f-pasta", pasta);
     mount({ foodId: "f-dish" });
     expect(await screen.findByRole("heading", { name: "Ret opskriften" })).toBeVisible();
-    expect(screen.getAllByTestId("ingredient-row")).toHaveLength(3);
+    const rows = screen.getAllByTestId("ingredient-row");
+    expect(rows).toHaveLength(3);
     expect(screen.getByLabelText("Én portion")).toHaveValue("1 portion");
+    // The pasta line's food was fetched back: 500 g at the library's 70 g per 100 g.
+    fireEvent.change(within(at(rows, 0)).getByLabelText("M\u00e6ngde"), {
+      target: { value: "500" },
+    });
+    expect(within(at(rows, 0)).getByText("350 g")).toBeVisible();
+    // The milk came from a source and has no id: its carbs scale with the amount, 5 dl → 10 dl.
+    fireEvent.change(within(at(rows, 1)).getByLabelText("M\u00e6ngde"), {
+      target: { value: "10" },
+    });
+    expect(within(at(rows, 1)).getByText("48 g")).toBeVisible();
+    expect(within(at(rows, 1)).getByText("Fundet som M\u00e6lk, Fiktiv")).toBeVisible();
+    fireEvent.change(within(at(rows, 0)).getByLabelText("M\u00e6ngde"), {
+      target: { value: "250" },
+    });
+    fireEvent.change(within(at(rows, 1)).getByLabelText("M\u00e6ngde"), { target: { value: "5" } });
     fireEvent.change(screen.getByLabelText("Portioner"), { target: { value: "8" } });
     fireEvent.click(screen.getByRole("button", { name: "Gem" }));
     await screen.findByRole("status");
