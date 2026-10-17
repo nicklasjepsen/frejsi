@@ -147,9 +147,20 @@ describe("Jeg har det… (the picker, plan §5)", () => {
     expect(screen.getByTestId("feel")).toHaveAttribute("data-simple", "true");
     expect(screen.queryByRole("button", { name: "Mere…" })).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Træt" }));
-    await screen.findByTestId("feel-status");
+    const status = await screen.findByTestId("feel-status");
     expect(fake.calls.find((c) => c.method === "POST")?.body).toEqual({ kind: "tired" });
     expect(screen.queryByTestId("symptom-sheet")).not.toBeInTheDocument();
+    // The route refuses a simpleMode delete, so the child is not offered one.
+    expect(within(status).queryByRole("button", { name: "Fortryd" })).not.toBeInTheDocument();
+  });
+  it("asks for today's entries by the space's calendar day, not the last 24 hours", async () => {
+    mount();
+    await tiles();
+    const list = fake.calls.find((c) => c.path.startsWith("/api/spaces/s1/symptoms?"));
+    const query = new URL(`https://x${list?.path ?? ""}`).searchParams;
+    // 15 October in Copenhagen (CEST): 22:00Z the day before to 22:00Z that day.
+    expect(query.get("from")).toBe("2026-10-14T22:00:00.000Z");
+    expect(query.get("to")).toBe("2026-10-15T22:00:00.000Z");
   });
   it("Mere… opens the sheet with severity chips, a note and a time, and saves them with the kind", async () => {
     mount();
