@@ -3,7 +3,8 @@ import type { PrismaClient } from "@prisma/client";
 import { Portion } from "../schemas/food";
 import { localeOrDefault } from "../schemas/settings";
 import { z } from "zod";
-import type { PushRepository, PushRecipient } from "./sink";
+import { parseSpaceKinds } from "../symptoms/kinds";
+import type { PushRepository, PushRecipient, SymptomLogger } from "./sink";
 
 /** Delivery bookkeeping only: expired endpoints and failure counters do not emit. */
 export class PrismaPushRepository implements PushRepository {
@@ -25,6 +26,23 @@ export class PrismaPushRepository implements PushRepository {
     const first = portions[0];
     if (first?.carbs === undefined) return null;
     return { child: user.name, dishName: food.name, carbs: first.carbs };
+  }
+  async symptomLogger(spaceId: string, byUserId: string): Promise<SymptomLogger | null> {
+    const [space, user, member] = await Promise.all([
+      this.db.space.findUnique({
+        where: { id: spaceId },
+        select: { timezone: true, symptomKinds: true },
+      }),
+      this.db.user.findUnique({ where: { id: byUserId }, select: { name: true, simpleMode: true } }),
+      this.db.membership.findUnique({ where: { userId_spaceId: { userId: byUserId, spaceId } } }),
+    ]);
+    if (!space || !user || !member || member.role === "viewer") return null;
+    return {
+      child: user.name,
+      simpleMode: user.simpleMode,
+      timezone: space.timezone,
+      symptomKinds: parseSpaceKinds(space.symptomKinds),
+    };
   }
   async recipients(spaceId: string, excludeUserId: string): Promise<PushRecipient[]> {
     const rows = await this.db.pushSubscription.findMany({

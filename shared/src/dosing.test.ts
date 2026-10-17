@@ -13,6 +13,7 @@ import {
 import * as schemas from "./schemas/index";
 
 const messagesDir = path.resolve(import.meta.dirname, "../../web/messages");
+const pushMessagesDir = path.resolve(import.meta.dirname, "push/messages");
 
 describe("dosing vocabulary (the hard rule: Frejsi never computes or suggests insulin)", () => {
   it("has exactly the list and the allow-list from the plan (§8)", () => {
@@ -108,6 +109,21 @@ describe("dosing vocabulary (the hard rule: Frejsi never computes or suggests in
       ["da/a.json:c.0", "x"],
       ["da/a.json:c.1", "y"],
     ]);
+  });
+
+  it("finds no dosing vocabulary in the push copy, both locales, estimate and symptom alike", () => {
+    const files: Record<string, unknown> = {};
+    for (const file of readdirSync(pushMessagesDir).filter((f) => f.endsWith(".json"))) {
+      files[`push/${file}`] = JSON.parse(
+        readFileSync(path.join(pushMessagesDir, file), "utf8"),
+      ) as unknown;
+    }
+    expect(Object.keys(files).sort()).toEqual(["push/da.json", "push/en.json"]);
+    const strings = messageStrings(files);
+    expect(strings.map(([where]) => where)).toEqual(
+      expect.arrayContaining(["push/da.json:estimate.title", "push/da.json:symptom.body"]),
+    );
+    expect(findDosingVocabulary(strings)).toEqual([]);
   });
 
   it("finds no dosing vocabulary in the UI strings that exist today", () => {
