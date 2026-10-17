@@ -5,6 +5,7 @@ import {
   FoodCandidate,
   type ContributionResult,
   type Food,
+  type FoodCategory,
   type FoodCorrection,
   type FoodSourceStatus,
   type Portion,
@@ -100,4 +101,15 @@ export interface EnrichmentRepository {
   ): Promise<void>;
   embeddingCandidates(spaceId: string | null, revision: string, limit: number): Promise<Food[]>;
   setEmbeddings(rows: FoodEmbedding[]): Promise<void>;
+  /**
+   * Foods with no category yet and an origin other than `recipe`, cache first (v0.6.0 plan §7).
+   * Verified rows are included: a category is not nutrition and never touches verification.
+   */
+  categoryCandidates(spaceIds: string[], limit: number, includeCache: boolean): Promise<Food[]>;
+  /**
+   * Writes the category on the row and on every unplaced copy of the same source food in the
+   * cache and the given spaces; each space copy's change and its `food.updated` commit together.
+   * Nothing else on the row changes: not `verified`, not the name, not the portions.
+   */
+  setCategory(row: Food, category: FoodCategory, spaceIds: string[], emit: EmitFn): Promise<void>;
 }

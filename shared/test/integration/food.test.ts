@@ -1,12 +1,16 @@
 // Release-only checks of the real SQL constraints and the web service/query implementations.
 import path from "node:path";
 import { PrismaClient } from "@prisma/client";
-import { afterAll, beforeAll, expect, it } from "vitest";
+import { afterAll, beforeAll, expect, it, vi } from "vitest";
 
 import { lookup } from "../../src/food/lookup";
 import { PrismaFoodRepository } from "../../src/food/repository";
 import { FakeFoodSource } from "../../src/food/fake";
 import { MemoryEventSink } from "../../src/events/memory";
+import { createEmit } from "../../src/events/emit";
+import { createLogger } from "../../src/log";
+import { FakeAiProvider, type RecordedAiCall } from "../../src/ai/fake";
+import { MemoryAiCallRepository } from "../../src/ai/calls";
 import type { FoodCandidate, FoodView } from "../../src/schemas/food";
 import type { SessionContext } from "../../src/schemas/auth";
 import type { CreateMealRequest, DayView, MealView } from "../../src/schemas/meal";
@@ -19,7 +23,9 @@ import {
   type ScratchDatabase,
 } from "./database";
 
+vi.mock("@azure/functions", () => ({ app: { timer: vi.fn() } }));
 const FOODS = "@/lib/foods";
+const ENRICH = path.resolve(import.meta.dirname, "../../../poller/src/functions/enrich-foods.ts");
 const MEALS = "@/lib/meals/service";
 const REPOSITORY = "@/lib/meals/repository";
 const WRITER = "@/lib/meals/transaction";
@@ -236,4 +242,93 @@ it("deleting a food nulls its meal link and preserves the snapshot; day never se
   expect(queries.some((query) => query.includes("Meal"))).toBe(true);
   expect(queries.join("\n")).not.toMatch(/Reading|mmol|trend|bolusTs|\[note\]/i);
   expect(JSON.stringify(day)).not.toMatch(/mmol|trend|reading|bolusTs|note|foodId/i);
+});
+
+it("the category pass places an unplaced food in the database, never a recipe, with food.updated in the same transaction (v0.6.0)", async () => {
+  const { spaceId, session, deps } = await context();
+  const loaf = await services.createFood(
+    spaceId,
+    session,
+    {
+      name: "Fictional seeded loaf",
+      carbsPer100g: 40,
+      portions: [{ label: "1 slice", grams: 45, carbs: 18 }],
+      verify: true,
+    },
+    deps,
+  );
+  const dish = await services.createFood(
+    spaceId,
+    session,
+    {
+      name: "Fictional recipe dish",
+      origin: "recipe",
+      portions: [{ label: "1 portion", carbs: 30 }],
+      recipe: {
+        ingredients: [{ name: "Fictional flour", carbs: 120 }],
+        yieldPortions: 4,
+        source: { kind: "text", text: "flour" },
+      },
+    },
+    deps,
+  );
+  const placed = await services.createFood(
+    spaceId,
+    session,
+    { name: "Fictional pear", carbsPer100g: 12, portions: [], category: "fruit" },
+    deps,
+  );
+  const repo = new PrismaFoodRepository(db, sink);
+  expect((await repo.categoryCandidates([spaceId], 50, false)).map((row) => row.id)).toEqual([
+    loaf.id,
+  ]);
+  const before = await db.event.count({ where: { spaceId } });
+  const { runEnrichment } = (await import(ENRICH)) as {
+    runEnrichment: (deps: object) => Promise<void>;
+  };
+  const provider = new FakeAiProvider((call: RecordedAiCall) =>
+    call.kind === "embed"
+      ? { vectors: call.request.texts.map(() => [1, ...Array<number>(1023).fill(0)]), model: "f" }
+      : { kind: "json" as const, json: { category: "bread" }, model: "f" },
+  );
+  await runEnrichment({
+    repo,
+    calls: new MemoryAiCallRepository(),
+    emit: createEmit({ db, sink }),
+    providers: { ollama: provider },
+    remoteOrigins: [],
+    spaces: [{ id: spaceId, aiEnabled: true, aiProvider: "ollama", timezone: "UTC", locale: "da" }],
+    env: {},
+    log: createLogger(() => undefined),
+  });
+  const rows = await db.food.findMany({ where: { spaceId }, orderBy: { name: "asc" } });
+  const byId = (id: string) => rows.find((row) => row.id === id);
+  expect(byId(loaf.id)).toMatchObject({
+    category: "bread",
+    verified: true,
+    verifiedBy: session.userId,
+    name: "Fictional seeded loaf",
+    portions: JSON.stringify([{ label: "1 slice", grams: 45, carbs: 18 }]),
+  });
+  expect(byId(dish.id)?.category).toBeNull();
+  expect(byId(placed.id)?.category).toBe("fruit");
+  const events = await db.event.findMany({
+    where: { spaceId },
+    orderBy: { seq: "asc" },
+    skip: before,
+  });
+  expect(events.map((event) => [event.type, JSON.parse(event.payload) as unknown])).toEqual([
+    ["food.updated", { foodId: loaf.id }],
+  ]);
+  // Only the name reaches the model, once for the loaf; the dish and the placed pear never do.
+  const asked = provider.calls.flatMap((call) =>
+    call.kind === "complete"
+      ? call.request.messages.flatMap((m) =>
+          m.content.map((c) => (c.type === "text" ? c.text : "")),
+        )
+      : [],
+  );
+  expect(asked).toContain(JSON.stringify({ name: "Fictional seeded loaf", locale: "da" }));
+  expect(asked.join()).not.toMatch(/recipe dish|Fictional pear/);
+  expect(await repo.categoryCandidates([spaceId], 50, false)).toEqual([]);
 });

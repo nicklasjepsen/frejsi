@@ -21,6 +21,7 @@ import {
 import { AiProviderId } from "@frejsi/shared/schemas/ai";
 import type { EnrichmentRepository } from "@frejsi/shared/food/types";
 import { embeddingIdentity, embeddingRevision } from "@frejsi/shared/ai/search/model";
+import { categoriseFood } from "@frejsi/shared/ai/search/category";
 import { normaliseFoodName } from "@frejsi/shared/ai/search/normalise";
 
 export const SCHEDULE = "0 */15 * * * *";
@@ -62,7 +63,15 @@ export async function runEnrichment(deps: EnrichmentDeps): Promise<void> {
   const enabled = deps.spaces.filter((space) => space.aiEnabled);
   const groups = [
     ...(cache?.capabilities().embed && cacheId
-      ? [{ spaceId: null, id: cacheId, inner: cache, timezone: "UTC", locale: localeOrDefault(undefined) }]
+      ? [
+          {
+            spaceId: null,
+            id: cacheId,
+            inner: cache,
+            timezone: "UTC",
+            locale: localeOrDefault(undefined),
+          },
+        ]
       : []),
     ...enabled.flatMap((space) => {
       const id = AiProviderId.safeParse(space.aiProvider);
@@ -147,6 +156,26 @@ export async function runEnrichment(deps: EnrichmentDeps): Promise<void> {
       deps.log.warn("enrich-foods", { code: "ai-unavailable", count: batch.length });
     }
   }
+  // The third pass (v0.6.0 plan §7): up to 50 foods without a category, cache first, under the
+  // same daily cap as the names. A recipe is placed by the person who made it, never here.
+  const unplaced = await deps.repo.categoryCandidates(
+    normalisationSpaceIds,
+    50,
+    groups.some((group) => group.spaceId === null),
+  );
+  let categorised = 0;
+  const placed = new Set<string>();
+  for (const row of unplaced) {
+    const group = groups.find((group) => group.spaceId === row.spaceId);
+    const key = `${row.origin}|${row.sourceRef}`;
+    if (!group || placed.has(key)) continue;
+    placed.add(key);
+    const category = await categoriseFood(group.provider, row.name, group.locale);
+    if (!category) continue;
+    await deps.repo.setCategory(row, category, spaceIds, deps.emit);
+    categorised++;
+  }
+  deps.log.info("enrich-foods", { code: "categorised", count: categorised });
 }
 
 app.timer("enrich-foods", {

@@ -7,7 +7,7 @@ import { Prisma, type Food as FoodRow } from "@prisma/client";
 import { z } from "zod";
 
 import { prisma } from "../db/client";
-import { Food, FoodCandidate, Portion, Recipe } from "../schemas/food";
+import { Food, FoodCandidate, Portion, Recipe, type FoodCategory } from "../schemas/food";
 import { foldForSearch } from "./search";
 import {
   CacheFoodInput,
@@ -121,29 +121,75 @@ export class PrismaFoodRepository implements FoodRepository {
         await this.db.$executeRaw(sql);
         continue;
       }
-      if (!this.db.$transaction) throw new Error("Food event transactions unavailable");
-      const spaceId = copy.spaceId;
-      const queued: { group: string; envelope: EventEnvelope }[] = [];
-      await this.db.$transaction(async (tx) => {
-        const changed = await tx.$executeRaw(sql);
-        if (!changed) return;
-        const emit = createEmit({
-          db: { $transaction: (run) => run(tx) },
-          sink: {
-            publish: (group, envelope) => {
-              queued.push({ group, envelope });
-              return Promise.resolve();
-            },
+      await this.commitSpaceChange(copy.spaceId, copy.id, sql);
+    }
+  }
+  async categoryCandidates(
+    spaceIds: string[],
+    limit: number,
+    includeCache: boolean,
+  ): Promise<Food[]> {
+    return (
+      await this.db.food.findMany({
+        where: {
+          category: null,
+          origin: { notIn: ["recipe"] },
+          OR: [...(includeCache ? [{ spaceId: null }] : []), { spaceId: { in: spaceIds } }],
+        },
+        orderBy: [{ spaceId: "asc" }, { id: "asc" }],
+        take: limit,
+      })
+    ).map(fromRow);
+  }
+  async setCategory(
+    row: Food,
+    category: FoodCategory,
+    spaceIds: string[],
+    _emit: EmitFn,
+  ): Promise<void> {
+    if (!this.db.$executeRaw) throw new Error("Vector writes unavailable");
+    const copies = await this.db.food.findMany({
+      where: {
+        origin: row.origin,
+        sourceRef: row.sourceRef,
+        category: null,
+        OR: [{ id: row.id }, { spaceId: { in: spaceIds } }],
+      },
+    });
+    for (const copy of copies) {
+      // Only the category and the timestamp: a person's later choice (a non-null category) wins.
+      const sql = Prisma.sql`UPDATE [Food] SET [category] = ${category}, [updatedAt] = ${new Date()}
+        WHERE [id] = ${copy.id} AND [category] IS NULL`;
+      if (copy.spaceId === null) {
+        await this.db.$executeRaw(sql);
+        continue;
+      }
+      await this.commitSpaceChange(copy.spaceId, copy.id, sql);
+    }
+  }
+  /** One space copy's change and its `food.updated`, committed together, published after. */
+  private async commitSpaceChange(spaceId: string, foodId: string, sql: Prisma.Sql) {
+    if (!this.db.$transaction) throw new Error("Food event transactions unavailable");
+    const queued: { group: string; envelope: EventEnvelope }[] = [];
+    await this.db.$transaction(async (tx) => {
+      const changed = await tx.$executeRaw(sql);
+      if (!changed) return;
+      const emit = createEmit({
+        db: { $transaction: (run) => run(tx) },
+        sink: {
+          publish: (group, envelope) => {
+            queued.push({ group, envelope });
+            return Promise.resolve();
           },
-        });
-        await emit(spaceId, "food.updated", { foodId: copy.id });
+        },
       });
-      for (const event of queued) {
-        try {
-          await this.sink.publish(event.group, event.envelope);
-        } catch {
-          log.warn("event.publish-failed", { code: "publish-failed", count: 1 });
-        }
+      await emit(spaceId, "food.updated", { foodId });
+    });
+    for (const event of queued) {
+      try {
+        await this.sink.publish(event.group, event.envelope);
+      } catch {
+        log.warn("event.publish-failed", { code: "publish-failed", count: 1 });
       }
     }
   }

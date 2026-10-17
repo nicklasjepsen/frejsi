@@ -139,6 +139,15 @@ are added only to unverified rows. A matching space copy receives the cleaned na
 still equals the source's original; each space change emits `food.updated`. Failed or capped
 normalisation keeps the original and marks it finished. AI and typed foods are never normalised.
 
+A third pass (v0.6.0) places up to 50 foods per run that have no category yet (`Food.category`
+is null) and are not a dish from a recipe: one small call per food under the same daily cap as the
+names (`AI_DAILY_CAP`), answering exactly one of the ten categories. The category is written to the
+row and to every unplaced copy of the same source food in the cache and the enabled spaces; each
+space copy's change emits `food.updated`. Nothing else changes: not `verified`, not the name, not
+the portions. A failed, capped or off-schema answer leaves the row unplaced for a later run; a
+category a person has chosen is never overwritten. Foods from Frida and Open Food Facts usually
+arrive with a category from their source and never reach this pass.
+
 Space rows use their enabled space's provider and local-day caps (`AI_DAILY_CAP`, default 50;
 `AI_EMBED_DAILY_CAP`, default 500). AI-off spaces are skipped, including name propagation. Groups without an available embedding
 provider are excluded before applying the normalisation limit. Cache
