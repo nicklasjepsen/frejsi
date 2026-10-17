@@ -241,6 +241,22 @@ describe("lookup", () => {
     expect(legacy).toHaveProperty("createdBy", undefined);
   });
 
+  it("carries a library or cache row's category into the lookup result (v0.6.0 plan §7)", async () => {
+    const repo = new MemoryFoodRepository([
+      row("own", { category: "bread" }),
+      row("plain"),
+      row("cache", { spaceId: null, sourceRef: "fake-remote:cache", category: "dairy" }),
+    ]);
+    const result = await lookup(repo, [], options);
+    const byId = (id: string) =>
+      result.results.find((r) =>
+        "id" in r.food ? r.food.id === id : r.food.sourceRef.endsWith(id),
+      );
+    expect(byId("own")?.food.category).toBe("bread");
+    expect(byId("plain")?.food.category).toBeUndefined();
+    expect(byId("cache")?.food).toMatchObject({ category: "dairy" });
+  });
+
   it("orders library, deduplicated cache, then plugins and pre-fills manual", async () => {
     const repo = new MemoryFoodRepository([
       row("normal", { name: "Example Z" }),

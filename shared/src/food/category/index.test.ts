@@ -19,7 +19,8 @@ describe("Frida groups → FoodCategory (plan §7)", () => {
     expect(missing).toEqual([]);
     const stale = Object.keys(FRIDA_GROUPS).filter((group) => !groups.includes(group));
     expect(stale).toEqual([]);
-    for (const group of groups) expect(FoodCategory.safeParse(fridaCategory(group)).success).toBe(true);
+    for (const group of groups)
+      expect(FoodCategory.safeParse(fridaCategory(group)).success).toBe(true);
   });
   it("uses every category at least once and answers undefined for an unknown group", () => {
     const used = new Set(Object.values(FRIDA_GROUPS));
@@ -66,7 +67,8 @@ it("keeps OFF tags and Frida group names inside shared/src/food (plugins behind 
       if (/categories_tags|["'`]en:[a-z-]+["'`]/.test(code)) reasons.push("OFF tag");
       if (/food\/category\/(off-tags|frida-groups)/.test(code)) reasons.push("table import");
       for (const group of Object.keys(FRIDA_GROUPS))
-        if (group.includes(" ") && code.includes(`"${group}"`)) reasons.push(`Frida group ${group}`);
+        if (group.includes(" ") && code.includes(`"${group}"`))
+          reasons.push(`Frida group ${group}`);
       return reasons.map((reason) => `${path.relative(root, file)}: ${reason}`);
     });
   expect(offenders).toEqual([]);

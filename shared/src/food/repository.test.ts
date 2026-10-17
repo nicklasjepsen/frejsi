@@ -204,3 +204,183 @@ it("persists a candidate's category in the cache and reads category and recipe b
   expect(plain?.recipe).toBeUndefined();
   expect(full).toMatchObject({ category: "bread", recipe });
 });
+
+it("keeps a cache row's category on upsert unless the new candidate names one (v0.6.0 plan §7)", async () => {
+  const updates: Record<string, unknown>[] = [];
+  const base = {
+    id: "cache-1",
+    spaceId: null,
+    name: "Fictional loaf",
+    nameSearch: "fictional loaf",
+    embeddingModel: null,
+    sourceName: null,
+    carbsPer100g: null,
+    portions: "[]",
+    barcode: null,
+    photoKey: null,
+    origin: "remote-test",
+    sourceRef: "remote-test:loaf",
+    category: "bread",
+    recipe: null,
+    verified: false,
+    verifiedBy: null,
+    verifiedAt: null,
+    favourite: false,
+    createdBy: null,
+    createdAt: new Date("2026-10-15T12:00:00Z"),
+    updatedAt: new Date("2026-10-15T12:00:00Z"),
+  };
+  const db = {
+    food: {
+      findFirst: () => Promise.resolve(base),
+      findMany: () => Promise.resolve([]),
+      create: () => Promise.reject(new Error("unexpected")),
+      update: (args: { data: Record<string, unknown> }) => {
+        updates.push(args.data);
+        return Promise.resolve({ ...base, ...args.data });
+      },
+    },
+  } as unknown as FoodDb;
+  const repo = new PrismaFoodRepository(db);
+  const candidate = {
+    name: "Fictional loaf",
+    portions: [],
+    origin: "remote-test",
+    sourceRef: "remote-test:loaf",
+    spaceId: null,
+    verified: false as const,
+  };
+  expect((await repo.upsertCache(candidate)).category).toBe("bread");
+  expect(updates[0]).not.toHaveProperty("category");
+  expect(updates[0]).not.toHaveProperty("verified", true);
+  expect((await repo.upsertCache({ ...candidate, category: "snack" })).category).toBe("snack");
+  expect(updates[1]).toMatchObject({ category: "snack", verified: false });
+});
+
+it("lists foods without a category, cache first, never a recipe, bounded (v0.6.0 plan §7)", async () => {
+  const args: unknown[] = [];
+  const db = {
+    food: {
+      findMany: (query: unknown) => {
+        args.push(query);
+        return Promise.resolve([]);
+      },
+    },
+  } as unknown as FoodDb;
+  const repo = new PrismaFoodRepository(db);
+  expect(await repo.categoryCandidates(["s1", "s2"], 50, true)).toEqual([]);
+  expect(args[0]).toEqual({
+    where: {
+      category: null,
+      origin: { notIn: ["recipe"] },
+      OR: [{ spaceId: null }, { spaceId: { in: ["s1", "s2"] } }],
+    },
+    orderBy: [{ spaceId: "asc" }, { id: "asc" }],
+    take: 50,
+  });
+  await repo.categoryCandidates(["s1"], 10, false);
+  expect(args[1]).toMatchObject({ where: { OR: [{ spaceId: { in: ["s1"] } }] }, take: 10 });
+});
+
+it.each([false, true])(
+  "setCategory writes only the category, into every unplaced copy, with food.updated in the same transaction (verified %s)",
+  async (verified) => {
+    const { Food } = await import("../schemas/food");
+    const input = Food.parse({
+      id: "a",
+      spaceId: "s1",
+      origin: "remote-test",
+      sourceRef: "remote-test:a",
+      name: "Example loaf",
+      nameSearch: "example loaf",
+      carbsPer100g: 40,
+      portions: [{ label: "slice", grams: 45, carbs: 18 }],
+      verified,
+      verifiedBy: "u1",
+      createdAt: "2026-10-15T12:00:00Z",
+      updatedAt: "2026-10-15T12:00:00Z",
+    });
+    const stored = [
+      { ...input, portions: JSON.stringify(input.portions), category: null as string | null },
+      {
+        ...input,
+        id: "cache",
+        spaceId: null,
+        portions: JSON.stringify(input.portions),
+        category: null as string | null,
+      },
+    ];
+    let failEvent = true;
+    const published: unknown[] = [];
+    const statements: Prisma.Sql[] = [];
+    const where: unknown[] = [];
+    const executeRaw = (sql: Prisma.Sql) => {
+      statements.push(sql);
+      const target = stored.find((row) => row.id === sql.values[2]);
+      if (target) target.category = String(sql.values[0]);
+      return Promise.resolve(1);
+    };
+    const tx = {
+      $executeRaw: executeRaw,
+      space: { update: () => Promise.resolve({ lastSeq: 1 }) },
+      event: {
+        create: () => {
+          if (failEvent) throw new Error("event failure");
+          return Promise.resolve({});
+        },
+      },
+    };
+    const db = {
+      food: {
+        findMany: (query: { where: unknown }) => {
+          where.push(query.where);
+          return Promise.resolve(stored.map((row) => ({ ...row })));
+        },
+      },
+      $executeRaw: executeRaw,
+      $transaction: async (run: (tx: unknown) => Promise<void>) => {
+        const before = structuredClone(stored);
+        try {
+          await run(tx);
+        } catch (error) {
+          stored.splice(0, stored.length, ...before);
+          throw error;
+        }
+      },
+    } as unknown as FoodDb;
+    const repo = new PrismaFoodRepository(db, {
+      publish: (_group, event) => {
+        published.push(event);
+        return Promise.resolve();
+      },
+    });
+    const emit: EmitFn = (spaceId, type, payload) =>
+      Promise.resolve(
+        EventEnvelope.parse({ spaceId, type, payload, seq: 1, ts: "2026-10-15T12:00:00Z" }),
+      );
+    await expect(repo.setCategory(input, "bread", ["s1"], emit)).rejects.toThrow("event failure");
+    expect(stored[0]?.category).toBeNull();
+    expect(published).toEqual([]);
+    failEvent = false;
+    await repo.setCategory(input, "bread", ["s1"], emit);
+    expect(stored.map((row) => row.category)).toEqual(["bread", "bread"]);
+    expect(stored.map((row) => row.verified)).toEqual([verified, verified]);
+    expect(stored.map((row) => row.name)).toEqual([input.name, input.name]);
+    expect(published).toEqual([
+      expect.objectContaining({ spaceId: "s1", type: "food.updated", payload: { foodId: "a" } }),
+    ]);
+    expect(where[0]).toEqual({
+      origin: input.origin,
+      sourceRef: input.sourceRef,
+      category: null,
+      OR: [{ id: input.id }, { spaceId: { in: ["s1"] } }],
+    });
+    for (const sql of statements) {
+      const set = sql.sql.split("WHERE")[0] ?? "";
+      expect(set).toMatch(/SET \[category\] = \?, \[updatedAt\] = \?/);
+      expect(set).not.toMatch(/verified|\[name\]|portions|sourceName/);
+      expect(sql.sql).toContain("[category] IS NULL");
+      expect(sql.values[0]).toBe("bread");
+    }
+  },
+);

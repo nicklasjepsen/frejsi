@@ -1,12 +1,61 @@
-import { expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 vi.mock("@azure/functions", () => ({ app: { timer: vi.fn() } }));
 import { Food } from "@frejsi/shared/schemas/food";
 import { createLogger, type EmitFn } from "@frejsi/shared";
 import { FakeAiProvider, type RecordedAiCall } from "@frejsi/shared/ai/fake";
 import { MemoryAiCallRepository } from "@frejsi/shared/ai/calls";
 import { MemoryFoodRepository } from "@frejsi/shared/food/memory";
+import type { FoodCategory } from "@frejsi/shared/schemas/food";
 import { runEnrichment, SCHEDULE } from "./enrich-foods";
+
+/** The in-memory repository plus the category pass of v0.6.0 (the memory fake is another lane's). */
+class CategoryMemoryRepository extends MemoryFoodRepository {
+  readonly categoryWrites: { id: string; category: FoodCategory }[] = [];
+  categoryCandidates(spaceIds: string[], limit: number, includeCache: boolean): Promise<Food[]> {
+    return Promise.resolve(
+      this.rows
+        .filter(
+          (row) =>
+            row.category === undefined &&
+            row.origin !== "recipe" &&
+            (row.spaceId === null ? includeCache : spaceIds.includes(row.spaceId)),
+        )
+        .sort(
+          (a, b) =>
+            Number(a.spaceId !== null) - Number(b.spaceId !== null) || a.id.localeCompare(b.id),
+        )
+        .slice(0, limit)
+        .map((row) => structuredClone(row)),
+    );
+  }
+  async setCategory(
+    row: Food,
+    category: FoodCategory,
+    spaceIds: string[],
+    emit: EmitFn,
+  ): Promise<void> {
+    const copies = this.rows.filter(
+      (other) =>
+        other.origin === row.origin &&
+        other.sourceRef === row.sourceRef &&
+        other.category === undefined &&
+        (other.id === row.id || (other.spaceId !== null && spaceIds.includes(other.spaceId))),
+    );
+    for (const target of copies) {
+      target.category = category;
+      this.categoryWrites.push({ id: target.id, category });
+      if (target.spaceId !== null)
+        await emit(target.spaceId, "food.updated", { foodId: target.id });
+    }
+  }
+}
 const vector = [1, ...Array<number>(1023).fill(0)];
+const isCategory = (call: RecordedAiCall) =>
+  call.kind === "complete" &&
+  call.request.outputSchema?.safeParse({ category: "bread" }).success === true;
+/** The normalisation calls: every completion that is not the category pass's. */
+const nameCalls = (calls: readonly RecordedAiCall[]) =>
+  calls.filter((call) => call.kind === "complete" && !isCategory(call));
 const row = (id: string, spaceId: string | null, fields = {}) =>
   Food.parse({
     id,
@@ -23,7 +72,7 @@ const row = (id: string, spaceId: string | null, fields = {}) =>
     ...fields,
   });
 function rig() {
-  const repo = new MemoryFoodRepository([
+  const repo = new CategoryMemoryRepository([
     row("cache", null),
     row("space", "s1"),
     row("edited", "s1", { name: "My loaf", sourceName: "EXAMPLE LOAF 900G" }),
@@ -40,11 +89,14 @@ function rig() {
   const script = (call: RecordedAiCall) =>
     call.kind === "embed"
       ? { vectors: call.request.texts.map(() => vector), model: "fixture" }
-      : {
-          kind: "json" as const,
-          json: { name: "Example loaf", portions: [{ label: "1 slice", grams: 45, carbs: 18 }] },
-          model: "fixture",
-        };
+      : call.kind === "complete" &&
+          call.request.outputSchema?.safeParse({ category: "bread" }).success
+        ? { kind: "json" as const, json: { category: "bread" }, model: "fixture" }
+        : {
+            kind: "json" as const,
+            json: { name: "Example loaf", portions: [{ label: "1 slice", grams: 45, carbs: 18 }] },
+            model: "fixture",
+          };
   const cache = new FakeAiProvider(script),
     space = new FakeAiProvider(script);
   const calls = new MemoryAiCallRepository();
@@ -70,7 +122,7 @@ function rig() {
       },
       { id: "off", aiProvider: "ollama", aiEnabled: false, timezone: "UTC", locale: "da" as const },
     ],
-    env: { AI_CACHE_EMBED_PROVIDER: "anthropic" },
+    env: { AI_CACHE_EMBED_PROVIDER: "anthropic" } as Record<string, string | undefined>,
     log: createLogger((line) => logs.push(line)),
   };
   return { repo, cache, space, calls, events, logs, deps };
@@ -97,7 +149,7 @@ it("registers the fifteen-minute timer and normalises before batching per provid
   ).toEqual([undefined, undefined]);
   expect(r.cache.calls.filter((c) => c.kind === "embed")).toHaveLength(1);
   expect(r.space.calls.filter((c) => c.kind === "embed")).toHaveLength(1);
-  expect(r.cache.calls.at(-1)).toMatchObject({
+  expect(r.cache.calls.findLast((c) => c.kind === "embed")).toMatchObject({
     kind: "embed",
     request: { texts: ["Example loaf"] },
   });
@@ -129,7 +181,7 @@ it("marks failed or capped names finished and does not send AI-off rows", async 
     AI_CACHE_EMBED_PROVIDER: "anthropic",
     AI_DAILY_CAP: "0",
     AI_EMBED_DAILY_CAP: "0",
-  } as typeof r.deps.env;
+  };
   r.cache.complete = () => Promise.reject(new Error("offline"));
   await runEnrichment(r.deps);
   expect(r.repo.rows.find((r) => r.id === "cache")).toMatchObject({
@@ -149,9 +201,9 @@ it("has no configured embedding adapter: one code, no writes and no provider cal
 it("a changed embedding deployment revision is backfilled without renormalising", async () => {
   const r = rig();
   await runEnrichment(r.deps);
-  const names = r.space.calls.filter((c) => c.kind === "complete").length;
+  const names = nameCalls(r.space.calls).length;
   await runEnrichment({ ...r.deps, env: { ...r.deps.env, OLLAMA_MODEL_EMBED: "fixture-v2" } });
-  expect(r.space.calls.filter((c) => c.kind === "complete")).toHaveLength(names);
+  expect(nameCalls(r.space.calls)).toHaveLength(names);
   expect(r.space.calls.filter((c) => c.kind === "embed")).toHaveLength(2);
 });
 
@@ -162,9 +214,8 @@ it("bounds work at 50 names and 100 embeddings, leaving room for each space when
       row(`cache-${String(n).padStart(3, "0")}`, null, { sourceRef: `remote-test:${n}` }),
     );
   await runEnrichment(r.deps);
-  const nameCalls = [...r.cache.calls, ...r.space.calls].filter((c) => c.kind === "complete");
   const embedCalls = [...r.cache.calls, ...r.space.calls].filter((c) => c.kind === "embed");
-  expect(nameCalls).toHaveLength(50);
+  expect(nameCalls([...r.cache.calls, ...r.space.calls])).toHaveLength(50);
   expect(embedCalls).toHaveLength(2);
   expect(embedCalls.reduce((n, call) => n + call.request.texts.length, 0)).toBeLessThanOrEqual(100);
   expect(r.repo.embeddings.has("space")).toBe(true);
@@ -196,7 +247,7 @@ it("a verified copy never prevents an unverified copy from being normalised", as
     sourceName: "EXAMPLE LOAF 900G",
     verified: false,
   });
-  expect(r.space.calls.filter((call) => call.kind === "complete")).toHaveLength(1);
+  expect(nameCalls(r.space.calls)).toHaveLength(1);
 });
 
 it.each(["cache", "space"] as const)(
@@ -235,3 +286,99 @@ it.each(["cache", "space"] as const)(
     expect(r.cache.calls).toEqual([]);
   },
 );
+
+describe("the category pass (v0.6.0 plan §7)", () => {
+  const categoryCalls = (r: ReturnType<typeof rig>) =>
+    [...r.cache.calls, ...r.space.calls].filter(isCategory);
+  const logged = (r: ReturnType<typeof rig>, code: string) =>
+    r.logs
+      .map((line) => JSON.parse(line) as { code: string; count: number })
+      .find((l) => l.code === code);
+  it("fills the category of every unplaced food but a recipe, through a small call, without touching verified, name or portions", async () => {
+    const r = rig();
+    r.repo.rows.push(
+      row("placed", "s1", { sourceRef: "remote-test:placed", category: "fruit" }),
+      row("dish", "s1", { origin: "recipe", sourceRef: "recipe:dish", verified: true }),
+      row("own", "s1", {
+        origin: "family",
+        sourceRef: "family:own",
+        verified: true,
+        verifiedBy: "u1",
+      }),
+    );
+    await runEnrichment(r.deps);
+    const byId = (id: string) => r.repo.rows.find((food) => food.id === id);
+    expect(byId("cache")?.category).toBe("bread");
+    expect(byId("space")?.category).toBe("bread");
+    expect(byId("own")).toMatchObject({ category: "bread", verified: true, verifiedBy: "u1" });
+    expect(byId("verified")).toMatchObject({
+      category: "bread",
+      verified: true,
+      verifiedBy: "u1",
+      name: "EXAMPLE LOAF 900G",
+      portions: [{ label: "slice", carbs: 18 }],
+    });
+    expect(byId("placed")?.category).toBe("fruit");
+    expect(byId("dish")?.category).toBeUndefined();
+    expect(byId("off")?.category).toBeUndefined();
+    for (const call of categoryCalls(r))
+      expect(call.request).toMatchObject({ role: "small", use: "normalise" });
+    expect(r.events).toContainEqual({
+      spaceId: "s1",
+      type: "food.updated",
+      payload: { foodId: "own" },
+    });
+    expect(r.events.filter((event) => (event as { spaceId: string }).spaceId === "off")).toEqual(
+      [],
+    );
+    expect(
+      r.calls.rows
+        .filter((call) => call.use === "normalise")
+        .every((call) => call.kind === "complete"),
+    ).toBe(true);
+    expect(logged(r, "categorised")?.count).toBe(5);
+    expect(r.logs.join()).not.toContain("LOAF");
+    const calls = categoryCalls(r).length;
+    await runEnrichment(r.deps);
+    expect(categoryCalls(r)).toHaveLength(calls);
+  });
+  it("categorises at most 50 foods per run, under the daily cap shared with normalisation", async () => {
+    const r = rig();
+    r.repo.rows.splice(0, r.repo.rows.length);
+    for (let n = 0; n < 80; n++)
+      r.repo.rows.push(
+        row(`own-${String(n).padStart(3, "0")}`, "s1", {
+          origin: "family",
+          sourceRef: `family:${n}`,
+          sourceName: "typed",
+        }),
+      );
+    r.deps.env = { ...r.deps.env, AI_DAILY_CAP: "60" };
+    await runEnrichment(r.deps);
+    expect(categoryCalls(r)).toHaveLength(50);
+    expect(r.repo.categoryWrites).toHaveLength(50);
+    const r2 = rig();
+    r2.repo.rows.splice(0, r2.repo.rows.length, ...r.repo.rows.filter((f) => !f.category));
+    r2.deps.env = { ...r2.deps.env, AI_DAILY_CAP: "0" };
+    await runEnrichment(r2.deps);
+    expect(categoryCalls(r2)).toHaveLength(0);
+    expect(r2.repo.categoryWrites).toEqual([]);
+  });
+  it("leaves a food unplaced when the model answers nothing usable, and writes nothing", async () => {
+    const r = rig();
+    r.space.complete = () =>
+      Promise.resolve({ kind: "json", json: { category: "loaf" }, model: "f" });
+    r.cache.complete = () => Promise.reject(new Error("offline"));
+    await runEnrichment(r.deps);
+    expect(r.repo.rows.every((food) => food.category === undefined)).toBe(true);
+    expect(r.repo.categoryWrites).toEqual([]);
+    expect(logged(r, "categorised")?.count).toBe(0);
+  });
+  it("makes no category call and no write when no provider is configured", async () => {
+    const r = rig();
+    await runEnrichment({ ...r.deps, providers: {} });
+    expect(r.repo.categoryWrites).toEqual([]);
+    expect(r.cache.calls).toEqual([]);
+    expect(r.space.calls).toEqual([]);
+  });
+});

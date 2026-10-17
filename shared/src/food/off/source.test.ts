@@ -77,16 +77,16 @@ describe("OFF fixture adapter", () => {
       },
     ]);
     const tagged = (await fixture("product-with-categories")) as { product: object };
-    expect(mapProduct({ ...tagged.product, categories_tags: ["en:plant-based-foods"] }, "da")).not.toHaveProperty(
-      "category",
-    );
+    expect(
+      mapProduct({ ...tagged.product, categories_tags: ["en:plant-based-foods"] }, "da"),
+    ).not.toHaveProperty("category");
     expect(
       mapProduct({ ...tagged.product, categories_tags: ["en:breads", "en:sandwiches"] }, "da")
         ?.category,
     ).toBe("mixed");
-    expect(mapProduct({ ...tagged.product, categories_tags: "en:breads" }, "da")).not.toHaveProperty(
-      "category",
-    );
+    expect(
+      mapProduct({ ...tagged.product, categories_tags: "en:breads" }, "da"),
+    ).not.toHaveProperty("category");
     const plain = (await fixture("product-found")) as { product: object };
     expect(mapProduct(plain.product, "da")).not.toHaveProperty("category");
     const search = (await fixture("search-results")) as { products: object[] };

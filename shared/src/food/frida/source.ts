@@ -23,7 +23,11 @@ export class FridaSource implements FoodSource {
     return Promise.resolve({ status: "skipped", candidates: [] });
   }
   /** `frida:<id>` read from the dataset: the one place a Frida pick's category is decided. */
-  async byRef(sourceRef: string, locale: Locale, signal: AbortSignal): Promise<FoodCandidate | null> {
+  async byRef(
+    sourceRef: string,
+    locale: Locale,
+    signal: AbortSignal,
+  ): Promise<FoodCandidate | null> {
     const match = /^frida:(\d+)$/.exec(sourceRef);
     if (!match || cancelled(signal)) return null;
     const id = Number(match[1]);

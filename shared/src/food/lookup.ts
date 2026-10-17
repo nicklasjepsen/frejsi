@@ -29,6 +29,7 @@ function candidateFromRow(row: Food): FoodCandidate {
     barcode: row.barcode,
     origin: row.origin,
     sourceRef: row.sourceRef,
+    category: row.category,
   });
 }
 function libraryResult(row: Food): LookupResult {
@@ -46,6 +47,7 @@ function libraryResult(row: Food): LookupResult {
     createdAt: row.createdAt,
     sourceName: row.sourceName ?? undefined,
     createdBy: row.creator ?? undefined,
+    category: row.category,
   });
   return { source: "library", verified: row.verified, food };
 }
