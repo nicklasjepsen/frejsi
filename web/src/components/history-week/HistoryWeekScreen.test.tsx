@@ -1,7 +1,7 @@
 import "@testing-library/jest-dom/vitest";
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
-import { afterEach, beforeEach, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { WeekHistoryView } from "@frejsi/shared/schemas/history";
 import { getMessages } from "@/lib/i18n/messages";
 import fixture from "./fixtures/week.json";
@@ -406,4 +406,79 @@ it("draws a day's meals as their food symbols at 8 px, and the dots where a tile
   expect(symbol).toHaveAttribute("width", "8");
   expect(first.querySelector("[data-testid=meal-dot]")).toBeNull();
   expect(tiles[1]?.querySelector("[data-testid=meal-dot]")).not.toBeNull();
+});
+
+describe("symptoms on the week (v0.6.0 plan §5)", () => {
+  const symptom = {
+    id: "s1",
+    kind: "stomach-ache",
+    ts: "2025-10-07T10:00:00.000Z", // Tuesday 12:00 Copenhagen
+    byUserId: "u1",
+    byName: "Jonas",
+  };
+  let symptoms: (typeof symptom)[];
+  let symptomCalls: string[];
+  beforeEach(() => {
+    symptoms = [symptom];
+    symptomCalls = [];
+    vi.stubGlobal(
+      "fetch",
+      vi.fn((input: string) => {
+        const url = new URL(input, "https://frejsi.example");
+        symptomCalls.push(`${url.pathname}${url.search}`);
+        if (url.pathname.endsWith("/symptoms/kinds"))
+          return Promise.resolve(Response.json({ kinds: [] }));
+        return Promise.resolve(Response.json({ symptoms }));
+      }),
+    );
+  });
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("reads the seven days once, draws the diamond on its tile and opens the detail with the day's values", async () => {
+    mount();
+    const target = await screen.findByRole("button", { name: "Ondt i maven kl. 12:00" });
+    expect(symptomCalls.filter((c) => c.includes("/symptoms?"))).toEqual([
+      "/api/spaces/s1/symptoms?from=2025-10-05T22%3A00%3A00.000Z&to=2025-10-12T22%3A00%3A00.000Z",
+    ]);
+    const days = screen.getByRole("region", { name: "Ugens dage" });
+    const tiles = days.querySelectorAll('[data-variant="week-tile"]');
+    expect(tiles[1]?.querySelector("[data-testid=symptom-marker]")).not.toBeNull();
+    expect(tiles[0]?.querySelector("[data-testid=symptom-marker]")).toBeNull();
+    // The tile is still one link to its day, and the tap target is not inside it.
+    expect(within(days).getAllByRole("link")).toHaveLength(7);
+    expect(target.closest("a")).toBeNull();
+    fireEvent.click(target);
+    const dialog = screen.getByRole("dialog", { name: "Ondt i maven kl. 12:00" });
+    expect(dialog).toHaveTextContent("Logget af Jonas");
+    expect(within(dialog).getByRole("list", { name: "Tal omkring" })).toHaveTextContent(/12:00 · /);
+    act(() => {
+      mocks.handlers.get("symptom.deleted")?.();
+    });
+    await waitFor(() => {
+      expect(symptomCalls.filter((c) => c.includes("/symptoms?"))).toHaveLength(2);
+    });
+  });
+
+  it("filters the tiles to the days with symptoms from the period header, and says when there are none", async () => {
+    mount();
+    await screen.findByRole("button", { name: "Ondt i maven kl. 12:00" });
+    const chip = screen.getByRole("button", { name: "Symptomer" });
+    expect(chip.closest("header")).not.toBeNull();
+    fireEvent.click(chip);
+    expect(chip).toHaveAttribute("aria-pressed", "true");
+    const days = screen.getByRole("region", { name: "Ugens dage" });
+    expect(within(days).getAllByRole("link")).toHaveLength(1);
+    expect(within(days).getByRole("link")).toHaveAttribute("href", "/da/history?date=2025-10-07");
+    cleanup();
+    symptoms = [];
+    mount();
+    await screen.findByRole("region", { name: "Ugens dage" });
+    await waitFor(() => {
+      expect(symptomCalls.filter((c) => c.includes("/symptoms?"))).toHaveLength(2);
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Symptomer" }));
+    expect(await screen.findByText("Ingen symptomer denne uge")).toBeVisible();
+  });
 });

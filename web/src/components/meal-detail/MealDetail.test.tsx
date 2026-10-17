@@ -80,6 +80,8 @@ function mount(props: Partial<MealDetailProps> = {}, locale: AppLocale = "da") {
 }
 
 const ready = () => screen.findByTestId("curve-card");
+/** The meal reads; the curve card's symptom reads (v0.6.0, #202) are counted elsewhere. */
+const mealCalls = () => api.calls.filter((call) => !call.includes("/symptoms"));
 const tile = (label: string) => {
   const tiles = within(screen.getByTestId("meal-tiles"));
   const node = tiles.getByText(label).parentElement;
@@ -457,7 +459,7 @@ describe("Måltid · live (plan §8)", () => {
     mount();
     await ready();
     expect(live.calls[0]).toEqual(["s1", { readings: false }]);
-    expect(api.calls).toEqual(["GET /api/spaces/s1/meals/m1/curve"]);
+    expect(mealCalls()).toEqual(["GET /api/spaces/s1/meals/m1/curve"]);
   });
 
   it("merges a new reading from the hook by ts and recomputes the peak", async () => {
@@ -500,7 +502,7 @@ describe("Måltid · live (plan §8)", () => {
     act(() => {
       live.emit("meal.updated", "other");
     });
-    expect(api.calls).toHaveLength(1);
+    expect(mealCalls()).toHaveLength(1);
     api.curve = curveView({ meal: mealView({ title: "Rye bread with cheese" }) });
     act(() => {
       live.emit("meal.updated", "m1");
@@ -508,14 +510,14 @@ describe("Måltid · live (plan §8)", () => {
     await waitFor(() => {
       expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("Rye bread with cheese");
     });
-    expect(api.calls).toHaveLength(2);
+    expect(mealCalls()).toHaveLength(2);
   });
 
   it("reads the curve again once the feed has its cursor", async () => {
     live.loaded = false;
     const { rerender } = mount();
     await ready();
-    expect(api.calls).toHaveLength(1);
+    expect(mealCalls()).toHaveLength(1);
     live.loaded = true;
     rerender(
       <I18nProvider locale="da" messages={getMessages("da")}>
@@ -530,7 +532,7 @@ describe("Måltid · live (plan §8)", () => {
       </I18nProvider>,
     );
     await waitFor(() => {
-      expect(api.calls).toHaveLength(2);
+      expect(mealCalls()).toHaveLength(2);
     });
     expect(screen.getByTestId("curve-card")).toBeInTheDocument();
   });
@@ -569,7 +571,7 @@ describe("Måltid · live (plan §8)", () => {
       live.emit("meal.updated", "m1");
     });
     await waitFor(() => {
-      expect(api.calls).toHaveLength(2);
+      expect(mealCalls()).toHaveLength(2);
     });
     expect(screen.getByTestId("curve-card")).toBeInTheDocument();
   });

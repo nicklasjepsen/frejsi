@@ -15,7 +15,7 @@ export const SYMPTOM_READINGS_MINUTES = 30;
  */
 export function readingsAround(
   ts: string,
-  readings: readonly Reading[],
+  readings: readonly Pick<Reading, "ts" | "mmol">[],
   unit: GlucoseUnit,
   locale: AppLocale,
   unitLabel: string,

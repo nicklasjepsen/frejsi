@@ -100,6 +100,8 @@ function mount(props: Partial<NowScreenProps> = {}, locale: AppLocale = "da") {
 
 let api: FakeApi;
 let historyMeals: DayHistoryMeal[] | null;
+let symptoms: { id: string; kind: string; ts: string; byUserId: string; byName: string }[];
+let symptomReads: number;
 let previousMeals: DayHistoryMeal[];
 let aiEnabled = true;
 let weekReady = false;
@@ -125,6 +127,8 @@ beforeEach(() => {
   api.date = "2026-10-14";
   historyMeals = null;
   previousMeals = [];
+  symptoms = [];
+  symptomReads = 0;
   aiEnabled = true;
   weekReady = false;
   requestedWeeks = [];
@@ -143,6 +147,11 @@ beforeEach(() => {
         embedCallsToday: 0,
         embedDailyCap: 500,
       });
+    if (url.pathname.endsWith("/symptoms/kinds")) return Response.json({ kinds: [] });
+    if (url.pathname.endsWith("/symptoms")) {
+      symptomReads += 1;
+      return Response.json({ symptoms });
+    }
     if (url.pathname.endsWith("/history/week/insight")) {
       requestedWeeks.push(url.searchParams.get("start"));
       return Response.json({
@@ -500,8 +509,10 @@ describe("Nu · simpleMode (Nu-Simpel, Nu-Simpel-Desktop)", () => {
     );
     expect(simple.getByTestId("glucose-age")).not.toHaveTextContent("mmol");
     const links = simple.getAllByRole("link");
-    expect(links.map((a) => a.textContent)).toEqual(["Jeg spiser nu"]);
+    // "Jeg har det…" sits under "Jeg spiser nu" since v0.6.0 (plan §5).
+    expect(links.map((a) => a.textContent)).toEqual(["Jeg spiser nu", "Jeg har det…"]);
     expect(links[0]).toHaveAttribute("href", "/da/eat");
+    expect(links[1]).toHaveAttribute("href", "/da/feel");
     expect(simple.queryByText("Spørg en voksen")).toBeNull();
   });
 
@@ -776,4 +787,72 @@ it("reads and opens the just-finished week before 06:00 on Monday", async () => 
     "href",
     "/da/history/week?start=2026-10-12#opsummering",
   );
+});
+
+describe("Nu · symptoms and 'Jeg har det…' (v0.6.0 plan §5)", () => {
+  const dizzy = {
+    id: "s1",
+    kind: "dizzy",
+    ts: "2026-10-14T12:00:00.000Z", // 14:00 Copenhagen, 13 minutes before the 14:13 reading
+    byUserId: "u1",
+    byName: "Jonas",
+  };
+
+  it("draws the day's symptoms on the desktop curve and opens the detail with the feed's readings", async () => {
+    symptoms = [dizzy];
+    mount();
+    const desktop = within(screen.getByTestId("now-desktop"));
+    const target = await desktop.findByRole("button", { name: "Svimmel kl. 14:00" });
+    expect(
+      desktop
+        .getByRole("img", { name: /^Glukose i dag/ })
+        .querySelector("[data-testid=symptom-marker]"),
+    ).not.toBeNull();
+    expect(within(screen.getByTestId("now-phone")).queryByTestId("symptom-marker")).toBeNull();
+    fireEvent.click(target);
+    const dialog = desktop.getByRole("dialog", { name: "Svimmel kl. 14:00" });
+    expect(within(dialog).getByRole("list", { name: "Tal omkring" })).toHaveTextContent(
+      "14:13 · 5,8 mmol/L",
+    );
+    // Read again on a symptom event.
+    const before = symptomReads;
+    act(() => {
+      live.emit("symptom.created");
+    });
+    await waitFor(() => {
+      expect(symptomReads).toBe(before + 1);
+    });
+  });
+
+  it("mounts 'Jeg har det…' under 'Log et måltid' on the phone for an owner and a carer, not a viewer", () => {
+    mount();
+    const feel = screen.getByRole("link", { name: "Jeg har det…" });
+    expect(feel).toHaveAttribute("href", "/da/feel");
+    expect(feel).toHaveAttribute("data-size", "phone");
+    const log = screen.getAllByRole("link", { name: "Log et måltid" }).at(-1);
+    expect(log?.compareDocumentPosition(feel)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+    cleanup();
+    document.body.innerHTML = "";
+    mount({ role: "carer" });
+    expect(screen.getByRole("link", { name: "Jeg har det…" })).toBeInTheDocument();
+    cleanup();
+    document.body.innerHTML = "";
+    mount({ role: "viewer" });
+    expect(screen.queryByRole("link", { name: "Jeg har det…" })).toBeNull();
+  });
+
+  it("mounts it at 64 px under 'Jeg spiser nu' in simpleMode and shows the last meal's symbol", async () => {
+    api.meals = [{ ...lunch, symbol: "bread" }];
+    mount({ simpleMode: true });
+    const simple = within(screen.getByTestId("now-simple"));
+    const feel = simple.getByRole("link", { name: "Jeg har det…" });
+    expect(feel).toHaveAttribute("data-size", "simple");
+    expect(feel).toHaveAttribute("data-variant", "secondary");
+    const eat = simple.getByRole("link", { name: "Jeg spiser nu" });
+    expect(eat.compareDocumentPosition(feel)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+    const card = await simple.findByTestId("meal-card");
+    const symbol = card.parentElement?.querySelector("[data-testid=food-symbol]");
+    expect(symbol).toHaveAttribute("data-symbol", "bread");
+    expect(card.parentElement?.querySelector("[role=img][aria-label=Brød]")).not.toBeNull();
+  });
 });

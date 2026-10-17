@@ -1,14 +1,20 @@
 "use client";
 import type { GlucoseUnit } from "@frejsi/shared/schemas/glucose";
 import { WeekHistoryView } from "@frejsi/shared/schemas/history";
+import { dayRange } from "@frejsi/shared/meals/day-range";
 import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { localDateOf } from "@/components/day/format";
+import { readingsAround } from "@/components/glucose/symptom-readings";
 import { PeriodHeader } from "@/components/history/PeriodHeader";
+import { SymptomDetailCard } from "@/components/history/SymptomDetailCard";
+import { useSymptomRange } from "@/components/history/useSymptomRange";
 import { useDesktop } from "@/components/meal-detail/useDesktop";
+import { useKindLabel } from "@/components/symptoms/kinds";
 import { ArrowNav } from "@/components/ui/ArrowNav";
+import { Chip } from "@/components/ui/Chip";
 import { ChipGroup } from "@/components/ui/ChipGroup";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Notice } from "@/components/ui/Notice";
@@ -17,7 +23,7 @@ import { useLiveFeed } from "@/lib/live/useLiveFeed";
 import type { SocketFactory } from "@/lib/live/live-feed";
 import { dateAfter, mondayOf, weekDateLabel } from "./dates";
 import { WeekObservation } from "@/components/observation/WeekObservation";
-import { WeekTiles } from "./WeekTiles";
+import { symptomsByDay, WeekTiles } from "./WeekTiles";
 import { WeekNumbersTiles } from "./WeekNumbersTiles";
 import { WeekMealsTable } from "./WeekMealsTable";
 import styles from "./history-week.module.css";
@@ -51,6 +57,8 @@ export function HistoryWeekScreen({
   aiEnabled = false,
 }: HistoryWeekScreenProps) {
   const t = useTranslations("historyWeek");
+  const history = useTranslations("history");
+  const glucose = useTranslations("glucose");
   const errors = useTranslations("errors.api");
   const router = useRouter();
   const desktop = useDesktop();
@@ -107,6 +115,24 @@ export function HistoryWeekScreen({
   const current =
     week !== null && start >= mondayOf(localDateOf(new Date(week.now), week.timezone));
   const { subscribe } = feed;
+  // The week's symptoms (plan §5): seven local days in one read, again on every symptom event.
+  const weekBounds = week
+    ? {
+        from: dayRange(week.weekStart, week.timezone)[0].toISOString(),
+        to: dayRange(dateAfter(week.weekStart, 6), week.timezone)[1].toISOString(),
+      }
+    : { from: "", to: "" };
+  const symptomRange = useSymptomRange(
+    spaceId,
+    weekBounds.from,
+    weekBounds.to,
+    subscribe,
+    week !== null,
+  );
+  const symptoms = symptomRange.status === "ready" ? symptomRange.symptoms : [];
+  const labelOf = useKindLabel(locale, symptomRange.kinds);
+  const [symptomsOnly, setSymptomsOnly] = useState(false);
+  const [activeSymptomId, setActiveSymptomId] = useState<string | null>(null);
   useEffect(() => {
     const refresh = () => {
       if (!week || current) void load();
@@ -199,6 +225,31 @@ export function HistoryWeekScreen({
   const dates = weekDateLabel(start, locale);
   const previous = { label: t("previous"), href: weekHref(dateAfter(start, -7)) };
   const next = { label: t("next"), href: weekHref(dateAfter(start, 7)), disabled: current };
+  const symptomsChip = (
+    <Chip
+      pressed={symptomsOnly}
+      data-testid="symptoms-filter"
+      onClick={() => {
+        setSymptomsOnly((value) => !value);
+      }}
+    >
+      {history("symptomsFilter")}
+    </Chip>
+  );
+  const activeSymptom = symptoms.find((symptom) => symptom.id === activeSymptomId) ?? null;
+  // The tile's own values around the symptom: the day's 30-minute buckets, each with its time.
+  const activeDay = activeSymptom
+    ? [...symptomsByDay(week, [activeSymptom]).entries()].find(([, list]) => list.length > 0)?.[0]
+    : undefined;
+  const activeReadings = activeSymptom
+    ? readingsAround(
+        activeSymptom.ts,
+        week.days.find((day) => day.date === activeDay)?.curve ?? [],
+        unit,
+        locale,
+        glucose(`unit.${unit}`),
+      )
+    : [];
   return (
     <div className={styles.page} data-view={view}>
       {/* The phone reads like the day view: the title with the Day link, then the week between
@@ -237,6 +288,7 @@ export function HistoryWeekScreen({
               },
             ]}
           />
+          {desktop && showTiles && symptomsChip}
           {desktop && (
             <div className={styles.arrows}>
               <ArrowNav previous={previous} next={next} />
@@ -249,11 +301,34 @@ export function HistoryWeekScreen({
             line={dates}
             previous={previous}
             next={next}
+            {...(showTiles ? { filter: symptomsChip } : {})}
           />
         )}
       </div>
       {showTiles ? (
-        <WeekTiles week={week} locale={locale} desktop={desktop} />
+        <>
+          <WeekTiles
+            week={week}
+            locale={locale}
+            desktop={desktop}
+            symptoms={symptoms}
+            onlyWithSymptoms={symptomsOnly}
+            onSymptomTap={setActiveSymptomId}
+            symptomLabel={labelOf}
+          />
+          {activeSymptom && (
+            <SymptomDetailCard
+              locale={locale}
+              timeZone={week.timezone}
+              symptom={activeSymptom}
+              spaceKinds={symptomRange.kinds}
+              readings={activeReadings}
+              onClose={() => {
+                setActiveSymptomId(null);
+              }}
+            />
+          )}
+        </>
       ) : (
         <WeekMealsTable
           week={week}
