@@ -40,18 +40,54 @@ function dayBefore(date: LocalDate): LocalDate {
   const previous = new Date(Date.UTC(date.year, date.month - 1, date.day) - DAY_MS);
   return { year: previous.getUTCFullYear(), month: previous.getUTCMonth() + 1, day: previous.getUTCDate() };
 }
-/** `HH:MM` on `date` in the zone; two passes settle the offset on a day with a clock change. */
-function resolve(date: LocalDate, hours: number, minutes: number, timeZone: string): number {
+/** `HH:MM` on `date` in the zone when the clock does not land on it (the spring gap): two passes settle the offset. */
+function resolveLoose(date: LocalDate, hours: number, minutes: number, timeZone: string): number {
   const wall = Date.UTC(date.year, date.month - 1, date.day, hours, minutes);
   let guess = wall;
   for (let i = 0; i < 2; i++) guess = wall - offsetMinutes(new Date(guess), timeZone) * MINUTE_MS;
   return guess;
 }
+/**
+ * Every instant whose wall clock in the zone reads `HH:MM` on `date`, earliest first: one on an
+ * ordinary day, two in the hour that repeats when summer time ends, none in the hour that is
+ * skipped when it starts. The offsets a day either side of the date cover a change on the date.
+ */
+function occurrences(date: LocalDate, hours: number, minutes: number, timeZone: string): number[] {
+  const wall = Date.UTC(date.year, date.month - 1, date.day, hours, minutes);
+  const offsets = new Set<number>();
+  for (const probe of [wall - DAY_MS, wall, wall + DAY_MS])
+    offsets.add(offsetMinutes(new Date(probe), timeZone));
+  const found = new Set<number>();
+  for (const offset of offsets) {
+    const instant = wall - offset * MINUTE_MS;
+    if (offsetMinutes(new Date(instant), timeZone) === offset) found.add(instant);
+  }
+  return [...found].sort((a, b) => a - b);
+}
+/**
+ * The latest occurrence of `HH:MM` on `date` that is not more than ten minutes ahead of `now`, or
+ * null. A time the clock skipped that day resolves loosely on that day before yesterday is tried.
+ */
+function latestNotAhead(
+  date: LocalDate,
+  hours: number,
+  minutes: number,
+  timeZone: string,
+  now: Date,
+): number | null {
+  const limit = now.getTime() + AHEAD_MS;
+  const exact = occurrences(date, hours, minutes, timeZone);
+  const candidates = exact.length > 0 ? exact : [resolveLoose(date, hours, minutes, timeZone)];
+  const past = candidates.filter((instant) => instant <= limit);
+  return past.length > 0 ? (past[past.length - 1] ?? null) : null;
+}
 
 /**
  * The instant of `HH:MM` on today's date in the space's zone, as the time field means it: the
  * most recent one not more than ten minutes ahead of `now`, so "23:50" typed at 00:10 is last
- * night, not tonight. Yesterday is resolved on its own date, with its own offset.
+ * night, not tonight. Yesterday is resolved on its own date, with its own offset. In the hour that
+ * repeats when summer time ends, the occurrence that has already passed wins, so "02:10" typed at
+ * 02:15 on the first pass is five minutes ago, not a day ago.
  */
 export function instantOfLocalTime(hhmm: string, timeZone: string, now: Date): Date | null {
   const match = /^(\d{2}):(\d{2})$/.exec(hhmm);
@@ -60,8 +96,11 @@ export function instantOfLocalTime(hhmm: string, timeZone: string, now: Date): D
   const minutes = Number(match[2]);
   if (hours > 23 || minutes > 59) return null;
   const today = localDate(now, timeZone);
-  let instant = resolve(today, hours, minutes, timeZone);
-  if (instant > now.getTime() + AHEAD_MS) instant = resolve(dayBefore(today), hours, minutes, timeZone);
+  const yesterday = dayBefore(today);
+  const instant =
+    latestNotAhead(today, hours, minutes, timeZone, now) ??
+    latestNotAhead(yesterday, hours, minutes, timeZone, now) ??
+    resolveLoose(yesterday, hours, minutes, timeZone);
   return new Date(instant);
 }
 

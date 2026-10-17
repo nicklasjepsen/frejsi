@@ -10,6 +10,9 @@ export async function narrateWeek(provider: AiProvider, raw: WeekInsightInput) {
   const input = WeekInsightInput.parse(raw);
   const projected = narrationInput(input);
   const allowed = new Set(numerals(projected));
+  // The explanation guard only applies when a symptom is in the input: without one, "caused by the
+  // later meal" is an ordinary observation about the curve.
+  const withSymptoms = (input.symptomCounts?.length ?? 0) > 0;
   for (let attempt = 0; attempt < 2; attempt++) {
     // Filter before the capped provider's recursive guard. Counting stays local rather
     // than adding bookkeeping fields to the model's WeekInsight output contract.
@@ -18,7 +21,7 @@ export async function narrateWeek(provider: AiProvider, raw: WeekInsightInput) {
       const safe = value.questions.filter((question) => {
         try {
           assertNoDosing(question, "question");
-          assertNoSymptomExplanation(question, "question");
+          if (withSymptoms) assertNoSymptomExplanation(question, "question");
           assertKnownNumbers(question, allowed);
           return true;
         } catch {
@@ -43,7 +46,7 @@ export async function narrateWeek(provider: AiProvider, raw: WeekInsightInput) {
       const parsed = output.safeParse(result.json);
       if (!parsed.success) throw new HttpError(502, "ai-rejected");
       assertNoDosing(parsed.data.summary, "summary");
-      assertNoSymptomExplanation(parsed.data.summary, "summary");
+      if (withSymptoms) assertNoSymptomExplanation(parsed.data.summary, "summary");
       assertKnownNumbers(parsed.data.summary, allowed);
       return { ...parsed.data, rejectedCount, model: result.model };
     } catch (error) {

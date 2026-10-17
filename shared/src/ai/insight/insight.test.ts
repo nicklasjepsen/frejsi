@@ -256,6 +256,8 @@ describe("symptoms next to the meal, never explained (v0.6.0 plan §5)", () => {
       "The dizziness came because your blood sugar fell after 42 grams.",
       "Svimmelheden skyldes at dit blodsukker faldt efter 42 gram.",
       "Feeling dizzy is a symptom of a low after the 42 grams.",
+      "Dizziness may result from falling blood sugar after the 42 grams.",
+      "Svimmelheden kommer af at blodsukkeret faldt efter 42 gram.",
     ]) {
       const fake = new FakeAiProvider([answer({ text }), answer({ text })]);
       await expect(narrateMeal(capped(fake), withSymptom)).rejects.toMatchObject({
@@ -267,6 +269,43 @@ describe("symptoms next to the meal, never explained (v0.6.0 plan §5)", () => {
       answer({ text: "Dizzy was logged 60 minutes after the meal of 42 grams." }),
     ]);
     expect((await narrateMeal(capped(fake), withSymptom)).text).toContain("logged");
+  });
+  it("lets a causal observation about the curve through when no symptom is logged", async () => {
+    const without = buildMealInput({ ...input, stats, previous: [], mealTs });
+    expect(without).not.toHaveProperty("symptoms");
+    const fake = new FakeAiProvider([
+      answer({ text: "The higher peak may be caused by the later meal." }),
+    ]);
+    expect((await narrateMeal(capped(fake), without)).text).toContain("caused by");
+    expect(fake.calls).toHaveLength(1);
+    const week = WeekInsightInput.parse({
+      locale: "en",
+      glucoseUnit: "mmol",
+      isoWeek: 42,
+      weekStart: "2026-10-12",
+      numbers: {
+        lowEpisodes: { count: 0, atNight: 0 },
+        carbsPerDay: 0,
+        mealCount: 0,
+        lead: { registered: 0, of: 0 },
+      },
+      days: Array.from({ length: 7 }, (_, i) => ({
+        localDate: `2026-10-${12 + i}`,
+        mealCount: 0,
+        totalCarbs: 0,
+      })),
+      meals: [],
+    });
+    const weekFake = new FakeAiProvider([
+      answer({
+        summary: "A quiet week with the peaks caused by the later meals.",
+        questions: ["Was the later peak caused by the bigger meal?"],
+      }),
+    ]);
+    expect(await narrateWeek(capped(weekFake), week)).toMatchObject({
+      questions: ["Was the later peak caused by the bigger meal?"],
+      rejectedCount: 0,
+    });
   });
   it("drops a weekly question that explains a symptom and rejects such a summary", async () => {
     const week = WeekInsightInput.parse({

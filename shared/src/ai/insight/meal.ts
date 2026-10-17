@@ -25,7 +25,7 @@ export async function narrateMeal(provider: AiProvider, raw: InsightInput) {
       const parsed = MealInsight.safeParse(result.json);
       if (!parsed.success) throw new HttpError(502, "ai-rejected");
       guardOutput(parsed.data);
-      assertNoSymptomExplanation(parsed.data.text, "text");
+      if (input.symptoms?.length) assertNoSymptomExplanation(parsed.data.text, "text");
       assertKnownNumbers(parsed.data.text, allowed);
       return { ...parsed.data, model: result.model };
     } catch (error) {
