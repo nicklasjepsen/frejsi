@@ -170,7 +170,8 @@ describe("symptoms on the day (v0.6.0 plan §5)", () => {
     const target = await screen.findByRole("button", { name: "Ondt i maven kl. 13:00" });
     expect(target).toBeInTheDocument();
     expect(fetchCalls.filter((c) => c.includes("/symptoms?"))).toEqual([
-      "/api/spaces/s1/symptoms?from=2026-10-13T22%3A00%3A00.000Z&to=2026-10-14T22%3A00%3A00.000Z",
+      // The route includes both ends: the day stops a millisecond before the next midnight.
+      "/api/spaces/s1/symptoms?from=2026-10-13T22%3A00%3A00.000Z&to=2026-10-14T21%3A59%3A59.999Z",
     ]);
     expect(document.querySelectorAll("svg [data-testid=symptom-marker]")).toHaveLength(1);
     // The row sits between the meals by time: 12:10, 13:30, 08:30 newest first → m1, s1, m2.
@@ -210,6 +211,28 @@ describe("symptoms on the day (v0.6.0 plan §5)", () => {
     mount({ symptomsOnly: true });
     expect(await screen.findByText("Ingen symptomer denne dag")).toBeVisible();
     expect(screen.queryByTestId("meal-card")).toBeNull();
+  });
+
+  it("says that the symptoms could not be loaded, with a retry, never that there are none", async () => {
+    let fail = true;
+    vi.stubGlobal(
+      "fetch",
+      vi.fn((input: string) => {
+        const url = new URL(input, "https://frejsi.example");
+        if (url.pathname.endsWith("/symptoms/kinds"))
+          return Promise.resolve(Response.json({ kinds: [] }));
+        if (fail) return Promise.resolve(new Response("down", { status: 500 }));
+        return Promise.resolve(Response.json({ symptoms }));
+      }),
+    );
+    mount({ symptomsOnly: true });
+    const failed = await screen.findByTestId("symptoms-failed");
+    expect(failed).toHaveTextContent("Symptomerne kunne ikke hentes lige nu.");
+    expect(screen.queryByText("Ingen symptomer denne dag")).toBeNull();
+    fail = false;
+    fireEvent.click(within(failed).getByRole("button", { name: "Prøv igen" }));
+    expect(await screen.findByTestId("symptom-row")).toBeVisible();
+    expect(screen.queryByTestId("symptoms-failed")).toBeNull();
   });
 
   it("moves between meal links and symptom buttons with the arrow keys", async () => {

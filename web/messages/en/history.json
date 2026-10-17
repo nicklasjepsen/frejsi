@@ -28,6 +28,7 @@
   "noSymptoms": "No symptoms this day",
   "noSymptomsWeek": "No symptoms this week",
   "symptomsLabel": "Symptoms",
+  "symptomsFailed": "The symptoms could not be loaded just now.",
   "observation": {
     "title": "Weekly summary",
     "ready": "With questions for the clinic · ready",

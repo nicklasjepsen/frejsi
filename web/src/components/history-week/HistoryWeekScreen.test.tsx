@@ -440,7 +440,7 @@ describe("symptoms on the week (v0.6.0 plan §5)", () => {
     mount();
     const target = await screen.findByRole("button", { name: "Ondt i maven kl. 12:00" });
     expect(symptomCalls.filter((c) => c.includes("/symptoms?"))).toEqual([
-      "/api/spaces/s1/symptoms?from=2025-10-05T22%3A00%3A00.000Z&to=2025-10-12T22%3A00%3A00.000Z",
+      "/api/spaces/s1/symptoms?from=2025-10-05T22%3A00%3A00.000Z&to=2025-10-12T21%3A59%3A59.999Z",
     ]);
     const days = screen.getByRole("region", { name: "Ugens dage" });
     const tiles = days.querySelectorAll('[data-variant="week-tile"]');

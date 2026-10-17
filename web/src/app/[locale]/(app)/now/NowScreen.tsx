@@ -23,7 +23,7 @@ import {
   useAgeText,
 } from "@/components/glucose";
 import { SymptomDetailCard } from "@/components/history/SymptomDetailCard";
-import { useSymptomRange } from "@/components/history/useSymptomRange";
+import { beforeInstant, useSymptomRange } from "@/components/history/useSymptomRange";
 import { ManualReadingButton, ManualReadingSheet, useManualReading } from "@/components/manual";
 import { FeelButton } from "@/components/symptoms/FeelButton";
 import { useKindLabel } from "@/components/symptoms/kinds";
@@ -135,7 +135,9 @@ export function NowScreen({
   // The day's symptoms for the desktop curve (v0.6.0 plan §5): the curve's day, read again on
   // every symptom event. A viewer never mounts this screen; the route refuses it anyway.
   const symptomsFrom = dayFrom.toISOString();
-  const symptomsTo = new Date(dayFrom.getTime() + WINDOW_HOURS * 60 * 60 * 1000).toISOString();
+  const symptomsTo = beforeInstant(
+    new Date(dayFrom.getTime() + WINDOW_HOURS * 60 * 60 * 1000).toISOString(),
+  );
   const symptomRange = useSymptomRange(
     spaceId,
     symptomsFrom,

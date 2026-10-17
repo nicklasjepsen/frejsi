@@ -6,7 +6,8 @@ import type { FeedEventType } from "@/lib/live/live-feed";
 import type { AppLocale } from "@/lib/i18n/routing";
 import { SymptomDetailCard } from "./SymptomDetailCard";
 import { SymptomRow } from "./SymptomRow";
-import { useSymptomRange } from "./useSymptomRange";
+import { SymptomsFailed } from "./SymptomsFailed";
+import { beforeInstant, useSymptomRange } from "./useSymptomRange";
 import styles from "./history.module.css";
 
 type Subscribe = (type: FeedEventType, handler: () => void) => () => void;
@@ -31,10 +32,11 @@ export function ViewerSymptoms({
   const t = useTranslations("history");
   const [from, to] = useMemo(() => {
     const [start, end] = dayRange(date, timeZone);
-    return [start.toISOString(), end.toISOString()];
+    return [start.toISOString(), beforeInstant(end.toISOString())];
   }, [date, timeZone]);
   const range = useSymptomRange(spaceId, from, to, subscribe);
   const [activeId, setActiveId] = useState<string | null>(null);
+  if (range.status === "failed") return <SymptomsFailed onRetry={range.refresh} />;
   if (range.status !== "ready" || range.symptoms.length === 0) return null;
   const active = range.symptoms.find((symptom) => symptom.id === activeId) ?? null;
   return (

@@ -9,7 +9,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { localDateOf } from "@/components/day/format";
 import { PeriodHeader } from "@/components/history/PeriodHeader";
 import { SymptomDetailCard } from "@/components/history/SymptomDetailCard";
-import { useSymptomRange } from "@/components/history/useSymptomRange";
+import { SymptomsFailed } from "@/components/history/SymptomsFailed";
+import { beforeInstant, useSymptomRange } from "@/components/history/useSymptomRange";
 import { useDesktop } from "@/components/meal-detail/useDesktop";
 import { useKindLabel } from "@/components/symptoms/kinds";
 import { ArrowNav } from "@/components/ui/ArrowNav";
@@ -117,7 +118,7 @@ export function HistoryWeekScreen({
   const weekBounds = week
     ? {
         from: dayRange(week.weekStart, week.timezone)[0].toISOString(),
-        to: dayRange(dateAfter(week.weekStart, 6), week.timezone)[1].toISOString(),
+        to: beforeInstant(dayRange(dateAfter(week.weekStart, 6), week.timezone)[1].toISOString()),
       }
     : { from: "", to: "" };
   const symptomRange = useSymptomRange(
@@ -294,12 +295,13 @@ export function HistoryWeekScreen({
       </div>
       {showTiles ? (
         <>
+          {symptomRange.status === "failed" && <SymptomsFailed onRetry={symptomRange.refresh} />}
           <WeekTiles
             week={week}
             locale={locale}
             desktop={desktop}
             symptoms={symptoms}
-            onlyWithSymptoms={symptomsOnly}
+            onlyWithSymptoms={symptomsOnly && symptomRange.status === "ready"}
             onSymptomTap={setActiveSymptomId}
             symptomLabel={labelOf}
           />

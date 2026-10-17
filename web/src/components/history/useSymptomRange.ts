@@ -5,6 +5,14 @@ import { useCallback, useEffect, useState } from "react";
 import { loadSymptomKinds, loadSymptoms } from "@/components/symptoms/api";
 import type { FeedEventType } from "@/lib/live/live-feed";
 
+/**
+ * The last instant before `iso`: the symptoms route includes both ends of its range, and a day's
+ * bound is the next midnight, so a symptom logged exactly then belongs to the next day only.
+ */
+export function beforeInstant(iso: string): string {
+  return new Date(Date.parse(iso) - 1).toISOString();
+}
+
 export type SymptomRangeState =
   { status: "loading" } | { status: "failed" } | { status: "ready"; symptoms: SymptomView[] };
 
