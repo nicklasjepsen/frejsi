@@ -77,6 +77,15 @@ export function defaultFakeAnswer(call: RecordedAiCall): Answer {
       summary: "This week includes twenty-one meals across seven days.",
       questions: ["What patterns appeared after lunch this week?"],
     },
+    {
+      title: "Example stew",
+      ingredients: [
+        { name: "Example pasta", amount: 200, unit: "g" },
+        { name: "Example pear", amount: 2, unit: "stk" },
+        { name: "Water", amount: 5, unit: "dl" },
+      ],
+      yieldPortions: 4,
+    },
   ];
   const schema = call.request.outputSchema;
   if (schema) {
