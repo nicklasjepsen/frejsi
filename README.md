@@ -4,7 +4,9 @@
 
 Frejsi is a web app — on your phone for the moment you're eating, on your desktop for the evening you want to understand the week — that answers two questions fast: _how many carbs is this?_ and _what did that meal do to my glucose?_ A space brings one person's food library, meals and glucose together, with access for the people they invite.
 
-> **Status: v0.5.1 is tagged and deploying; v0.5.0 is live at [frejsi.jepsen.ninja](https://frejsi.jepsen.ninja).** v0.5.1 is the phone round: no zoom on text entry, a fixed tab bar, barcode scanning that names its failure, 48px back controls, a light/dark theme setting and the visual phone audit fixes.
+> **Status: v0.5.2 is tagged and deploying; v0.5.0 is live at [frejsi.jepsen.ninja](https://frejsi.jepsen.ninja).**
+
+v0.5.2 is the phone round: no zoom on text entry, a fixed tab bar, barcode scanning that names its failure, 48px back controls, a light/dark theme setting and the visual phone audit fixes. The v0.5.1 tag failed in its suite on a README line and deployed nothing.
 
 The v0.1.0 foundation (passkeys, roles and live glucose), v0.2.0 food lookup and meal logging, v0.3.0 meal curves and history, the v0.3.1 Dexcom Clarity import and the v0.4.1 AI features are implemented and deployed. The AI features remain off until a provider is configured and a space opts in. Parts of v0.5.0 (Nightscout and manual glucose sources, Open Food Facts corrections, the poller's managed identity and the country settings) are merged and ship with its tag. Merging does not deploy: a version tag runs the release pipeline, and a [GitHub release](https://github.com/nicklasjepsen/frejsi/releases) is published only after deployment and smoke checks succeed. An existing tag alone does not mean deployment succeeded. Frejsi is free software (AGPL-3.0) and built to be run by anyone: your country, your language and your glucose source are settings, not code.
 
