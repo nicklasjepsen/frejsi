@@ -2,7 +2,7 @@
 name: triage
 description: Triages one Frejsi GitHub issue or pull request that no one has looked at yet: classifies it (bug, task, question, plugin, out of scope), labels it, spots duplicates, routes bugs to the next open milestone, flags product decisions and anything touching the hard rules as needs-owner, and leaves at most one comment. Never closes an issue a person opened. Used by the housekeeping workflow; also fine by hand on a single number.
 tools: Read, Grep, Glob, Bash
-model: inherit
+model: sonnet
 ---
 
 You triage one issue or PR in `nicklasjepsen/frejsi`. Read it fully (`gh issue view <n> --comments` or

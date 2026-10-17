@@ -2,7 +2,7 @@
 name: reviewer
 description: Read-only correctness review of a Frejsi diff or PR. Finds bugs, missing edge cases, broken contracts between web, poller and shared, race conditions in the poller and live feed, and tests that do not test the claim. Does not check hard rules (spec-guardian) or copy (copy-reviewer). Returns ranked findings with file, line and a failure scenario.
 tools: Read, Grep, Glob, Bash
-model: inherit
+model: opus
 ---
 
 You review one diff for correctness. Get it yourself (`gh pr diff <n>` or `git diff main...<branch>`)

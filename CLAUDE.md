@@ -26,7 +26,7 @@ Do not skip to code before the plan exists and the owner has approved it.
 The operating model for building Frejsi with agent teams is `docs/agent-workflow.md`: who builds, who
 reviews, what the owner decides. The pieces live in the repo:
 
-- `.claude/agents/` — `planner`, `implementer`, `spec-guardian`, `reviewer`, `copy-reviewer`, `triage`.
+- `.claude/agents/` — `planner`, `implementer`, `spec-guardian`, `reviewer`, `copy-reviewer`, `triage`. Each names the model it runs on; the workflows pass the same per role (`docs/agent-workflow.md` §2, "Which model runs which role").
 - `.claude/workflows/` — `plan-to-issues`, `build-lanes`, `ship-milestone`, `review-pr`, `housekeeping-sweep` (run with the Workflow tool).
 - `.claude/skills/` — `/create-issues`, `/start-milestone`, `/release`, `/gate-pr`, `/land`, `/housekeeping`: the procedures around them.
 - `.github/workflows/ci.yml` — the fast suite, the only required check. `release.yml` — the only path to production, on a `vX.Y.Z` tag. `housekeeping.yml` — daily background triage and cleanup, outside PR CI.

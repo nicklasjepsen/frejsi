@@ -25,6 +25,21 @@ const callAgent = async (prompt, opts = {}) => {
   }
 }
 
+// One model per role (docs/agent-workflow.md §2). The session model is the most capable tier and
+// overkill for most steps; args.models overrides any role for the run, e.g. { models: { implementer: 'fable' } }.
+const ROLE_MODELS = {
+  'spec-guardian': 'opus',
+  reviewer: 'opus',
+  'copy-reviewer': 'sonnet',
+  refuter: 'sonnet',
+}
+const ROLE_EFFORT = { lookup: 'low' }
+const as = (role, opts) => {
+  const model = ((args && args.models) || {})[role] || ROLE_MODELS[role]
+  return { ...(model ? { model } : {}), ...(ROLE_EFFORT[role] ? { effort: ROLE_EFFORT[role] } : {}), ...opts }
+}
+
+// args: { pr: 42, models?: { reviewer: 'fable', ... } }
 if (!args || !args.pr) throw new Error('args.pr (PR number) is required')
 const pr = args.pr
 
@@ -66,7 +81,7 @@ const confirmed = await pipeline(
   GATES,
   (g) => callAgent(
     `Run your ${g.lens} review on PR #${pr} of nicklasjepsen/frejsi (gh pr diff ${pr}). Return verdict and findings in the schema. Hard-rule failures from spec-guardian are never downgraded.`,
-    { label: `find:${g.key}`, phase: 'Find', agentType: g.agentType, schema: FINDINGS_SCHEMA },
+    as(g.agentType, { label: `find:${g.key}`, phase: 'Find', agentType: g.agentType, schema: FINDINGS_SCHEMA }),
   ),
   async (found, g) => {
     const findings = (found && found.findings) || []
@@ -78,7 +93,7 @@ const confirmed = await pipeline(
         `PR #${pr} of nicklasjepsen/frejsi. A ${g.lens} reviewer claims:\n${JSON.stringify(f, null, 1)}\n\n` +
         `Read the diff (gh pr diff ${pr}) and the surrounding code and try to refute this claim${i === 0 ? ' by showing the scenario cannot occur' : ' by showing the code already handles it or a test covers it'}. ` +
         `Default to refuted=true if you are not sure it is real.`,
-        { label: `refute${i + 1}:${g.key}`, phase: 'Verify', schema: VERDICT_SCHEMA },
+        as('refuter', { label: `refute${i + 1}:${g.key}`, phase: 'Verify', schema: VERDICT_SCHEMA }),
       )))
       const refutedCount = votes.filter(Boolean).filter((v) => v.refuted).length
       return refutedCount >= 2 ? null : { ...f, from: g.key, verified: `${2 - refutedCount}/2 upheld` }

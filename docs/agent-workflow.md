@@ -50,6 +50,28 @@ for `agentType` in a workflow script.
 Three narrow reviewers in parallel beat one broad one: each is an independent perspective on the same
 diff, and the one that matters most here (the guardian) cannot be distracted by style.
 
+### Which model runs which role
+
+The owner's sessions run on the most capable tier (Fable). That is overkill for most of the steps a
+milestone takes, so each role names its model: in the agent's frontmatter (`model:` in
+`.claude/agents/<role>.md`, used when the Agent tool runs it by hand) and in the workflow scripts
+(`ROLE_MODELS`, passed as `model` on every `agent()` call, which is what runs during a milestone).
+Keep the two in step.
+
+| Role | Model | Where |
+|---|---|---|
+| `implementer` | Opus | build and fix rounds in `build-lanes`; a lane's `"model"` overrides it for that lane |
+| `planner` | Opus | `plan-to-issues` planner and spec-coverage critic |
+| `spec-guardian`, `reviewer` | Opus | gates in `build-lanes` and `review-pr`; the guardian's red is never overridden, so it keeps a strong model |
+| `copy-reviewer`, `triage`, `refuter` | Sonnet | strings and tone; issue triage; the refute votes in `review-pr` |
+| `plumbing` | Sonnet | merge and watch CI, tag and release, create issues, housekeeping cleanups |
+| `lookup` | Haiku, low effort | one-shot lookups and labels: flag `needs-owner`, find a milestone, list untriaged |
+
+Every workflow takes `models` in its args to override a role for one run, for example
+`{ models: { implementer: 'fable' } }` when a milestone rewrites the schema, and `/start-milestone` may
+give a single lane `"model": "fable"` when it touches the hard rules across packages. Change the
+defaults in the table, the scripts and the frontmatter together.
+
 ## 3. Lanes are vertical slices, not small PRs
 
 Learned on Scarecrow: twenty small PRs, each waiting 15–25 minutes for a preview deploy and an

@@ -26,7 +26,20 @@ const callAgent = async (prompt, opts = {}) => {
   }
 }
 
-// args: { plan: 'docs/superpowers/plans/<file>.md', milestone: 'v0.2.0', repo?: 'nicklasjepsen/frejsi' }
+// One model per role (docs/agent-workflow.md §2). The session model is the most capable tier and
+// overkill for most steps; args.models overrides any role for the run, e.g. { models: { implementer: 'fable' } }.
+const ROLE_MODELS = {
+  planner: 'opus',
+  plumbing: 'sonnet',
+  lookup: 'haiku',
+}
+const ROLE_EFFORT = { lookup: 'low' }
+const as = (role, opts) => {
+  const model = ((args && args.models) || {})[role] || ROLE_MODELS[role]
+  return { ...(model ? { model } : {}), ...(ROLE_EFFORT[role] ? { effort: ROLE_EFFORT[role] } : {}), ...opts }
+}
+
+// args: { plan: 'docs/superpowers/plans/<file>.md', milestone: 'v0.2.0', repo?: 'nicklasjepsen/frejsi', models?: { planner: 'fable', ... } }
 // Every issue carries the milestone: the milestone is the release, its title is the version.
 if (!args || !args.plan) throw new Error('args.plan (plan file path) is required')
 if (!args.milestone || !/^v\d+\.\d+\.\d+$/.test(args.milestone)) throw new Error('args.milestone must look like v0.2.0')
@@ -81,7 +94,7 @@ const ISSUE_SCHEMA = {
 phase('Plan')
 const plan = await callAgent(
   `Read the approved plan at ${args.plan} and emit the task list. Follow your rules: one task per PR, owns paths as specific as possible, testable acceptance criteria citing the spec section, decisions the owner has not made as kind "decision".`,
-  { label: 'planner', phase: 'Plan', agentType: 'planner', schema: TASKS_SCHEMA },
+  as('planner', { label: 'planner', phase: 'Plan', agentType: 'planner', schema: TASKS_SCHEMA }),
 )
 if (!plan || !plan.tasks.length) throw new Error('planner returned no tasks')
 log(`${plan.tasks.length} tasks from ${args.plan}`)
@@ -92,11 +105,11 @@ const taskText = JSON.stringify(plan.tasks, null, 1)
 const [collisions, coverage] = await parallel([
   () => callAgent(
     `Here is a task list for Frejsi:\n${taskText}\n\nFind every pair of tasks that would run in the same wave (neither depends on the other, directly or transitively) and own the same path or a parent/child of the same path. Shared append-only files (pnpm-workspace.yaml, shared/src/index.ts, web/messages/*.json, infra/main.bicep) do not count. Also flag a task whose owns list is empty or is a whole package root (web/, poller/, shared/, infra/). Set ok=false if you find any.`,
-    { label: 'critic:collisions', phase: 'Check', schema: CRITIC_SCHEMA },
+    as('plumbing', { label: 'critic:collisions', phase: 'Check', schema: CRITIC_SCHEMA }),
   ),
   () => callAgent(
     `Here is a task list derived from the plan ${args.plan}:\n${taskText}\n\nRead the plan. List every plan step, requirement or acceptance criterion that no task covers, and every task that is not in the plan. Then read CLAUDE.md's hard rules: for each task that touches glucose rendering, roles, AI, external sources or data writes, check that hardRules names the rule and a test. Set ok=false if anything is missing.`,
-    { label: 'critic:coverage', phase: 'Check', schema: CRITIC_SCHEMA },
+    as('planner', { label: 'critic:coverage', phase: 'Check', schema: CRITIC_SCHEMA }),
   ),
 ])
 const problems = [...((collisions && collisions.problems) || []), ...((coverage && coverage.problems) || [])]
@@ -109,7 +122,7 @@ phase('Issues')
 await callAgent(
   `Make sure milestone "${args.milestone}" exists in ${repo}: \`gh api repos/${repo}/milestones?state=all --jq '.[] | select(.title=="${args.milestone}") | .number'\`. ` +
   `If nothing is printed, create it: \`gh api -X POST repos/${repo}/milestones -f title="${args.milestone}" -f description="Release ${args.milestone} — plan: ${args.plan}"\`. Reply with the milestone number only.`,
-  { label: 'milestone', phase: 'Issues' },
+  as('lookup', { label: 'milestone', phase: 'Issues' }),
 )
 const created = await pipeline(
   plan.tasks,
@@ -122,7 +135,7 @@ const created = await pipeline(
     `\`gh issue create -R ${repo} --title "<title>" --label task --label "area:${task.area}" ${task.kind === 'decision' ? '--label needs-owner ' : ''}${task.schema ? '--label schema ' : ''}--milestone "${args.milestone}" --body-file <file>\`. ` +
     `Write the body to a file in your scratchpad first. For "Depends on" use the task numbers; the caller rewrites them to issue numbers afterwards.\n` +
     `3. Return n=${task.n}, the issue URL, skipped=false.`,
-    { label: `issue:${task.n}`, phase: 'Issues', schema: ISSUE_SCHEMA },
+    as('plumbing', { label: `issue:${task.n}`, phase: 'Issues', schema: ISSUE_SCHEMA }),
   ),
 )
 

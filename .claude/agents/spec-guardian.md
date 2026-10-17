@@ -2,7 +2,7 @@
 name: spec-guardian
 description: Read-only gate that checks a diff, a PR or a set of files against Frejsi's hard rules only (no insulin dosing, unverified external data, glucose age, viewer never gets glucose, raw readings never to AI, emit() on every write, plugins behind interfaces, no secrets or PII, glucose sources read-only). Use before any PR is opened and on every PR review. Returns one verdict per rule with file and line.
 tools: Read, Grep, Glob, Bash
-model: inherit
+model: opus
 ---
 
 You are the spec guardian for Frejsi. You check code against the hard rules in `CLAUDE.md` and §5 of

@@ -46,6 +46,10 @@ or two issues per lane, grouped by file ownership, never by theme alone.
 - `migration`: the next Prisma migration number for the first lane labelled `schema`, the next after
   that for the second, `null` otherwise.
 - Four to six lanes. Fewer, larger PRs: the gate agents read every line.
+- `model`: leave it out. The implementer runs on Opus by default (`docs/agent-workflow.md` §2); set
+  `"model": "fable"` only on a lane that rewrites the Prisma schema or touches the hard rules across
+  several packages, and say why in the board. A top-level `"models": { "<role>": "<model>" }` changes
+  a role for the whole run.
 
 Write the split to the scratchpad as the workflow's `args`:
 
@@ -62,14 +66,15 @@ Write the split to the scratchpad as the workflow's `args`:
       "owns": ["shared/src/glucose/dexcom-share/", "poller/src/", "web/app/api/spaces/[id]/readings/", "fixtures/dexcom/"],
       "shared": ["shared/src/index.ts", "web/messages/da/index.ts", "web/messages/en/index.ts"],
       "migration": "0003",
-      "notes": "Fixtures are recorded JSON; never a live call in tests."
+      "notes": "Fixtures are recorded JSON; never a live call in tests.",
+      "model": "fable"
     }
   ]
 }
 ```
 
-Show the board: lane, issues, branch, owns, migration; above it the in-flight, gated and blocked
-lists. Ask for an OK with one question. Change the file and show again on any objection.
+Show the board: lane, issues, branch, owns, migration, model (Opus unless the lane sets one); above it
+the in-flight, gated and blocked lists. Ask for an OK with one question. Change the file and show again on any objection.
 
 ## 3. Create the worktrees and ship
 

@@ -25,7 +25,18 @@ const callAgent = async (prompt, opts = {}) => {
   }
 }
 
-// args: { milestone: 'v0.2.0', base: 'main', lanes: [...] }  (same lanes shape as build-lanes)
+// One model per role (docs/agent-workflow.md §2). The session model is the most capable tier and
+// overkill for most steps; args.models overrides any role for the run, e.g. { models: { implementer: 'fable' } }.
+const ROLE_MODELS = {
+  plumbing: 'sonnet',
+}
+const ROLE_EFFORT = { lookup: 'low' }
+const as = (role, opts) => {
+  const model = ((args && args.models) || {})[role] || ROLE_MODELS[role]
+  return { ...(model ? { model } : {}), ...(ROLE_EFFORT[role] ? { effort: ROLE_EFFORT[role] } : {}), ...opts }
+}
+
+// args: { milestone: 'v0.2.0', base: 'main', lanes: [...], models?: {...} }  (same lanes and models shape as build-lanes)
 if (!args || !args.milestone || !/^v\d+\.\d+\.\d+$/.test(args.milestone)) throw new Error('args.milestone must look like v0.2.0')
 if (!Array.isArray(args.lanes) || !args.lanes.length) throw new Error('args.lanes is required')
 
@@ -43,7 +54,7 @@ const RELEASE_SCHEMA = {
 }
 
 phase('Lanes')
-const lanes = await workflow('build-lanes', { base: args.base || 'main', lanes: args.lanes, milestone: args.milestone })
+const lanes = await workflow('build-lanes', { base: args.base || 'main', lanes: args.lanes, milestone: args.milestone, models: args.models })
 const board = (lanes && lanes.board) || []
 const unmerged = board.filter((b) => b.final !== 'merged')
 if (unmerged.length) {
@@ -58,7 +69,7 @@ const release = await callAgent(
   `If the milestone still has open issues that no lane in this run owned, do not tag: set released=false and list them in summary. ` +
   `If the run is waiting on the production-infra environment, set waitingOnOwner=true and keep watching until it ends or 50 minutes pass. ` +
   `Never move or delete a tag, never rerun more than once, never deploy by any other path.`,
-  { label: `release:${args.milestone}`, phase: 'Release', schema: RELEASE_SCHEMA },
+  as('plumbing', { label: `release:${args.milestone}`, phase: 'Release', schema: RELEASE_SCHEMA }),
 )
 
 log(release && release.released ? `${args.milestone} released: ${release.releaseUrl || release.runUrl || ''}` : `${args.milestone} not released`)

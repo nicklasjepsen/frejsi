@@ -27,9 +27,27 @@ const callAgent = async (prompt, opts = {}) => {
   }
 }
 
+// One model per role (docs/agent-workflow.md §2). The session model is the most capable tier and
+// overkill for most steps; args.models overrides any role for the run, e.g. { models: { implementer: 'fable' } }.
+const ROLE_MODELS = {
+  implementer: 'opus',
+  'spec-guardian': 'opus',
+  reviewer: 'opus',
+  'copy-reviewer': 'sonnet',
+  plumbing: 'sonnet',
+  lookup: 'haiku',
+}
+const ROLE_EFFORT = { lookup: 'low' }
+const as = (role, opts) => {
+  const model = ((args && args.models) || {})[role] || ROLE_MODELS[role]
+  return { ...(model ? { model } : {}), ...(ROLE_EFFORT[role] ? { effort: ROLE_EFFORT[role] } : {}), ...opts }
+}
+
 // args: {
 //   base: 'main', milestone?: 'v0.2.0', gates?: true (Claude gate agents; off by default until the pre-1.0 audit),
-//   lanes: [{ name, issues: [n, ...], branch, worktree, owns: [...], shared: [...], migration: '0003' | null, notes }]
+//   models?: { implementer?: 'fable', plumbing?: 'opus', ... } (per-role model override, see ROLE_MODELS),
+//   lanes: [{ name, issues: [n, ...], branch, worktree, owns: [...], shared: [...], migration: '0003' | null, notes, model? }]
+// lane.model overrides the implementer model for that lane only (a schema rewrite or a hard-rule lane may want 'fable').
 // }
 if (!args || !Array.isArray(args.lanes) || !args.lanes.length) throw new Error('args.lanes is required')
 const base = (args && args.base) || 'main'
@@ -98,7 +116,7 @@ const results = await pipeline(
   args.lanes,
 
   // Build. The worktree already exists, so no isolation here.
-  (lane) => callAgent(briefFor(lane), { label: `build:${lane.name}`, phase: 'Build', agentType: 'implementer', schema: PR_SCHEMA }),
+  (lane) => callAgent(briefFor(lane), as('implementer', { ...(lane.model ? { model: lane.model } : {}), label: `build:${lane.name}`, phase: 'Build', agentType: 'implementer', schema: PR_SCHEMA })),
 
   // Gate: three independent perspectives on the same PR. parallel() is right: the fix round needs all three.
   async (built, lane) => {
@@ -108,9 +126,9 @@ const results = await pipeline(
     // pass runs once over the whole codebase before v1.0.0 (issue in milestone v1.0.0).
     if (!(args && args.gates === true)) return { lane, built, gates: { guardian: null, review: null, copy: null } }
     const [guardian, review, copy] = await parallel([
-      () => callAgent(gatePrompt('spec-guardian', built.pr), { label: `guardian:${lane.name}`, phase: 'Gate', agentType: 'spec-guardian', schema: GATE_SCHEMA }),
-      () => callAgent(gatePrompt('reviewer', built.pr), { label: `review:${lane.name}`, phase: 'Gate', agentType: 'reviewer', schema: GATE_SCHEMA }),
-      () => callAgent(gatePrompt('copy-reviewer', built.pr), { label: `copy:${lane.name}`, phase: 'Gate', agentType: 'copy-reviewer', schema: GATE_SCHEMA }),
+      () => callAgent(gatePrompt('spec-guardian', built.pr), as('spec-guardian', { label: `guardian:${lane.name}`, phase: 'Gate', agentType: 'spec-guardian', schema: GATE_SCHEMA })),
+      () => callAgent(gatePrompt('reviewer', built.pr), as('reviewer', { label: `review:${lane.name}`, phase: 'Gate', agentType: 'reviewer', schema: GATE_SCHEMA })),
+      () => callAgent(gatePrompt('copy-reviewer', built.pr), as('copy-reviewer', { label: `copy:${lane.name}`, phase: 'Gate', agentType: 'copy-reviewer', schema: GATE_SCHEMA })),
     ])
     return { lane, built, gates: { guardian, review, copy } }
   },
@@ -126,9 +144,9 @@ const results = await pipeline(
     log(`${lane.name}: ${findings.length} findings, one fix round`)
     const fixed = await callAgent(
       `${briefFor(lane)}\n\nThe PR #${built.pr} is open. Address every finding below in follow-up signed-off commits on the same branch, or reply in the PR thread with why not. Re-run the full checks before pushing.\n\n${JSON.stringify(findings, null, 1)}`,
-      { label: `fix:${lane.name}`, phase: 'Fix', agentType: 'implementer', schema: PR_SCHEMA },
+      as('implementer', { ...(lane.model ? { model: lane.model } : {}), label: `fix:${lane.name}`, phase: 'Fix', agentType: 'implementer', schema: PR_SCHEMA }),
     )
-    const recheck = await callAgent(gatePrompt('spec-guardian', built.pr), { label: `guardian2:${lane.name}`, phase: 'Fix', agentType: 'spec-guardian', schema: GATE_SCHEMA })
+    const recheck = await callAgent(gatePrompt('spec-guardian', built.pr), as('spec-guardian', { label: `guardian2:${lane.name}`, phase: 'Fix', agentType: 'spec-guardian', schema: GATE_SCHEMA }))
     const final = recheck && recheck.verdict === 'pass' ? 'green-after-fix' : 'red-needs-owner'
     return { ...state, fixed, recheck, findings, final }
   },
@@ -138,7 +156,7 @@ const results = await pipeline(
     const { lane, built, final } = state
     if (final !== 'green' && final !== 'green-after-fix') {
       if (final === 'red-needs-owner' && built) {
-        await callAgent(`Label PR #${built.pr} of nicklasjepsen/frejsi with needs-owner and post one comment summarising the unresolved findings: ${JSON.stringify(state.findings || [])}`, { label: `flag:${lane.name}`, phase: 'Merge' })
+        await callAgent(`Label PR #${built.pr} of nicklasjepsen/frejsi with needs-owner and post one comment summarising the unresolved findings: ${JSON.stringify(state.findings || [])}`, as('lookup', { label: `flag:${lane.name}`, phase: 'Merge' }))
       }
       return state
     }
@@ -149,7 +167,7 @@ const results = await pipeline(
       `3. Merge: gh pr merge ${built.pr} --rebase --delete-branch. Never --admin. If GitHub refuses because of a conflict with ${base}, rebase your branch on origin/${base} in your worktree, run the full checks, push, and merge.\n` +
       `4. Watch main: gh run list --workflow ci.yml --branch ${base} --limit 1, then gh run watch <id> --exit-status. If it is red because of your merge, fix forward on a new branch from ${base} through the normal PR, or revert your merge with gh pr revert / git revert and a PR, within this session. Report mainGreen honestly.\n` +
       `5. Return merged, mainGreen, the merge sha and a one-line summary.`,
-      { label: `merge:${lane.name}`, phase: 'Merge', agentType: 'implementer', schema: MERGE_SCHEMA },
+      as('plumbing', { label: `merge:${lane.name}`, phase: 'Merge', agentType: 'implementer', schema: MERGE_SCHEMA }),
     )
     const merged = !!(merge && merge.merged)
     return { ...state, merge, final: merged ? (merge.mainGreen ? 'merged' : 'merged-main-red') : 'merge-failed' }
