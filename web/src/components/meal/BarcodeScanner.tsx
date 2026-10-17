@@ -3,6 +3,8 @@ import { useTranslations } from "next-intl";
 import { useEffect, useRef } from "react";
 
 import {
+  CAMERA_CONSTRAINTS,
+  confirmedReads,
   createBarcodeReader,
   describeCameraError,
   errorText,
@@ -19,8 +21,8 @@ const MAX_DETECT_FAILURES = 3;
 
 /**
  * The full-screen rear-camera view (design gap 8): the video, a frame to aim with, a 44 px close
- * and "Skriv stregkoden". Frames are read every `intervalMs` until a barcode with a valid checksum
- * is found; the camera is stopped before `onDetected`. A denied, missing or busy camera, or a
+ * and "Skriv stregkoden". Frames are read every `intervalMs` until two frames in a row read the
+ * same barcode with a valid checksum (`confirmedReads`); the camera is stopped before `onDetected`. A denied, missing or busy camera, or a
  * reader that cannot start, calls `onFailed` with the reason and the browser's own error text, so
  * the screen can show the typed-barcode field and say what went wrong.
  */
@@ -77,10 +79,7 @@ export function BarcodeScanner({
         return;
       }
       try {
-        run.stream = await media.getUserMedia({
-          video: { facingMode: { ideal: "environment" } },
-          audio: false,
-        });
+        run.stream = await media.getUserMedia(CAMERA_CONSTRAINTS);
       } catch (error) {
         fail(describeCameraError(error));
         return;
@@ -105,6 +104,7 @@ export function BarcodeScanner({
         fail({ reason: "reader", detail: errorText(error) });
         return;
       }
+      const detect = confirmedReads((frame) => reader.detect(frame));
       let failures = 0;
       const tick = async () => {
         if (isStopped() || !video.current) return;
@@ -115,7 +115,7 @@ export function BarcodeScanner({
         }
         let code: string | null = null;
         try {
-          code = await reader.detect(video.current);
+          code = await detect(video.current);
           failures = 0;
         } catch (error) {
           failures += 1;

@@ -10,8 +10,10 @@ vi.mock("zxing-wasm/reader", () => ({
 }));
 
 import {
+  CAMERA_CONSTRAINTS,
   ZXING_WASM_PATH,
   asTypedBarcode,
+  confirmedReads,
   createBarcodeReader,
   describeCameraError,
   frameGrabber,
@@ -83,8 +85,20 @@ describe("createBarcodeReader", () => {
     expect(await reader.detect(video)).toBe(EAN13);
     expect(zxing.read).toHaveBeenCalledWith(
       frame,
-      expect.objectContaining({ formats: ["EAN13", "EAN8", "UPCA"] }),
+      expect.objectContaining({
+        formats: ["EAN13", "EAN8", "UPCA"],
+        tryHarder: true,
+        tryInvert: false,
+        tryDownscale: false,
+        minLineCount: 4,
+      }),
     );
+  });
+
+  it("ignores a zxing result that is not valid even when its text passes the checksum", async () => {
+    zxing.read.mockResolvedValueOnce([{ text: EAN13, isValid: false }]);
+    const reader = await createBarcodeReader({ grabFrame: () => frame });
+    expect(await reader.detect({} as HTMLVideoElement)).toBeNull();
   });
 
   it("falls back to zxing when BarcodeDetector cannot read retail codes", async () => {
@@ -165,5 +179,47 @@ describe("describeCameraError", () => {
     expect(describeCameraError(new DOMException("none", "NotFoundError")).reason).toBe("noCamera");
     expect(describeCameraError(new TypeError("bad constraints")).reason).toBe("noCamera");
     expect(describeCameraError("odd")).toEqual({ reason: "noCamera", detail: "odd" });
+  });
+});
+
+describe("confirmedReads", () => {
+  const OTHER = "2000000000022";
+  it("answers only when two frames in a row read the same code", async () => {
+    const frames = [EAN13, OTHER, OTHER];
+    const detect = confirmedReads(() => Promise.resolve(frames.shift() ?? null));
+    const video = {} as HTMLVideoElement;
+    expect(await detect(video)).toBeNull();
+    expect(await detect(video)).toBeNull(); // a different code starts over
+    expect(await detect(video)).toBe(OTHER);
+  });
+  it("starts over after an empty frame and after an answer", async () => {
+    const frames = [EAN13, null, EAN13, EAN13, EAN13];
+    const detect = confirmedReads(() => Promise.resolve(frames.shift() ?? null));
+    const video = {} as HTMLVideoElement;
+    expect(await detect(video)).toBeNull();
+    expect(await detect(video)).toBeNull();
+    expect(await detect(video)).toBeNull();
+    expect(await detect(video)).toBe(EAN13);
+    expect(await detect(video)).toBeNull(); // the run after an answer needs two again
+  });
+  it("takes the number of agreeing frames as a setting", async () => {
+    const detect = confirmedReads(() => Promise.resolve(EAN13), 3);
+    const video = {} as HTMLVideoElement;
+    expect(await detect(video)).toBeNull();
+    expect(await detect(video)).toBeNull();
+    expect(await detect(video)).toBe(EAN13);
+  });
+});
+
+describe("CAMERA_CONSTRAINTS", () => {
+  it("asks for the rear camera at full HD, as an ideal the phone may lower", () => {
+    expect(CAMERA_CONSTRAINTS).toEqual({
+      video: {
+        facingMode: { ideal: "environment" },
+        width: { ideal: 1920 },
+        height: { ideal: 1080 },
+      },
+      audio: false,
+    });
   });
 });

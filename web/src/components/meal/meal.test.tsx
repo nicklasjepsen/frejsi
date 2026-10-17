@@ -283,7 +283,8 @@ describe("BarcodeScanner", () => {
     const camera = stream();
     const getUserMedia = vi.fn(() => Promise.resolve(camera.stream));
     stubMedia({ getUserMedia });
-    const detect = vi.fn().mockResolvedValueOnce(null).mockResolvedValueOnce("2000000000015");
+    // Two frames in a row must agree (confirmedReads), so the code keeps coming once it is read.
+    const detect = vi.fn().mockResolvedValueOnce(null).mockResolvedValue("2000000000015");
     const detected = vi.fn();
     mount(
       <BarcodeScanner
@@ -299,7 +300,11 @@ describe("BarcodeScanner", () => {
       expect(detected).toHaveBeenCalledWith("2000000000015");
     });
     expect(getUserMedia).toHaveBeenCalledWith({
-      video: { facingMode: { ideal: "environment" } },
+      video: {
+        facingMode: { ideal: "environment" },
+        width: { ideal: 1920 },
+        height: { ideal: 1080 },
+      },
       audio: false,
     });
     expect(camera.stop).toHaveBeenCalled();

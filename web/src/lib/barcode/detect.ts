@@ -38,6 +38,49 @@ export interface ReaderOptions {
   grabFrame?: (video: HTMLVideoElement) => ImageData | null;
 }
 
+/**
+ * The camera the scanner asks for: the rear camera at full HD where the phone offers it. Without
+ * a size, iOS Safari hands out a small frame, and a retail barcode a few pixels per bar is where
+ * the decoders start guessing digits that happen to pass the checksum.
+ */
+export const CAMERA_CONSTRAINTS: MediaStreamConstraints = {
+  video: { facingMode: { ideal: "environment" }, width: { ideal: 1920 }, height: { ideal: 1080 } },
+  audio: false,
+};
+
+/** Consecutive frames that must read the same code before the scanner believes it. */
+export const CONFIRM_READS = 2;
+
+/**
+ * A detect function that answers only when `needed` consecutive frames read the same code. One
+ * frame's misread survives the EAN checksum about one time in ten; two independent frames
+ * agreeing on the same wrong digits is rare. A different code, or an empty frame, starts over.
+ */
+export function confirmedReads(
+  detect: BarcodeReader["detect"],
+  needed: number = CONFIRM_READS,
+): BarcodeReader["detect"] {
+  let candidate: string | null = null;
+  let seen = 0;
+  return async (video) => {
+    const code = await detect(video);
+    if (!code) {
+      candidate = null;
+      seen = 0;
+      return null;
+    }
+    if (code === candidate) seen += 1;
+    else {
+      candidate = code;
+      seen = 1;
+    }
+    if (seen < needed) return null;
+    candidate = null;
+    seen = 0;
+    return code;
+  };
+}
+
 /** A typed or USB-scanned value is a barcode when it has 8, 12 or 13 digits and a valid checksum. */
 export function asTypedBarcode(value: string): string | null {
   return normaliseBarcode(value.trim());
@@ -154,9 +197,14 @@ async function zxingReader(grabFrame: (video: HTMLVideoElement) => ImageData | n
       const found = await readBarcodes(frame, {
         formats: [...ZXING_FORMATS],
         tryHarder: true,
+        // Retail codes are never printed inverted, and a downscaled frame loses the thin bars.
+        tryInvert: false,
+        tryDownscale: false,
+        // Scan lines that must agree inside one frame (zxing's default is 2).
+        minLineCount: 4,
         maxNumberOfSymbols: 1,
       });
-      return firstValid(found.map((item) => item.text));
+      return firstValid(found.filter((item) => item.isValid).map((item) => item.text));
     },
   };
   return reader;
