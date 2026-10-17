@@ -25,4 +25,13 @@ test("History opens today's day on phone and the seven-day week on desktop", asy
     await expect(card).toContainText("top");
     await expect(card).toContainText("efter");
   }
+  // "Symptomer" (v0.6.0 plan §5): the day's list becomes the symptom rows; none are seeded yet.
+  const chip = page.getByRole("button", { name: "Symptomer" }).first();
+  await expect(chip).toHaveAttribute("aria-pressed", "false");
+  await chip.click();
+  await expect(chip).toHaveAttribute("aria-pressed", "true");
+  await expect(today.getByTestId("meal-card")).toHaveCount(0);
+  await expect(today).toContainText("Ingen symptomer denne dag");
+  await chip.click();
+  await expect(today.getByTestId("meal-card")).toHaveCount(3);
 });
