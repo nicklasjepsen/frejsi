@@ -27,6 +27,7 @@ export async function readRecipe(
   spaceId: string,
   session: SessionContext,
   input: RecipeInput,
+  options: { fallbackTitle?: string } = {},
 ): Promise<ParsedRecipe> {
   assertRole(session, spaceId, "owner", "carer");
   const factory = overrides.provider ?? aiForSpace;
@@ -37,5 +38,5 @@ export async function readRecipe(
     if (input.kind === "html" && error instanceof HttpError && OFF.has(error.code)) provider = null;
     else throw error;
   }
-  return parseRecipe(provider, input, session.locale);
+  return parseRecipe(provider, input, session.locale, options);
 }

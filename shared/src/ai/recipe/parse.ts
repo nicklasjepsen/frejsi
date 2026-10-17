@@ -36,9 +36,10 @@ export async function parseRecipe(
   provider: AiProvider | null,
   input: RecipeInput,
   locale: Locale,
+  options: { fallbackTitle?: string } = {},
 ): Promise<ParsedRecipe> {
   if (input.kind === "html") {
-    const structured = readJsonLd(input.html);
+    const structured = readJsonLd(input.html, options);
     if (structured) return { parse: structured, approx: false };
     if (!provider) throw new HttpError(422, "recipe-unreadable");
     return { parse: await fromText(provider, extractText(input.html), locale), approx: true };

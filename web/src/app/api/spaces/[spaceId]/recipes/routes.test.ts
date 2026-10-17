@@ -229,6 +229,16 @@ describe("POST recipes/parse", () => {
       expect(fake.calls).toEqual([]);
     },
   );
+  it("names an unnamed JSON-LD recipe in the person's language", async () => {
+    page = `<html><script type="application/ld+json">${JSON.stringify({ "@type": "Recipe", recipeIngredient: ["1 l vand"] })}</script></html>`;
+    expect((await body(await call(parse, { url: "https://recipes.example/unnamed" }))).title).toBe(
+      "Recipe",
+    );
+    Object.assign(auth.rows("user").find((u) => u.id === USERS.carer) ?? {}, { locale: "da" });
+    expect((await body(await call(parse, { url: "https://recipes.example/unnamed" }))).title).toBe(
+      "Opskrift",
+    );
+  });
   it("passes a fetch failure through as recipe-fetch-failed and validates the one way in", async () => {
     configureRecipes({
       fetchPage: () => Promise.reject(new HttpError(502, "recipe-fetch-failed")),
@@ -328,6 +338,23 @@ describe("POST recipes (Gem)", () => {
       { label: "1 tallerken", grams: 188, carbs: 50 },
       { label: "½ tallerken", grams: 94, carbs: 25 },
     ]);
+  });
+  it("leaves no dish behind when the photo cannot be stored, so a retry does not double it", async () => {
+    const store = rig.deps.photos as MemoryPhotoStore;
+    const put = vi.spyOn(store, "put").mockRejectedValue(new Error("blob down"));
+    const response = await call(save, { ...saveBody, photoDataUrl: plate.photoDataUrl });
+    expect(response.status).toBe(503);
+    expect((await body(response)).error).toMatchObject({ code: "photo-unavailable" });
+    expect(put).toHaveBeenCalledTimes(1);
+    expect(rig.rows).toEqual([]);
+    expect(rig.events).toEqual([]);
+    expect(rig.published).toEqual([]);
+    expect(store.photos.size).toBe(0);
+    put.mockRestore();
+    const retry = await call(save, { ...saveBody, photoDataUrl: plate.photoDataUrl });
+    expect(retry.status).toBe(201);
+    expect(rig.rows).toHaveLength(1);
+    expect(rig.published.map((e) => e.type)).toEqual(["food.created", "food.updated"]);
   });
   it("refuses a recipe without a yield or without lines, and never writes before validation", async () => {
     for (const bad of [

@@ -23,8 +23,14 @@ export function isPrivateAddress(value: string): boolean {
   const host = value.replace(/^\[|\]$/g, "").toLowerCase();
   if (host === "localhost" || host.endsWith(".localhost") || host.endsWith(".local")) return true;
   if (host.includes(":")) {
-    const mapped = /^::ffff:(\d+\.\d+\.\d+\.\d+)$/.exec(host);
-    if (mapped?.[1]) return isPrivateAddress(mapped[1]);
+    // Node writes `[::ffff:127.0.0.1]` as `[::ffff:7f00:1]`; NAT64 maps IPv4 under 64:ff9b::/96.
+    const mapped = /^(?:::ffff|64:ff9b::?)(?::)?([0-9a-f]{1,4}):([0-9a-f]{1,4})$/.exec(host);
+    if (mapped?.[1] && mapped[2]) {
+      const [high, low] = [Number.parseInt(mapped[1], 16), Number.parseInt(mapped[2], 16)];
+      return isPrivateAddress(`${high >> 8}.${high & 255}.${low >> 8}.${low & 255}`);
+    }
+    const dotted = /^(?:::ffff:|64:ff9b::)(\d+\.\d+\.\d+\.\d+)$/.exec(host);
+    if (dotted?.[1]) return isPrivateAddress(dotted[1]);
     return (
       host === "::" ||
       host === "::1" ||

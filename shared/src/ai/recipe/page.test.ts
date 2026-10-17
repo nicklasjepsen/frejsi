@@ -34,6 +34,11 @@ describe("fetchRecipePage (https only, 2 MB and 10 s caps, no redirects off the 
       "https://10.0.0.5/recipe",
       "https://192.168.1.2/recipe",
       "https://[::1]/recipe",
+      "https://[::ffff:127.0.0.1]/recipe",
+      "https://[::ffff:7f00:1]/recipe",
+      "https://[::ffff:a00:1]/recipe",
+      "https://[64:ff9b::a00:1]/recipe",
+      "https://[0:0:0:0:0:ffff:c0a8:101]/recipe",
       "https://user:pw@recipes.example/x",
     ])
       await expect(fetchRecipePage(url, { fetch, resolve: publicHost }), url).rejects.toMatchObject(
@@ -191,6 +196,8 @@ describe("fetchRecipePage (https only, 2 MB and 10 s caps, no redirects off the 
     expect(resolve).toHaveBeenCalledTimes(2);
     expect(isPrivateAddress("203.0.113.10")).toBe(false);
     expect(isPrivateAddress("2001:db8::1")).toBe(false);
+    expect(isPrivateAddress("::ffff:cb00:710a")).toBe(false);
+    expect(isPrivateAddress("::ffff:7f00:1")).toBe(true);
   });
   it("exposes the caps the plan names", () => {
     expect(MAX_PAGE_BYTES).toBe(2 * 1024 * 1024);

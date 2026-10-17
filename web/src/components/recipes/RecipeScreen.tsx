@@ -106,7 +106,13 @@ export function RecipeScreen({
       .then((result) => {
         if (!live) return;
         if ("review" in result) setLoaded(result);
-        else setInitial({ text: result.text, url: result.url, photoDataUrl: result.photoDataUrl });
+        else
+          setInitial({
+            // A title-only share is still a share: the title stands in for the text.
+            text: result.text ?? result.title,
+            url: result.url,
+            photoDataUrl: result.photoDataUrl,
+          });
         setLoading(false);
       })
       .catch((error: unknown) => {

@@ -1,4 +1,5 @@
 import {
+  type EventEnvelope,
   type FoodView,
   HttpError,
   RecipeReview,
@@ -18,12 +19,13 @@ import {
 import { canonicalUnit, parseIngredientLine } from "@frejsi/shared/ai/recipe/jsonld";
 import { fetchRecipePage } from "@frejsi/shared/ai/recipe/page";
 import type { RecipeInput } from "@frejsi/shared/ai/recipe/parse";
+import type { PhotoStore } from "@frejsi/shared/photos";
 import { RecipeParseRequest } from "@frejsi/shared/schemas/ai";
 import { estimateImage } from "@/ai/estimate/photo";
 import { readRecipe } from "@/ai/recipe/service";
 import { assertRole } from "@/lib/auth/session";
 import { createFood, getFood, setFoodPhoto, updateFood } from "@/lib/foods";
-import { resolveFoods, type FoodDeps, type ResolvedFoods } from "@/lib/foods/core";
+import { resolveFoods, type FoodDeps, type FoodTx, type ResolvedFoods } from "@/lib/foods/core";
 import { getMessages } from "@/lib/i18n/messages";
 import { getMeal } from "@/lib/meals/service";
 import { RecalcRecipeRequest, SaveRecipeRequest } from "./contracts";
@@ -153,7 +155,9 @@ export async function reviewRecipe(
     recipeInput = { kind: "photo", base64: Buffer.from(bytes).toString("base64") };
     source = { kind: "photo" };
   }
-  const parsed = await readRecipe(spaceId, session, recipeInput);
+  const parsed = await readRecipe(spaceId, session, recipeInput, {
+    fallbackTitle: getMessages(session.locale).recipe.untitled,
+  });
   return review(spaceId, session, deps.foods, parsed.parse, source, parsed.approx);
 }
 
@@ -244,7 +248,8 @@ function foodFields(
 /**
  * "Gem": the dish through `createFood` with origin `recipe`, `verified: false`, the computed
  * carbs per 100 g and portions, the recipe JSON with its source; then the photo through
- * `setFoodPhoto`. Both emit; nothing else writes.
+ * `setFoodPhoto`. Both emit; nothing else writes. With a photo the two run in one transaction
+ * (as "Spørg en voksen" does), so a failed upload leaves no dish behind for a retry to double.
  */
 export async function saveRecipe(
   spaceId: string,
@@ -258,21 +263,64 @@ export async function saveRecipe(
   const food = foodFields(session, fields);
   if (food.carbsPer100g === undefined && food.portions.length === 0)
     throw new HttpError(400, "validation");
-  let saved = await createFood(
-    spaceId,
-    session,
-    {
-      ...food,
-      ...(fields.category ? { category: fields.category } : {}),
-      origin: "recipe",
-      from: "library",
-      verify: false,
+  const request = {
+    ...food,
+    ...(fields.category ? { category: fields.category } : {}),
+    origin: "recipe",
+    from: "library",
+    verify: false,
+  };
+  if (!fields.photoDataUrl) return createFood(spaceId, session, request, deps.foods);
+  const bytes = await estimateImage(fields.photoDataUrl);
+  const store = deps.foods.photos;
+  if (!store) throw new HttpError(503, "photo-unavailable");
+  let uploadedKey: string | undefined;
+  const photos: PhotoStore = {
+    put: async (key, photo) => {
+      uploadedKey = key;
+      await store.put(key, photo);
     },
-    deps.foods,
-  );
-  if (fields.photoDataUrl) {
-    const bytes = await estimateImage(fields.photoDataUrl);
-    saved = await setFoodPhoto(spaceId, session, saved.id, bytes, deps.foods);
+    delete: (key) => store.delete(key),
+    readUrl: (key, size) => store.readUrl(key, size),
+  };
+  const queued: { group: string; envelope: EventEnvelope }[] = [];
+  const sink = {
+    publish: (group: string, envelope: EventEnvelope) => {
+      queued.push({ group, envelope });
+      return Promise.resolve();
+    },
+  };
+  let saved: FoodView;
+  try {
+    saved = await deps.foods.db.$transaction(
+      async (tx) => {
+        const joined = {
+          ...deps.foods,
+          photos,
+          db: { ...tx, $transaction: <T>(run: (tx: FoodTx) => Promise<T>) => run(tx) },
+          sink,
+        };
+        const created = await createFood(spaceId, session, request, joined);
+        return setFoodPhoto(spaceId, session, created.id, bytes, joined);
+      },
+      { isolationLevel: "Serializable" },
+    );
+  } catch (error) {
+    if (uploadedKey) {
+      try {
+        await store.delete(uploadedKey);
+      } catch {
+        deps.foods.log.warn("recipe.photo-cleanup-failed", { spaceId, code: "photo-unavailable" });
+      }
+    }
+    throw error;
+  }
+  for (const { group, envelope } of queued) {
+    try {
+      await deps.foods.sink.publish(group, envelope);
+    } catch {
+      deps.foods.log.warn("event.publish-failed", { spaceId, code: "publish-failed" });
+    }
   }
   return saved;
 }
