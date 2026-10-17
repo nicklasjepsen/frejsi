@@ -64,44 +64,65 @@ function occurrences(date: LocalDate, hours: number, minutes: number, timeZone: 
   }
   return [...found].sort((a, b) => a - b);
 }
+const pad = (n: number, width = 2) => String(n).padStart(width, "0");
+const dayKey = (date: LocalDate): string => `${pad(date.year, 4)}-${pad(date.month)}-${pad(date.day)}`;
+
 /**
- * The latest occurrence of `HH:MM` on `date` that is not more than ten minutes ahead of `now`, or
- * null. A time the clock skipped that day resolves loosely on that day before yesterday is tried.
+ * The local dates the sheet offers, today first: today and the six days before it in the space's
+ * zone, so every time on them is inside the route's seven-day window.
  */
-function latestNotAhead(
-  date: LocalDate,
-  hours: number,
-  minutes: number,
-  timeZone: string,
-  now: Date,
-): number | null {
-  const limit = now.getTime() + AHEAD_MS;
-  const exact = occurrences(date, hours, minutes, timeZone);
-  const candidates = exact.length > 0 ? exact : [resolveLoose(date, hours, minutes, timeZone)];
-  const past = candidates.filter((instant) => instant <= limit);
-  return past.length > 0 ? (past[past.length - 1] ?? null) : null;
+export function recentDays(now: Date, timeZone: string, count = 7): string[] {
+  const days: string[] = [];
+  let date = localDate(now, timeZone);
+  for (let i = 0; i < count; i++) {
+    days.push(dayKey(date));
+    date = dayBefore(date);
+  }
+  return days;
 }
 
 /**
- * The instant of `HH:MM` on today's date in the space's zone, as the time field means it: the
- * most recent one not more than ten minutes ahead of `now`, so "23:50" typed at 00:10 is last
- * night, not tonight. Yesterday is resolved on its own date, with its own offset. In the hour that
- * repeats when summer time ends, the occurrence that has already passed wins, so "02:10" typed at
- * 02:15 on the first pass is five minutes ago, not a day ago.
+ * The instant whose wall clock in the zone reads `HH:MM` on the local date `YYYY-MM-DD`, or null
+ * for nonsense. In the hour that repeats when summer time ends, the occurrence that has already
+ * passed wins, so "02:10" typed at 02:15 on the second pass is five minutes ago, not an hour. A
+ * time the clock skipped lands on the clock after the jump. The result may lie ahead of `now`;
+ * `isAhead` says when it is too far ahead to log.
  */
-export function instantOfLocalTime(hhmm: string, timeZone: string, now: Date): Date | null {
-  const match = /^(\d{2}):(\d{2})$/.exec(hhmm);
-  if (!match) return null;
-  const hours = Number(match[1]);
-  const minutes = Number(match[2]);
+export function instantOn(day: string, hhmm: string, timeZone: string, now: Date): Date | null {
+  const dayMatch = /^(\d{4})-(\d{2})-(\d{2})$/.exec(day);
+  const clock = /^(\d{2}):(\d{2})$/.exec(hhmm);
+  if (!dayMatch || !clock) return null;
+  const hours = Number(clock[1]);
+  const minutes = Number(clock[2]);
   if (hours > 23 || minutes > 59) return null;
+  const date = { year: Number(dayMatch[1]), month: Number(dayMatch[2]), day: Number(dayMatch[3]) };
+  const exact = occurrences(date, hours, minutes, timeZone);
+  const candidates = exact.length > 0 ? exact : [resolveLoose(date, hours, minutes, timeZone)];
+  const limit = now.getTime() + AHEAD_MS;
+  const passed = candidates.filter((instant) => instant <= limit);
+  const chosen = passed.length > 0 ? passed[passed.length - 1] : candidates[0];
+  return chosen === undefined ? null : new Date(chosen);
+}
+
+/** More than ten minutes ahead of now: the route refuses it, a feeling is logged as it happens. */
+export const isAhead = (at: Date, now: Date): boolean => at.getTime() - now.getTime() > AHEAD_MS;
+
+/** Whether `at` falls on today, yesterday or an earlier day in the space's zone. */
+export function dayOf(at: Date, now: Date, timeZone: string): "today" | "yesterday" | "earlier" {
+  const day = dayKey(localDate(at, timeZone));
   const today = localDate(now, timeZone);
-  const yesterday = dayBefore(today);
-  const instant =
-    latestNotAhead(today, hours, minutes, timeZone, now) ??
-    latestNotAhead(yesterday, hours, minutes, timeZone, now) ??
-    resolveLoose(yesterday, hours, minutes, timeZone);
-  return new Date(instant);
+  if (day === dayKey(today)) return "today";
+  return day === dayKey(dayBefore(today)) ? "yesterday" : "earlier";
+}
+
+/** "tirsdag 13. oktober" for a local date, in the session's language. */
+export function longDay(day: string, locale: string): string {
+  return new Intl.DateTimeFormat(locale, {
+    timeZone: "UTC",
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+  }).format(new Date(`${day}T12:00:00.000Z`));
 }
 
 /** `HH:MM` of `at` in the zone, for the time field's value. */

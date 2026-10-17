@@ -2,6 +2,12 @@
   "title": "I feel…",
   "nav": "I feel…",
   "intro": "Tap the one that fits. It is logged straight away.",
+  "when": "When?",
+  "ago": {
+    "now": "Now",
+    "minutes": "{minutes} min ago",
+    "hours": "{hours, plural, one {# hour} other {# hours}} ago"
+  },
   "close": "Close",
   "kinds": {
     "stomach-ache": "Stomach ache",
@@ -13,6 +19,9 @@
   },
   "logged": "Logged",
   "loggedKind": "{kind} is logged",
+  "loggedKindAt": "{kind} is logged at {time}",
+  "loggedKindYesterday": "{kind} is logged yesterday at {time}",
+  "loggedKindOn": "{kind} is logged on {day} at {time}",
   "undo": "Undo",
   "undone": "Undone",
   "more": "More…",
@@ -26,7 +35,13 @@
   },
   "note": "Note",
   "notePlaceholder": "For example what happened when it came",
-  "time": "When?",
+  "day": "Which day?",
+  "days": {
+    "today": "Today",
+    "yesterday": "Yesterday"
+  },
+  "time": "Time",
+  "ahead": "That time has not come yet",
   "save": "Log it",
   "cancel": "Back",
   "saveFailed": "It was not saved – try again",

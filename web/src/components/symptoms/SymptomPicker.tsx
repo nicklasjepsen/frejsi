@@ -3,7 +3,9 @@ import type { CreateSymptomRequest, SpaceSymptomKind, SymptomKind, SymptomView }
 import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { localDateOf } from "@/components/day/format";
 import { Button } from "@/components/ui/Button";
+import { ChipGroup } from "@/components/ui/ChipGroup";
 import { Notice } from "@/components/ui/Notice";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { localeHref, type AppLocale } from "@/lib/i18n/routing";
@@ -13,6 +15,7 @@ import { SymptomIcon } from "./icons";
 import { ALL_KINDS, useKindLabel } from "./kinds";
 import { SymptomSheet } from "./SymptomSheet";
 import styles from "./symptoms.module.css";
+import { dayOf, longDay } from "./time";
 import { DEFAULT_NOW, useSymptoms } from "./useSymptoms";
 
 export interface SymptomPickerProps {
@@ -30,13 +33,19 @@ type KindsLoad =
   | { status: "loading" }
   | { status: "failed" }
   | { status: "ready"; kinds: SpaceSymptomKind[] };
-type Toast = { id: string; kind: SymptomKind; undone: false } | { undone: true };
+type Toast = { id: string; kind: SymptomKind; ts: string; undone: false } | { undone: true };
 const UNDO_MS = 10_000;
+const MINUTE_MS = 60_000;
+/** "Hvornår?": how long ago it started, in minutes; a tile logs at now minus the choice. */
+const AGO_CHOICES = [0, 15, 30, 60, 120] as const;
+type Ago = (typeof AGO_CHOICES)[number];
 
 /**
  * Jeg har det… (`/feel`, plan §5): six large tiles with a picture and a name, plus the space's own
- * kinds. One tap logs the kind at now and says "Logget" with "Fortryd" for ten seconds; "Mere…"
- * opens the sheet. Below the tiles, today's entries, live. A simpleMode member logs and does not
+ * kinds. "Hvornår?" chips above them set how long ago it started (now by default); one tap logs
+ * the kind at that time and says "Logget" with "Fortryd" for ten seconds, naming the time when it
+ * was not now. "Mere…" opens the sheet at the chosen time, where any day of the last week can be
+ * picked. A simpleMode child gets the tiles alone and logs at now. Below the tiles, today's entries, live. A simpleMode member logs and does not
  * edit afterwards (plan §12, decision 7), so Fortryd is an adult's button.
  */
 export function SymptomPicker({
@@ -52,6 +61,7 @@ export function SymptomPicker({
   const [load, setLoad] = useState<KindsLoad>({ status: "loading" });
   const [toast, setToast] = useState<Toast | null>(null);
   const [sheet, setSheet] = useState<SymptomKind | null>(null);
+  const [ago, setAgo] = useState<Ago>(0);
   const [busy, setBusy] = useState(false);
   const [failed, setFailed] = useState(false);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -93,7 +103,7 @@ export function SymptomPicker({
       const saved: SymptomView = await createSymptom(spaceId, body);
       if (!live.current) return;
       setSheet(null);
-      announce({ id: saved.id, kind: saved.kind, undone: false });
+      announce({ id: saved.id, kind: saved.kind, ts: saved.ts, undone: false });
       refresh();
     } catch {
       if (live.current) setFailed(true);
@@ -116,6 +126,25 @@ export function SymptomPicker({
     }
   }
   const today = list.status === "ready" ? [...list.symptoms].reverse() : [];
+  const agoStart = () => new Date(now().getTime() - ago * MINUTE_MS);
+  const agoLabel = (minutes: Ago) =>
+    minutes === 0
+      ? t("ago.now")
+      : minutes < 60
+        ? t("ago.minutes", { minutes })
+        : t("ago.hours", { hours: minutes / 60 });
+  /** "Logget", with the time when it was not now: the list below shows today only. */
+  function loggedText(kind: SymptomKind, ts: string): string {
+    const at = new Date(ts);
+    const current = now();
+    const label = labelOf(kind);
+    if (Math.abs(current.getTime() - at.getTime()) <= MINUTE_MS) return t("loggedKind", { kind: label });
+    const time = formatClock(at, timeZone);
+    const day = dayOf(at, current, timeZone);
+    if (day === "today") return t("loggedKindAt", { kind: label, time });
+    if (day === "yesterday") return t("loggedKindYesterday", { kind: label, time });
+    return t("loggedKindOn", { kind: label, time, day: longDay(localDateOf(at, timeZone), locale) });
+  }
 
   return (
     <div className={styles.page} data-simple={simple} data-testid="feel">
@@ -140,7 +169,7 @@ export function SymptomPicker({
       )}
       {toast && (
         <div className={styles.status} role="status" data-testid="feel-status">
-          <span>{toast.undone ? t("undone") : t("loggedKind", { kind: labelOf(toast.kind) })}</span>
+          <span>{toast.undone ? t("undone") : loggedText(toast.kind, toast.ts)}</span>
           {!toast.undone && !simple && (
             <button type="button" className={styles.undo} disabled={busy} onClick={() => void undo()}>
               {t("undo")}
@@ -155,6 +184,19 @@ export function SymptomPicker({
       )}
       {load.status === "ready" && !sheet && (
         <>
+          {!simple && (
+            <div className={styles.ago} data-testid="feel-when">
+              <span aria-hidden="true">{t("when")}</span>
+              <ChipGroup
+                label={t("when")}
+                options={AGO_CHOICES.map((minutes) => ({ value: String(minutes), label: agoLabel(minutes) }))}
+                value={String(ago)}
+                onChange={(value) => {
+                  setAgo(Number(value) as Ago);
+                }}
+              />
+            </div>
+          )}
           <div className={styles.grid} data-testid="feel-grid">
             {ALL_KINDS(spaceKinds).map((kind) => (
               <button
@@ -162,7 +204,9 @@ export function SymptomPicker({
                 type="button"
                 className={styles.tile}
                 disabled={busy}
-                onClick={() => void log({ kind })}
+                onClick={() =>
+                  void log(ago === 0 ? { kind } : { kind, ts: agoStart().toISOString() })
+                }
               >
                 <SymptomIcon kind={kind} size={simple ? 44 : 36} />
                 <span>{labelOf(kind)}</span>
@@ -190,6 +234,7 @@ export function SymptomPicker({
           timeZone={timeZone}
           spaceKinds={spaceKinds}
           initialKind={sheet}
+          initialAt={ago === 0 ? undefined : agoStart()}
           busy={busy}
           failed={failed}
           now={now}

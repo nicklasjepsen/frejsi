@@ -126,7 +126,8 @@
   font-weight: 700;
 }
 .field textarea,
-.field input {
+.field input,
+.field select {
   width: 100%;
   box-sizing: border-box;
   padding: 12px;
@@ -140,6 +141,22 @@
 .field textarea {
   min-height: 80px;
   resize: vertical;
+}
+.when {
+  display: grid;
+  grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+  gap: 12px;
+}
+.field select {
+  min-height: var(--touch-min);
+}
+.ago {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.ago > span {
+  font-weight: 700;
 }
 .actions {
   display: flex;

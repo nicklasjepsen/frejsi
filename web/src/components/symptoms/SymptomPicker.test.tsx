@@ -146,6 +146,7 @@ describe("Jeg har det… (the picker, plan §5)", () => {
     expect(await tiles()).toHaveLength(7);
     expect(screen.getByTestId("feel")).toHaveAttribute("data-simple", "true");
     expect(screen.queryByRole("button", { name: "Mere…" })).not.toBeInTheDocument();
+    expect(screen.queryByTestId("feel-when")).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Træt" }));
     const status = await screen.findByTestId("feel-status");
     expect(fake.calls.find((c) => c.method === "POST")?.body).toEqual({ kind: "tired" });
@@ -171,8 +172,9 @@ describe("Jeg har det… (the picker, plan §5)", () => {
     fireEvent.click(within(sheet).getByRole("radio", { name: "Kvalme" }));
     fireEvent.click(within(sheet).getByRole("radio", { name: "En del" }));
     fireEvent.change(within(sheet).getByLabelText("Note"), { target: { value: "Efter frokost" } });
-    expect(within(sheet).getByLabelText("Hvornår?")).toHaveValue("15:00");
-    fireEvent.change(within(sheet).getByLabelText("Hvornår?"), { target: { value: "14:20" } });
+    expect(within(sheet).getByLabelText("Hvilken dag?")).toHaveValue("2026-10-15");
+    expect(within(sheet).getByLabelText("Klokken")).toHaveValue("15:00");
+    fireEvent.change(within(sheet).getByLabelText("Klokken"), { target: { value: "14:20" } });
     fireEvent.click(within(sheet).getByRole("button", { name: "Log det" }));
     await screen.findByTestId("feel-status");
     expect(fake.calls.find((c) => c.method === "POST")?.body).toEqual({
@@ -183,6 +185,79 @@ describe("Jeg har det… (the picker, plan §5)", () => {
     });
     expect(screen.queryByTestId("symptom-sheet")).not.toBeInTheDocument();
     expect(screen.getByTestId("feel-grid")).toBeInTheDocument();
+    expect(screen.getByTestId("feel-status")).toHaveTextContent("Kvalme er logget kl. 14:20");
+  });
+  it("Hvornår? starts at Nu, and a tile logs at the chosen time ago and says when", async () => {
+    mount();
+    await tiles();
+    const when = within(screen.getByTestId("feel-when"));
+    expect(when.getAllByRole("radio").map((r) => r.textContent)).toEqual([
+      "Nu",
+      "15 min siden",
+      "30 min siden",
+      "1 time siden",
+      "2 timer siden",
+    ]);
+    expect(when.getByRole("radio", { name: "Nu" })).toHaveAttribute("aria-checked", "true");
+    fireEvent.click(when.getByRole("radio", { name: "30 min siden" }));
+    fireEvent.click(screen.getByRole("button", { name: "Hovedpine" }));
+    expect(await screen.findByTestId("feel-status")).toHaveTextContent("Hovedpine er logget kl. 14:30");
+    expect(fake.calls.find((c) => c.method === "POST")?.body).toEqual({
+      kind: "headache",
+      ts: "2026-10-15T12:30:00.000Z",
+    });
+  });
+  it("Mere… opens the sheet at the time chosen in Hvornår?", async () => {
+    mount();
+    await tiles();
+    fireEvent.click(within(screen.getByTestId("feel-when")).getByRole("radio", { name: "2 timer siden" }));
+    fireEvent.click(screen.getByRole("button", { name: "Mere…" }));
+    const sheet = screen.getByTestId("symptom-sheet");
+    expect(within(sheet).getByLabelText("Hvilken dag?")).toHaveValue("2026-10-15");
+    expect(within(sheet).getByLabelText("Klokken")).toHaveValue("13:00");
+  });
+  it("the sheet logs on another day of the last week and says which", async () => {
+    mount();
+    await tiles();
+    fireEvent.click(screen.getByRole("button", { name: "Mere…" }));
+    const sheet = screen.getByTestId("symptom-sheet");
+    const day = within(sheet).getByLabelText("Hvilken dag?");
+    const options = within(day).getAllByRole("option");
+    expect(options).toHaveLength(7);
+    expect(options.slice(0, 2).map((o) => o.textContent)).toEqual(["I dag", "I går"]);
+    expect(options[2]?.textContent).toMatch(/^tirsdag (den )?13\. oktober$/);
+    fireEvent.change(day, { target: { value: "2026-10-14" } });
+    fireEvent.change(within(sheet).getByLabelText("Klokken"), { target: { value: "22:15" } });
+    fireEvent.click(within(sheet).getByRole("button", { name: "Log det" }));
+    expect(await screen.findByTestId("feel-status")).toHaveTextContent("Ondt i maven er logget i går kl. 22:15");
+    expect(fake.calls.find((c) => c.method === "POST")?.body).toEqual({
+      kind: "stomach-ache",
+      ts: "2026-10-14T20:15:00.000Z",
+    });
+  });
+  it("names the date when the sheet logs further back than yesterday", async () => {
+    mount();
+    await tiles();
+    fireEvent.click(screen.getByRole("button", { name: "Mere…" }));
+    const sheet = screen.getByTestId("symptom-sheet");
+    fireEvent.change(within(sheet).getByLabelText("Hvilken dag?"), { target: { value: "2026-10-12" } });
+    fireEvent.change(within(sheet).getByLabelText("Klokken"), { target: { value: "09:00" } });
+    fireEvent.click(within(sheet).getByRole("button", { name: "Log det" }));
+    expect(await screen.findByTestId("feel-status")).toHaveTextContent(
+      /^Ondt i maven er logget mandag (den )?12\. oktober kl\. 09:00/,
+    );
+  });
+  it("refuses a time that has not come yet, and says so", async () => {
+    mount();
+    await tiles();
+    fireEvent.click(screen.getByRole("button", { name: "Mere…" }));
+    const sheet = screen.getByTestId("symptom-sheet");
+    fireEvent.change(within(sheet).getByLabelText("Klokken"), { target: { value: "15:30" } });
+    expect(within(sheet).getByTestId("symptom-ahead")).toHaveTextContent("Det tidspunkt er ikke kommet endnu");
+    expect(within(sheet).getByRole("button", { name: "Log det" })).toBeDisabled();
+    fireEvent.change(within(sheet).getByLabelText("Hvilken dag?"), { target: { value: "2026-10-14" } });
+    expect(within(sheet).queryByTestId("symptom-ahead")).not.toBeInTheDocument();
+    expect(within(sheet).getByRole("button", { name: "Log det" })).toBeEnabled();
   });
   it("reloads today's list when the feed says a symptom was created elsewhere", async () => {
     mount();

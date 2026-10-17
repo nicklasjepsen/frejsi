@@ -112,7 +112,7 @@ test("Fortryd within ten seconds removes the entry; Mere… logs severity, a not
   await sheet.getByRole("radio", { name: "Hovedpine", exact: true }).click();
   await sheet.getByRole("radio", { name: "En del", exact: true }).click();
   await sheet.getByLabel("Note").fill("Efter fodbold");
-  await sheet.getByLabel("Hvornår?").fill("14:30");
+  await sheet.getByLabel("Klokken").fill("14:30");
   const saving = page.waitForResponse(
     (r) => r.url().endsWith("/symptoms") && r.request().method() === "POST",
   );

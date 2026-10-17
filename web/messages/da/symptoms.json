@@ -2,6 +2,12 @@
   "title": "Jeg har det…",
   "nav": "Jeg har det…",
   "intro": "Tryk på det, der passer. Det bliver logget med det samme.",
+  "when": "Hvornår?",
+  "ago": {
+    "now": "Nu",
+    "minutes": "{minutes} min siden",
+    "hours": "{hours, plural, one {# time} other {# timer}} siden"
+  },
   "close": "Luk",
   "kinds": {
     "stomach-ache": "Ondt i maven",
@@ -13,6 +19,9 @@
   },
   "logged": "Logget",
   "loggedKind": "{kind} er logget",
+  "loggedKindAt": "{kind} er logget kl. {time}",
+  "loggedKindYesterday": "{kind} er logget i går kl. {time}",
+  "loggedKindOn": "{kind} er logget {day} kl. {time}",
   "undo": "Fortryd",
   "undone": "Fortrudt",
   "more": "Mere…",
@@ -26,7 +35,13 @@
   },
   "note": "Note",
   "notePlaceholder": "Fx hvad der skete, da det kom",
-  "time": "Hvornår?",
+  "day": "Hvilken dag?",
+  "days": {
+    "today": "I dag",
+    "yesterday": "I går"
+  },
+  "time": "Klokken",
+  "ahead": "Det tidspunkt er ikke kommet endnu",
   "save": "Log det",
   "cancel": "Tilbage",
   "saveFailed": "Det blev ikke gemt – prøv igen",
