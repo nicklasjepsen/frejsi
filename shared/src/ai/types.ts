@@ -2,7 +2,14 @@ import type { z } from "zod";
 import type { AiProviderId, ModelRole } from "../schemas/ai";
 
 export type AiUse =
-  "search" | "normalise" | "parse" | "estimate" | "insight-meal" | "insight-week" | "backfill";
+  | "search"
+  | "normalise"
+  | "parse"
+  | "estimate"
+  | "insight-meal"
+  | "insight-week"
+  | "backfill"
+  | "recipe";
 export interface ToolCall {
   id: string;
   name: string;

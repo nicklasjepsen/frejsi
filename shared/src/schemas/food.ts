@@ -16,6 +16,61 @@ export const ai = "ai";
 export const FoodOrigin = z.string().regex(/^[a-z][a-z0-9-]{0,19}$/);
 export type FoodOrigin = z.infer<typeof FoodOrigin>;
 
+/**
+ * What a child sees on the plate (v0.6.0 plan §4, decision 3): `starch` is pasta, rice and potato,
+ * `protein` is meat, fish and egg, `mixed` is the plate. Message keys; the enum stays English.
+ */
+export const FoodCategory = z.enum([
+  "bread",
+  "fruit",
+  "vegetables",
+  "dairy",
+  "starch",
+  "protein",
+  "sweets",
+  "snack",
+  "drink",
+  "mixed",
+]);
+export type FoodCategory = z.infer<typeof FoodCategory>;
+/** The symbol stored on a meal: a category, or `unknown` when nothing dominates (drawn as the apple). */
+export const MealSymbol = z.enum([...FoodCategory.options, "unknown"]);
+export type MealSymbol = z.infer<typeof MealSymbol>;
+
+/** Where a recipe came from. The text and the URL are kept so the dish can be recalculated. */
+export const RecipeSource = z.strictObject({
+  kind: z.enum(["photo", "url", "text", "meal"]),
+  url: z.url().startsWith("https://").max(2000).optional(),
+  text: z.string().max(4000).optional(),
+  photoKey: z.string().min(1).max(200).optional(),
+  mealId: z.string().min(1).optional(),
+});
+export type RecipeSource = z.infer<typeof RecipeSource>;
+/** One line of a recipe after review: the person's amount, the matched food and the carbs for it. */
+export const RecipeIngredient = z.strictObject({
+  name: z.string().trim().min(1).max(120),
+  amount: z.number().min(0).max(100_000).optional(),
+  unit: z.string().trim().max(20).optional(),
+  grams: z.number().min(0).max(100_000).optional(),
+  foodId: z.string().min(1).optional(),
+  foodName: z.string().max(200).optional(),
+  carbs: z.number().int().min(0).max(100_000),
+  noCarb: z.boolean().optional(),
+});
+export type RecipeIngredient = z.infer<typeof RecipeIngredient>;
+const recipeFields = {
+  ingredients: z.array(RecipeIngredient).min(1).max(40),
+  yieldGrams: z.number().min(1).max(100_000).optional(),
+  yieldPortions: z.number().min(0.5).max(1000).optional(),
+  source: RecipeSource,
+};
+const hasYield = (value: { yieldGrams?: number | undefined; yieldPortions?: number | undefined }) =>
+  value.yieldGrams !== undefined || value.yieldPortions !== undefined;
+const yieldError = { message: "A recipe needs a yield in grams or portions", path: ["yieldGrams"] };
+/** The recipe behind a dish (`Food.recipe`), kept so the dish can be recalculated from its lines. */
+export const Recipe = z.strictObject(recipeFields).refine(hasYield, yieldError);
+export type Recipe = z.infer<typeof Recipe>;
+
 const barcode = z.string().transform((value, ctx) => {
   const normalised = normaliseBarcode(value);
   if (normalised === null) {
@@ -37,7 +92,10 @@ const fields = {
   carbsPer100g: z.number().min(0).max(100).multipleOf(0.1).nullish(),
   portions: z.array(Portion).default([]),
   barcode: barcode.optional(),
+  /** Absent when no source, model or person has placed the food yet. */
+  category: FoodCategory.optional(),
 };
+const ownFields = { recipe: Recipe.optional() };
 const hasCarbs = (value: { carbsPer100g?: number | null | undefined; portions: Portion[] }) =>
   value.carbsPer100g != null || value.portions.length > 0;
 const nutritionError = {
@@ -64,6 +122,7 @@ const viewFields = {
 };
 export const FoodView = z.strictObject({
   ...viewFields,
+  ...ownFields,
   photo: FoodPhoto.optional(),
   sourceName: z.string().max(200).optional(),
   createdBy: z.strictObject({ id: z.string().min(1), name: z.string().min(1) }).optional(),
@@ -74,6 +133,7 @@ export type FoodView = z.infer<typeof FoodView>;
 export const Food = z
   .strictObject({
     ...viewFields,
+    ...ownFields,
     spaceId: z.string().min(1).nullable(),
     sourceName: z.string().max(200).nullish(),
     embeddingModel: z.string().max(80).nullish(),
@@ -118,8 +178,14 @@ export const LookupResponse = z.strictObject({
 });
 export type LookupResponse = z.infer<typeof LookupResponse>;
 
+/** `origin` is settable only for a dish from a recipe; `family` and `manual` follow from `from`. */
 export const CreateFoodRequest = z
-  .strictObject({ ...fields, favourite: z.boolean().optional() })
+  .strictObject({
+    ...fields,
+    ...ownFields,
+    favourite: z.boolean().optional(),
+    origin: z.literal("recipe").optional(),
+  })
   .refine(hasCarbs, nutritionError);
 export type CreateFoodRequest = z.infer<typeof CreateFoodRequest>;
 export const AddCandidateRequest = z.strictObject({
@@ -127,7 +193,14 @@ export const AddCandidateRequest = z.strictObject({
 });
 export type AddCandidateRequest = z.infer<typeof AddCandidateRequest>;
 export const UpdateFoodRequest = z
-  .strictObject({ ...fields, portions: z.array(Portion), favourite: z.boolean() })
+  .strictObject({
+    ...fields,
+    portions: z.array(Portion),
+    favourite: z.boolean(),
+    // Omitted means unchanged; null clears the category.
+    category: FoodCategory.nullable(),
+    recipe: Recipe,
+  })
   .partial()
   .refine((value) => value.carbsPer100g !== null || value.portions?.length !== 0, nutritionError);
 export type UpdateFoodRequest = z.infer<typeof UpdateFoodRequest>;
@@ -159,3 +232,25 @@ export type ContributionResult = z.infer<typeof ContributionResult>;
 /** Plugin ids with a configured contributor. Never a credential, a host or anything glucose. */
 export const ContributionsView = z.strictObject({ available: z.array(FoodOrigin) });
 export type ContributionsView = z.infer<typeof ContributionsView>;
+
+/**
+ * A parsed recipe on its way to the review form: every line with the food it matched (or the
+ * candidates to pick from), the total, the yield and whether a model wrote any of the numbers.
+ */
+export const RecipeReview = z.strictObject({
+  title: z.string().trim().min(1).max(120),
+  lines: z
+    .array(
+      RecipeIngredient.safeExtend({
+        match: FoodView.optional(),
+        candidates: z.array(FoodCandidate).optional(),
+      }),
+    )
+    .max(40),
+  totalCarbs: z.number().int().min(0).max(100_000),
+  yieldPortions: recipeFields.yieldPortions,
+  yieldGrams: recipeFields.yieldGrams,
+  source: RecipeSource,
+  approx: z.boolean(),
+});
+export type RecipeReview = z.infer<typeof RecipeReview>;

@@ -274,6 +274,54 @@ describe("history contracts", () => {
           "root.meals[].photo.originalUrl",
           "originalUrl",
         ],
+        [
+          "root.meals[].symbol",
+          "symbol",
+        ],
+        [
+          "root.meals[].symbol",
+          "bread",
+        ],
+        [
+          "root.meals[].symbol",
+          "fruit",
+        ],
+        [
+          "root.meals[].symbol",
+          "vegetables",
+        ],
+        [
+          "root.meals[].symbol",
+          "dairy",
+        ],
+        [
+          "root.meals[].symbol",
+          "starch",
+        ],
+        [
+          "root.meals[].symbol",
+          "protein",
+        ],
+        [
+          "root.meals[].symbol",
+          "sweets",
+        ],
+        [
+          "root.meals[].symbol",
+          "snack",
+        ],
+        [
+          "root.meals[].symbol",
+          "drink",
+        ],
+        [
+          "root.meals[].symbol",
+          "mixed",
+        ],
+        [
+          "root.meals[].symbol",
+          "unknown",
+        ],
       ]
     `);
     const eventKeys = Object.fromEntries(

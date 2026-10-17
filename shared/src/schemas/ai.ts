@@ -4,6 +4,7 @@ import { GlucoseUnit } from "./glucose";
 import { InRange } from "./history";
 import { MealSlot } from "./meal";
 import { Locale } from "./settings";
+import { SymptomKind } from "./symptom";
 
 const count = z.number().int().nonnegative();
 const percent = z.number().min(0).max(100);
@@ -52,6 +53,8 @@ export type ParsedItem = z.infer<typeof ParsedItem>;
 export const ParsedMeal = z.strictObject({
   items: z.array(ParsedItem).max(12),
   unmatched: z.array(text.max(500)).max(12),
+  /** A feeling said at the table ("jeg har ondt i maven"); absent means none (v0.6.0 plan §5). */
+  symptoms: z.array(z.strictObject({ kind: SymptomKind, note: text.max(500).optional() })).max(6).optional(),
 });
 export type ParsedMeal = z.infer<typeof ParsedMeal>;
 export const PhotoEstimate = z.strictObject({
@@ -92,6 +95,11 @@ export const InsightInput = z.strictObject({
     .array(z.strictObject({ localDate: z.iso.date(), totalCarbs: count, stats: InsightStats }))
     .max(5),
   leadLabel: z.enum(["before", "after", "none"]),
+  /** Symptoms within −1 h/+4 h of the meal: the kind and the minutes only, never a note. */
+  symptoms: z
+    .array(z.strictObject({ kind: SymptomKind, minutesAfterMeal: z.number().int() }))
+    .max(20)
+    .optional(),
 });
 export type InsightInput = z.infer<typeof InsightInput>;
 export const WeekInsightInput = z.strictObject({
@@ -123,6 +131,8 @@ export const WeekInsightInput = z.strictObject({
       }),
     )
     .max(40),
+  /** How often each kind was logged that week. Counts only. */
+  symptomCounts: z.array(z.strictObject({ kind: SymptomKind, count })).max(40).optional(),
 });
 export type WeekInsightInput = z.infer<typeof WeekInsightInput>;
 export const MealInsight = z.strictObject({ text: z.string().min(20).max(280) });
@@ -174,6 +184,29 @@ export type EstimateRequest = z.infer<typeof EstimateRequest>;
 export const AskRequest = z.strictObject({ estimate: PhotoEstimate, photoDataUrl });
 export type AskRequest = z.infer<typeof AskRequest>;
 export const UpdateInsightRequest = z.strictObject({ questions });
+/** What a model reads out of a recipe page, text or photo (v0.6.0 plan §4): names and amounts only. */
+export const RecipeParse = z.strictObject({
+  title: text.max(120),
+  ingredients: z
+    .array(
+      z.strictObject({
+        name: text.max(120),
+        amount: z.number().min(0).max(100_000).optional(),
+        unit: z.string().trim().max(20).optional(),
+      }),
+    )
+    .max(40),
+  yieldPortions: z.number().min(0.5).max(1000).optional(),
+  yieldGrams: z.number().min(1).max(100_000).optional(),
+});
+export type RecipeParse = z.infer<typeof RecipeParse>;
+/** One way in at a time; the photo and the text reach a model only from the form's explicit tap. */
+export const RecipeParseRequest = z.union([
+  z.strictObject({ text: text.max(4000) }),
+  z.strictObject({ url: z.url().startsWith("https://").max(2000) }),
+  z.strictObject({ photoDataUrl }),
+]);
+export type RecipeParseRequest = z.infer<typeof RecipeParseRequest>;
 export type UpdateInsightRequest = z.infer<typeof UpdateInsightRequest>;
 export const PushSubscriptionRequest = z.strictObject({
   spaceId: text,

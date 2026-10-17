@@ -35,6 +35,11 @@ export const ApiErrorCode = z.enum([
   "source-url-invalid",
   "contribution-unavailable",
   "contribution-rejected",
+  "symptom-kind-unknown",
+  "symptom-not-found",
+  "recipe-fetch-failed",
+  "recipe-unreadable",
+  "share-expired",
 ]);
 export type ApiErrorCode = z.infer<typeof ApiErrorCode>;
 
