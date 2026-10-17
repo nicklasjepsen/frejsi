@@ -417,13 +417,27 @@
   }
 }
 
-.editLink {
-  border: 0;
-  background: transparent;
-  color: var(--accent-base);
-  font: inherit;
-  cursor: pointer;
+/* Maaltid-Telefon's action row under the hero: "Ret måltid", "Gem som egen ret" and the optional
+   second action, each a 44 px secondary button; SaveAsDish's feedback wraps onto its own line. */
+.phoneActions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.phoneActions > button,
+.phoneActions .saveDish > button {
+  min-width: 44px;
   min-height: 44px;
+  padding: 0 16px;
+  border-radius: 12px;
+  font-size: 15px;
+}
+
+.phoneActions .saveDish p,
+.phoneActions .saveDish a {
+  flex-basis: 100%;
 }
 
 .detailNav {

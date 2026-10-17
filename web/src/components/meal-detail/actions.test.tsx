@@ -41,7 +41,7 @@ function mount(layout: "phone" | "desktop" = "phone") {
 async function edit(layout: "phone" | "desktop" = "phone") {
   mount(layout);
   fireEvent.click(
-    await screen.findByRole("button", { name: layout === "phone" ? "Ret" : "Ret E" }),
+    await screen.findByRole("button", { name: layout === "phone" ? "Ret måltid" : "Ret E" }),
   );
   return within(screen.getByRole("dialog", { name: "Ret måltid" }));
 }
@@ -100,9 +100,12 @@ describe("edit and delete inside meal detail", () => {
       expect(sheet.getByTestId("total-bar")).toHaveTextContent("45 g");
       view = { ...view, meal: mealView({ title: "Updated fictional meal", totalCarbs: 45 }) };
       fireEvent.click(sheet.getByRole("button", { name: "Gem" }));
-      await waitFor(() => {
-        expect(screen.queryByRole("dialog")).toBeNull();
-      });
+      await waitFor(
+        () => {
+          expect(screen.queryByRole("dialog")).toBeNull();
+        },
+        { timeout: 3000 },
+      );
       expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("Updated fictional meal");
       expect(nav.push).not.toHaveBeenCalled();
       expect(nav.refresh).not.toHaveBeenCalled();
@@ -128,6 +131,28 @@ describe("edit and delete inside meal detail", () => {
       ]);
     },
   );
+  it.each(["phone", "desktop"] as const)(
+    "%s: says 'Gemt' once the write and the read are through, then returns to detail",
+    async (layout) => {
+      const sheet = await edit(layout);
+      fireEvent.change(sheet.getByLabelText("Note"), { target: { value: "Saved note" } });
+      fireEvent.click(sheet.getByRole("button", { name: "Gem" }));
+      const status = await sheet.findByTestId("sheet-saved");
+      expect(status).toHaveTextContent("Gemt");
+      expect(status).toHaveAttribute("role", "status");
+      expect(sheet.getByRole("button", { name: "Hent måltidet igen" })).toBeDisabled();
+      expect(writes()).toHaveLength(1);
+      expect(fake.calls.filter((c) => c.method === "GET")).toHaveLength(2);
+      await waitFor(
+        () => {
+          expect(screen.queryByRole("dialog")).toBeNull();
+        },
+        { timeout: 3000 },
+      );
+      expect(screen.getByTestId("meal-detail")).toBeVisible();
+    },
+  );
+
   it("preserves stored nutrition on a note-only edit by omitting unchanged items", async () => {
     const bread = view.editItems[0];
     if (!bread) throw new Error("fixture");
@@ -229,9 +254,12 @@ describe("edit and delete inside meal detail", () => {
         expect(writes()).toHaveLength(1);
       });
       expect(writes()[0]?.body).toMatchObject({ photoDataUrl: "data:image/jpeg;base64,BAUG" });
-      await waitFor(() => {
-        expect(screen.queryByRole("dialog")).toBeNull();
-      });
+      await waitFor(
+        () => {
+          expect(screen.queryByRole("dialog")).toBeNull();
+        },
+        { timeout: 3000 },
+      );
       cleanup();
       photos.process = () => Promise.reject(new Error("invalid fictional photo"));
       const retry = await edit();
@@ -254,9 +282,12 @@ describe("edit and delete inside meal detail", () => {
     );
     fake.on("GET /api/spaces/s1/meals/m1/curve", view);
     fireEvent.click(sheet.getByRole("button", { name: "Hent måltidet igen" }));
-    await waitFor(() => {
-      expect(screen.queryByRole("dialog")).toBeNull();
-    });
+    await waitFor(
+      () => {
+        expect(screen.queryByRole("dialog")).toBeNull();
+      },
+      { timeout: 3000 },
+    );
     expect(writes()).toHaveLength(1);
   });
 
@@ -308,9 +339,12 @@ describe("edit and delete inside meal detail", () => {
     expect(sheet.getByLabelText("Note")).toHaveValue("Keep this");
     fake.on("PATCH /api/spaces/s1/meals/m1", {});
     fireEvent.click(sheet.getByRole("button", { name: "Gem" }));
-    await waitFor(() => {
-      expect(screen.queryByRole("dialog")).toBeNull();
-    });
+    await waitFor(
+      () => {
+        expect(screen.queryByRole("dialog")).toBeNull();
+      },
+      { timeout: 3000 },
+    );
   });
   it("records a new tap, undoes it and omits an unchanged absent timestamp", async () => {
     view.meal = mealView({ bolusTs: undefined });
@@ -353,9 +387,12 @@ describe("edit and delete inside meal detail", () => {
     fireEvent.keyDown(sheet.getByLabelText("Note"), { key: "ArrowLeft" });
     expect(nav.push).not.toHaveBeenCalled();
     fireEvent.keyDown(screen.getByRole("dialog"), { key: "Escape" });
-    await waitFor(() => {
-      expect(screen.queryByRole("dialog")).toBeNull();
-    });
+    await waitFor(
+      () => {
+        expect(screen.queryByRole("dialog")).toBeNull();
+      },
+      { timeout: 3000 },
+    );
     expect(button).toHaveFocus();
   });
 });

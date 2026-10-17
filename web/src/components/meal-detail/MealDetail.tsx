@@ -233,6 +233,9 @@ function Ready({
       feed={feed}
     />
   ) : null;
+  const saveDish = (
+    <SaveAsDish key={view.meal.id} spaceId={spaceId} meal={view.meal} locale={locale} />
+  );
   if (size === "phone") {
     return (
       <>
@@ -241,6 +244,7 @@ function Ready({
           timeZone={timeZone}
           onEdit={onEdit}
           backHref={localeHref(locale, "/now")}
+          saveDish={saveDish}
         />
         {card}
         {tiles}
@@ -258,9 +262,7 @@ function Ready({
             meal={view.meal}
             timeZone={timeZone}
             onEdit={onEdit}
-            saveDish={
-              <SaveAsDish key={view.meal.id} spaceId={spaceId} meal={view.meal} locale={locale} />
-            }
+            saveDish={saveDish}
           />
           <MealItems items={view.meal.items} total={view.meal.totalCarbs} size="desktop" />
           {tiles}

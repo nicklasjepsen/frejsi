@@ -22,6 +22,9 @@ function dataUrl(bytes: Uint8Array): string {
   return `data:image/jpeg;base64,${btoa(binary)}`;
 }
 
+/** How long "Gemt" stays on the sheet after a save before the detail returns. */
+export const SAVED_PAUSE_MS = 600;
+
 /** Log-Portioner on the phone; a derived Log-Desktop meal column on desktop. */
 export function EditMealSheet({
   spaceId,
@@ -53,6 +56,7 @@ export function EditMealSheet({
   const [failed, setFailed] = useState(false);
   const [written, setWritten] = useState(false);
   const [refreshFailed, setRefreshFailed] = useState(false);
+  const [saved, setSaved] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleteFailed, setDeleteFailed] = useState(false);
   const dialog = useRef<HTMLDialogElement>(null);
@@ -93,6 +97,9 @@ export function EditMealSheet({
         setRefreshFailed(true);
         return;
       }
+      // "Gemt" for a moment, so the person sees the save land before the detail returns.
+      setSaved(true);
+      await new Promise((resolve) => setTimeout(resolve, SAVED_PAUSE_MS));
       onClose();
     } catch {
       setFailed(true);
@@ -236,6 +243,11 @@ export function EditMealSheet({
       {refreshFailed && (
         <p className={styles.sheetFeedback} role="alert">
           {t("refreshFailed")}
+        </p>
+      )}
+      {saved && (
+        <p className={styles.sheetFeedback} role="status" data-testid="sheet-saved">
+          {t("saved")}
         </p>
       )}
       <TotalBar

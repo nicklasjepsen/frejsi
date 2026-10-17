@@ -60,15 +60,21 @@ describe("clearing a saved meal timestamp", () => {
       mount(layout);
       await screen.findByTestId("curve-card");
       expect(screen.getByTestId("bolus")).toBeInTheDocument();
-      fireEvent.click(screen.getByRole("button", { name: layout === "phone" ? "Ret" : "Ret E" }));
+      fireEvent.click(
+        screen.getByRole("button", { name: layout === "phone" ? "Ret måltid" : "Ret E" }),
+      );
       const sheet = within(screen.getByRole("dialog"));
       fireEvent.click(sheet.getByRole("button", { name: "Fjern bolustidspunkt" }));
       expect(sheet.queryByRole("button", { name: "Fjern bolustidspunkt" })).toBeNull();
       expect(fake.calls.filter((c) => c.method === "PATCH")).toHaveLength(0);
       fireEvent.click(sheet.getByRole("button", { name: "Gem" }));
-      await waitFor(() => {
-        expect(screen.queryByRole("dialog")).toBeNull();
-      });
+      // The sheet says "Gemt" for a moment before it returns to the detail.
+      await waitFor(
+        () => {
+          expect(screen.queryByRole("dialog")).toBeNull();
+        },
+        { timeout: 3000 },
+      );
       expect(fake.calls.find((c) => c.method === "PATCH")?.body).toHaveProperty("bolusTs", null);
       expect(screen.queryByTestId("bolus")).toBeNull();
     },
@@ -107,7 +113,9 @@ describe("clearing a saved meal timestamp", () => {
     const fake = fetchFake().on("GET /api/spaces/s1/meals/m1/curve", curveView());
     fake.install();
     mount("phone", locale);
-    fireEvent.click(await screen.findByRole("button", { name: locale === "da" ? "Ret" : "Edit" }));
+    fireEvent.click(
+      await screen.findByRole("button", { name: locale === "da" ? "Ret måltid" : "Edit meal" }),
+    );
     expect(
       screen.getByRole("button", {
         name: locale === "da" ? "Fjern bolustidspunkt" : "Remove bolus time",
@@ -119,7 +127,9 @@ describe("clearing a saved meal timestamp", () => {
       curveView({ meal: mealView({ bolusTs: undefined }) }),
     );
     mount("phone", locale);
-    fireEvent.click(await screen.findByRole("button", { name: locale === "da" ? "Ret" : "Edit" }));
+    fireEvent.click(
+      await screen.findByRole("button", { name: locale === "da" ? "Ret måltid" : "Edit meal" }),
+    );
     expect(
       screen.queryByRole("button", { name: /Fjern bolustidspunkt|Remove bolus time/ }),
     ).toBeNull();

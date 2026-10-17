@@ -43,9 +43,9 @@ export function MealCard({
   /** Timeline metadata, including a timestamped peak when the caller has permission. */
   detail?: ReactNode;
   /** Links the card to `/meal/<id>`; without it the card is plain. */
-  locale?: AppLocale;
+  locale?: AppLocale | undefined;
   /** The member's role, from the call site; only an owner or carer gets "Ret". */
-  role?: Role;
+  role?: Role | undefined;
 }) {
   const t = useTranslations("today");
   const time = formatClock(new Date(meal.ts), timeZone);
