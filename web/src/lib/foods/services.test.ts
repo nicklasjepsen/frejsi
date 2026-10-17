@@ -690,9 +690,9 @@ describe("food categories and recipes (v0.6.0 task 1)", () => {
     const withRecipe = await updateFood("s1", actor, food.id, { recipe }, rig.deps);
     expect(withRecipe.recipe).toEqual(recipe);
     expect(rig.rows[0]?.recipe).toBe(JSON.stringify(recipe));
-    expect(
-      (await updateFood("s1", actor, food.id, { favourite: true }, rig.deps)).recipe,
-    ).toEqual(recipe);
+    expect((await updateFood("s1", actor, food.id, { favourite: true }, rig.deps)).recipe).toEqual(
+      recipe,
+    );
     await expect(
       updateFood("s1", actor, food.id, { category: "loaf" }, rig.deps),
     ).rejects.toMatchObject({ status: 400 });
@@ -719,6 +719,79 @@ describe("food categories and recipes (v0.6.0 task 1)", () => {
       else expect(cache).toBeUndefined();
     },
   );
+  it("takes a local pick that answers byRef from the dataset, category included, never from the client", async () => {
+    const dataset = {
+      name: "Fiktivt rugbrød",
+      carbsPer100g: 32.5,
+      portions: [],
+      origin: "local-test",
+      sourceRef: "local-test:1",
+      category: "bread" as const,
+    };
+    const refs: { sourceRef: string; locale: string }[] = [];
+    rig.deps.sources = [
+      {
+        id: "local-test",
+        kind: "local",
+        search: () => Promise.resolve({ status: "ok", candidates: [dataset] }),
+        byBarcode: () => Promise.resolve({ status: "skipped", candidates: [] }),
+        byRef: (sourceRef, locale) => {
+          refs.push({ sourceRef, locale });
+          return Promise.resolve(sourceRef === dataset.sourceRef ? { ...dataset } : null);
+        },
+      },
+    ];
+    const food = await addCandidate(
+      "s1",
+      actor,
+      { ...dataset, name: "Forged loaf", carbsPer100g: 99, category: "sweets" },
+      rig.deps,
+    );
+    expect(food).toMatchObject({
+      name: "Fiktivt rugbrød",
+      carbsPer100g: 32.5,
+      category: "bread",
+      verified: false,
+      origin: "local-test",
+    });
+    expect(refs).toEqual([{ sourceRef: "local-test:1", locale: actor.locale }]);
+    expect(rig.rows).toHaveLength(1);
+    expect(rig.rows[0]).toMatchObject({ spaceId: "s1", category: "bread", verified: false });
+    // A reference the dataset does not know is a bad request, and nothing is written.
+    await expect(
+      addCandidate("s1", actor, { ...dataset, sourceRef: "local-test:2" }, rig.deps),
+    ).rejects.toMatchObject({ status: 400, code: "validation" });
+    expect(rig.rows).toHaveLength(1);
+    expect(rig.events.map((event) => event.type)).toEqual(["food.created"]);
+  });
+  it("ignores a client-sent category on a remote pick: the re-fetched product sets it, or nothing does", async () => {
+    rig.remoteCandidates = [{ ...candidate, category: "dairy" }];
+    const byBarcode = await addCandidate(
+      "s1",
+      actor,
+      { ...candidate, category: "sweets" },
+      rig.deps,
+    );
+    expect(byBarcode.category).toBe("dairy");
+    const offered = {
+      name: "Cloud fruit",
+      carbsPer100g: 17,
+      portions: [],
+      origin: "remote-test",
+      sourceRef: "remote-test:fruit",
+    };
+    rig.deps.sources = [
+      {
+        id: "remote-test",
+        kind: "remote",
+        search: () => Promise.resolve({ status: "ok", candidates: [offered] }),
+        byBarcode: () => Promise.resolve({ status: "ok", candidates: [] }),
+      },
+    ];
+    const bySearch = await addCandidate("s1", actor, { ...offered, category: "sweets" }, rig.deps);
+    expect(bySearch.category).toBeUndefined();
+    expect(rig.rows.find((row) => row.sourceRef === offered.sourceRef)?.category).toBeNull();
+  });
   it("copies the cached category rather than the client's when the cache already has the food", async () => {
     rig.seed({
       spaceId: null,

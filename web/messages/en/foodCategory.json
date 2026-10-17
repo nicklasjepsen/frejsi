@@ -1,0 +1,16 @@
+{
+  "label": "Category",
+  "none": "No category",
+  "names": {
+    "bread": "Bread",
+    "fruit": "Fruit",
+    "vegetables": "Vegetables",
+    "dairy": "Milk and cheese",
+    "starch": "Pasta, rice and potato",
+    "protein": "Meat, fish and egg",
+    "sweets": "Sweets and cake",
+    "snack": "Snacks",
+    "drink": "Drinks",
+    "mixed": "Mixed dish"
+  }
+}

@@ -7,6 +7,7 @@ import ask from "./ask.json";
 import chart from "./chart.json";
 import eat from "./eat.json";
 import errors from "./errors.json";
+import foodCategory from "./foodCategory.json";
 import foodKit from "./foodKit.json";
 import glucose from "./glucose.json";
 import history from "./history.json";
@@ -39,6 +40,7 @@ const messages = {
   chart,
   eat,
   errors,
+  foodCategory,
   foodKit,
   glucose,
   history,

@@ -329,6 +329,98 @@ describe("Bibliotek on desktop (Bibliotek-Desktop)", () => {
   });
 });
 
+describe("food categories and recipes in the library (v0.6.0 plan §7)", () => {
+  const recipeDish = () => ({
+    id: "f-lasagne",
+    name: "Fiktiv lasagne",
+    carbsPer100g: 12,
+    portions: [{ label: "1 portion", grams: 350, carbs: 42 }],
+    origin: "recipe",
+    verified: false,
+    favourite: false,
+    category: "mixed" as const,
+    updatedAt: "2026-10-16T10:00:00.000Z",
+    createdAt: "2026-10-16T10:00:00.000Z",
+  });
+  it("draws the symbol before the name on the phone rows and in the desktop table, named by its category", async () => {
+    mount();
+    const rows = await phoneRows();
+    const rye = at(rows, 0);
+    const symbol = within(rye).getByRole("img", { name: "Brød" });
+    expect(symbol).toHaveAttribute("data-testid", "category-symbol");
+    expect(symbol.compareDocumentPosition(within(rye).getByText("Rugbrød, Eksempelbageriet"))).toBe(
+      Node.DOCUMENT_POSITION_FOLLOWING,
+    );
+    // Without a category there is no symbol, not a wrong one.
+    expect(within(at(rows, 2)).queryByTestId("category-symbol")).toBeNull();
+    const tableRows = desktop().getAllByRole("row").slice(1);
+    const cell = at(within(at(tableRows, 0)).getAllByRole("cell"), 1);
+    const desktopSymbol = within(cell).getByRole("img", { name: "Brød" });
+    expect(
+      desktopSymbol.compareDocumentPosition(
+        within(cell).getByRole("button", { name: "Ret Rugbrød, Eksempelbageriet" }),
+      ),
+    ).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+    expect(cell).toHaveTextContent("Rugbrød, Eksempelbageriet");
+  });
+  it("labels a dish from a recipe as Opskrift, counts it among Egne retter, and offers no origin chip for it", async () => {
+    api = fakeFoodsApi([...artboardFoods(), recipeDish()]);
+    vi.stubGlobal("fetch", api.fetch);
+    mount();
+    await waitFor(() => {
+      expect(phone().getAllByTestId("food-row")).toHaveLength(6);
+    });
+    const row = phone()
+      .getAllByTestId("food-row")
+      .find((item) => item.textContent.includes("Fiktiv lasagne"));
+    expect(row?.textContent).toContain("Opskrift · 12 g pr. 100 g · 1 portion 350 g");
+    const chips = within(phone().getByRole("group", { name: "Vis" })).getAllByRole("button");
+    expect(chips.map((chip) => chip.textContent)).not.toContain("Fra recipe");
+    fireEvent.click(
+      within(phone().getByRole("group", { name: "Vis" })).getByRole("button", {
+        name: "Egne retter",
+      }),
+    );
+    await waitFor(() => {
+      expect(phone().getAllByTestId("food-row")).toHaveLength(4);
+    });
+    expect(
+      phone()
+        .getAllByTestId("food-row")
+        .map((item) => item.textContent),
+    ).toEqual(expect.arrayContaining([expect.stringContaining("Fiktiv lasagne")]));
+    const tableRows = desktop().getAllByRole("row").slice(1);
+    const dish = at(
+      tableRows.filter((item) => item.textContent.includes("Fiktiv lasagne")),
+      0,
+    );
+    expect(
+      within(dish)
+        .getAllByRole("cell")
+        .map((cell) => cell.textContent),
+    ).toEqual(["", "Fiktiv lasagne", "12 g", "1 portion 350 g", "Opskrift", "Ikke tjekket"]);
+  });
+  it("offers Ny ret fra opskrift next to Ny fødevare, linking to the recipe page of the locale", async () => {
+    mount();
+    await phoneRows();
+    expect(phone().getByRole("link", { name: "Ny ret fra opskrift" })).toHaveAttribute(
+      "href",
+      "/da/recipe/new",
+    );
+    expect(desktop().getByRole("link", { name: "Ny ret fra opskrift" })).toHaveAttribute(
+      "href",
+      "/da/recipe/new",
+    );
+    cleanup();
+    mount("en");
+    await phoneRows();
+    expect(desktop().getByRole("link", { name: "New dish from a recipe" })).toHaveAttribute(
+      "href",
+      "/en/recipe/new",
+    );
+  });
+});
+
 describe("initial library filter (#122)", () => {
   it("selects unverified on phone and desktop and filters the first request", async () => {
     mount("da", "unverified");

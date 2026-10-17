@@ -3,19 +3,16 @@ import {
   HttpError,
   type FoodCandidate,
   type FoodSource,
+  type Locale,
 } from "@frejsi/shared";
 
-/** Client fields identify a pick, but can never author cross-space source data. */
-export async function confirmRemoteCandidate(
-  source: FoodSource,
-  candidate: FoodCandidate & { barcode: string },
-): Promise<FoodCandidate> {
+/** One bounded call to a source: 2.5 s, then the signal aborts and the pick is unavailable. */
+async function bounded<T>(run: (signal: AbortSignal) => Promise<T>): Promise<T> {
   const controller = new AbortController();
   let timer: ReturnType<typeof setTimeout> | undefined;
-  let result;
   try {
-    result = await Promise.race([
-      Promise.resolve().then(() => source.byBarcode(candidate.barcode, controller.signal)),
+    return await Promise.race([
+      Promise.resolve().then(() => run(controller.signal)),
       new Promise<never>((_resolve, reject) => {
         timer = setTimeout(() => {
           controller.abort();
@@ -28,6 +25,14 @@ export async function confirmRemoteCandidate(
   } finally {
     clearTimeout(timer);
   }
+}
+
+/** Client fields identify a pick, but can never author cross-space source data. */
+export async function confirmRemoteCandidate(
+  source: FoodSource,
+  candidate: FoodCandidate & { barcode: string },
+): Promise<FoodCandidate> {
+  const result = await bounded((signal) => source.byBarcode(candidate.barcode, signal));
   if (result.status !== "ok") throw new HttpError(503, "lookup-unavailable");
   const found = result.candidates.find(
     (food) =>
@@ -36,6 +41,25 @@ export async function confirmRemoteCandidate(
         food.barcode === candidate.barcode),
   );
   if (!found) throw new HttpError(400, "validation");
+  const parsed = AddCandidateRequest.safeParse({
+    candidate: { ...found, origin: source.id, sourceRef: candidate.sourceRef },
+  });
+  if (!parsed.success) throw new HttpError(503, "lookup-unavailable");
+  return parsed.data.candidate;
+}
+
+/**
+ * A pick from a source that answers by reference (a local dataset such as Frida): the whole
+ * candidate, its category included, is read from the source again; the client's copy only
+ * identifies it. A reference the source does not know is a bad request.
+ */
+export async function resolveCandidateByRef(
+  source: FoodSource & { byRef: NonNullable<FoodSource["byRef"]> },
+  candidate: FoodCandidate,
+  locale: Locale,
+): Promise<FoodCandidate> {
+  const found = await bounded((signal) => source.byRef(candidate.sourceRef, locale, signal));
+  if (found?.sourceRef !== candidate.sourceRef) throw new HttpError(400, "validation");
   const parsed = AddCandidateRequest.safeParse({
     candidate: { ...found, origin: source.id, sourceRef: candidate.sourceRef },
   });

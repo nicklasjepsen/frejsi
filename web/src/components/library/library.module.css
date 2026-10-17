@@ -49,6 +49,10 @@
 .addLink:focus-visible {
   outline: 2px solid var(--accent-base);
 }
+.addLinks {
+  display: inline-flex;
+  gap: 4px;
+}
 
 /* The chips scroll edge to edge (the gutter is inside the scroller) and fade out at both edges so
    a cut-off chip reads as "more". At either end the gutter is what sits under the fade, so the
@@ -387,4 +391,35 @@
 .askedMeta {
   color: var(--text-muted);
   font-size: 12px;
+}
+
+/* Food categories (v0.6.0): the symbol before the name, and the chip row in the form. */
+.categorySymbol {
+  display: inline-grid;
+  place-items: center;
+  flex-shrink: 0;
+  color: var(--meal-marker);
+}
+.categorySymbol svg {
+  width: 100%;
+  height: 100%;
+}
+.symbolTile {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  border-radius: 12px;
+  background: var(--library-tint);
+  border: 1px solid var(--library-tint-border);
+}
+.categoryChips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.categoryChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
 }

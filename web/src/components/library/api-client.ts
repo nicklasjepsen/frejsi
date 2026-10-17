@@ -30,8 +30,8 @@ export const FIXED_FILTERS = ["all", "unverified", "own", "favourites", "recent"
 export type FixedFilter = (typeof FIXED_FILTERS)[number];
 export type LibraryFilter = FixedFilter | (string & {});
 
-/** Origins typed by a person: they fall under "Egne retter", not under an origin chip. */
-export const OWN_ORIGINS: ReadonlySet<string> = new Set(["family", "manual"]);
+/** Origins a person made here (a dish from a recipe too): "Egne retter", never an origin chip. */
+export const OWN_ORIGINS: ReadonlySet<string> = new Set(["family", "manual", "recipe"]);
 
 /**
  * `GET foods`: the space's foods with the counts per filter. A bare `FoodView[]` is accepted too;

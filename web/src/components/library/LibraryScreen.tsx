@@ -18,6 +18,7 @@ import { localeHref, type AppLocale } from "@/lib/i18n/routing";
 
 import { libraryApi, type LibraryFilter } from "./api-client";
 import { BatchBar } from "./BatchBar";
+import { CategorySymbol } from "./CategorySymbol";
 import { EditPanel } from "./EditPanel";
 import { useFoodText } from "./format";
 import { LibraryFilters } from "./LibraryFilters";
@@ -75,6 +76,7 @@ export function LibraryScreen({ spaceId, locale, initialFilter = "all" }: Librar
       <DesktopLibrary
         library={library}
         spaceId={spaceId}
+        locale={locale}
         verify={verify}
         busy={verifying.size > 0}
         writeFailed={writeFailed}
@@ -127,13 +129,23 @@ function PhoneLibrary({
       <PageHeader
         title={t("title")}
         trailing={
-          <Link
-            href={localeHref(locale, "/library/new")}
-            className={styles.addLink}
-            aria-label={t("newFood")}
-          >
-            <span aria-hidden="true">+</span>
-          </Link>
+          <span className={styles.addLinks}>
+            <Link
+              href={localeHref(locale, "/recipe/new")}
+              className={styles.addLink}
+              aria-label={t("newRecipe")}
+              title={t("newRecipe")}
+            >
+              <RecipeIcon />
+            </Link>
+            <Link
+              href={localeHref(locale, "/library/new")}
+              className={styles.addLink}
+              aria-label={t("newFood")}
+            >
+              <span aria-hidden="true">+</span>
+            </Link>
+          </span>
         }
       />
       <SearchField
@@ -167,7 +179,7 @@ function PhoneLibrary({
                 title={text.title(food)}
                 verified={food.verified || food.origin === "ai"}
                 href={localeHref(locale, `/library/${encodeURIComponent(food.id)}`)}
-                photo={<FoodPhoto src={food.photo?.thumbUrl} size={44} />}
+                photo={<RowPicture food={food} />}
                 secondary={
                   <span className={styles.estimateLine}>
                     <span>{text.line(food)}</span>
@@ -207,6 +219,7 @@ type Editing = { kind: "new" } | { kind: "edit"; id: string } | null;
 function DesktopLibrary({
   library,
   spaceId,
+  locale,
   verify,
   busy,
   writeFailed,
@@ -214,6 +227,7 @@ function DesktopLibrary({
 }: {
   library: LibraryState;
   spaceId: string;
+  locale: AppLocale;
   verify: (ids: string[]) => Promise<boolean>;
   busy: boolean;
   writeFailed: boolean;
@@ -302,6 +316,7 @@ function DesktopLibrary({
       render: (food) => (
         <div className={styles.cellFood}>
           {food.origin === "ai" && <FoodPhoto src={food.photo?.thumbUrl} size={44} />}
+          {food.category && <CategorySymbol category={food.category} size={20} />}
           <div>
             <button
               type="button"
@@ -368,6 +383,9 @@ function DesktopLibrary({
           >
             {t("newFood")}
           </Button>
+          <Button variant="secondary" href={localeHref(locale, "/recipe/new")}>
+            {t("newRecipe")}
+          </Button>
         </div>
       </div>
       <LibraryFilters
@@ -427,6 +445,40 @@ function DesktopLibrary({
         )}
       </div>
     </section>
+  );
+}
+
+/**
+ * The phone row's picture: the photo when the food has one, else its category symbol before the
+ * name (v0.6.0 plan §7), else the photo placeholder as before.
+ */
+function RowPicture({ food }: { food: FoodView }) {
+  if (!food.photo && food.category)
+    return (
+      <span className={styles.symbolTile}>
+        <CategorySymbol category={food.category} size={24} />
+      </span>
+    );
+  return <FoodPhoto src={food.photo?.thumbUrl} size={44} />;
+}
+
+/** A sheet with lines: the recipe way in, beside the plus. */
+function RecipeIcon() {
+  return (
+    <svg
+      width="22"
+      height="22"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M6 3h9l4 4v14H6z" />
+      <path d="M9 11h6M9 15h6" />
+    </svg>
   );
 }
 

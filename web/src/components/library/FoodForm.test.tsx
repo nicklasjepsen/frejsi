@@ -221,6 +221,96 @@ describe("FoodForm (the edit panel's fields)", () => {
   });
 });
 
+describe("FoodForm: Kategori (v0.6.0 plan §7)", () => {
+  const group = () => screen.getByRole("radiogroup", { name: "Kategori" });
+  it("shows the ten categories and none, each with its symbol, and saves the chosen one on create", async () => {
+    const onSaved = vi.fn();
+    mount({ onSaved });
+    const chips = within(group()).getAllByRole("radio");
+    expect(chips.map((chip) => chip.textContent)).toEqual([
+      "Ingen kategori",
+      "Brød",
+      "Frugt",
+      "Grønt",
+      "Mælk og ost",
+      "Pasta, ris og kartofler",
+      "Kød, fisk og æg",
+      "Slik og kage",
+      "Snacks",
+      "Drikke",
+      "Blandet ret",
+    ]);
+    expect(chips[0]).toHaveAttribute("aria-checked", "true");
+    expect(within(group()).getAllByTestId("category-symbol")).toHaveLength(10);
+    fireEvent.click(within(group()).getByRole("radio", { name: "Brød" }));
+    expect(within(group()).getByRole("radio", { name: "Brød" })).toHaveAttribute(
+      "aria-checked",
+      "true",
+    );
+    fireEvent.change(screen.getByLabelText("Navn"), { target: { value: "Boller" } });
+    fireEvent.change(screen.getByLabelText("Kulhydrat pr. 100 g"), { target: { value: "48" } });
+    fireEvent.click(screen.getByRole("button", { name: "Gem" }));
+    await waitFor(() => {
+      expect(onSaved).toHaveBeenCalled();
+    });
+    expect(writes().map((call) => call.body)).toEqual([
+      {
+        name: "Boller",
+        carbsPer100g: 48,
+        portions: [],
+        favourite: false,
+        category: "bread",
+        from: "library",
+      },
+    ]);
+    expect(onSaved.mock.calls[0]?.[0]).toMatchObject({ category: "bread" });
+  });
+  it("starts on the food's category, sends a change as PATCH category and a cleared one as null, and leaves it out when unchanged", async () => {
+    const onSaved = vi.fn();
+    mount({ food: { ...food("f-rye"), category: "bread" }, onSaved });
+    expect(within(group()).getByRole("radio", { name: "Brød" })).toHaveAttribute(
+      "aria-checked",
+      "true",
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Gem" }));
+    await waitFor(() => {
+      expect(onSaved).toHaveBeenCalledTimes(1);
+    });
+    expect(at(writes(), 0).body).not.toHaveProperty("category");
+    fireEvent.click(within(group()).getByRole("radio", { name: "Snacks" }));
+    fireEvent.click(screen.getByRole("button", { name: "Gem" }));
+    await waitFor(() => {
+      expect(onSaved).toHaveBeenCalledTimes(2);
+    });
+    expect(at(writes(), 1).body).toMatchObject({ category: "snack" });
+    fireEvent.click(within(group()).getByRole("radio", { name: "Ingen kategori" }));
+    fireEvent.click(screen.getByRole("button", { name: "Gem" }));
+    await waitFor(() => {
+      expect(onSaved).toHaveBeenCalledTimes(3);
+    });
+    expect(at(writes(), 2).body).toMatchObject({ category: null });
+    expect(onSaved.mock.calls[2]?.[0]).not.toHaveProperty("category");
+    // Nothing about a category touches verification: the body never carries `verified`.
+    for (const call of writes()) expect(call.body).not.toHaveProperty("verified");
+  });
+  it("moves between the chips with the arrow keys and speaks English with the en messages", () => {
+    cleanup();
+    render(
+      <I18nProvider locale="en" messages={getMessages("en")}>
+        <FoodForm spaceId="s1" onSaved={vi.fn()} />
+      </I18nProvider>,
+    );
+    const chips = within(screen.getByRole("radiogroup", { name: "Category" })).getAllByRole(
+      "radio",
+    );
+    expect(chips.map((chip) => chip.textContent)).toContain("Meat, fish and egg");
+    fireEvent.keyDown(at(chips, 0), { key: "ArrowRight" });
+    expect(at(chips, 1)).toHaveAttribute("aria-checked", "true");
+    expect(at(chips, 1)).toHaveAttribute("tabindex", "0");
+    expect(at(chips, 0)).toHaveAttribute("tabindex", "-1");
+  });
+});
+
 describe("FoodForm: Send rettelsen til Open Food Facts (spec §4, always behind the question)", () => {
   const box = () =>
     screen.queryByRole("checkbox", {

@@ -27,7 +27,7 @@ import {
   type ResolvedFoods,
 } from "./core";
 
-import { confirmRemoteCandidate } from "./candidate";
+import { confirmRemoteCandidate, resolveCandidateByRef } from "./candidate";
 
 export { configureFoods, type FoodDeps } from "./core";
 function parse<T>(schema: z.ZodType<T>, value: unknown): T {
@@ -235,7 +235,8 @@ export async function createFood(
   const fields = parse(createRequest, value);
   authorize(spaceId, session, fields.verify);
   // A dish from a recipe is made from the library, never from the log's manual path.
-  if (fields.origin === "recipe" && fields.from !== "library") throw new HttpError(400, "validation");
+  if (fields.origin === "recipe" && fields.from !== "library")
+    throw new HttpError(400, "validation");
   const deps = resolveFoods(input);
   const row = await foodTransaction(deps, async (tx, emit) => {
     const id = randomUUID();
@@ -318,6 +319,17 @@ export async function addCandidate(
         spaceId: null,
         verified: false,
       });
+    } else if (source.byRef) {
+      // A dataset pick (Frida): the data and the category come from the dataset, never the client.
+      candidate = await resolveCandidateByRef(
+        { ...source, byRef: source.byRef.bind(source) },
+        candidate,
+        session.locale,
+      );
+    } else if (source.kind === "remote") {
+      // Nothing to re-fetch, so a category cannot be confirmed; the enrichment pass places it.
+      const { category: _unconfirmed, ...rest } = candidate;
+      candidate = rest;
     }
   }
   const row = await foodTransaction(deps, async (tx, emit) => {

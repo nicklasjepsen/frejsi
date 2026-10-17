@@ -5,6 +5,7 @@
   "search": "Search food",
   "searchDesktop": "Search the library",
   "newFood": "New food",
+  "newRecipe": "New dish from a recipe",
   "filters": "Show",
   "filter": {
     "all": "All",
@@ -19,20 +20,23 @@
     "off": "From Open Food Facts",
     "frida": "From Frida",
     "other": "From {origin}",
-    "ai": "AI from photo"
+    "ai": "AI from photo",
+    "recipe": "From a recipe"
   },
   "sourceName": {
     "off": "Open Food Facts",
     "frida": "Frida",
     "family": "Own dish",
     "manual": "Own dish",
-    "ai": "AI from photo"
+    "ai": "AI from photo",
+    "recipe": "Recipe"
   },
   "line": {
     "origin": {
       "family": "Own dish",
       "manual": "Own dish",
-      "frida": "Frida"
+      "frida": "Frida",
+      "recipe": "Recipe"
     },
     "per100g": "{amount} g per 100 g",
     "portion": "{label} {amount} g"

@@ -3,6 +3,7 @@ import { carbsFor } from "@frejsi/shared/food/portions";
 import {
   CreateFoodRequest,
   UpdateFoodRequest,
+  type FoodCategory,
   type FoodView,
   type Portion,
 } from "@frejsi/shared/schemas/food";
@@ -13,6 +14,7 @@ import { FoodPhoto, PhotoPicker } from "@/components/food";
 import { Badge, Button, Checkbox, NumberInput, TextInput } from "@/components/ui";
 
 import { libraryApi, OWN_ORIGINS } from "./api-client";
+import { CategoryChips } from "./CategoryChips";
 import { useFoodText } from "./format";
 import styles from "./library.module.css";
 
@@ -88,6 +90,7 @@ export function FoodForm({ spaceId, food, titleId, onSaved }: FoodFormProps) {
     food && food.portions.length > 0 ? food.portions.map(toRow) : [toRow()],
   );
   const [favourite, setFavourite] = useState(food?.favourite ?? false);
+  const [category, setCategory] = useState<FoodCategory | "">(food?.category ?? "");
   const [photo, setPhoto] = useState<Uint8Array | null>(null);
   const [preview, setPreview] = useState<string>();
   const [saving, setSaving] = useState(false);
@@ -187,14 +190,17 @@ export function FoodForm({ spaceId, food, titleId, onSaved }: FoodFormProps) {
           portions: values.portions,
           favourite,
           ...(values.carbsPer100g === undefined ? {} : { carbsPer100g: values.carbsPer100g }),
+          ...(category ? { category } : {}),
         });
         result = await libraryApi.create(spaceId, body, { verify });
       } else {
+        // The category goes only when it changed: omitted means unchanged, null clears it.
         const body = UpdateFoodRequest.parse({
           name,
           carbsPer100g: values.carbsPer100g ?? null,
           portions: values.portions,
           favourite,
+          ...(category === (saved.category ?? "") ? {} : { category: category || null }),
         });
         result = await libraryApi.update(spaceId, saved.id, body);
         if (verify && !result.verified) {
@@ -358,6 +364,7 @@ export function FoodForm({ spaceId, food, titleId, onSaved }: FoodFormProps) {
           {t("addPortion")}
         </button>
       </fieldset>
+      <CategoryChips value={category} onChange={setCategory} />
       <Checkbox
         label={t("favourite")}
         checked={favourite}

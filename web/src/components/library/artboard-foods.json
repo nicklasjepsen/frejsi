@@ -12,6 +12,7 @@
     ],
     "barcode": "2000000000015",
     "origin": "off",
+    "category": "bread",
     "verified": false,
     "favourite": false,
     "updatedAt": "2026-10-15T10:00:00.000Z",
@@ -31,6 +32,7 @@
       }
     ],
     "origin": "family",
+    "category": "mixed",
     "verified": false,
     "favourite": true,
     "updatedAt": "2026-10-15T10:00:00.000Z",
@@ -57,6 +59,7 @@
     "carbsPer100g": 17,
     "portions": [],
     "origin": "frida",
+    "category": "starch",
     "verified": false,
     "favourite": false,
     "updatedAt": "2026-10-15T10:00:00.000Z",
@@ -74,6 +77,7 @@
       }
     ],
     "origin": "manual",
+    "category": "starch",
     "verified": true,
     "favourite": false,
     "updatedAt": "2026-10-15T10:00:00.000Z",
