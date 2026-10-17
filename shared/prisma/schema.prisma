@@ -1,8 +1,8 @@
 // Enums are String columns validated by the Zod enums in
 // src/schemas/; JSON is NVarChar(Max) parsed with Zod (the SQL Server connector has no Json).
-// Foundation: 0001_foundation. Food: 0002_food. AI: 0003_ai. Theme: 0004_theme.
-// Each migration's end state is kept as a snapshot (foundation.prisma, food.prisma, ai.prisma) so
-// `prisma:check` can diff one step at a time.
+// Foundation: 0001_foundation. Food: 0002_food. AI: 0003_ai. Theme: 0004_theme. Feel: 0005_feel.
+// Each migration's end state is kept as a snapshot (foundation.prisma, food.prisma, ai.prisma,
+// theme.prisma) so `prisma:check` can diff one step at a time.
 
 generator client {
   provider      = "prisma-client-js"
@@ -36,6 +36,7 @@ model User {
   meals             Meal[]
   aiCalls           AiCall[]
   pushSubscriptions PushSubscription[]
+  symptoms          Symptom[]
 }
 
 model Space {
@@ -53,6 +54,7 @@ model Space {
   lastSeq        Int       @default(0)
   aiEnabled      Boolean   @default(false)
   aiProvider     String?
+  symptomKinds   String    @default("[]") @db.NVarChar(Max)
   createdAt      DateTime  @default(now())
 
   subjectUser       User?              @relation("SpaceSubject", fields: [subjectUserId], references: [id], onDelete: NoAction, onUpdate: NoAction)
@@ -65,6 +67,7 @@ model Space {
   aiCalls           AiCall[]
   insights          Insight[]
   pushSubscriptions PushSubscription[]
+  symptoms          Symptom[]
 }
 
 model Membership {
@@ -180,6 +183,8 @@ model Food {
   photoKey       String?                      @db.NVarChar(200)
   origin         String                       @db.NVarChar(20)
   sourceRef      String                       @db.NVarChar(64)
+  category       String?                      @db.NVarChar(20)
+  recipe         String?                      @db.NVarChar(Max)
   verified       Boolean                      @default(false)
   verifiedBy     String?
   verifiedAt     DateTime?
@@ -208,12 +213,33 @@ model Meal {
   note       String?   @db.NVarChar(500)
   bolusTs    DateTime?
   photoKey   String?   @db.NVarChar(200)
+  symbol     String?   @db.NVarChar(20)
   createdAt  DateTime  @default(now())
   updatedAt  DateTime  @updatedAt
 
   space  Space      @relation(fields: [spaceId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   byUser User       @relation(fields: [byUserId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   items  MealItem[]
+
+  @@index([spaceId, ts])
+}
+
+// How the person felt, logged next to the meals (v0.6.0). `kind` is a SymptomKind, `severity` a
+// Severity; both are Zod enums. Never a glucose value: a viewer may read symptoms.
+model Symptom {
+  id         String    @id @default(cuid())
+  spaceId    String
+  ts         DateTime
+  byUserId   String
+  kind       String    @db.NVarChar(40)
+  severity   String?   @db.NVarChar(10)
+  note       String?   @db.NVarChar(500)
+  resolvedTs DateTime?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  space  Space @relation(fields: [spaceId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  byUser User  @relation(fields: [byUserId], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
   @@index([spaceId, ts])
 }

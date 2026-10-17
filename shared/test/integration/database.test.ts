@@ -11,7 +11,14 @@ import { runPollCycle } from "../../src/glucose/poll-cycle";
 import { createLogger } from "../../src/log";
 import type { EventEnvelope, Role } from "../../src/schemas/index";
 import { glucoseSecretName } from "../../src/secrets/types";
-import { createEmptyDatabase, migrate, schemaDiff, type ScratchDatabase } from "./database";
+import {
+  createEmptyDatabase,
+  migrate,
+  prismaCli,
+  SCHEMA,
+  schemaDiff,
+  type ScratchDatabase,
+} from "./database";
 
 /** The web app's viewer query (`/api/spaces/:id/events`), loaded at run time from web/src. */
 interface EventsPageModule {
@@ -94,10 +101,69 @@ describe("the database (SQL Server)", () => {
       "0002_food",
       "0003_ai",
       "0004_theme",
+      "0005_feel",
     ]);
     // Nothing left between the migrated database and schema.prisma: exit code 0, no script.
     const diff = await schemaDiff(scratch.url, db);
     expect(diff).not.toMatch(/CREATE|ALTER|DROP/);
+  });
+
+  it("applies 0005_feel to a database at 0004 without losing a row (v0.6.0 plan §3)", async () => {
+    const older = await createEmptyDatabase("frejsi_feel_it");
+    const olderDb = new PrismaClient({ datasourceUrl: older.url });
+    try {
+      // Bring the database to the state of v0.5.x: the first four migrations, marked as applied.
+      for (const name of ["0001_foundation", "0002_food", "0003_ai", "0004_theme"]) {
+        prismaCli(
+          ["db", "execute", "--file", `prisma/migrations/${name}/migration.sql`, "--schema", SCHEMA],
+          older.url,
+        );
+        prismaCli(["migrate", "resolve", "--applied", name, "--schema", SCHEMA], older.url);
+      }
+      // Fictional rows written in SQL: the generated client already expects the new columns.
+      await olderDb.$executeRaw`INSERT INTO [User] ([id], [name]) VALUES ('u-feel', 'Fixture carer')`;
+      await olderDb.$executeRaw`INSERT INTO [Space] ([id], [name], [timezone]) VALUES ('s-feel', 'Fixture space', 'Europe/Copenhagen')`;
+      await olderDb.$executeRaw`INSERT INTO [Food] ([id], [spaceId], [name], [nameSearch], [portions], [origin], [sourceRef], [updatedAt])
+        VALUES ('f-feel', 's-feel', 'Fixture loaf', 'fixture loaf', '[]', 'family', 'family:f-feel', '2026-10-01T10:00:00')`;
+      await olderDb.$executeRaw`INSERT INTO [Meal] ([id], [spaceId], [ts], [byUserId], [totalCarbs], [updatedAt])
+        VALUES ('m-feel', 's-feel', '2026-10-01T12:00:00', 'u-feel', 18, '2026-10-01T12:00:00')`;
+      await olderDb.$executeRaw`INSERT INTO [MealItem] ([id], [mealId], [foodId], [name], [carbs], [position])
+        VALUES ('i-feel', 'm-feel', 'f-feel', 'Fixture loaf', 18, 0)`;
+
+      migrate(older.url);
+
+      const applied = await olderDb.$queryRaw<{ migration_name: string }[]>`
+        SELECT migration_name FROM _prisma_migrations
+        WHERE finished_at IS NOT NULL AND rolled_back_at IS NULL`;
+      expect(applied.map((row) => row.migration_name).sort()).toEqual([
+        "0001_foundation",
+        "0002_food",
+        "0003_ai",
+        "0004_theme",
+        "0005_feel",
+      ]);
+      const space = await olderDb.space.findUniqueOrThrow({ where: { id: "s-feel" } });
+      expect(space.symptomKinds).toBe("[]");
+      const food = await olderDb.food.findUniqueOrThrow({ where: { id: "f-feel" } });
+      expect(food).toMatchObject({ name: "Fixture loaf", category: null, recipe: null });
+      const meal = await olderDb.meal.findUniqueOrThrow({
+        where: { id: "m-feel" },
+        include: { items: true },
+      });
+      expect(meal.symbol).toBeNull();
+      expect(meal.items.map((item) => item.carbs)).toEqual([18]);
+      const symptom = await olderDb.symptom.create({
+        data: { spaceId: "s-feel", byUserId: "u-feel", ts: new Date(), kind: "tired" },
+      });
+      expect(symptom.severity).toBeNull();
+      const index = await olderDb.$queryRaw<{ name: string }[]>`
+        SELECT name FROM sys.indexes WHERE object_id = OBJECT_ID('dbo.Symptom')`;
+      expect(index.map((row) => row.name)).toContain("Symptom_spaceId_ts_idx");
+      expect(await schemaDiff(older.url, olderDb)).not.toMatch(/CREATE|ALTER|DROP/);
+    } finally {
+      await olderDb.$disconnect();
+      await older.drop();
+    }
   });
 
   it("stores each reading once however often, and however concurrently, the cycle runs", async () => {
