@@ -406,6 +406,17 @@ previous curves/table, portion editing with `meal.updated`, deletion, simpleMode
 history and the viewer's meal-only responses and 403s. Edits and deletion are restored through the
 API so the earlier release assertions retain their original data.
 
+## Symptoms, food categories and the meal symbol (v0.6.0)
+
+Migration `0005_feel` adds the `Symptom` table (kind, time, severity, note; indexed by space and
+time; never a glucose value, so viewers may read symptoms), `Space.symptomKinds` (a JSON list of
+custom kinds, `[]` by default), `Food.category` and `Food.recipe`, and `Meal.symbol`. The symbol is
+decided once when a meal is saved (`mealSymbol()` in `shared/src/meals/symbol.ts`) and stored, so a
+later library edit never rewrites a past day; a row from before 0005 has `NULL` and is shown as the
+apple (`unknown`). The snapshot `shared/prisma/theme.prisma` freezes the schema as of 0004 for
+`prisma:check`, and `shared/test/integration/database.test.ts` applies 0005 to a database at 0004
+and checks that every row survives.
+
 ## AI foundation (v0.4.0)
 
 The shared AI contracts and migration `0003_ai` reserve food vectors (1024 dimensions), cached
