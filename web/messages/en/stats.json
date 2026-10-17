@@ -16,10 +16,8 @@
     "minutes": "{minutes} min",
     "before": "before the meal",
     "after": "after the meal",
-    "afterShort": "{minutes} min after",
-    "none": "not recorded"
+    "afterShort": "{minutes} min after"
   },
-  "bolusBeforeMeal": "Bolus before meal",
   "missing": "–",
   "grams": "{grams} g",
   "table": {

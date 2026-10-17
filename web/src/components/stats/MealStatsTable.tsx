@@ -28,7 +28,8 @@ type Row = MealStatsRow & { id: string };
 /**
  * Dato · Kulhydrat · Bolus før · Top · I mål af 3 t (Maaltid-Desktop). The date cell always
  * carries the meal's clock time, so every peak in the row has a visible anchor; the bolus column
- * is minutes between two taps, never an amount.
+ * is minutes between two stored times, never an amount, and shows only when a meal in view has a
+ * stored bolus time (issue #215).
  */
 export function MealStatsTable({
   rows,
@@ -47,6 +48,18 @@ export function MealStatsTable({
       date: relativeDay(t, row.ts, now, timeZone, locale),
       time: formatClock(new Date(row.ts), timeZone),
     });
+  const anyBolus = rows.some((row) => row.bolusLeadMinutes !== undefined);
+  const bolusColumn: DataColumn<Row> = {
+    key: "bolus",
+    header: t("table.bolusBefore"),
+    align: "end",
+    render: (row) =>
+      row.bolusLeadMinutes === undefined
+        ? missing
+        : row.bolusLeadMinutes >= 0
+          ? t("lead.minutes", { minutes: row.bolusLeadMinutes })
+          : t("lead.afterShort", { minutes: -row.bolusLeadMinutes }),
+  };
   const columns: DataColumn<Row>[] = [
     { key: "date", header: t("table.date"), render: dateOf },
     {
@@ -55,17 +68,7 @@ export function MealStatsTable({
       align: "end",
       render: (row) => t("grams", { grams: Math.round(row.totalCarbs) }),
     },
-    {
-      key: "bolus",
-      header: t("table.bolusBefore"),
-      align: "end",
-      render: (row) =>
-        row.bolusLeadMinutes === undefined
-          ? missing
-          : row.bolusLeadMinutes >= 0
-            ? t("lead.minutes", { minutes: row.bolusLeadMinutes })
-            : t("lead.afterShort", { minutes: -row.bolusLeadMinutes }),
-    },
+    ...(anyBolus ? [bolusColumn] : []),
     {
       key: "peak",
       header: t("table.peak"),

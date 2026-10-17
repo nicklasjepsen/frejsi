@@ -59,7 +59,7 @@ describe("ChartLegend (plan §7)", () => {
 
   it("day: a meal dot, a triangle and the target with the space's bounds and unit", () => {
     const { container } = mount(
-      <ChartLegend variant="day" target={{ low: 4, high: 10 }} unit="mmol" />,
+      <ChartLegend variant="day" bolus target={{ low: 4, high: 10 }} unit="mmol" />,
     );
     expect([...container.querySelectorAll("li")].map((li) => li.textContent)).toEqual([
       "Måltid",
@@ -74,8 +74,23 @@ describe("ChartLegend (plan §7)", () => {
     ).toHaveAttribute("data-symbol", "mixed");
   });
 
+  it("day: leaves out the bolus entry when no meal in view has a stored time (issue #215)", () => {
+    const { container } = mount(
+      <ChartLegend variant="day" bolus={false} target={{ low: 4, high: 10 }} unit="mmol" />,
+    );
+    expect([...container.querySelectorAll("li")].map((li) => li.textContent)).toEqual([
+      "Måltid",
+      "Mål 4–10 mmol/L",
+    ]);
+    expect(container.querySelector("[data-swatch=triangle]")).toBeNull();
+    expect(container.textContent).not.toMatch(/bolus/i);
+  });
+
   it("day: a mg/dL space shows its bounds in mg/dL", () => {
-    mount(<ChartLegend variant="day" target={{ low: 3.9, high: 10 }} unit="mgdl" />, "en");
+    mount(
+      <ChartLegend variant="day" bolus={false} target={{ low: 3.9, high: 10 }} unit="mgdl" />,
+      "en",
+    );
     expect(screen.getByText("Target 70–180 mg/dL")).toBeInTheDocument();
   });
 });

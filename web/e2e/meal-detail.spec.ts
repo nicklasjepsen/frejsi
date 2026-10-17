@@ -35,6 +35,8 @@ test("the last meal shows its curve and previous dishes, edits portions and dele
   await expect(curve.getByTestId("previous")).toHaveCount(desktop ? 4 : 3);
   await expect(page.getByTestId("meal-tiles")).toContainText("Top");
   await expect(page.getByTestId("meal-tiles")).toContainText("efter");
+  // The seed meal has a stored bolus time, so its lead tile shows (issue #215).
+  await expect(page.getByTestId("meal-tiles")).toContainText("Bolus");
   if (desktop) {
     await expect(page.getByRole("radio", { name: "Sammen med de sidste 4 gange" })).toHaveAttribute(
       "aria-checked",
@@ -100,6 +102,9 @@ test("the last meal shows its curve and previous dishes, edits portions and dele
     await page.reload();
     await expect(page.getByRole("heading", { name: updatedTitle, exact: true })).toBeVisible();
     await expect(page.getByTestId("curve-card").getByTestId("bolus")).toHaveCount(0);
+    // Without a stored time the lead tile is left out, not shown empty (issue #215).
+    await expect(page.getByTestId("meal-tiles")).toContainText("Top");
+    await expect(page.getByTestId("meal-tiles")).not.toContainText("Bolus");
   } finally {
     // Keep the baseline intact for the other viewport and the viewer's original total assertions.
     const apple = await prisma.food.findFirstOrThrow({ where: { spaceId, name: "Æble" } });

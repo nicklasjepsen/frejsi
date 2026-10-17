@@ -89,6 +89,13 @@ const tile = (label: string) => {
   return node;
 };
 
+/** An earlier occurrence as it reads without a stored bolus time (issue #215). */
+const withoutBolus = ({
+  bolusLeadMinutes: _lead,
+  stats: { bolusLeadMinutes: _stats, ...stats },
+  ...meal
+}: ReturnType<typeof previousMeal>) => ({ ...meal, stats });
+
 beforeEach(() => {
   vi.useFakeTimers({ now: new Date(DONE), toFake: ["Date"] });
   live.readings = [];
@@ -213,16 +220,28 @@ describe("Måltid · phone (Maaltid-Telefon)", () => {
     expect(card.getByTestId("chart-caption")).toHaveTextContent("sidste måling for 3 min. siden");
   });
 
-  it("says 'efter måltidet' for a tap after the meal and '– ikke registreret' without one", async () => {
+  it("says 'efter måltidet' for a stored time after the meal", async () => {
     api.curve = curveView({ meal: mealView({ bolusTs: shift(MEAL_TS, 5) }) });
     mount();
     await ready();
     expect(tile("Bolus")).toHaveTextContent("Bolus5 minefter måltidet");
-    cleanup();
+    expect(screen.getByTestId("meal-tiles").querySelector("[data-columns]")).toHaveAttribute(
+      "data-columns",
+      "3",
+    );
+  });
+
+  // Issue #215: without a stored bolus time the tile is left out, not shown as "ikke registreret".
+  it("leaves out the bolus tile without a stored time, and keeps the other two", async () => {
     api.curve = curveView({ meal: mealView({ bolusTs: undefined }) });
     mount();
     await ready();
-    expect(tile("Bolus")).toHaveTextContent("Bolus–ikke registreret");
+    const tiles = screen.getByTestId("meal-tiles");
+    expect(tile("Top")).toHaveTextContent("Top9,6efter 1 t 05 min");
+    expect(tile("I mål 4–10")).toHaveTextContent("I mål 4–103 taf 3 t");
+    expect(tiles.querySelectorAll('[data-part="label"]')).toHaveLength(2);
+    expect(tiles.querySelector("[data-columns]")).toHaveAttribute("data-columns", "2");
+    expect(tiles.textContent).not.toMatch(/bolus|registreret/i);
   });
 
   it("takes the range bounds from the space and draws mg/dL spaces in mg/dL", async () => {
@@ -401,6 +420,44 @@ describe("Måltid · desktop (Maaltid-Desktop)", () => {
     expect(tile("Top")).toHaveTextContent("Top9,6efter 1 t 05");
     expect(tile("I mål 4–10")).toHaveTextContent("I mål 4–103 taf 3 t");
     expect(tile("Bolus")).toHaveTextContent("Bolus12 minfør");
+  });
+
+  // Issue #215: the compare table's "Bolus før" column shows only when a meal in it has a time.
+  it("shows the 'Bolus før' column in the compare when a meal in it has a stored time", async () => {
+    api.curve = curveView({
+      meal: mealView({ bolusTs: undefined }),
+      previous: [withoutBolus(previousMeal(2)), previousMeal(5)],
+    });
+    mount({ layout: "desktop" });
+    await ready();
+    const table = screen.getByRole("table");
+    expect(
+      within(table)
+        .getAllByRole("columnheader")
+        .map((h) => h.textContent),
+    ).toEqual(["Dato", "Kulhydrat", "Bolus før", "Top", "I mål af 3 t"]);
+    const leads = within(table)
+      .getAllByRole("row")
+      .slice(1)
+      .map((row) => within(row).getAllByRole("cell")[2]?.textContent);
+    expect(leads).toEqual(["–", "–", "10 min"]);
+  });
+
+  it("leaves out the 'Bolus før' column and the bolus tile when no meal in the compare has a time", async () => {
+    api.curve = curveView({
+      meal: mealView({ bolusTs: undefined }),
+      previous: [withoutBolus(previousMeal(2)), withoutBolus(previousMeal(5))],
+    });
+    mount({ layout: "desktop" });
+    await ready();
+    const table = screen.getByRole("table");
+    expect(
+      within(table)
+        .getAllByRole("columnheader")
+        .map((h) => h.textContent),
+    ).toEqual(["Dato", "Kulhydrat", "Top", "I mål af 3 t"]);
+    expect(table.textContent).not.toMatch(/bolus/i);
+    expect(screen.getByTestId("meal-tiles").textContent).not.toMatch(/bolus/i);
   });
 
   it("switches the five earlier curves with the chips, 'Sammen med de sidste 5 gange' pressed by default", async () => {
