@@ -1,4 +1,10 @@
 {
-  "title": "{child} is asking about a photo",
-  "body": "{dishName} · approx. {carbs} g · tap to check"
+  "estimate": {
+    "title": "{child} is asking about a photo",
+    "body": "{dishName} · approx. {carbs} g · tap to check"
+  },
+  "symptom": {
+    "title": "{child}: {kind}",
+    "body": "Logged at {time} · tap to see the day"
+  }
 }
