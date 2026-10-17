@@ -1,12 +1,14 @@
+import { ParsedMeal } from "../../schemas/ai";
 import { Food } from "../../schemas/food";
 import { lookup } from "../../food/lookup";
 import { MemoryFoodRepository } from "../../food/memory";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { FakeAiProvider, defaultFakeAnswer } from "../fake";
 import { CappedAiProvider } from "../capped";
 import { MemoryAiCallRepository } from "../calls";
 import { parseMeal } from "./parse";
 import { parsePrompt } from "./prompt";
+import { LookupInput } from "./tool";
 import { assertNoDosing } from "../guard";
 
 const candidate = {
@@ -256,4 +258,96 @@ it("keeps the default fake usable through the same lookup gate", async () => {
     estimate: { approx: true },
   });
   expect(fake.calls).toHaveLength(2);
+});
+
+describe("a feeling said at the table (v0.6.0 plan §5)", () => {
+  const banana = {
+    name: "Example banana",
+    origin: "off",
+    sourceRef: "off:banana",
+    carbsPer100g: 20,
+    portions: [],
+  };
+  const bananaRow = { source: "cache", verified: false, food: banana };
+  const lookupBanana = (q: string) =>
+    Promise.resolve({
+      results: q === "banana" ? [bananaRow] : [],
+      sources: {},
+      manual: {},
+    });
+  it("returns one banana item and one stomach-ache symptom for 'jeg har ondt i maven og spiste en banan'", async () => {
+    const meal = {
+      items: [{ query: "banana", match: { source: "cache", food: banana, grams: 120 } }],
+      unmatched: [],
+      symptoms: [{ kind: "stomach-ache" }],
+    };
+    const fake = new FakeAiProvider([
+      { ...tools, calls: [{ id: "1", name: "lookup", input: { query: "banana" } }] },
+      { ...answer, json: meal },
+    ]);
+    const result = await parseMeal(
+      fake,
+      "jeg har ondt i maven og spiste en banan",
+      "da",
+      lookupBanana,
+    );
+    expect(result).toEqual({ meal, count: 1 });
+    expect(result.meal.items).toHaveLength(1);
+    expect(result.meal.symptoms).toEqual([{ kind: "stomach-ache" }]);
+  });
+  it("returns no items and one dizzy symptom for 'jeg er svimmel', without a lookup", async () => {
+    const meal = { items: [], unmatched: [], symptoms: [{ kind: "dizzy" }] };
+    const fake = new FakeAiProvider([{ ...answer, json: meal }]);
+    const lookup = vi.fn(lookupBanana);
+    expect(await parseMeal(fake, "jeg er svimmel", "da", lookup)).toEqual({ meal, count: 0 });
+    expect(lookup).not.toHaveBeenCalled();
+  });
+  it("rejects a symptom kind the model made up", async () => {
+    const fake = new FakeAiProvider([
+      { ...answer, json: { items: [], unmatched: [], symptoms: [{ kind: "sad" }] } },
+    ]);
+    await expect(parseMeal(fake, "jeg er ked af det", "da", lookupBanana)).rejects.toMatchObject({
+      code: "ai-rejected",
+    });
+  });
+  it("names the six kinds in the prompt so the model picks from them, in both locales", () => {
+    for (const locale of ["da", "en"] as const) {
+      const prompt = parsePrompt(locale);
+      for (const kind of ["stomach-ache", "dizzy", "nausea", "tired", "headache", "shaky"])
+        expect(prompt).toContain(kind);
+      expect(prompt).toMatch(/symptoms/);
+    }
+  });
+  it("still validates the fake provider's default parse answer", () => {
+    const final = defaultFakeAnswer({
+      kind: "complete",
+      request: {
+        role: "everyday",
+        use: "parse",
+        system: parsePrompt("da"),
+        tools: [{ name: "lookup", description: "", inputSchema: LookupInput }],
+        messages: [
+          { role: "user", content: [{ type: "text", text: "jeg er svimmel" }] },
+          {
+            role: "assistant",
+            content: [
+              { type: "tool-call", id: "fixture-lookup", name: "lookup", input: { query: "x" } },
+            ],
+          },
+          {
+            role: "user",
+            content: [
+              {
+                type: "tool-result",
+                toolCallId: "fixture-lookup",
+                result: { results: [], sources: {}, manual: {} },
+              },
+            ],
+          },
+        ],
+      },
+    });
+    expect(final).toMatchObject({ kind: "json" });
+    expect(ParsedMeal.safeParse((final as { json: unknown }).json).success).toBe(true);
+  });
 });
