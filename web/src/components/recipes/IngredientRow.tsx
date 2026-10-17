@@ -4,6 +4,7 @@ import { useTranslations } from "next-intl";
 import { useId, useState } from "react";
 
 import { lookupText } from "@/components/meal/api";
+import { useSourceLine } from "@/components/meal/source-line";
 import { Button, NumberInput, TextInput } from "@/components/ui";
 
 import { withAmount, withMatch, type ReviewLine } from "./lines";
@@ -34,6 +35,7 @@ export function IngredientRow({
   onRemove: () => void;
 }) {
   const t = useTranslations("recipe.review");
+  const { line: sourceLine } = useSourceLine();
   const [amount, setAmount] = useState(line.amount === undefined ? "" : String(line.amount));
   const [unit, setUnit] = useState(line.unit ?? "");
   const [searching, setSearching] = useState(false);
@@ -128,13 +130,8 @@ export function IngredientRow({
       </div>
       {searching && (
         <div className={styles.search}>
-          <form
-            className={styles.searchRow}
-            onSubmit={(event) => {
-              event.preventDefault();
-              void search();
-            }}
-          >
+          {/* Not a form: the review form around it is the one that saves (Enter searches). */}
+          <div className={styles.searchRow}>
             <TextInput
               label={t("search", { name: line.name })}
               value={query}
@@ -143,8 +140,19 @@ export function IngredientRow({
               onChange={(event) => {
                 setQuery(event.target.value);
               }}
+              onKeyDown={(event) => {
+                if (event.key === "Enter") {
+                  event.preventDefault();
+                  void search();
+                }
+              }}
             />
-            <Button type="submit" variant="secondary" size="phone" disabled={busy || !query.trim()}>
+            <Button
+              variant="secondary"
+              size="phone"
+              disabled={busy || !query.trim()}
+              onClick={() => void search()}
+            >
               {t("searchButton")}
             </Button>
             <Button
@@ -157,7 +165,7 @@ export function IngredientRow({
             >
               {t("cancelSearch")}
             </Button>
-          </form>
+          </div>
           {results && (
             <ul className={styles.results} role="list">
               {results.map((result) => {
@@ -176,7 +184,7 @@ export function IngredientRow({
                       }}
                     >
                       <span>{result.food.name}</span>
-                      <span className={styles.muted}>{result.source}</span>
+                      <span className={styles.muted}>{sourceLine(result.food)}</span>
                     </button>
                   </li>
                 );
