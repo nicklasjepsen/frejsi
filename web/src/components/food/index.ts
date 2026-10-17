@@ -4,3 +4,9 @@ export { PhotoPicker } from "./PhotoPicker";
 export { CarbAmount } from "./CarbAmount";
 export { PortionChips, type PortionChoice } from "./PortionChips";
 export { SearchField } from "./SearchField";
+export {
+  FOOD_SYMBOL_PATHS,
+  FoodSymbol,
+  symbolPaths,
+  type FoodSymbolProps,
+} from "./FoodSymbol";
