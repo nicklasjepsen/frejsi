@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 
+import { FeelIcon } from "@/components/symptoms/icons";
 import { Avatar } from "@/components/ui/Avatar";
 import { Kbd } from "@/components/ui/Kbd";
 import { localeHref, type AppLocale } from "@/lib/i18n/routing";
@@ -62,6 +63,7 @@ function useShortcuts(locale: AppLocale, items: NavItem[], enabled: boolean) {
  */
 export function Sidebar({ locale, variant, path, user, space, spaces }: SidebarProps) {
   const t = useTranslations("nav");
+  const symptoms = useTranslations("symptoms");
   const shell = useTranslations("shell");
   const roles = useTranslations("roles");
   const items = sidebarItems(variant, space.aiEnabled);
@@ -91,9 +93,13 @@ export function Sidebar({ locale, variant, path, user, space, spaces }: SidebarP
             aria-current={isActive(path, item.activeHref ?? item.href) ? "page" : undefined}
             aria-keyshortcuts={item.shortcut && !simple ? item.shortcut : undefined}
           >
-            <Icon name={item.icon} size={simple ? 30 : 22} />
+            {item.icon === "feel" ? (
+              <FeelIcon size={simple ? 30 : 22} />
+            ) : (
+              <Icon name={item.icon} size={simple ? 30 : 22} />
+            )}
             <span className={styles.sidebarItemLabel} data-testid="label">
-              {t(item.sidebarLabel ?? item.label)}
+              {item.label === "feel" ? symptoms("nav") : t(item.sidebarLabel ?? item.label)}
             </span>
             {item.shortcut && !simple && (
               <span className={styles.sidebarHint} role="presentation">

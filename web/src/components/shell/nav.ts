@@ -8,13 +8,23 @@ export type ShellVariant = "normal" | "simple" | "viewer";
 export const HEADER_END_ID = "shell-header-end";
 
 export type NavIcon =
-  "now" | "plus" | "book" | "clock" | "dots" | "people" | "settings" | "ask" | "calendar";
+  | "now"
+  | "plus"
+  | "book"
+  | "clock"
+  | "dots"
+  | "people"
+  | "settings"
+  | "ask"
+  | "calendar"
+  /** "Jeg har det…": drawn by the Sidebar from the symptoms family, never a phone tab. */
+  | "feel";
 
 type NavKey = keyof Messages["nav"];
 
 export interface NavItem {
-  /** The message key under `nav` for the phone label. */
-  label: NavKey;
+  /** The message key under `nav` for the phone label; `feel` reads `symptoms.nav` instead. */
+  label: NavKey | "feel";
   /** The message key for the sidebar label when it differs from the phone's (Måltid → Log et måltid). */
   sidebarLabel?: NavKey;
   /** Path without the locale prefix. */
@@ -26,6 +36,8 @@ export interface NavItem {
   icon: NavIcon;
   /** Desktop shortcut, shown as a hint and bound on keydown (normal mode only). */
   shortcut?: string;
+  /** In the sidebar only: Now carries the phone's way there (v0.6.0 plan §5). */
+  sidebarOnly?: boolean;
 }
 
 /** The variant: a viewer gets the viewer shell whatever else is set (§2: no glucose). */
@@ -47,6 +59,7 @@ const NORMAL: NavItem[] = [
     icon: "clock",
     shortcut: "H",
   },
+  { label: "feel", href: "/feel", icon: "feel", shortcut: "J", sidebarOnly: true },
   { label: "people", href: "/people", icon: "people", shortcut: "P" },
   { label: "more", sidebarLabel: "settings", href: "/settings", icon: "settings", shortcut: "," },
 ];
@@ -69,7 +82,7 @@ const VIEWER: NavItem[] = [
 export function phoneItems(variant: ShellVariant, aiEnabled = false): NavItem[] {
   if (variant === "simple") return SIMPLE.filter((item) => aiEnabled || item.label !== "ask");
   if (variant === "viewer") return VIEWER;
-  return NORMAL.filter((item) => item.label !== "people").map((item) =>
+  return NORMAL.filter((item) => item.label !== "people" && !item.sidebarOnly).map((item) =>
     item.label === "more" ? { ...item, icon: "dots" } : item,
   );
 }
@@ -90,7 +103,7 @@ export function homePath(role: Role): string {
  * button instead (design README "Navigation model"), and the picker is one of them.
  */
 export function isChromeless(path: string): boolean {
-  return path === "/eat" || path.startsWith("/eat/");
+  return path === "/eat" || path.startsWith("/eat/") || path === "/feel";
 }
 
 /** Active when the path is the item's path or below it. */
