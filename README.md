@@ -4,7 +4,7 @@
 
 Frejsi is a web app — on your phone for the moment you're eating, on your desktop for the evening you want to understand the week — that answers two questions fast: _how many carbs is this?_ and _what did that meal do to my glucose?_ A space brings one person's food library, meals and glucose together, with access for the people they invite.
 
-> **Status: v0.5.5 is tagged and deploying; v0.5.3 is live at [frejsi.jepsen.ninja](https://frejsi.jepsen.ninja).**
+> **Status: v0.5.5 is live at [frejsi.jepsen.ninja](https://frejsi.jepsen.ninja).**
 
 v0.5.2 is the phone round: no zoom on text entry, a fixed tab bar, barcode scanning that names its failure, 48px back controls, a light/dark theme setting and the visual phone audit fixes. v0.5.3 makes the scanner read a barcode twice before it believes it; v0.5.5 adds the "Spiser om" chips on the confirm step and an immutable secret reference from source-connect (the v0.5.4 tag failed its suite and deployed nothing: a meal stamped ahead of now was missing from the day). The v0.5.1 tag failed in its suite on a README line and deployed nothing.
 
