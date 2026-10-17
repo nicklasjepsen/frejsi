@@ -17,6 +17,7 @@ import {
   type FoodCandidate,
   type SessionContext,
 } from "@frejsi/shared";
+import { OWN_FOOD_ORIGINS } from "@frejsi/shared/food/types";
 import { photoKey, processPhoto } from "@frejsi/shared/photos";
 import { assertRole } from "@/lib/auth/session";
 import {
@@ -41,7 +42,7 @@ function authorize(spaceId: string, session: SessionContext, verify = false) {
 }
 type FoodRow = Awaited<ReturnType<FoodTx["food"]["findFirst"]>> & {};
 /** Foods a person made here: never renamed by a source, counted as "own" in the library. */
-const OWN_ORIGINS = ["family", "manual", "recipe"];
+const OWN_ORIGINS = OWN_FOOD_ORIGINS;
 function foodOf(row: FoodRow): Food {
   return Food.parse({
     ...row,

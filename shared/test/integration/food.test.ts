@@ -278,9 +278,43 @@ it("the category pass places an unplaced food in the database, never a recipe, w
     { name: "Fictional pear", carbsPer100g: 12, portions: [], category: "fruit" },
     deps,
   );
+  const picked = await services.addCandidate(
+    spaceId,
+    session,
+    {
+      name: "Fictional dataset loaf",
+      origin: "fake-local",
+      sourceRef: "fake-local:loaf",
+      carbsPer100g: 38,
+      portions: [{ label: "1 slice", grams: 45, carbs: 17 }],
+    },
+    {
+      ...deps,
+      sources: [
+        new FakeFoodSource({
+          id: "fake-local",
+          kind: "local",
+          candidates: [
+            {
+              name: "Fictional dataset loaf",
+              origin: "fake-local",
+              sourceRef: "fake-local:loaf",
+              carbsPer100g: 38,
+              portions: [{ label: "1 slice", grams: 45, carbs: 17 }],
+            },
+          ],
+        }),
+      ],
+    },
+  );
+  await db.food.update({
+    where: { id: picked.id },
+    data: { verified: true, verifiedBy: session.userId, verifiedAt: new Date() },
+  });
   const repo = new PrismaFoodRepository(db, sink);
+  // The typed loaf is a person's text and never a candidate; the picked one is.
   expect((await repo.categoryCandidates([spaceId], 50, false)).map((row) => row.id)).toEqual([
-    loaf.id,
+    picked.id,
   ]);
   const before = await db.event.count({ where: { spaceId } });
   const { runEnrichment } = (await import(ENRICH)) as {
@@ -303,13 +337,14 @@ it("the category pass places an unplaced food in the database, never a recipe, w
   });
   const rows = await db.food.findMany({ where: { spaceId }, orderBy: { name: "asc" } });
   const byId = (id: string) => rows.find((row) => row.id === id);
-  expect(byId(loaf.id)).toMatchObject({
+  expect(byId(picked.id)).toMatchObject({
     category: "bread",
     verified: true,
     verifiedBy: session.userId,
-    name: "Fictional seeded loaf",
-    portions: JSON.stringify([{ label: "1 slice", grams: 45, carbs: 18 }]),
+    name: "Fictional dataset loaf",
+    portions: JSON.stringify([{ label: "1 slice", grams: 45, carbs: 17 }]),
   });
+  expect(byId(loaf.id)?.category).toBeNull();
   expect(byId(dish.id)?.category).toBeNull();
   expect(byId(placed.id)?.category).toBe("fruit");
   const events = await db.event.findMany({
@@ -318,7 +353,7 @@ it("the category pass places an unplaced food in the database, never a recipe, w
     skip: before,
   });
   expect(events.map((event) => [event.type, JSON.parse(event.payload) as unknown])).toEqual([
-    ["food.updated", { foodId: loaf.id }],
+    ["food.updated", { foodId: picked.id }],
   ]);
   // Only the name reaches the model, once for the loaf; the dish and the placed pear never do.
   const asked = provider.calls.flatMap((call) =>
@@ -328,7 +363,7 @@ it("the category pass places an unplaced food in the database, never a recipe, w
         )
       : [],
   );
-  expect(asked).toContain(JSON.stringify({ name: "Fictional seeded loaf", locale: "da" }));
-  expect(asked.join()).not.toMatch(/recipe dish|Fictional pear/);
+  expect(asked).toContain(JSON.stringify({ name: "Fictional dataset loaf", locale: "da" }));
+  expect(asked.join()).not.toMatch(/seeded loaf|recipe dish|Fictional pear/);
   expect(await repo.categoryCandidates([spaceId], 50, false)).toEqual([]);
 });

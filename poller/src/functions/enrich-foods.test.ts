@@ -5,6 +5,7 @@ import { createLogger, type EmitFn } from "@frejsi/shared";
 import { FakeAiProvider, type RecordedAiCall } from "@frejsi/shared/ai/fake";
 import { MemoryAiCallRepository } from "@frejsi/shared/ai/calls";
 import { MemoryFoodRepository } from "@frejsi/shared/food/memory";
+import { OWN_FOOD_ORIGINS } from "@frejsi/shared/food/types";
 import type { FoodCategory } from "@frejsi/shared/schemas/food";
 import { runEnrichment, SCHEDULE } from "./enrich-foods";
 
@@ -17,7 +18,7 @@ class CategoryMemoryRepository extends MemoryFoodRepository {
         .filter(
           (row) =>
             row.category === undefined &&
-            row.origin !== "recipe" &&
+            !OWN_FOOD_ORIGINS.includes(row.origin) &&
             (row.spaceId === null ? includeCache : spaceIds.includes(row.spaceId)),
         )
         .sort(
@@ -39,7 +40,7 @@ class CategoryMemoryRepository extends MemoryFoodRepository {
         other.origin === row.origin &&
         other.sourceRef === row.sourceRef &&
         other.category === undefined &&
-        (other.id === row.id || (other.spaceId !== null && spaceIds.includes(other.spaceId))),
+        (other.id === row.id || other.spaceId === null || spaceIds.includes(other.spaceId)),
     );
     for (const target of copies) {
       target.category = category;
@@ -294,7 +295,7 @@ describe("the category pass (v0.6.0 plan §7)", () => {
     r.logs
       .map((line) => JSON.parse(line) as { code: string; count: number })
       .find((l) => l.code === code);
-  it("fills the category of every unplaced food but a recipe, through a small call, without touching verified, name or portions", async () => {
+  it("fills the category of every unplaced source food, never a person's own, through a small call, without touching verified, name or portions", async () => {
     const r = rig();
     r.repo.rows.push(
       row("placed", "s1", { sourceRef: "remote-test:placed", category: "fruit" }),
@@ -305,12 +306,20 @@ describe("the category pass (v0.6.0 plan §7)", () => {
         verified: true,
         verifiedBy: "u1",
       }),
+      row("local", "s1", { origin: "local-test", sourceRef: "local-test:7" }),
+      // A cache row whose provider the timer cannot use is still placed from the space copy's
+      // call: the source food is the same.
+      row("other-cache", null, { sourceRef: "remote-test:other" }),
+      row("other", "s1", { sourceRef: "remote-test:other" }),
     );
     await runEnrichment(r.deps);
     const byId = (id: string) => r.repo.rows.find((food) => food.id === id);
     expect(byId("cache")?.category).toBe("bread");
     expect(byId("space")?.category).toBe("bread");
-    expect(byId("own")).toMatchObject({ category: "bread", verified: true, verifiedBy: "u1" });
+    expect(byId("local")?.category).toBe("bread");
+    expect(byId("other-cache")?.category).toBe("bread");
+    expect(byId("other")?.category).toBe("bread");
+    expect(byId("ai")?.category).toBe("bread");
     expect(byId("verified")).toMatchObject({
       category: "bread",
       verified: true,
@@ -318,15 +327,28 @@ describe("the category pass (v0.6.0 plan §7)", () => {
       name: "EXAMPLE LOAF 900G",
       portions: [{ label: "slice", carbs: 18 }],
     });
-    expect(byId("placed")?.category).toBe("fruit");
+    // A person's own text never goes to a model from a timer: typed foods and recipe dishes stay
+    // unplaced here and are placed through the chip row.
+    expect(byId("own")).toMatchObject({ verified: true, verifiedBy: "u1" });
+    expect(byId("own")?.category).toBeUndefined();
+    expect(byId("typed")?.category).toBeUndefined();
     expect(byId("dish")?.category).toBeUndefined();
+    expect(byId("placed")?.category).toBe("fruit");
     expect(byId("off")?.category).toBeUndefined();
     for (const call of categoryCalls(r))
       expect(call.request).toMatchObject({ role: "small", use: "normalise" });
+    const asked = categoryCalls(r).flatMap((call) =>
+      call.kind === "complete"
+        ? call.request.messages.flatMap((m) =>
+            m.content.map((c) => (c.type === "text" ? c.text : "")),
+          )
+        : [],
+    );
+    expect(asked.join()).not.toMatch(/family|manual|recipe/);
     expect(r.events).toContainEqual({
       spaceId: "s1",
       type: "food.updated",
-      payload: { foodId: "own" },
+      payload: { foodId: "local" },
     });
     expect(r.events.filter((event) => (event as { spaceId: string }).spaceId === "off")).toEqual(
       [],
@@ -336,6 +358,7 @@ describe("the category pass (v0.6.0 plan §7)", () => {
         .filter((call) => call.use === "normalise")
         .every((call) => call.kind === "complete"),
     ).toBe(true);
+    // The cache loaf (placing its space copies), the other loaf, the AI guess, verified, local.
     expect(logged(r, "categorised")?.count).toBe(5);
     expect(r.logs.join()).not.toContain("LOAF");
     const calls = categoryCalls(r).length;
@@ -347,10 +370,10 @@ describe("the category pass (v0.6.0 plan §7)", () => {
     r.repo.rows.splice(0, r.repo.rows.length);
     for (let n = 0; n < 80; n++)
       r.repo.rows.push(
-        row(`own-${String(n).padStart(3, "0")}`, "s1", {
-          origin: "family",
-          sourceRef: `family:${n}`,
-          sourceName: "typed",
+        row(`src-${String(n).padStart(3, "0")}`, "s1", {
+          origin: "local-test",
+          sourceRef: `local-test:${n}`,
+          sourceName: "already normalised",
         }),
       );
     r.deps.env = { ...r.deps.env, AI_DAILY_CAP: "60" };
