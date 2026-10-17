@@ -62,7 +62,7 @@ test("two taps from Nu log a symptom, and the day curve shows its diamond with t
     // The readings around it carry their times (the seed has readings up to now).
     const readings = detail.getByRole("list", { name: "Tal omkring" });
     await expect(readings.getByRole("listitem").first()).toContainText(
-      /^\d\d:\d\d · \d+,\d mmol\/L$/,
+      /^\d\d:\d\d · \d+,\d mmol\/L · (lige nu|for .+ siden)$/,
     );
     await detail.getByRole("button", { name: "Luk" }).click();
     await expect(detail).toHaveCount(0);

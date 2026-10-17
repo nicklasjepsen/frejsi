@@ -190,8 +190,9 @@ describe("symptoms on the day (v0.6.0 plan §5)", () => {
     const dialog = screen.getByRole("dialog", { name: "Ondt i maven kl. 13:00" });
     expect(dialog).toHaveTextContent("Lidt");
     expect(dialog).toHaveTextContent("Logget af Jonas");
+    // Each value with its time and its age (the reading is 5 minutes before the test's now).
     expect(within(dialog).getByRole("list", { name: "Tal omkring" })).toHaveTextContent(
-      "13:15 · 9,6 mmol/L",
+      "13:15 · 9,6 mmol/L · for 5 min. siden",
     );
     fireEvent.click(within(dialog).getByRole("button", { name: "Luk" }));
     expect(screen.queryByRole("dialog")).toBeNull();

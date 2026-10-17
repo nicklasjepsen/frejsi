@@ -436,7 +436,7 @@ describe("symptoms on the week (v0.6.0 plan §5)", () => {
     vi.unstubAllGlobals();
   });
 
-  it("reads the seven days once, draws the diamond on its tile and opens the detail with the day's values", async () => {
+  it("reads the seven days once, draws the diamond on its tile and opens the detail without readings", async () => {
     mount();
     const target = await screen.findByRole("button", { name: "Ondt i maven kl. 12:00" });
     expect(symptomCalls.filter((c) => c.includes("/symptoms?"))).toEqual([
@@ -452,7 +452,8 @@ describe("symptoms on the week (v0.6.0 plan §5)", () => {
     fireEvent.click(target);
     const dialog = screen.getByRole("dialog", { name: "Ondt i maven kl. 12:00" });
     expect(dialog).toHaveTextContent("Logget af Jonas");
-    expect(within(dialog).getByRole("list", { name: "Tal omkring" })).toHaveTextContent(/12:00 · /);
+    // The week has bucket averages, not readings: none are shown as if they were.
+    expect(within(dialog).queryByRole("list")).toBeNull();
     act(() => {
       mocks.handlers.get("symptom.deleted")?.();
     });

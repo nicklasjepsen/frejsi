@@ -378,6 +378,7 @@ export function NowScreen({
                     unit,
                     locale,
                     g(`unit.${unit}`),
+                    (ts) => ageText(ts, now),
                   )}
                   onClose={() => {
                     setActiveSymptomId(null);

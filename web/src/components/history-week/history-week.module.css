@@ -75,7 +75,8 @@
 .tileChart {
   position: relative;
 }
-.tileChart svg {
+/* The chart alone: the food symbols nested in it keep their own 8 px (v0.6.0). */
+.tileChart svg[data-variant="week-tile"] {
   height: 64px;
 }
 .tileChart button {

@@ -812,7 +812,7 @@ describe("Nu · symptoms and 'Jeg har det…' (v0.6.0 plan §5)", () => {
     fireEvent.click(target);
     const dialog = desktop.getByRole("dialog", { name: "Svimmel kl. 14:00" });
     expect(within(dialog).getByRole("list", { name: "Tal omkring" })).toHaveTextContent(
-      "14:13 · 5,8 mmol/L",
+      "14:13 · 5,8 mmol/L · for 1 time siden",
     );
     // Read again on a symptom event.
     const before = symptomReads;
