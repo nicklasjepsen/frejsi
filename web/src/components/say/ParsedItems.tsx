@@ -2,25 +2,40 @@
 import type { ParsedItem, ParsedMeal } from "@frejsi/shared/schemas/ai";
 import { useTranslations } from "next-intl";
 import { useState } from "react";
+import { resolveLocale } from "@/lib/i18n/routing";
 import { PortionChips } from "../food/PortionChips";
+import { SymptomIcon } from "../symptoms/icons";
+import { useKindLabel } from "../symptoms/kinds";
 import { Badge } from "../ui/Badge";
 import { Button } from "../ui/Button";
 import { NumberInput } from "../ui/NumberInput";
 import styles from "./say.module.css";
 
+export type ParsedSymptom = NonNullable<ParsedMeal["symptoms"]>[number];
+
+/**
+ * The food lines, then the feelings apart from them (v0.6.0 plan §5): a symptom line shows its
+ * picture and name, never a portion. The one button adds the food to the meal and logs the
+ * feelings; with feelings alone it only logs them.
+ */
 export function ParsedItems({
   meal,
+  locale,
   onAdd,
   onSearch,
   busy,
 }: {
   meal: ParsedMeal;
-  onAdd: (items: ParsedItem[]) => void;
+  locale: string;
+  onAdd: (items: ParsedItem[], symptoms: ParsedSymptom[]) => void;
   onSearch: (query: string) => void;
   busy: boolean;
 }) {
   const t = useTranslations("say");
+  const feelings = useTranslations("symptoms");
+  const labelOf = useKindLabel(resolveLocale(locale), []);
   const [items, setItems] = useState(meal.items);
+  const [symptoms, setSymptoms] = useState<ParsedSymptom[]>(meal.symptoms ?? []);
   const update = (index: number, item: ParsedItem) => {
     setItems((current) => current.map((row, i) => (i === index ? item : row)));
   };
@@ -143,15 +158,40 @@ export function ParsedItems({
           {query} · {t("unmatched")}
         </button>
       ))}
-      {items.length > 0 && (
+      {symptoms.length > 0 && (
+        <section
+          className={styles.symptoms}
+          aria-label={feelings("say.title")}
+          data-testid="say-symptoms"
+        >
+          <h3>{feelings("say.title")}</h3>
+          {symptoms.map((symptom, index) => (
+            <div key={index} className={styles.symptom}>
+              <SymptomIcon kind={symptom.kind} size={28} />
+              <span>{labelOf(symptom.kind)}</span>
+              <button
+                type="button"
+                className={styles.remove}
+                disabled={busy}
+                onClick={() => {
+                  setSymptoms((current) => current.filter((_, i) => i !== index));
+                }}
+              >
+                {feelings("say.remove")}
+              </button>
+            </div>
+          ))}
+        </section>
+      )}
+      {(items.length > 0 || symptoms.length > 0) && (
         <Button
           size="phone"
           disabled={!valid || busy}
           onClick={() => {
-            onAdd(items);
+            onAdd(items, symptoms);
           }}
         >
-          {t("add")}
+          {items.length > 0 ? t("add") : feelings("say.log")}
         </Button>
       )}
     </fieldset>

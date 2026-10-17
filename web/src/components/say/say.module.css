@@ -148,3 +148,28 @@
     padding: 24px;
   }
 }
+.symptoms {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.symptoms h3 {
+  margin: 0;
+  font: 600 17px/1.2 var(--font-display-stack);
+}
+.symptom {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--hairline);
+}
+.symptom svg {
+  flex: none;
+  color: var(--accent-strong);
+}
+.symptom span {
+  flex: 1 1 auto;
+  font: 600 17px/1.2 var(--font-display-stack);
+}
