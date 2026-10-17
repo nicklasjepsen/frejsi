@@ -91,7 +91,8 @@ describe("POST /api/share (the Web Share Target receiver)", () => {
     });
     expect(response.status).toBe(303);
     const location = response.headers.get("location") ?? "";
-    expect(location).toMatch(/^https:\/\/frejsi\.example\/da\/recipe\/new\?share=[0-9a-f-]{36}$/);
+    // A relative Location: the public host is the browser's, never the server's bind address.
+    expect(location).toMatch(/^\/da\/recipe\/new\?share=[0-9a-f-]{36}$/);
     const id = shareId(response);
     const taken = await take(id);
     expect(taken.status).toBe(200);
@@ -132,11 +133,11 @@ describe("POST /api/share (the Web Share Target receiver)", () => {
     const before = shareStore().size;
     const response = await post({ text: "500 g mince", url: "https://recipes.example/x" }, null);
     expect(response.status).toBe(303);
-    expect(response.headers.get("location")).toBe("https://frejsi.example/da/welcome");
+    expect(response.headers.get("location")).toBe("/da/welcome");
     expect(shareStore().size).toBe(before);
     Object.assign(fake.rows("user").find((u) => u.id === USERS.carer) ?? {}, { simpleMode: true });
     const simple = await post({ text: "500 g mince" });
-    expect(simple.headers.get("location")).toBe("https://frejsi.example/da/now");
+    expect(simple.headers.get("location")).toBe("/da/now");
     expect(shareStore().size).toBe(before);
   });
   it("logs the outcome only: never the title, the text, the URL or the image", async () => {
