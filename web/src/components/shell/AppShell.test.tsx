@@ -88,7 +88,7 @@ describe("AppShell · normal mode (Main, Nu-Desktop)", () => {
     );
   });
 
-  it("renders the sidebar with the wordmark, the space switcher card and the six items with their shortcut hints", () => {
+  it("renders the sidebar with the wordmark, the space switcher card and the seven items with their shortcut hints", () => {
     mount();
     const side = sidebar();
     expect(within(side).getByText("Frejsi")).toBeInTheDocument();
@@ -101,6 +101,7 @@ describe("AppShell · normal mode (Main, Nu-Desktop)", () => {
       "Log et måltid",
       "Bibliotek",
       "Historik",
+      "Jeg har det…",
       "Personer",
       "Indstillinger",
     ]);
@@ -109,6 +110,7 @@ describe("AppShell · normal mode (Main, Nu-Desktop)", () => {
       "M",
       "B",
       "H",
+      "J",
       "P",
       ",",
     ]);
@@ -130,6 +132,7 @@ describe("AppShell · normal mode (Main, Nu-Desktop)", () => {
       "/da/log",
       "/da/library",
       "/da/history/week",
+      "/da/feel",
       "/da/people",
       "/da/settings",
     ]);
