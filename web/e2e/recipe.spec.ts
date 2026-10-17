@@ -15,11 +15,10 @@ test("Jonas pastes a recipe, corrects a match, saves the dish unverified and edi
   await registerFromInvite(page, await inviteLink("jonas"));
   await page.waitForURL(/\/da\/now$/);
   await page.goto("/da/log");
-  // The manual path's way in: the row after "Jeg kender tallet selv".
+  // The manual path's way in: the row after "Jeg kender tallet selv". One SearchField at both
+  // widths (type="search"), named for the phone and for the desktop.
   const search = page
-    .getByRole((page.viewportSize()?.width ?? 0) >= 1280 ? "searchbox" : "textbox", {
-      name: /Skriv hvad der spises|Søg mad eller skriv en stregkode/,
-    })
+    .getByRole("searchbox", { name: /Skriv hvad der spises|Søg mad eller skriv en stregkode/ })
     .filter({ visible: true });
   await search.fill("lasagne");
   await search.press("Enter");
@@ -59,7 +58,8 @@ test("Jonas pastes a recipe, corrects a match, saves the dish unverified and edi
   );
   await page.getByRole("button", { name: "Gem", exact: true }).click();
   expect((await saving).status()).toBe(201);
-  await expect(page.getByRole("status")).toContainText("Gemt i biblioteket");
+  // The shell has a status region of its own: the one with the saved message.
+  await expect(page.getByRole("status").filter({ hasText: "Gemt i biblioteket" })).toBeVisible();
   const dish = await prisma.food.findFirstOrThrow({ where: { spaceId, name: "Eksempelgryde" } });
   try {
     expect(dish).toMatchObject({ origin: "recipe", verified: false });
@@ -120,7 +120,9 @@ test("Gem som opskrift opens a logged meal as lines, and the share receiver hand
   );
   await expect(page.getByText("Delt fra en anden app", { exact: true })).toBeVisible();
   await page.reload();
-  await expect(page.getByRole("alert")).toContainText("Det delte indhold er udløbet");
+  await expect(
+    page.getByRole("alert").filter({ hasText: "Det delte indhold er udløbet" }),
+  ).toBeVisible();
 
   // A signed-out share goes to welcome and keeps nothing.
   const anonymous = await page.context().browser()?.newContext();
