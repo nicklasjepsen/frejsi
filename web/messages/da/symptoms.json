@@ -1,0 +1,48 @@
+{
+  "title": "Jeg har det…",
+  "nav": "Jeg har det…",
+  "intro": "Tryk på det, der passer. Det bliver logget med det samme.",
+  "close": "Luk",
+  "kinds": {
+    "stomach-ache": "Ondt i maven",
+    "dizzy": "Svimmel",
+    "nausea": "Kvalme",
+    "tired": "Træt",
+    "headache": "Hovedpine",
+    "shaky": "Rysten"
+  },
+  "logged": "Logget",
+  "loggedKind": "{kind} er logget",
+  "undo": "Fortryd",
+  "undone": "Fortrudt",
+  "more": "Mere…",
+  "sheetTitle": "Fortæl lidt mere",
+  "kind": "Hvad?",
+  "severity": "Hvor meget?",
+  "severities": {
+    "light": "Lidt",
+    "medium": "En del",
+    "strong": "Meget"
+  },
+  "note": "Note",
+  "notePlaceholder": "Fx hvad der skete, da det kom",
+  "time": "Hvornår?",
+  "save": "Log det",
+  "cancel": "Tilbage",
+  "saveFailed": "Det blev ikke gemt – prøv igen",
+  "loadFailed": "Det kunne ikke hentes lige nu.",
+  "retry": "Prøv igen",
+  "today": "Logget i dag",
+  "none": "Intet logget i dag",
+  "entry": "{kind} kl. {time} · {name}",
+  "resolved": "Bedre kl. {time}",
+  "by": "Logget af {name}",
+  "at": "kl. {time}",
+  "readings": "Tal omkring",
+  "say": {
+    "title": "Hvordan du har det",
+    "log": "Log hvordan du har det",
+    "logged": "Logget",
+    "remove": "Fjern"
+  }
+}
