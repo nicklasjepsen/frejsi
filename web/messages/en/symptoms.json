@@ -1,0 +1,48 @@
+{
+  "title": "I feel…",
+  "nav": "I feel…",
+  "intro": "Tap the one that fits. It is logged straight away.",
+  "close": "Close",
+  "kinds": {
+    "stomach-ache": "Stomach ache",
+    "dizzy": "Dizzy",
+    "nausea": "Nausea",
+    "tired": "Tired",
+    "headache": "Headache",
+    "shaky": "Shaky"
+  },
+  "logged": "Logged",
+  "loggedKind": "{kind} is logged",
+  "undo": "Undo",
+  "undone": "Undone",
+  "more": "More…",
+  "sheetTitle": "Tell a little more",
+  "kind": "What?",
+  "severity": "How much?",
+  "severities": {
+    "light": "A little",
+    "medium": "Quite a bit",
+    "strong": "A lot"
+  },
+  "note": "Note",
+  "notePlaceholder": "For example what happened when it came",
+  "time": "When?",
+  "save": "Log it",
+  "cancel": "Back",
+  "saveFailed": "It was not saved – try again",
+  "loadFailed": "It could not be loaded right now.",
+  "retry": "Try again",
+  "today": "Logged today",
+  "none": "Nothing logged today",
+  "entry": "{kind} at {time} · {name}",
+  "resolved": "Better at {time}",
+  "by": "Logged by {name}",
+  "at": "at {time}",
+  "readings": "Readings around it",
+  "say": {
+    "title": "How you feel",
+    "log": "Log how you feel",
+    "logged": "Logged",
+    "remove": "Remove"
+  }
+}
