@@ -79,6 +79,12 @@ const dish: FoodView = {
   updatedAt: "2026-10-14T10:00:00.000Z",
 };
 
+function at<T>(list: readonly T[], index: number): T {
+  const item = list[index];
+  if (item === undefined) throw new Error(`no item ${String(index)}`);
+  return item;
+}
+
 let fake: FetchFake;
 const writes = () => fake.calls.filter((call) => call.method !== "GET");
 function mount(props: { mealId?: string; shareId?: string; foodId?: string } = {}) {
@@ -130,10 +136,10 @@ describe("RecipeScreen (/recipe/new)", () => {
     ]);
     const rows = screen.getAllByTestId("ingredient-row");
     expect(rows).toHaveLength(3);
-    expect(within(rows[0] as HTMLElement).getByText("ca.")).toBeVisible();
-    expect(within(rows[0] as HTMLElement).getByText("Fundet som Lasagneplader")).toBeVisible();
-    expect(within(rows[0] as HTMLElement).getByText("175 g")).toBeVisible();
-    expect(within(rows[2] as HTMLElement).getByText("Uden kulhydrat")).toBeVisible();
+    expect(within(at(rows, 0)).getByText("ca.")).toBeVisible();
+    expect(within(at(rows, 0)).getByText("Fundet som Lasagneplader")).toBeVisible();
+    expect(within(at(rows, 0)).getByText("175 g")).toBeVisible();
+    expect(within(at(rows, 2)).getByText("Uden kulhydrat")).toBeVisible();
     expect(screen.getByText("199 g kulhydrat")).toBeVisible();
     expect(screen.getByLabelText("Portioner")).toHaveValue(6);
     expect(screen.getByText("1 portion · 33 g")).toBeVisible();
@@ -144,12 +150,12 @@ describe("RecipeScreen (/recipe/new)", () => {
     fireEvent.change(await screen.findByLabelText("Ingredienser"), { target: { value: "x" } });
     fireEvent.click(screen.getByRole("button", { name: "Læs ingredienserne" }));
     const rows = await screen.findAllByTestId("ingredient-row");
-    const first = within(rows[0] as HTMLElement);
+    const first = within(at(rows, 0));
     fireEvent.change(first.getByLabelText("Mængde"), { target: { value: "500" } });
     expect(first.getByText("350 g")).toBeVisible();
     expect(first.queryByText("ca.")).toBeNull();
     expect(screen.getByText("374 g kulhydrat")).toBeVisible();
-    fireEvent.click(within(rows[1] as HTMLElement).getByRole("button", { name: "Fjern mælk" }));
+    fireEvent.click(within(at(rows, 1)).getByRole("button", { name: "Fjern mælk" }));
     expect(screen.getAllByTestId("ingredient-row")).toHaveLength(2);
     expect(screen.getByText("350 g kulhydrat")).toBeVisible();
     expect(writes()).toHaveLength(1);
@@ -210,7 +216,7 @@ describe("RecipeScreen (/recipe/new)", () => {
     fireEvent.change(await screen.findByLabelText("Ingredienser"), { target: { value: "x" } });
     fireEvent.click(screen.getByRole("button", { name: "Læs ingredienserne" }));
     const rows = await screen.findAllByTestId("ingredient-row");
-    const milk = within(rows[1] as HTMLElement);
+    const milk = within(at(rows, 1));
     fireEvent.click(milk.getByRole("button", { name: "Skift" }));
     fireEvent.change(milk.getByLabelText("Søg efter en vare til mælk"), {
       target: { value: "skummet" },
