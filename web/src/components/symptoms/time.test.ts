@@ -14,6 +14,14 @@ describe("the sheet's time field", () => {
     expect(instantOfLocalTime("00:15", zone, now)?.toISOString()).toBe("2026-10-15T22:15:00.000Z");
     expect(instantOfLocalTime("00:30", zone, now)?.toISOString()).toBe("2026-10-14T22:30:00.000Z");
   });
+  it("resolves yesterday on its own offset across the clock change", () => {
+    // 03:10 CET on 25 October, two hours after summer time ended; 23:50 yesterday was CEST.
+    const after = new Date("2026-10-25T02:10:00.000Z");
+    expect(instantOfLocalTime("23:50", zone, after)?.toISOString()).toBe("2026-10-24T21:50:00.000Z");
+    // 03:10 CEST on 29 March, after the spring change; 23:50 yesterday was CET.
+    const spring = new Date("2026-03-29T01:10:00.000Z");
+    expect(instantOfLocalTime("23:50", zone, spring)?.toISOString()).toBe("2026-03-28T22:50:00.000Z");
+  });
   it("handles the day daylight saving ends and refuses nonsense", () => {
     const now = new Date("2026-10-25T12:00:00.000Z"); // 13:00 CET, after the change at 03:00
     expect(instantOfLocalTime("01:30", zone, now)?.toISOString()).toBe("2026-10-24T23:30:00.000Z");
