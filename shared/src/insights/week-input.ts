@@ -3,6 +3,7 @@ import { dayRange } from "../meals/day-range";
 import { mealTitle } from "../meals/title";
 import { AiProviderId, type WeekInsightInput } from "../schemas/ai";
 import type { Reading } from "../schemas/glucose";
+import type { SymptomKind } from "../schemas/symptom";
 import { localeOrDefault } from "../schemas/settings";
 import type { Target } from "../schemas/history";
 import { dayStats, mealsInRange } from "../stats/day";
@@ -33,6 +34,8 @@ export interface WeekSource {
     to: Date,
     locale: WeekSpace["locale"],
   ): Promise<WeekMeal[]>;
+  /** The kinds logged in the range (v0.6.0 plan §5); a source without it narrates no symptoms. */
+  symptomsBetween?(spaceId: string, from: Date, to: Date): Promise<{ kind: SymptomKind }[]>;
 }
 export const dateAfter = (date: string, days: number) =>
   new Date(Date.parse(`${date}T00:00:00Z`) + days * 86400000).toISOString().slice(0, 10);
@@ -56,7 +59,7 @@ export async function buildWeekInsightInput(
 ): Promise<WeekInsightInput> {
   const range = weekRange(start, space.timezone);
   const previousFrom = dayRange(dateAfter(start, -7), space.timezone)[0];
-  const [readings, previousWeekReadings, rows] = await Promise.all([
+  const [readings, previousWeekReadings, rows, symptoms] = await Promise.all([
     source.readingsBetween(
       space.id,
       new Date(+range.from - 600000),
@@ -68,6 +71,7 @@ export async function buildWeekInsightInput(
       new Date(Math.min(+now, +range.from + 600000)),
     ),
     source.mealsBetween(space.id, range.from, range.to, space.locale),
+    source.symptomsBetween?.(space.id, range.from, range.to) ?? Promise.resolve([]),
   ]);
   const numbers = weekStats({
     readings,
@@ -107,6 +111,7 @@ export async function buildWeekInsightInput(
     numbers,
     days,
     meals,
+    symptoms,
   });
 }
 export class PrismaWeekSource implements WeekSource {
@@ -150,6 +155,13 @@ export class PrismaWeekSource implements WeekSource {
       mmol: Number(r.mmol),
       trend: r.trend as Reading["trend"],
     }));
+  }
+  async symptomsBetween(spaceId: string, from: Date, to: Date) {
+    const rows = await prisma.symptom.findMany({
+      where: { spaceId, ts: { gte: from, lt: to } },
+      select: { kind: true },
+    });
+    return rows.map((r) => ({ kind: r.kind }));
   }
   async mealsBetween(spaceId: string, from: Date, to: Date, locale: WeekSpace["locale"]) {
     const rows = await prisma.meal.findMany({

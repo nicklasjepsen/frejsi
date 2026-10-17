@@ -19,3 +19,8 @@ export { CappedAiProvider, type CappedAiOptions } from "./capped";
 export { aiProviders, type AiProviderRegistry } from "./registry";
 export { runToolLoop, type ToolHandlers } from "./tool-loop";
 export { assertNoDosing } from "./guard";
+export {
+  SYMPTOM_EXPLANATION_PHRASES,
+  assertNoSymptomExplanation,
+  findSymptomExplanation,
+} from "./insight/guard";

@@ -1,9 +1,9 @@
-import { expect, it } from "vitest";
+import { describe, expect, it } from "vitest";
 import { mealStats } from "../../stats/meal";
 import { FakeAiProvider } from "../fake";
 import { CappedAiProvider } from "../capped";
 import { MemoryAiCallRepository } from "../calls";
-import { buildMealInput } from "./input";
+import { buildMealInput, buildWeekInput } from "./input";
 import { narrateMeal } from "./meal";
 import { narrateWeek } from "./week";
 import { WeekInsightInput } from "../../schemas/ai";
@@ -178,5 +178,133 @@ it("rejects invented weekly summary numerals and drops invented question numeral
     summary: "Time in range was 60% this week.",
     questions: ["What patterns appeared this week?"],
     rejectedCount: 1,
+  });
+});
+
+describe("symptoms next to the meal, never explained (v0.6.0 plan §5)", () => {
+  const mealTs = "2026-10-12T10:00:00Z";
+  const logged = [
+    { kind: "stomach-ache", ts: "2026-10-12T11:30:00Z" }, // +90 min
+    { kind: "dizzy", ts: "2026-10-12T09:00:00Z" }, // -60 min, the edge
+    { kind: "tired", ts: "2026-10-12T14:00:00Z" }, // +240 min, the edge
+    { kind: "nausea", ts: "2026-10-12T08:59:00Z" }, // just before the window
+    { kind: "headache", ts: "2026-10-12T14:01:00Z" }, // just after it
+  ];
+  it("carries the kind and the minutes after the meal for the symptoms within −1 h/+4 h", () => {
+    const projected = buildMealInput({ ...input, stats, previous: [], mealTs, loggedSymptoms: logged });
+    expect(projected.symptoms).toEqual([
+      { kind: "dizzy", minutesAfterMeal: -60 },
+      { kind: "stomach-ache", minutesAfterMeal: 90 },
+      { kind: "tired", minutesAfterMeal: 240 },
+    ]);
+    const text = JSON.stringify(projected.symptoms);
+    expect(text).not.toMatch(/mmol|readings|glucose|note|ts"/);
+    expect(Object.keys(projected.symptoms?.[0] ?? {}).sort()).toEqual([
+      "kind",
+      "minutesAfterMeal",
+    ]);
+    expect(buildMealInput({ ...input, stats, previous: [] })).not.toHaveProperty("symptoms");
+    expect(JSON.stringify(projected)).not.toMatch(/\bts\b|readings|bolus|2026-10-12T/);
+  });
+  it("counts the week's symptoms per kind, most frequent first, and nothing else", () => {
+    const week = buildWeekInput({
+      locale: "en",
+      glucoseUnit: "mmol",
+      isoWeek: 42,
+      weekStart: "2026-10-12",
+      timezone: "UTC",
+      numbers: {
+        inRangePercent: 60,
+        belowPercent: 2,
+        lowEpisodes: { count: 0, atNight: 0 },
+        carbsPerDay: 0,
+        mealCount: 0,
+        bolusLead: { registered: 0, of: 0 },
+      },
+      days: Array.from({ length: 7 }, (_, i) => ({
+        localDate: `2026-10-${12 + i}`,
+        mealCount: 0,
+        totalCarbs: 0,
+      })),
+      meals: [],
+      symptoms: [{ kind: "tired" }, { kind: "dizzy" }, { kind: "tired" }],
+    });
+    expect(week.symptomCounts).toEqual([
+      { kind: "tired", count: 2 },
+      { kind: "dizzy", count: 1 },
+    ]);
+    expect(JSON.stringify(week.symptomCounts)).not.toMatch(/mmol|readings|glucose/);
+  });
+  it("tells both prompts to mention a symptom as logged and never to explain it", async () => {
+    const { mealPrompt } = await import("./prompt-meal");
+    const { weekPrompt } = await import("./prompt-week");
+    for (const prompt of [mealPrompt, weekPrompt]) {
+      expect(prompt).toMatch(/symptom/i);
+      expect(prompt).toMatch(/as logged/i);
+      expect(prompt).toMatch(/never explain/i);
+    }
+  });
+  it("rejects a narration that explains a symptom medically, after two attempts, in both languages", async () => {
+    const withSymptom = buildMealInput({
+      ...input,
+      stats,
+      previous: [],
+      mealTs,
+      loggedSymptoms: [{ kind: "dizzy", ts: "2026-10-12T11:00:00Z" }],
+    });
+    for (const text of [
+      "The dizziness came because your blood sugar fell after 42 grams.",
+      "Svimmelheden skyldes at dit blodsukker faldt efter 42 gram.",
+      "Feeling dizzy is a symptom of a low after the 42 grams.",
+    ]) {
+      const fake = new FakeAiProvider([answer({ text }), answer({ text })]);
+      await expect(narrateMeal(capped(fake), withSymptom)).rejects.toMatchObject({
+        code: "ai-rejected",
+      });
+      expect(fake.calls).toHaveLength(2);
+    }
+    const fake = new FakeAiProvider([
+      answer({ text: "Dizzy was logged 60 minutes after the meal of 42 grams." }),
+    ]);
+    expect((await narrateMeal(capped(fake), withSymptom)).text).toContain("logged");
+  });
+  it("drops a weekly question that explains a symptom and rejects such a summary", async () => {
+    const week = WeekInsightInput.parse({
+      locale: "en",
+      glucoseUnit: "mmol",
+      isoWeek: 42,
+      weekStart: "2026-10-12",
+      numbers: {
+        lowEpisodes: { count: 0, atNight: 0 },
+        carbsPerDay: 0,
+        mealCount: 0,
+        lead: { registered: 0, of: 0 },
+      },
+      days: Array.from({ length: 7 }, (_, i) => ({
+        localDate: `2026-10-${12 + i}`,
+        mealCount: 0,
+        totalCarbs: 0,
+      })),
+      meals: [],
+      symptomCounts: [{ kind: "tired", count: 2 }],
+    });
+    const fake = new FakeAiProvider([
+      answer({
+        summary: "Tired was logged 2 times this week.",
+        questions: ["Was the tiredness caused by the blood sugar?", "What patterns appeared?"],
+      }),
+    ]);
+    expect(await narrateWeek(capped(fake), week)).toMatchObject({
+      questions: ["What patterns appeared?"],
+      rejectedCount: 1,
+    });
+    const unsafe = answer({
+      summary: "Tired was logged 2 times, a sign of high blood sugar.",
+      questions: [],
+    });
+    const rejected = new FakeAiProvider([unsafe, unsafe]);
+    await expect(narrateWeek(capped(rejected), week)).rejects.toMatchObject({
+      code: "ai-rejected",
+    });
   });
 });
