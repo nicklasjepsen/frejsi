@@ -41,6 +41,7 @@ const jonas: SessionContext = {
   memberships: [{ spaceId: "s1", role: "owner" }],
 };
 const params = Promise.resolve({ locale: "da", mealId: "m1" });
+const withEdit = Promise.resolve({ edit: "1" });
 const space = (role: string) => ({ space: { id: "s1", role, timezone: "Europe/Copenhagen" } });
 
 afterEach(() => {
@@ -63,8 +64,53 @@ describe("/[locale]/meal/[mealId]", () => {
         timeZone: "Europe/Copenhagen",
         unit: "mgdl",
         aiEnabled: true,
+        edit: false,
       });
     }
+  });
+
+  it("opens the edit sheet for an owner or carer on ?edit=1, and on nothing else", async () => {
+    for (const role of ["owner", "carer"]) {
+      mocks.session = jonas;
+      mocks.shell = space(role);
+      const tree = (await MealPage({ params, searchParams: withEdit })) as ReactElement<
+        Record<string, unknown>
+      >;
+      expect(tree.type).toBe(MealDetail);
+      expect(tree.props).toMatchObject({ mealId: "m1", edit: true });
+    }
+    mocks.session = jonas;
+    mocks.shell = space("owner");
+    const other = (await MealPage({
+      params,
+      searchParams: Promise.resolve({ edit: "yes" }),
+    })) as ReactElement<Record<string, unknown>>;
+    expect(other.props).toMatchObject({ edit: false });
+  });
+
+  it("redirects a viewer on ?edit=1 exactly as without it, before reading anything", async () => {
+    mocks.session = { ...jonas, memberships: [{ spaceId: "s1", role: "viewer" }] };
+    mocks.shell = space("viewer");
+    await expect(MealPage({ params, searchParams: withEdit })).rejects.toThrow(
+      "NEXT_REDIRECT:/da/today",
+    );
+    expect(mocks.unitCalls).toEqual([]);
+  });
+
+  it("ignores ?edit=1 for a simpleMode session: the simple view, with no edit at all", async () => {
+    mocks.session = { ...jonas, simpleMode: true };
+    mocks.shell = space("owner");
+    const tree = (await MealPage({ params, searchParams: withEdit })) as ReactElement<
+      Record<string, unknown>
+    >;
+    expect(tree.type).toBe(SimpleMealView);
+    expect(tree.props).toEqual({
+      spaceId: "s1",
+      mealId: "m1",
+      locale: "da",
+      timeZone: "Europe/Copenhagen",
+    });
+    expect(mocks.unitCalls).toEqual([]);
   });
 
   it("redirects a viewer to today before reading anything", async () => {
