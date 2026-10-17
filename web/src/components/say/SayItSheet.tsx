@@ -6,9 +6,10 @@ import { PhotoPicker } from "../food/PhotoPicker";
 import { BackButton } from "../ui/BackButton";
 import { Button } from "../ui/Button";
 import { Notice } from "../ui/Notice";
+import { createSymptom } from "../symptoms/api";
 import { parseText, estimatePhoto } from "./api";
 import { MicButton } from "./MicButton";
-import { ParsedItems } from "./ParsedItems";
+import { ParsedItems, type ParsedSymptom } from "./ParsedItems";
 import styles from "./say.module.css";
 
 export function SayItSheet({
@@ -75,6 +76,23 @@ export function SayItSheet({
       setVersion((v) => v + 1);
     }
   }
+  /**
+   * The feelings go through the symptoms route right away; the food goes to the meal draft, and
+   * only when there is food. "jeg har ondt i maven" alone logs a symptom and no meal (plan §5).
+   */
+  async function add(items: ParsedItem[], symptoms: ParsedSymptom[]) {
+    for (const symptom of symptoms)
+      await createSymptom(spaceId, {
+        kind: symptom.kind,
+        ...(symptom.note ? { note: symptom.note } : {}),
+      });
+    if (items.length > 0) await onAdd(items);
+    if (live.current) {
+      setMeal(null);
+      setText("");
+    }
+    if (items.length === 0) onClose();
+  }
   return (
     <section
       hidden={!active}
@@ -138,17 +156,10 @@ export function SayItSheet({
         <ParsedItems
           key={version}
           meal={meal}
+          locale={locale}
           busy={busy}
           onSearch={onSearch}
-          onAdd={(items) =>
-            void run(async () => {
-              await onAdd(items);
-              if (live.current) {
-                setMeal(null);
-                setText("");
-              }
-            })
-          }
+          onAdd={(items, symptoms) => void run(() => add(items, symptoms))}
         />
       )}
     </section>

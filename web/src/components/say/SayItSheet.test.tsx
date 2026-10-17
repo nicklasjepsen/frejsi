@@ -1,5 +1,5 @@
 import "@testing-library/jest-dom/vitest";
-import { cleanup, fireEvent, render, screen, waitFor, act } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor, act, within } from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
 import { afterEach, expect, it, vi } from "vitest";
 import da from "../../../messages/da";
@@ -133,4 +133,74 @@ it("invalidates parsed foods on a description edit, including after a failed ret
   expect(screen.getByLabelText("Skriv hvad der spises")).toHaveValue("bread");
   expect(screen.queryByRole("button", { name: "Tilføj til måltidet" })).not.toBeInTheDocument();
   expect(onAdd).not.toHaveBeenCalled();
+});
+
+it("lists a feeling apart from the food with its picture, logs it through the symptoms route and adds the food", async () => {
+  const fake = fetchFake()
+    .on("POST /api/spaces/s1/parse", { ...meal, unmatched: [], symptoms: [{ kind: "stomach-ache" }] })
+    .on("POST /api/spaces/s1/symptoms", {
+      id: "y1",
+      kind: "stomach-ache",
+      ts: "2026-10-15T13:00:00.000Z",
+      byUserId: "u1",
+      byName: "Jonas",
+    });
+  fake.install();
+  const { onAdd } = mount();
+  fireEvent.change(screen.getByLabelText("Skriv hvad der spises"), {
+    target: { value: "jeg har ondt i maven og spiste en banan" },
+  });
+  fireEvent.click(screen.getByRole("button", { name: "Find maden" }));
+  const feelings = await screen.findByTestId("say-symptoms");
+  expect(feelings).toHaveTextContent("Ondt i maven");
+  expect(feelings.querySelector('svg[data-kind="stomach-ache"]')).not.toBeNull();
+  expect(screen.getByText("Apple · ca. 12 g").closest("section")).not.toBe(feelings);
+  fireEvent.click(screen.getByRole("button", { name: "Tilføj til måltidet" }));
+  await waitFor(() => {
+    expect(onAdd).toHaveBeenCalledWith([guessed]);
+  });
+  expect(fake.calls.map((c) => [c.method, c.path, c.body])).toEqual([
+    ["POST", "/api/spaces/s1/parse", { text: "jeg har ondt i maven og spiste en banan" }],
+    ["POST", "/api/spaces/s1/symptoms", { kind: "stomach-ache" }],
+  ]);
+});
+it("logs a feeling alone without a meal and closes; a removed feeling is not logged", async () => {
+  const fake = fetchFake()
+    .on("POST /api/spaces/s1/parse", {
+      items: [],
+      unmatched: [],
+      symptoms: [{ kind: "dizzy" }, { kind: "tired", note: "Efter skole" }],
+    })
+    .on("POST /api/spaces/s1/symptoms", {
+      id: "y2",
+      kind: "dizzy",
+      ts: "2026-10-15T13:00:00.000Z",
+      byUserId: "u1",
+      byName: "Jonas",
+    });
+  fake.install();
+  const onClose = vi.fn();
+  const onAdd = vi.fn(() => Promise.resolve());
+  render(
+    <NextIntlClientProvider locale="da" messages={da}>
+      <SayItSheet spaceId="s1" locale="da" onClose={onClose} onAdd={onAdd} onSearch={vi.fn()} />
+    </NextIntlClientProvider>,
+  );
+  fireEvent.change(screen.getByLabelText("Skriv hvad der spises"), {
+    target: { value: "jeg er svimmel" },
+  });
+  fireEvent.click(screen.getByRole("button", { name: "Find maden" }));
+  const feelings = await screen.findByTestId("say-symptoms");
+  expect(feelings).toHaveTextContent("Svimmel");
+  expect(feelings).toHaveTextContent("Træt");
+  expect(screen.queryByRole("button", { name: "Tilføj til måltidet" })).not.toBeInTheDocument();
+  fireEvent.click(within(feelings).getAllByRole("button", { name: "Fjern" })[1] as Element);
+  fireEvent.click(screen.getByRole("button", { name: "Log hvordan du har det" }));
+  await waitFor(() => {
+    expect(onClose).toHaveBeenCalled();
+  });
+  expect(onAdd).not.toHaveBeenCalled();
+  expect(fake.calls.filter((c) => c.path.endsWith("/symptoms")).map((c) => c.body)).toEqual([
+    { kind: "dizzy" },
+  ]);
 });
