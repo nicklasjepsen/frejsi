@@ -5,7 +5,13 @@ import type { MealCurveView } from "@frejsi/shared/schemas/history";
 import { useLocale, useTranslations } from "next-intl";
 import { useState } from "react";
 
-import { ChartCaption, ChartLegend, GlucoseChart, readingsAround } from "@/components/glucose";
+import {
+  ChartCaption,
+  ChartLegend,
+  GlucoseChart,
+  readingsAround,
+  useAgeText,
+} from "@/components/glucose";
 import { SymptomDetailCard } from "@/components/history/SymptomDetailCard";
 import { useSymptomRange } from "@/components/history/useSymptomRange";
 import { useKindLabel } from "@/components/symptoms/kinds";
@@ -61,6 +67,7 @@ export function CurveCard({
 }: CurveCardProps) {
   const t = useTranslations("mealDetail");
   const glucose = useTranslations("glucose");
+  const ageText = useAgeText();
   const locale = resolveLocale(useLocale());
   const symptomRange = useSymptomRange(
     spaceId ?? "",
@@ -146,6 +153,7 @@ export function CurveCard({
             unit,
             locale,
             glucose(`unit.${unit}`),
+            (ts) => ageText(ts, now),
           )}
           onClose={() => {
             setActiveSymptomId(null);

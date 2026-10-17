@@ -7,7 +7,6 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { localDateOf } from "@/components/day/format";
-import { readingsAround } from "@/components/glucose/symptom-readings";
 import { PeriodHeader } from "@/components/history/PeriodHeader";
 import { SymptomDetailCard } from "@/components/history/SymptomDetailCard";
 import { useSymptomRange } from "@/components/history/useSymptomRange";
@@ -23,7 +22,7 @@ import { useLiveFeed } from "@/lib/live/useLiveFeed";
 import type { SocketFactory } from "@/lib/live/live-feed";
 import { dateAfter, mondayOf, weekDateLabel } from "./dates";
 import { WeekObservation } from "@/components/observation/WeekObservation";
-import { symptomsByDay, WeekTiles } from "./WeekTiles";
+import { WeekTiles } from "./WeekTiles";
 import { WeekNumbersTiles } from "./WeekNumbersTiles";
 import { WeekMealsTable } from "./WeekMealsTable";
 import styles from "./history-week.module.css";
@@ -58,7 +57,6 @@ export function HistoryWeekScreen({
 }: HistoryWeekScreenProps) {
   const t = useTranslations("historyWeek");
   const history = useTranslations("history");
-  const glucose = useTranslations("glucose");
   const errors = useTranslations("errors.api");
   const router = useRouter();
   const desktop = useDesktop();
@@ -236,20 +234,9 @@ export function HistoryWeekScreen({
       {history("symptomsFilter")}
     </Chip>
   );
+  // The week carries 30-minute bucket averages, not readings: the detail shows none here; the
+  // tile's link opens the day, where the readings around the symptom are.
   const activeSymptom = symptoms.find((symptom) => symptom.id === activeSymptomId) ?? null;
-  // The tile's own values around the symptom: the day's 30-minute buckets, each with its time.
-  const activeDay = activeSymptom
-    ? [...symptomsByDay(week, [activeSymptom]).entries()].find(([, list]) => list.length > 0)?.[0]
-    : undefined;
-  const activeReadings = activeSymptom
-    ? readingsAround(
-        activeSymptom.ts,
-        week.days.find((day) => day.date === activeDay)?.curve ?? [],
-        unit,
-        locale,
-        glucose(`unit.${unit}`),
-      )
-    : [];
   return (
     <div className={styles.page} data-view={view}>
       {/* The phone reads like the day view: the title with the Day link, then the week between
@@ -322,7 +309,6 @@ export function HistoryWeekScreen({
               timeZone={week.timezone}
               symptom={activeSymptom}
               spaceKinds={symptomRange.kinds}
-              readings={activeReadings}
               onClose={() => {
                 setActiveSymptomId(null);
               }}

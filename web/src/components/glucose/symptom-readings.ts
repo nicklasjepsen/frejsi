@@ -9,9 +9,10 @@ export const SYMPTOM_READINGS_MINUTES = 30;
 
 /**
  * The readings from −30 to +30 minutes around `ts`, oldest first, each formatted with its
- * instant for `SymptomDetail` ("6,2 mmol/L"): a value never travels without its time. The
- * owner's and the carer's screens call this from the day data they already hold; a viewer's
- * screen never has readings to pass.
+ * instant and its age for `SymptomDetail` ("6,2 mmol/L · for 3 min. siden"): a value never
+ * travels without its time, and never renders without its age. The owner's and the carer's
+ * screens call this from the day data they already hold; a viewer's screen never has readings
+ * to pass.
  */
 export function readingsAround(
   ts: string,
@@ -19,6 +20,8 @@ export function readingsAround(
   unit: GlucoseUnit,
   locale: AppLocale,
   unitLabel: string,
+  /** The age line for a reading's `ts` ("for 3 min. siden"), from `useAgeText` at the screen's clock. */
+  age: (ts: string) => string,
   minutes: number = SYMPTOM_READINGS_MINUTES,
 ): { ts: string; text: string }[] {
   const centre = new Date(ts).getTime();
@@ -33,6 +36,6 @@ export function readingsAround(
     .toSorted((a, b) => a.ts.localeCompare(b.ts))
     .map((reading) => ({
       ts: reading.ts,
-      text: `${formatGlucose(reading.mmol, unit, locale)} ${unitLabel}`,
+      text: `${formatGlucose(reading.mmol, unit, locale)} ${unitLabel} · ${age(reading.ts)}`,
     }));
 }

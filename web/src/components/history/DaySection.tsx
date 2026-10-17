@@ -11,6 +11,7 @@ import { ChartCaption } from "@/components/glucose/ChartCaption";
 import { GlucoseChart } from "@/components/glucose/GlucoseChart";
 import { formatBound } from "@/components/glucose/format";
 import { readingsAround } from "@/components/glucose/symptom-readings";
+import { useAgeText } from "@/components/glucose/useAgeText";
 import { PeakValue } from "@/components/stats/PeakValue";
 import { formatDuration } from "@/components/stats/format";
 import { useKindLabel } from "@/components/symptoms/kinds";
@@ -61,6 +62,7 @@ export function DaySection({
   const t = useTranslations("history");
   const stats = useTranslations("stats");
   const glucose = useTranslations("glucose");
+  const ageText = useAgeText();
   const router = useRouter();
   const rows = useRef<(HTMLLIElement | null)[]>([]);
   const isToday = day.date === today;
@@ -176,6 +178,7 @@ export function DaySection({
                 unit,
                 locale,
                 glucose(`unit.${unit}`),
+                (ts) => ageText(ts, now),
               )}
               onClose={() => {
                 setActiveSymptomId(null);
