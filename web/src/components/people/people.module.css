@@ -6,7 +6,6 @@
   display: flex;
   flex-direction: column;
   gap: 16px;
-  padding-top: 12px;
 }
 
 .phoneOnly {
@@ -507,7 +506,6 @@
   }
 
   .page {
-    padding-top: 0;
     gap: 20px;
   }
 
