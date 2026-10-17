@@ -12,6 +12,7 @@ import { GlucoseChart } from "@/components/glucose/GlucoseChart";
 import { formatBound } from "@/components/glucose/format";
 import { readingsAround } from "@/components/glucose/symptom-readings";
 import { useAgeText } from "@/components/glucose/useAgeText";
+import { useNow } from "@/components/glucose/useNow";
 import { PeakValue } from "@/components/stats/PeakValue";
 import { formatDuration } from "@/components/stats/format";
 import { useKindLabel } from "@/components/symptoms/kinds";
@@ -66,7 +67,8 @@ export function DaySection({
   const router = useRouter();
   const rows = useRef<(HTMLLIElement | null)[]>([]);
   const isToday = day.date === today;
-  const now = new Date();
+  // The 30-second clock the ages are read at, so an open detail does not freeze on "lige nu".
+  const now = useNow();
   const symptomRange = useSymptomRange(spaceId, day.from, day.to, subscribe);
   const symptoms = symptomRange.status === "ready" ? symptomRange.symptoms : [];
   const labelOf = useKindLabel(locale, symptomRange.kinds);

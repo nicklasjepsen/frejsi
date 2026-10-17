@@ -226,11 +226,11 @@
   border-radius: 8px;
 }
 
-/* The symptom diamonds' 44 px tap targets, on the axis at the bottom of the chart. */
+/* The symptom diamonds' 44 px tap targets, on the axis at the bottom of the chart; `left` and
+   `width` are set inline so neighbours share the space between them. */
 .symptomTap {
   position: absolute;
   bottom: 0;
-  transform: translateX(-50%);
   padding: 0;
   border: 0;
   background: transparent;

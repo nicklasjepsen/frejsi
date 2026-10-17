@@ -72,8 +72,13 @@
   inset: 0;
   border-radius: 16px;
 }
+/* The chart lets a tap through to the stretched link; only its symptom buttons catch one. */
 .tileChart {
   position: relative;
+  pointer-events: none;
+}
+.tileChart button {
+  pointer-events: auto;
 }
 /* The chart alone: the food symbols nested in it keep their own 8 px (v0.6.0). */
 .tileChart svg[data-variant="week-tile"] {

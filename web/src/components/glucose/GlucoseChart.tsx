@@ -3,7 +3,7 @@
 import type { GlucoseUnit, Reading } from "@frejsi/shared";
 import type { MealSymbol } from "@frejsi/shared/schemas/food";
 import { useLocale, useTranslations } from "next-intl";
-import type { ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 
 import { FoodSymbol } from "@/components/food/FoodSymbol";
 import { resolveLocale, type AppLocale } from "@/lib/i18n/routing";
@@ -184,10 +184,43 @@ function SymptomMarks({ marks }: { marks: readonly ChartSymptomMark[] }) {
   ));
 }
 
+/** The tap target's width in px; neighbours closer than this share the space between them. */
+const TAP_WIDTH = 44;
+
+/**
+ * Each symptom target's left edge and width in px, so two symptoms logged close together each
+ * keep their own target instead of the later one covering the earlier: a target reaches at most
+ * halfway to its neighbour. Two at the same x coincide, and the later one is on top.
+ */
+export function symptomTargets(
+  marks: readonly { x: number }[],
+  width: number,
+  pxPerUnit: number,
+): { left: number; width: number }[] {
+  const sorted = marks.map((mark, index) => ({ index, px: mark.x * pxPerUnit }));
+  sorted.sort((a, b) => a.px - b.px);
+  const out: { left: number; width: number }[] = new Array<{ left: number; width: number }>(
+    marks.length,
+  );
+  sorted.forEach((mark, i) => {
+    const previous = sorted[i - 1];
+    const next = sorted[i + 1];
+    const half = TAP_WIDTH / 2;
+    const left = Math.max(mark.px - half, previous ? (previous.px + mark.px) / 2 : -Infinity, 0);
+    const right = Math.min(
+      mark.px + half,
+      next ? (next.px + mark.px) / 2 : Infinity,
+      width * pxPerUnit,
+    );
+    out[mark.index] = { left, width: Math.max(0, right - left) };
+  });
+  return out;
+}
+
 /**
  * The 44 px tap targets over the SVG: one per meal line (the plot's height) and one per symptom
- * diamond (44 px on the axis), each named with its time. Without any handler the SVG is returned
- * as it is.
+ * diamond (44 px on the axis, narrower only where two symptoms sit closer than that), each named
+ * with its time. Without any handler the SVG is returned as it is.
  */
 function TapLayer({
   svg,
@@ -207,6 +240,24 @@ function TapLayer({
 }) {
   const t = useTranslations("chart");
   const categories = useTranslations("foodCategory");
+  const layer = useRef<HTMLDivElement>(null);
+  // The rendered width, so neighbouring targets can share the pixels between them; before the
+  // first layout (and on the server) the SVG's own units stand in for pixels.
+  const [pxPerUnit, setPxPerUnit] = useState(1);
+  useEffect(() => {
+    const node = layer.current;
+    if (!node || typeof ResizeObserver === "undefined") return;
+    const measure = () => {
+      const rendered = node.getBoundingClientRect().width;
+      if (rendered > 0) setPxPerUnit(rendered / width);
+    };
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(node);
+    return () => {
+      observer.disconnect();
+    };
+  }, [width]);
   if ((!meals || meals.marks.length === 0) && (!symptoms || symptoms.marks.length === 0))
     return svg;
   // "Måltid, Brød, kl. 12:10" for a known symbol; "Måltid kl. 12:10" for unknown or none.
@@ -215,8 +266,9 @@ function TapLayer({
       ? t("mealWithCategory", { category: categories(`names.${symbol}`), time })
       : t("mealAt", { time });
   const left = (x: number) => `${(x / width) * 100}%`;
+  const targets = symptomTargets(symptoms?.marks ?? [], width, pxPerUnit);
   return (
-    <div className={styles.tapLayer}>
+    <div className={styles.tapLayer} ref={layer}>
       {svg}
       {meals?.marks.map((meal) => (
         <button
@@ -230,12 +282,16 @@ function TapLayer({
           }}
         />
       ))}
-      {symptoms?.marks.map((mark) => (
+      {symptoms?.marks.map((mark, index) => (
         <button
           key={mark.id}
           type="button"
           className={styles.symptomTap}
-          style={{ left: left(mark.x), width: "44px", height: "44px" }}
+          style={{
+            left: `${targets[index]?.left ?? 0}px`,
+            width: `${targets[index]?.width ?? TAP_WIDTH}px`,
+            height: `${TAP_WIDTH}px`,
+          }}
           aria-label={t("symptomAt", {
             kind: mark.label,
             time: formatClock(new Date(mark.ts), timeZone),
