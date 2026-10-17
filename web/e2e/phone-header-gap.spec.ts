@@ -73,8 +73,10 @@ async function expectGap(page: Page, name: string): Promise<void> {
     await page.emulateMedia({ colorScheme, reducedMotion: "reduce" });
     const m = await measure(page);
     const label = `${name} ${colorScheme}`;
-    expect(m.rootPadding, `${label}: the page draws no top padding of its own`).toBe("0px");
     if (desktop) {
+      // Only the column and `main` are checked here: the gap under the space name is the phone's.
+      // The desktop Log's root keeps its own padding on top of the column's, as on `main` before
+      // this change; that is a desktop layout question outside issue 214.
       expect(m.headerBottom, label).toBeNull();
       expect(m.columnPadding, `${label}: the desktop column keeps its own`).toBe(
         DESKTOP_MAIN_TOP[m.variant],
@@ -82,6 +84,7 @@ async function expectGap(page: Page, name: string): Promise<void> {
       expect(m.mainPadding, label).toBe("0px");
       continue;
     }
+    expect(m.rootPadding, `${label}: the page draws no top padding of its own`).toBe("0px");
     expect(m.headerBottom, `${label}: the space-name row`).not.toBeNull();
     expect(m.columnPadding, label).toBe("0px");
     expect(m.mainPadding, label).toBe(`${String(GAP)}px`);
