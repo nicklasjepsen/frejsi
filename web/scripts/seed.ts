@@ -138,10 +138,20 @@ export const SEED_FOODS = [
   },
   { name: "Banan", category: "fruit", portions: [{ label: "1 stk", carbs: 23 }] },
   { name: "Mælk", category: "dairy", carbsPer100g: 5, portions: [{ label: "1 glas", carbs: 10 }] },
-  { name: SEED_BREAKFAST, category: "starch", portions: [{ label: "1 skål", carbs: 38 }] },
+  // Typed in by Mette at breakfast and not ticked yet, so Alma's picker stays the artboard's seven.
+  {
+    name: SEED_BREAKFAST,
+    category: "starch",
+    verify: false,
+    portions: [{ label: "1 skål", carbs: 38 }],
+  },
 ] as const satisfies readonly { name: string; category: FoodCategory; [key: string]: unknown }[];
 
-/** The family's own entries for the lasagne, verified like their other foods but not favourites. */
+/**
+ * The family's own entries for the lasagne: typed in while the recipe was reviewed, not ticked and
+ * not favourites, so they are absent from Alma's picker and wait in the library like any other
+ * manual entry.
+ */
 export const SEED_INGREDIENTS = [
   {
     name: "Lasagneplader",
@@ -445,7 +455,12 @@ export async function seed(options: SeedOptions = {}): Promise<SeededSpace> {
         : await createFood(
             spaceId,
             session("jonas"),
-            { ...food, from: "library", favourite: true, verify: true },
+            {
+              ...food,
+              from: "library",
+              favourite: true,
+              verify: "verify" in food ? food.verify : true,
+            },
             { db, sink, now, sources: [], photos: null },
           );
     foods.set(food.name, saved);
@@ -454,7 +469,7 @@ export async function seed(options: SeedOptions = {}): Promise<SeededSpace> {
     const saved = await createFood(
       spaceId,
       session("jonas"),
-      { ...food, portions: [...food.portions], from: "library", favourite: false, verify: true },
+      { ...food, portions: [...food.portions], from: "library", favourite: false, verify: false },
       { db, sink, now, sources: [], photos: null },
     );
     foods.set(food.name, saved);
