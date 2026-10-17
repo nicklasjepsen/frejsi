@@ -70,12 +70,6 @@ it("seeds seventeen foods, fourteen reading days and seven meals through the emi
       "Æble",
       "Banan",
       "Mælk",
-      "Havregrød med æble",
-      "Lasagneplader",
-      "Hakket oksekød",
-      "Løg",
-      "Hakkede tomater",
-      "Revet ost",
     ].sort(),
   );
   expect(foods.find((food) => food.name === "Rugbrød")).toMatchObject({
@@ -87,6 +81,24 @@ it("seeds seventeen foods, fourteen reading days and seven meals through the emi
     origin: "frida",
     verified: false,
   });
+  // Alma's simpleMode picker shows verified foods only: the artboard's seven. The breakfast dish
+  // and the five lasagne ingredients are manual entries nobody has ticked.
+  expect(foods.filter((food) => food.verified)).toHaveLength(7);
+  expect(
+    foods
+      .filter((food) => !food.verified && food.origin === "family")
+      .map((food) => food.name)
+      .sort(),
+  ).toEqual(
+    [
+      "Havregrød med æble",
+      "Lasagneplader",
+      "Hakket oksekød",
+      "Løg",
+      "Hakkede tomater",
+      "Revet ost",
+    ].sort(),
+  );
   for (const food of foods) {
     expect(food.photoKey).toBeNull();
     expect(JSON.parse(food.portions) as unknown[]).not.toHaveLength(0);
