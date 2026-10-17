@@ -141,6 +141,26 @@ describe("history read services", () => {
     expect(repo.calls.filter((c) => c.method === "readingsBetween")).toHaveLength(2);
     expect((await loadHistoryDay("s1", "2026-10-18", false, "en", deps)).readings).toEqual([]);
   });
+  it("carries the stored symbol on the curve, the day and the week, unknown for a row without one", async () => {
+    const { repo, meal, deps } = setup();
+    meal.symbol = "starch";
+    const older = { ...meal, id: "older", ts: "2026-10-18T12:00:00.000Z", symbol: undefined };
+    repo.meals.push(older);
+    expect((await loadMealCurve("s1", meal.id, "en", deps)).meal.symbol).toBe("starch");
+    expect((await loadMealCurve("s1", older.id, "en", deps)).meal.symbol).toBe("unknown");
+    const day = await loadHistoryDay("s1", "2026-10-18", true, "en", deps);
+    expect(day.meals.map((m) => [m.id, m.symbol])).toEqual([
+      [meal.id, "starch"],
+      [older.id, "unknown"],
+    ]);
+    const week = await loadHistoryWeek("s1", "2026-10-12", "en", deps);
+    expect(week.days[6]?.meals).toEqual([
+      { ts: meal.ts, symbol: "starch" },
+      { ts: older.ts, symbol: "unknown" },
+    ]);
+    expect(week.days[6]?.mealTimes).toEqual([meal.ts, older.ts]);
+    expect(week.days[0]?.meals).toEqual([]);
+  });
   it("navigates every meal when timestamps are identical, using IDs as the tie break", async () => {
     const { repo, meal, deps } = setup();
     repo.meals.push(

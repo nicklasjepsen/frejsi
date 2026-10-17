@@ -8,6 +8,7 @@ import {
   mealSlot,
   mealTitle,
   prisma,
+  storedSymbol,
   type Locale,
   type PrismaClient,
 } from "@frejsi/shared";
@@ -100,6 +101,7 @@ export async function loadDay(
       ts: true,
       totalCarbs: true,
       photoKey: true,
+      symbol: true,
       byUser: { select: { id: true, name: true } },
       items: {
         orderBy: { position: "asc" },
@@ -129,6 +131,7 @@ export async function loadDay(
         title: mealTitle(items, undefined, locale),
         slot: mealSlot(row.ts, timezone),
         totalCarbs: row.totalCarbs,
+        symbol: storedSymbol(row.symbol),
         byUser: { id: row.byUser.id, name: row.byUser.name },
         items,
         ...(photo ? { photo } : {}),

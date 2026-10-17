@@ -41,6 +41,7 @@ export async function mealView(
     byUser: row.byUser,
     items,
     photo,
+    symbol: row.symbol ?? "unknown",
     title: mealTitle(items, detail ? row.note : undefined, locale),
     slot: mealSlot(row.ts, timezone),
     ...(detail ? { note: row.note, bolusTs: row.bolusTs } : {}),

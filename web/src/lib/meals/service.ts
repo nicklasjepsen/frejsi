@@ -8,6 +8,7 @@ import {
   carbsFor,
   log,
   mealSlot,
+  mealSymbol,
   mealTitle,
   type Locale,
   type MealItemInput,
@@ -54,11 +55,13 @@ async function snapshots(
     items.map(async (item) => {
       let { name, grams, carbs } = item;
       const { portionLabel } = item;
+      let category;
       if (item.foodId) {
         const food = await repo.food(spaceId, item.foodId);
         if (!food) throw new HttpError(404, "not-found");
         if (session.simpleMode && !food.verified) throw new HttpError(400, "simple-mode");
         name = food.name;
+        category = food.category;
         if (portionLabel !== undefined) {
           const portion = food.portions.find((p) => p.label === portionLabel);
           if (!portion) throw new HttpError(400, "validation");
@@ -70,7 +73,11 @@ async function snapshots(
       }
       const parsed = MealItemView.safeParse({ name, grams, portionLabel, carbs });
       if (!parsed.success) throw new HttpError(400, "validation");
-      return { ...parsed.data, ...(item.foodId ? { foodId: item.foodId } : {}) };
+      return {
+        ...parsed.data,
+        ...(item.foodId ? { foodId: item.foodId } : {}),
+        ...(category ? { category } : {}),
+      };
     }),
   );
 }
@@ -97,6 +104,7 @@ async function view(row: MealRecord, locale: Locale, deps: MealDeps): Promise<Me
     id: row.id,
     ts: row.ts,
     totalCarbs: row.totalCarbs,
+    symbol: row.symbol ?? "unknown",
     note: row.note,
     bolusTs: row.bolusTs,
     byUser: row.byUser,
@@ -192,6 +200,8 @@ export async function createMeal(
         bolusTs: data.bolusTs,
         photoKey: key,
         totalCarbs: items.reduce((sum, item) => sum + item.carbs, 0),
+        // Decided once from the snapshots and stored: a later library edit never rewrites it.
+        symbol: mealSymbol(items),
         items,
       });
       await emit(spaceId, "meal.created", {
@@ -223,6 +233,7 @@ export async function updateMeal(
   if (requested) {
     changes.items = await snapshots(spaceId, session, requested, deps.repo);
     changes.totalCarbs = changes.items.reduce((sum, item) => sum + item.carbs, 0);
+    changes.symbol = mealSymbol(changes.items);
   }
   const key = photoDataUrl ? await upload(spaceId, id, photoDataUrl, deps) : undefined;
   if (key) changes.photoKey = key;

@@ -20,6 +20,7 @@ interface Row {
   note: string | null;
   photoKey: string | null;
   bolusTs: Date | null;
+  symbol: string | null;
   items: Item[];
 }
 export function database() {
@@ -42,6 +43,8 @@ export function database() {
     verifiedBy: null,
     verifiedAt: null,
     createdBy: null,
+    category: "bread",
+    recipe: null,
   };
   function read(
     row: Row | undefined,

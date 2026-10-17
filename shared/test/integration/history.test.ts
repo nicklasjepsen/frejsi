@@ -133,6 +133,19 @@ it("matches different portions and deleted-food snapshots, excluding extra items
   expect(matches[0]?.items[0]?.foodId).toBeUndefined();
   expect(matches.map((row) => row.totalCarbs)).toEqual([25, 40, 30, 20]);
   expect(await repo.mealById(otherSpaceId, current.id)).toBeNull();
+  // The symbol column (0005): read back as stored, the apple for a row written without one.
+  expect(loaded.symbol).toBe("unknown");
+  const withSymbol = await db.meal.create({
+    data: {
+      spaceId,
+      byUserId: userId,
+      ts: at(16),
+      totalCarbs: 24,
+      symbol: "bread",
+      items: { create: { position: 0, name: "Fictional loaf", carbs: 24 } },
+    },
+  });
+  expect((await repo.mealById(spaceId, withSymbol.id))?.symbol).toBe("bread");
 });
 
 it("loads week statistics with exactly two SQL reading queries", async () => {
@@ -151,7 +164,13 @@ it("loads week statistics with exactly two SQL reading queries", async () => {
     now: () => at(19),
   });
   expect(week.days).toHaveLength(7);
-  expect(week.numbers.mealCount).toBe(4);
+  expect(week.numbers.mealCount).toBe(5);
   expect(week.days.find((day) => day.date === "2026-10-15")?.curve.length).toBeGreaterThan(0);
+  expect(week.days.find((day) => day.date === "2026-10-15")?.meals).toEqual([
+    { ts: at(15).toISOString(), symbol: "unknown" },
+  ]);
+  expect(week.days.find((day) => day.date === "2026-10-16")?.meals).toEqual([
+    { ts: at(16).toISOString(), symbol: "bread" },
+  ]);
   expect(queries.filter((query) => /FROM\s+\[dbo\]\.\[Reading\]/i.test(query))).toHaveLength(2);
 });

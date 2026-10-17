@@ -1,9 +1,20 @@
-import { HttpError, prisma, type Food, type MealItemView, type PrismaClient } from "@frejsi/shared";
-import { Food as FoodSchema, Portion } from "@frejsi/shared";
+import {
+  HttpError,
+  prisma,
+  storedSymbol,
+  type Food,
+  type FoodCategory,
+  type MealItemView,
+  type MealSymbol,
+  type PrismaClient,
+} from "@frejsi/shared";
+import { Food as FoodSchema, Portion, Recipe } from "@frejsi/shared";
 import { z } from "zod";
 
+/** An item as saved: the food's category rides along for `mealSymbol()` and is not persisted. */
 export interface MealSnapshot extends MealItemView {
   foodId?: string | undefined;
+  category?: FoodCategory | undefined;
 }
 export interface MealData {
   id: string;
@@ -11,18 +22,22 @@ export interface MealData {
   byUserId: string;
   ts: string;
   totalCarbs: number;
+  symbol: MealSymbol;
   items: MealSnapshot[];
   note?: string | undefined;
   bolusTs?: string | undefined;
   photoKey?: string | undefined;
 }
-export interface MealRecord extends MealData {
+export interface MealRecord extends Omit<MealData, "symbol"> {
   byUser: { id: string; name: string };
   timezone: string;
+  /** Always set by the Prisma repository (`unknown` for a row from before 0005). */
+  symbol?: MealSymbol | undefined;
 }
 export interface MealChanges {
   ts?: string | undefined;
   totalCarbs?: number | undefined;
+  symbol?: MealSymbol | undefined;
   items?: MealSnapshot[] | undefined;
   note?: string | undefined;
   bolusTs?: string | null | undefined;
@@ -49,6 +64,7 @@ function record(row: MealRow): MealRecord {
     byUserId: row.byUserId,
     ts: row.ts.toISOString(),
     totalCarbs: row.totalCarbs,
+    symbol: storedSymbol(row.symbol),
     note: row.note ?? undefined,
     bolusTs: row.bolusTs?.toISOString(),
     photoKey: row.photoKey ?? undefined,
@@ -85,6 +101,8 @@ export class PrismaMealRepository implements MealRepository {
       carbsPer100g: row.carbsPer100g?.toNumber(),
       portions: z.array(Portion).parse(JSON.parse(row.portions) as unknown),
       barcode: row.barcode ?? undefined,
+      category: row.category ?? undefined,
+      recipe: row.recipe ? Recipe.parse(JSON.parse(row.recipe) as unknown) : undefined,
       photoKey: row.photoKey ?? undefined,
       verifiedBy: row.verifiedBy ?? undefined,
       verifiedAt: row.verifiedAt?.toISOString(),
@@ -140,6 +158,7 @@ export class PrismaMealRepository implements MealRepository {
           where: { id, spaceId },
           data: {
             ...(fields.totalCarbs !== undefined ? { totalCarbs: fields.totalCarbs } : {}),
+            ...(fields.symbol !== undefined ? { symbol: fields.symbol } : {}),
             ...(fields.note !== undefined ? { note: fields.note } : {}),
             ...("photoKey" in fields ? { photoKey: fields.photoKey ?? null } : {}),
             ...(ts ? { ts: new Date(ts) } : {}),

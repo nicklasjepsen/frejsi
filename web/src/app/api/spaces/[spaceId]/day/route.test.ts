@@ -11,6 +11,8 @@ import { GET } from "./route";
 // 13:13 in Copenhagen (CEST, UTC+2) on Thursday 15 October 2026.
 const T0 = new Date("2026-10-15T11:13:00.000Z");
 const GLUCOSE_KEYS = new Set(["mmol", "mgdl", "trend", "reading", "readings", "glucose"]);
+/** What a meal row holds but the day never sends, and the symptom fields the day never reads. */
+const PRIVATE_KEYS = new Set(["note", "bolusTs", "severity", "resolvedTs", "kind", "recipe"]);
 
 interface MealRow {
   id: string;
@@ -21,6 +23,7 @@ interface MealRow {
   note: string | null;
   bolusTs: Date | null;
   photoKey: string | null;
+  symbol: string | null;
   items: {
     name: string;
     portionLabel: string | null;
@@ -87,6 +90,7 @@ function addMeal(
     note: null,
     bolusTs: null,
     photoKey: null,
+    symbol: null,
     ...row,
     ts: new Date(row.ts),
     items,
@@ -126,6 +130,7 @@ beforeEach(() => {
     note: "Madpakke, BS 6,2 før",
     bolusTs: new Date("2026-10-15T09:58:00.000Z"),
     photoKey: "spaces/s1/meals/m3/abc123",
+    symbol: "bread",
     items: [
       { name: "Æble", portionLabel: "1 stk", grams: 150, carbs: 14, position: 1 },
       { name: "Rugbrød med ost", portionLabel: "2 skiver", grams: null, carbs: 36, position: 0 },
@@ -180,6 +185,7 @@ describe("GET /api/spaces/:id/day?date= (plan §7)", () => {
       title: "Rugbrød med ost og Æble",
       slot: "lunch",
       totalCarbs: 50,
+      symbol: "bread",
       byUser: { id: "owner-1", name: "Testforælder" },
       items: [
         { name: "Rugbrød med ost", portionLabel: "2 skiver", carbs: 36 },
@@ -191,6 +197,8 @@ describe("GET /api/spaces/:id/day?date= (plan §7)", () => {
       },
     });
     expect(middle?.photo).toBeUndefined();
+    // A row from before 0005 has no symbol: the apple, never a missing key.
+    expect(middle?.symbol).toBe("unknown");
     expect(first).toMatchObject({ slot: "breakfast", byUser: { name: "Testhjælper" } });
   });
 
@@ -206,14 +214,18 @@ describe("GET /api/spaces/:id/day?date= (plan §7)", () => {
     expect(Object.keys(select)).not.toContain("bolusTs");
   });
 
-  it("gives a viewer the same day with not one glucose key at any depth", async () => {
+  it("gives a viewer the same day, symbols included, with not one glucose or private key at any depth", async () => {
     const { res, body } = await day("sess-viewer-1");
     expect(res.status).toBe(200);
     expect(body.mealCount).toBe(3);
+    expect(body.meals.map((m) => m.symbol)).toEqual(["bread", "unknown", "unknown"]);
     const keys = keysOf(body);
     expect(keys.length).toBeGreaterThan(20);
     for (const key of keys) expect(GLUCOSE_KEYS.has(key), key).toBe(false);
+    for (const key of keys) expect(PRIVATE_KEYS.has(key), key).toBe(false);
     expect(JSON.stringify(body)).not.toMatch(/mmol|mg\/dl|6,2/i);
+    const select = (mealQueries[0] as { select: Record<string, unknown> }).select;
+    expect(Object.keys(select)).toContain("symbol");
   });
 
   it("lets a carer read it too", async () => {
