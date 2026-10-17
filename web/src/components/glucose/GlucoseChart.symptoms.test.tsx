@@ -10,7 +10,7 @@ import { I18nProvider } from "@/lib/i18n/Provider";
 import { getMessages } from "@/lib/i18n/messages";
 import type { AppLocale } from "@/lib/i18n/routing";
 
-import { GlucoseChart } from "./GlucoseChart";
+import { GlucoseChart, symptomTargets } from "./GlucoseChart";
 import type { ChartSymptom } from "./chart";
 
 const MEAL = "2026-10-14T10:10:00.000Z"; // 12:10 Copenhagen
@@ -208,3 +208,40 @@ describe("a symptom marker is distinguishable at the phone sizes (plan §5)", ()
 });
 
 export type { ChartSymptom };
+
+describe("neighbouring symptom targets (Codex review)", () => {
+  it("each keeps its own target up to halfway to its neighbour, so both open", () => {
+    const onSymptomTap = vi.fn();
+    mount(
+      <GlucoseChart
+        {...day}
+        symptoms={[symptom("a", at(MEAL, 60)), symptom("b", at(MEAL, 90), "dizzy", "Svimmel")]}
+        onSymptomTap={onSymptomTap}
+      />,
+    );
+    const a = screen.getByRole("button", { name: "Ondt i maven kl. 13:10" });
+    const b = screen.getByRole("button", { name: "Svimmel kl. 13:40" });
+    // 30 min on a 296-unit day of 9.2 h is about 16 units apart: each target ends at the midpoint.
+    const edge = (el: HTMLElement) => ({
+      left: parseFloat(el.style.left),
+      right: parseFloat(el.style.left) + parseFloat(el.style.width),
+    });
+    expect(edge(a).right).toBeCloseTo(edge(b).left, 3);
+    expect(edge(a).right - edge(a).left).toBeLessThan(44);
+    fireEvent.click(a);
+    fireEvent.click(b);
+    expect(onSymptomTap.mock.calls).toEqual([["a"], ["b"]]);
+  });
+
+  it("keeps the full 44 px when symptoms are far apart", () => {
+    expect(symptomTargets([{ x: 100 }, { x: 200 }], 296, 1)).toEqual([
+      { left: 78, width: 44 },
+      { left: 178, width: 44 },
+    ]);
+    expect(symptomTargets([{ x: 100 }, { x: 110 }], 296, 1)).toEqual([
+      { left: 78, width: 27 },
+      { left: 105, width: 27 },
+    ]);
+    expect(symptomTargets([{ x: 5 }], 296, 1)).toEqual([{ left: 0, width: 27 }]);
+  });
+});
