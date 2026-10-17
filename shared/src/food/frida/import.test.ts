@@ -3,6 +3,8 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, expect, it } from "vitest";
 import { importFrida, parseFridaCsv } from "../../../scripts/import-frida";
+import { FoodCategory } from "../../schemas/food";
+import { fridaCategory } from "../category/index";
 import { FridaEntry } from "./entry";
 
 const dirs: string[] = [];
@@ -19,14 +21,19 @@ it("imports only available carbohydrate, sorts numerically and emits identical b
   await importFrida(csv, output);
   expect(await readFile(output, "utf8")).toBe(first);
   const entries = FridaEntry.array().parse(JSON.parse(first) as unknown);
-  expect(entries).toHaveLength(9);
-  expect(entries.map((entry) => entry.id)).toEqual([901, 902, 904, 905, 906, 907, 908, 909, 910]);
+  expect(entries).toHaveLength(13);
+  expect(entries.map((entry) => entry.id)).toEqual([
+    901, 902, 904, 905, 906, 907, 908, 909, 910, 911, 912, 913, 914,
+  ]);
   expect(entries.find((entry) => entry.id === 910)).toEqual({
     id: 910,
     name: { da: "Fiktivt rugbrød, fiberrigt", en: "Fictional rye bread, high fibre" },
     carbsPer100g: 32.5,
-    group: "Cereals",
+    group: "Bread",
   });
+  // The excerpt covers every food category through real Frida group names (v0.6.0 plan §7).
+  const covered = new Set(entries.map((entry) => fridaCategory(entry.group)));
+  expect([...covered].sort()).toEqual([...FoodCategory.options].sort());
   expect(entries.find((entry) => entry.id === 902)?.carbsPer100g).toBe(12.3);
   expect(entries.find((entry) => entry.id === 904)?.carbsPer100g).toBe(0);
 });

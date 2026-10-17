@@ -1,6 +1,7 @@
 import { readFile } from "node:fs/promises";
 import { afterEach, beforeEach, describe, expect, expectTypeOf, it, vi } from "vitest";
 import { FoodCandidate } from "../../schemas/food";
+import { mapProduct } from "./map";
 import { OffSource } from "./source";
 import { OffRateLimits } from "./rate-limit";
 
@@ -59,6 +60,41 @@ describe("OFF fixture adapter", () => {
       expect(candidate).not.toHaveProperty("verified");
     }
     expectTypeOf<Extract<keyof FoodCandidate, "verified">>().toEqualTypeOf<never>();
+  });
+  it("requests categories_tags and maps the most specific known tag; fixtures without tags map without a category (plan §7)", async () => {
+    const f = fake(["product-with-categories"]);
+    const result = await source(f.fetcher).byBarcode("2000000000039", signal());
+    expect(f.calls[0]?.url.searchParams.get("fields")?.split(",")).toContain("categories_tags");
+    expect(result.candidates).toEqual([
+      {
+        origin: "off",
+        sourceRef: "off:2000000000039",
+        barcode: "2000000000039",
+        name: "Fiktivt kernerugbrød, Fiktiv Bageri",
+        carbsPer100g: 38.2,
+        portions: [{ label: "1 slice (50 g)", grams: 50, carbs: 19 }],
+        category: "bread",
+      },
+    ]);
+    const tagged = (await fixture("product-with-categories")) as { product: object };
+    expect(mapProduct({ ...tagged.product, categories_tags: ["en:plant-based-foods"] }, "da")).not.toHaveProperty(
+      "category",
+    );
+    expect(
+      mapProduct({ ...tagged.product, categories_tags: ["en:breads", "en:sandwiches"] }, "da")
+        ?.category,
+    ).toBe("mixed");
+    expect(mapProduct({ ...tagged.product, categories_tags: "en:breads" }, "da")).not.toHaveProperty(
+      "category",
+    );
+    const plain = (await fixture("product-found")) as { product: object };
+    expect(mapProduct(plain.product, "da")).not.toHaveProperty("category");
+    const search = (await fixture("search-results")) as { products: object[] };
+    for (const product of search.products)
+      expect(mapProduct(product, "da")).not.toHaveProperty("category");
+    const text = fake(["search-results"]);
+    await source(text.fetcher).search("rugbrød", "da", signal());
+    expect(text.calls[0]?.url.searchParams.get("fields")?.split(",")).toContain("categories_tags");
   });
   it("keeps missing carbs null without a portion, and missing products are ok", async () => {
     const f = fake(["product-no-carbs", "product-not-found"]);

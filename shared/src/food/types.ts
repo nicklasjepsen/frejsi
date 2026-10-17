@@ -21,6 +21,14 @@ export interface FoodSource {
   kind: "remote" | "local";
   search(q: string, locale: Locale, signal: AbortSignal): Promise<FoodSourceResult>;
   byBarcode(barcode: string, signal: AbortSignal): Promise<FoodSourceResult>;
+  /**
+   * The candidate behind one of this source's `sourceRef`s, read again from the source, or null
+   * when the reference is not one of its own or no longer resolves. A local dataset answers it
+   * without the network; the space-copy service uses it so a pick's data, including its category,
+   * comes from the dataset and never from the client (v0.6.0 plan §7). Optional: a source without
+   * it keeps the client's unverified copy as before.
+   */
+  byRef?(sourceRef: string, locale: Locale, signal: AbortSignal): Promise<FoodCandidate | null>;
 }
 /**
  * Sends a human-approved correction back to the source a food came from (spec §4). Never called

@@ -9,8 +9,11 @@ Search folds names with the shared locale-independent Latin folding function,
 requires every query word to be a substring, and returns the first ten matches
 in numeric food-id order. The requested locale falls back to the other locale
 only when its name is missing. Candidates contain a name, `frida:<id>`, available
-carbohydrate per 100 g, and no barcode or portions. They carry no verification
-field; the space-copy service sets `verified: false` until a human checks it.
+carbohydrate per 100 g, the food category of the entry's Frida group
+(`shared/src/food/category/frida-groups.ts`, every group mapped; v0.6.0), and no
+barcode or portions. They carry no verification field; the space-copy service sets
+`verified: false` until a human checks it. `byRef("frida:<id>")` answers one entry from
+the dataset, so a pick's data and category come from here rather than from the client.
 
 See [data/README.md](data/README.md) for dataset provenance, attribution, licence
 and the exact refresh procedure. `pnpm --filter ./shared frida:import <csv>`

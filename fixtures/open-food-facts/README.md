@@ -6,7 +6,10 @@ all example barcodes are in restricted-circulation ranges. No production product
 response or image is stored. `rate-limited.json` accompanies HTTP 429.
 
 The fixture fetch in `shared/src/food/off/source.test.ts` records URLs/options and
-serves these files without network access. Search results deliberately repeat the
+serves these files without network access. `product-with-categories.json` carries
+`categories_tags` in OFF's general-to-specific order (the food category comes from the
+most specific known tag); the older product fixtures have no tags and map without a
+category. Search results deliberately repeat the
 barcode product so country/world deduplication is exercised.
 
 ## Write responses
