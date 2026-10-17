@@ -333,7 +333,13 @@ export function NowScreen({
                   variant="day"
                   bolus={
                     history.status === "ready" &&
-                    history.markers.some(({ bolusTs }) => Boolean(bolusTs))
+                    history.markers.some(({ bolusTs }) => {
+                      // Only a triangle the curve draws: before 06:00 the markers hold all of
+                      // yesterday, but the curve starts at dayFrom.
+                      if (!bolusTs) return false;
+                      const at = new Date(bolusTs).getTime();
+                      return at >= dayFrom.getTime() && at <= now.getTime();
+                    })
                   }
                   target={{ low: targetLow, high: targetHigh }}
                   unit={unit}
