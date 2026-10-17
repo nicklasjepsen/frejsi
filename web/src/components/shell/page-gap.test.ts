@@ -56,19 +56,24 @@ function desktopRule(css: string, selector: string): string {
 
 describe("the gap under the phone header", () => {
   const shell = read("shell/shell.module.css");
+  const phoneOnly = shell.split("@media (max-width: 1279.98px)").slice(1).join("");
 
-  it("is the shell's: 20 px on top of every page under 1280 px", () => {
-    expect(topPadding(rule(outsideMedia(shell), ".main"))).toBe("20px");
+  // AppShell renders the phone header and then `<main>` inside `.main`: padding `.main` would move
+  // the header down instead of opening the gap under it.
+  it("is the shell's: 20 px on top of the page's `main`, under the header, below 1280 px", () => {
+    expect(topPadding(rule(phoneOnly.replace(/^\s+/gm, ""), ".shell main"))).toBe("20px");
+    expect(topPadding(rule(outsideMedia(shell), ".main"))).toMatch(/^0(px)?$/);
   });
 
-  it("keeps the desktop main column's own padding from 1280 px", () => {
+  it("keeps the desktop main column's own padding from 1280 px, and nothing on top of it", () => {
     expect(desktopRule(shell, ".main")).toMatch(/padding: 28px 32px 40px;/);
+    expect(shell.split("@media (min-width: 1280px)").slice(1).join("")).not.toContain(".shell main");
   });
 
   // /eat and /feel draw no phone header; the same 20 px is their gap to the top of the screen,
   // which their own `.page` drew before, so they do not move.
   it("pads chromeless screens the same, so /eat and /feel keep their place", () => {
-    expect(shell).not.toMatch(/data-chromeless="true"\][^{]*\.main/);
+    expect(shell).not.toMatch(/data-chromeless="true"\][^{]*main/);
   });
 
   it.each([

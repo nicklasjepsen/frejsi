@@ -1,5 +1,5 @@
 // Issue 214: on the phone every page sits 20 px under the space name, and the gap is the shell's
-// alone (`.main`), so no screen draws its own or forgets it. Measured, not snapshotted: a runner's
+// alone (its `main`, under the header), so no screen draws its own or forgets it. Measured, not snapshotted: a runner's
 // font rasteriser differs from a workstation's by a few pixels, which is no finding. From 1280 px
 // the phone header is hidden and the desktop main column keeps its own 28 px.
 import { prisma } from "@frejsi/shared";
@@ -18,7 +18,8 @@ interface Measure {
   headerBottom: number | null;
   /** The top of the first thing the page draws: the lowest top of any visible box in `main`. */
   contentTop: number;
-  /** The shell's main column's top padding, and the page root's. */
+  /** The top padding of the shell's column (header and `main`), of `main`, and of the page root. */
+  columnPadding: string;
   mainPadding: string;
   rootPadding: string;
 }
@@ -35,7 +36,7 @@ async function measure(page: Page): Promise<Measure> {
     const shell = document.querySelector('[data-testid="app-shell"]');
     const main = shell?.querySelector("main");
     const root = main?.firstElementChild;
-    if (!main || !root?.parentElement || !main.parentElement) throw new Error("no page in shell");
+    if (!main || !root || !main.parentElement) throw new Error("no page in shell");
     const header = shell?.querySelector('[data-testid="phone-header"]');
     const headerRect = header?.getBoundingClientRect();
     let contentTop = Number.POSITIVE_INFINITY;
@@ -49,7 +50,8 @@ async function measure(page: Page): Promise<Measure> {
     return {
       headerBottom: headerRect && headerRect.height > 0 ? headerRect.bottom : null,
       contentTop,
-      mainPadding: getComputedStyle(main.parentElement).paddingTop,
+      columnPadding: getComputedStyle(main.parentElement).paddingTop,
+      mainPadding: getComputedStyle(main).paddingTop,
       rootPadding: getComputedStyle(root).paddingTop,
     };
   });
@@ -64,10 +66,12 @@ async function expectGap(page: Page, name: string): Promise<void> {
     expect(m.rootPadding, `${label}: the page draws no top padding of its own`).toBe("0px");
     if (desktop) {
       expect(m.headerBottom, label).toBeNull();
-      expect(m.mainPadding, `${label}: the desktop column keeps its own`).toBe(DESKTOP_MAIN_TOP);
+      expect(m.columnPadding, `${label}: the desktop column keeps its own`).toBe(DESKTOP_MAIN_TOP);
+      expect(m.mainPadding, label).toBe("0px");
       continue;
     }
     expect(m.headerBottom, `${label}: the space-name row`).not.toBeNull();
+    expect(m.columnPadding, label).toBe("0px");
     expect(m.mainPadding, label).toBe(`${String(GAP)}px`);
     expect(m.contentTop - (m.headerBottom ?? 0), `${label}: under the space name`).toBeCloseTo(
       GAP,
@@ -86,9 +90,11 @@ async function expectChromeless(page: Page, name: string): Promise<void> {
     expect(m.headerBottom, `${label}: no space-name row`).toBeNull();
     expect(m.rootPadding, label).toBe("0px");
     if (desktop) {
-      expect(m.mainPadding, label).toBe(DESKTOP_MAIN_TOP);
+      expect(m.columnPadding, label).toBe(DESKTOP_MAIN_TOP);
+      expect(m.mainPadding, label).toBe("0px");
       continue;
     }
+    expect(m.mainPadding, label).toBe(`${String(GAP)}px`);
     expect(m.contentTop, `${label}: from the top of the screen`).toBeCloseTo(GAP, 0);
   }
 }
