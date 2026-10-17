@@ -2,7 +2,7 @@
 
 The symbol a meal carries on the glucose curve (v0.6.0 plan §7). It is derived once, when the meal is saved (`mealSymbol()` in `shared/src/meals/symbol.ts`), stored on the meal and never recomputed from the library, so a later edit of a food's category leaves every past day as it was.
 
-The drawings were made in code (plan decision 4) under the `icons` rules of `tokens.json`: inline SVG on a 24-unit grid, `fill="none"`, `stroke="currentColor"`, round caps and joins, stroke width 1.8 (2.2 at the chart sizes). The source of truth is `web/src/components/food/FoodSymbol.tsx`; a test asserts that this sheet lists every symbol with the same path data. A later Claude Design pass replaces the paths there and here, nothing else.
+The drawings were made in code (plan decision 4) under the `icons` rules of `tokens.json`: inline SVG on a 24-unit grid, `fill="none"`, `stroke="currentColor"`, round caps and joins, stroke width 1.8 (2.2 at the chart sizes, 2 on the simpleMode card). The source of truth is `web/src/components/food/FoodSymbol.tsx`; a test asserts that this sheet lists every symbol with the same path data. A later Claude Design pass replaces the paths there and here, nothing else.
 
 ## Where and how large
 
@@ -116,7 +116,7 @@ The apple again: a meal whose dominant item has no category, or a meal from befo
 
 ## Symbols next to each other
 
-The symptom marker is not a food symbol: a 10 px diamond in `--text` on the time axis, `data-testid="symptom-marker"`. The bolus triangle (10 px, `--meal-bolus-marker`, apex up on the baseline) is unchanged. A test (`GlucoseChart.symbols.test.tsx`) checks that the three are distinguishable at the phone sizes by shape, colour and test id.
+The symptom marker is not a food symbol: a 10 px diamond in `--text` on the time axis, `data-testid="symptom-marker"`. The bolus triangle (10 px, `--meal-bolus-marker`, apex up on the baseline) is unchanged. A test (`GlucoseChart.symptoms.test.tsx`) checks that the three are distinguishable at the phone sizes by shape, colour and test id.
 
 ## What the owner may change
 
