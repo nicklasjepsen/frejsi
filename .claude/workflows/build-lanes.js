@@ -107,7 +107,9 @@ const briefFor = (lane) =>
   (lane.notes ? `Notes: ${lane.notes}\n` : '') +
   `\nThis lane is a vertical slice: build all of it, TDD, as one PR that closes the issue(s)` +
   `${milestone ? ` and carries milestone ${milestone}` : ''}. Return the PR number and URL. ` +
-  `If you had to stop (needs-owner), open a draft PR, set blocked=true and say why in summary.`
+  `If you had to stop (needs-owner), open a draft PR, set blocked=true and say why in summary. ` +
+  `The lanes of one run share the session scratchpad directory: name every temporary file with your lane ` +
+  `(pr-body-${lane.branch.replace(/[^a-z0-9]+/gi, '-')}.md, never pr-body.md), and never git stash in the worktree (the stash list is shared).`
 
 const gatePrompt = (role, pr) =>
   `Run your ${role} review on PR #${pr} of nicklasjepsen/frejsi (gh pr diff ${pr}). Return verdict and findings in the schema.`
