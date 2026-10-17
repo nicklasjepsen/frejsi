@@ -171,3 +171,46 @@
     max-width: 860px;
   }
 }
+/* v0.6.0 (plan §5): the symptom rows of the day's list and the detail a tap opens. The diamond
+   takes the text colour, never the meal colour. */
+.symptomRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 44px;
+  padding: 8px 12px;
+  border: var(--card-border);
+  border-radius: 18px;
+  background: var(--surface);
+  box-shadow: var(--card-shadow);
+  color: var(--text);
+  font: inherit;
+  font-size: 15px;
+  text-align: left;
+  cursor: pointer;
+}
+.symptomRowMarker {
+  flex-shrink: 0;
+  fill: var(--text);
+}
+.symptomRow svg + svg {
+  color: var(--text-muted);
+}
+.symptomDetail {
+  margin-top: 12px;
+  padding: 16px;
+  border: var(--card-border);
+  border-radius: 18px;
+  background: var(--surface);
+  box-shadow: var(--card-shadow);
+}
+.symptomDetail > a,
+.symptomDetail > button {
+  margin-top: 12px;
+}
+.symptomFilter {
+  display: flex;
+  justify-content: center;
+  margin-top: 8px;
+}

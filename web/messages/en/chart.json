@@ -16,5 +16,6 @@
   },
   "mealAt": "Meal at {time}",
   "lastReading": "last reading {age}",
-  "mealWithCategory": "Meal, {category}, at {time}"
+  "mealWithCategory": "Meal, {category}, at {time}",
+  "symptomAt": "{kind} at {time}"
 }

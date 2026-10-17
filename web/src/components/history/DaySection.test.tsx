@@ -67,6 +67,7 @@ function mount(props: Partial<Parameters<typeof DaySection>[0]> = {}) {
   return render(
     <NextIntlClientProvider locale="da" messages={da}>
       <DaySection
+        spaceId="s1"
         day={day}
         today={TODAY}
         locale="da"
@@ -132,5 +133,93 @@ describe("the food symbol on the day curve (v0.6.0 plan §7)", () => {
     ).not.toBeNull();
     expect(screen.getByRole("button", { name: "Måltid, Brød, kl. 12:10" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Måltid kl. 08:30" })).toBeInTheDocument();
+  });
+});
+
+describe("symptoms on the day (v0.6.0 plan §5)", () => {
+  const symptom = {
+    id: "s1",
+    kind: "stomach-ache",
+    ts: "2026-10-14T11:00:00.000Z", // 13:00, between the two meals, 15 min before the reading and before now
+    severity: "light" as const,
+    byUserId: "u1",
+    byName: "Jonas",
+  };
+  let symptoms: (typeof symptom)[];
+  let fetchCalls: string[];
+  beforeEach(() => {
+    symptoms = [symptom];
+    fetchCalls = [];
+    vi.stubGlobal(
+      "fetch",
+      vi.fn((input: string) => {
+        const url = new URL(input, "https://frejsi.example");
+        fetchCalls.push(`${url.pathname}${url.search}`);
+        if (url.pathname.endsWith("/symptoms/kinds"))
+          return Promise.resolve(Response.json({ kinds: [] }));
+        return Promise.resolve(Response.json({ symptoms }));
+      }),
+    );
+  });
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("reads the day's symptoms once, draws the diamond with its tap target and a row in the list", async () => {
+    mount();
+    const target = await screen.findByRole("button", { name: "Ondt i maven kl. 13:00" });
+    expect(target).toBeInTheDocument();
+    expect(fetchCalls.filter((c) => c.includes("/symptoms?"))).toEqual([
+      "/api/spaces/s1/symptoms?from=2026-10-13T22%3A00%3A00.000Z&to=2026-10-14T22%3A00%3A00.000Z",
+    ]);
+    expect(document.querySelectorAll("svg [data-testid=symptom-marker]")).toHaveLength(1);
+    // The row sits between the meals by time: 12:10, 13:30, 08:30 newest first → m1, s1, m2.
+    const list = screen.getByRole("list", { name: "Måltider" });
+    const rows = within(list).getAllByRole("listitem");
+    expect(
+      rows.map((row) => row.querySelector("[data-testid]")?.getAttribute("data-testid")),
+    ).toEqual(["symptom-row", "meal-card", "meal-card"]);
+    expect(
+      screen.getByRole("button", { name: "Ondt i maven kl. 13:00 · Jonas" }),
+    ).toBeInTheDocument();
+  });
+
+  it("opens the detail on tap with the readings from −30 to +30 min and their times, and closes it", async () => {
+    mount();
+    fireEvent.click(await screen.findByRole("button", { name: "Ondt i maven kl. 13:00" }));
+    const dialog = screen.getByRole("dialog", { name: "Ondt i maven kl. 13:00" });
+    expect(dialog).toHaveTextContent("Lidt");
+    expect(dialog).toHaveTextContent("Logget af Jonas");
+    expect(within(dialog).getByRole("list", { name: "Tal omkring" })).toHaveTextContent(
+      "13:15 · 9,6 mmol/L",
+    );
+    fireEvent.click(within(dialog).getByRole("button", { name: "Luk" }));
+    expect(screen.queryByRole("dialog")).toBeNull();
+    // The row opens the same detail.
+    fireEvent.click(screen.getByRole("button", { name: "Ondt i maven kl. 13:00 · Jonas" }));
+    expect(screen.getByRole("dialog", { name: "Ondt i maven kl. 13:00" })).toBeInTheDocument();
+  });
+
+  it("with the Symptomer filter shows the symptom rows only, and says so when there are none", async () => {
+    mount({ symptomsOnly: true });
+    await screen.findByTestId("symptom-row");
+    expect(screen.queryByTestId("meal-card")).toBeNull();
+    cleanup();
+    symptoms = [];
+    mount({ symptomsOnly: true });
+    expect(await screen.findByText("Ingen symptomer denne dag")).toBeVisible();
+    expect(screen.queryByTestId("meal-card")).toBeNull();
+  });
+
+  it("moves between meal links and symptom buttons with the arrow keys", async () => {
+    mount();
+    const row = await screen.findByRole("button", { name: "Ondt i maven kl. 13:00 · Jonas" });
+    // Newest first: the 13:00 symptom sits above the 12:10 meal.
+    const first = screen.getByRole("link", { name: /Rugbrød/ });
+    first.focus();
+    fireEvent.keyDown(first, { key: "ArrowUp" });
+    expect(row).toHaveFocus();
+    fireEvent.keyDown(row, { key: "ArrowDown" });
+    expect(first).toHaveFocus();
   });
 });

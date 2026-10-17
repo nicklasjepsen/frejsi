@@ -3,7 +3,7 @@ import type { DayHistoryView } from "@frejsi/shared/schemas/history";
 import type { DayView } from "@frejsi/shared/schemas/meal";
 import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
-import { afterEach, beforeEach, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import da from "../../../messages/da";
 import en from "../../../messages/en";
 import { fakeSocketFactory } from "@/lib/live/test-support";
@@ -642,4 +642,75 @@ it("keeps the viewer notice's owners current on changed, removed and joined memb
     });
     expect(screen.getByText(/Blodsukker vises ikke her/)).toHaveTextContent(`spørg ${owner}`);
   }
+});
+
+describe("the Symptomer chip and the viewer's symptom rows (v0.6.0 plan §5)", () => {
+  const symptom = {
+    id: "s1",
+    kind: "dizzy",
+    ts: "2026-10-14T09:00:00.000Z",
+    byUserId: "u1",
+    byName: "Jonas",
+  };
+  beforeEach(() => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn((input: string) => {
+        const url = new URL(input, "https://frejsi.example");
+        if (url.pathname.endsWith("/symptoms/kinds"))
+          return Promise.resolve(Response.json({ kinds: [] }));
+        if (url.pathname.endsWith("/symptoms")) {
+          const from = url.searchParams.get("from") ?? "";
+          const to = url.searchParams.get("to") ?? "";
+          return Promise.resolve(
+            Response.json({ symptoms: from <= symptom.ts && symptom.ts <= to ? [symptom] : [] }),
+          );
+        }
+        return Promise.reject(new Error(`Unexpected global route: ${url.pathname}`));
+      }),
+    );
+  });
+
+  it("filters the day's list to symptom rows from the period header on the phone", async () => {
+    await mount();
+    expect(await screen.findByTestId("symptom-row")).toBeVisible();
+    expect(screen.getByTestId("meal-card")).toBeVisible();
+    const chip = screen.getByRole("button", { name: "Symptomer" });
+    expect(chip).toHaveAttribute("aria-pressed", "false");
+    expect(chip.closest("header")).not.toBeNull();
+    await flush(() => {
+      fireEvent.click(chip);
+    });
+    expect(screen.getByRole("button", { name: "Symptomer" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+    expect(screen.queryByTestId("meal-card")).toBeNull();
+    expect(screen.getByTestId("symptom-row")).toBeVisible();
+  });
+
+  it("puts the chip in the desktop toolbar", async () => {
+    desktop = true;
+    await mount();
+    const chip = await screen.findByRole("button", { name: "Symptomer" });
+    expect(chip.closest("header")).toBeNull();
+    expect(chip.parentElement?.className).toContain("controls");
+  });
+
+  it("gives the viewer the rows and a detail without any reading", async () => {
+    reply = (date): DayView => ({
+      date,
+      timezone: "Europe/Copenhagen",
+      totalCarbs: 50,
+      mealCount: 1,
+      meals: [meal],
+    });
+    await mount(true);
+    const row = await screen.findByRole("button", { name: "Svimmel kl. 11:00 · Jonas" });
+    expect(within(row).getByTestId("symptom-marker")).toBeInTheDocument();
+    fireEvent.click(row);
+    const dialog = screen.getByRole("dialog", { name: "Svimmel kl. 11:00" });
+    expect(within(dialog).queryByRole("list")).toBeNull();
+    expect(dialog.textContent).not.toMatch(/mmol|\d,\d/);
+  });
 });

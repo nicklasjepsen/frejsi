@@ -14,6 +14,7 @@ import { DayLoading, OlderDays } from "./OlderDays";
 import { useToday } from "./useToday";
 import { useFeedReady } from "./useFeedReady";
 import { useDays } from "./useDays";
+import { ViewerSymptoms } from "./ViewerSymptoms";
 import styles from "./history.module.css";
 
 /** This branch only parses DayView and mounts meal-only components, on both screen sizes. */
@@ -129,6 +130,13 @@ export function ViewerDays({
               <>
                 <DayTotal carbs={entry.day.totalCarbs} suffix={t("totalSuffix")} />
                 <DayList meals={entry.day.meals} timeZone={entry.day.timezone} />
+                <ViewerSymptoms
+                  spaceId={spaceId}
+                  date={date}
+                  timeZone={entry.day.timezone}
+                  locale={locale}
+                  subscribe={subscribe}
+                />
               </>
             ) : entry?.status === "loading" ? (
               <DayLoading />

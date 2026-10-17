@@ -3,6 +3,7 @@
 import type { GlucoseUnit, Reading } from "@frejsi/shared";
 import type { MealSymbol } from "@frejsi/shared/schemas/food";
 import { useLocale, useTranslations } from "next-intl";
+import type { ReactNode } from "react";
 
 import { FoodSymbol } from "@/components/food/FoodSymbol";
 import { resolveLocale, type AppLocale } from "@/lib/i18n/routing";
@@ -14,6 +15,8 @@ import {
   weekTileGeometry,
   type ChartGeometry,
   type ChartMeal,
+  type ChartSymptom,
+  type ChartSymptomMark,
   type MealChartSize,
   type PreviousCurve,
 } from "./chart";
@@ -45,6 +48,9 @@ export interface DayChartProps extends CurveBase {
   meals?: readonly ChartMeal[];
   /** When given, each meal line is a 44 px-wide button that calls it with the meal's id. */
   onMealTap?: (mealId: string) => void;
+  /** Symptom diamonds on the time axis (v0.6.0 plan §5), each a 44 px tap target when tappable. */
+  symptoms?: readonly ChartSymptom[];
+  onSymptomTap?: (symptomId: string) => void;
   /**
    * The accessible name. Without one, the §7 day label: "Glukose i dag fra {from} til {to} med
    * {n} måltider" (Nu-Desktop), or with `labelKind="history"` "Glukose i dag med måltider markeret".
@@ -62,6 +68,9 @@ export interface MealChartProps {
   bolusTs?: string;
   /** The meal's food symbol, above the plot on the meal line (v0.6.0 plan §7). */
   symbol?: MealSymbol;
+  /** Symptoms; those within the window are diamonds on the axis (plan §5). */
+  symptoms?: readonly ChartSymptom[];
+  onSymptomTap?: (symptomId: string) => void;
   /** The same dish's earlier occurrences, drawn faintly behind, each relative to its own meal. */
   previous: readonly PreviousCurve[];
   target: { low: number; high: number };
@@ -80,6 +89,8 @@ export interface WeekTileChartProps {
   mealTimes: readonly string[];
   /** The same meals with their symbols: drawn at 8 px in place of the dots when given. */
   meals?: readonly { ts: string; symbol: MealSymbol }[];
+  symptoms?: readonly ChartSymptom[];
+  onSymptomTap?: (symptomId: string) => void;
   /** The local day, 00:00 to 24:00; its weekday is the accessible name ("Mandag"). */
   from: Date;
   to: Date;
@@ -159,6 +170,86 @@ function withBoluses(label: string, boluses: readonly string[]): string {
   return boluses.length === 0 ? label : `${label}. ${boluses.join(". ")}`;
 }
 
+/** The symptom diamonds: on the axis, the text colour, never terracotta (decision 14). */
+function SymptomMarks({ marks }: { marks: readonly ChartSymptomMark[] }) {
+  return marks.map((mark) => (
+    <path
+      key={mark.id}
+      className={styles.symptomMarker}
+      d={mark.path}
+      aria-hidden="true"
+      data-testid="symptom-marker"
+      data-kind={mark.kind}
+    />
+  ));
+}
+
+/**
+ * The 44 px tap targets over the SVG: one per meal line (the plot's height) and one per symptom
+ * diamond (44 px on the axis), each named with its time. Without any handler the SVG is returned
+ * as it is.
+ */
+function TapLayer({
+  svg,
+  width,
+  meals,
+  symptoms,
+  timeZone,
+  mealHeight,
+}: {
+  svg: ReactNode;
+  width: number;
+  meals: { marks: ChartGeometry["meals"]; onTap: (mealId: string) => void } | null;
+  symptoms: { marks: readonly ChartSymptomMark[]; onTap: (symptomId: string) => void } | null;
+  timeZone: string;
+  /** The meal target's height as a share of the chart's height. */
+  mealHeight: string;
+}) {
+  const t = useTranslations("chart");
+  const categories = useTranslations("foodCategory");
+  if ((!meals || meals.marks.length === 0) && (!symptoms || symptoms.marks.length === 0))
+    return svg;
+  // "Måltid, Brød, kl. 12:10" for a known symbol; "Måltid kl. 12:10" for unknown or none.
+  const mealName = (symbol: MealSymbol | undefined, time: string) =>
+    symbol !== undefined && symbol !== "unknown"
+      ? t("mealWithCategory", { category: categories(`names.${symbol}`), time })
+      : t("mealAt", { time });
+  const left = (x: number) => `${(x / width) * 100}%`;
+  return (
+    <div className={styles.tapLayer}>
+      {svg}
+      {meals?.marks.map((meal) => (
+        <button
+          key={meal.mealId}
+          type="button"
+          className={styles.mealTap}
+          style={{ left: left(meal.x), width: "44px", height: mealHeight }}
+          aria-label={mealName(meal.symbol, formatClock(new Date(meal.ts), timeZone))}
+          onClick={() => {
+            meals.onTap(meal.mealId);
+          }}
+        />
+      ))}
+      {symptoms?.marks.map((mark) => (
+        <button
+          key={mark.id}
+          type="button"
+          className={styles.symptomTap}
+          style={{ left: left(mark.x), width: "44px", height: "44px" }}
+          aria-label={t("symptomAt", {
+            kind: mark.label,
+            time: formatClock(new Date(mark.ts), timeZone),
+          })}
+          data-testid="symptom-tap"
+          onClick={() => {
+            symptoms.onTap(mark.id);
+          }}
+        />
+      ))}
+    </div>
+  );
+}
+
 /** A food symbol nested in the chart's SVG, in the meal colour (`.mealSymbol`). */
 function MealSymbolGlyph({
   symbol,
@@ -199,7 +290,6 @@ function CurveChart(props: SparklineChartProps | DayChartProps) {
   const locale = resolveLocale(useLocale());
   const t = useTranslations("chart");
   const log = useTranslations("log");
-  const categories = useTranslations("foodCategory");
   const day = props.variant === "day" ? props : null;
   const g = chartGeometry({
     readings: props.readings,
@@ -213,6 +303,7 @@ function CurveChart(props: SparklineChartProps | DayChartProps) {
     variant: props.variant,
     size: day?.size,
     meals: day?.meals,
+    symptoms: day?.symptoms,
   });
   const label =
     props.label ??
@@ -270,6 +361,7 @@ function CurveChart(props: SparklineChartProps | DayChartProps) {
       {g.end && (
         <circle className={styles.endDot} cx={g.end.x} cy={g.end.y} r="5" data-testid="end-dot" />
       )}
+      <SymptomMarks marks={g.symptoms} />
       {g.ticks.map((tick) => (
         <text
           key={`${tick.x}-${tick.label}`}
@@ -284,33 +376,15 @@ function CurveChart(props: SparklineChartProps | DayChartProps) {
       ))}
     </svg>
   );
-  if (!day?.onMealTap || g.meals.length === 0) return svg;
-  const onMealTap = day.onMealTap;
-  // "Måltid, Brød, kl. 12:10" for a known symbol; "Måltid kl. 12:10" for unknown or none.
-  const mealName = (symbol: MealSymbol | undefined, time: string) =>
-    symbol !== undefined && symbol !== "unknown"
-      ? t("mealWithCategory", { category: categories(`names.${symbol}`), time })
-      : t("mealAt", { time });
   return (
-    <div className={styles.tapLayer}>
-      {svg}
-      {g.meals.map((meal) => (
-        <button
-          key={meal.mealId}
-          type="button"
-          className={styles.mealTap}
-          style={{
-            left: `${(meal.x / g.width) * 100}%`,
-            width: "44px",
-            height: `${(g.plotHeight / g.height) * 100}%`,
-          }}
-          aria-label={mealName(meal.symbol, formatClock(new Date(meal.ts), props.timeZone))}
-          onClick={() => {
-            onMealTap(meal.mealId);
-          }}
-        />
-      ))}
-    </div>
+    <TapLayer
+      svg={svg}
+      width={g.width}
+      meals={day?.onMealTap ? { marks: g.meals, onTap: day.onMealTap } : null}
+      symptoms={day?.onSymptomTap ? { marks: g.symptoms, onTap: day.onSymptomTap } : null}
+      timeZone={props.timeZone}
+      mealHeight={`${(g.plotHeight / g.height) * 100}%`}
+    />
   );
 }
 
@@ -325,7 +399,7 @@ function MealChart(props: MealChartProps) {
       ? t("aria.mealWithPrevious", { count: props.previous.length })
       : t("aria.meal");
   const bolusText = g.bolus ? [log("bolus.at", { time: g.bolus.clock })] : [];
-  return (
+  const svg = (
     <svg
       className={styles.chart}
       viewBox={`0 0 ${g.width} ${g.height}`}
@@ -382,6 +456,7 @@ function MealChart(props: MealChartProps) {
       {g.end && (
         <circle className={styles.endDot} cx={g.end.x} cy={g.end.y} r="5" data-testid="end-dot" />
       )}
+      <SymptomMarks marks={g.symptoms} />
       {g.ticks.map((tick) => (
         <text
           key={tick.hours}
@@ -403,6 +478,16 @@ function MealChart(props: MealChartProps) {
       ))}
     </svg>
   );
+  return (
+    <TapLayer
+      svg={svg}
+      width={g.width}
+      meals={null}
+      symptoms={props.onSymptomTap ? { marks: g.symptoms, onTap: props.onSymptomTap } : null}
+      timeZone={props.timeZone}
+      mealHeight="100%"
+    />
+  );
 }
 
 function WeekTile(props: WeekTileChartProps) {
@@ -415,7 +500,7 @@ function WeekTile(props: WeekTileChartProps) {
     }).format(props.from),
     locale,
   );
-  return (
+  const svg = (
     <svg
       className={styles.chart}
       viewBox={`0 0 ${g.width} ${g.height}`}
@@ -466,6 +551,17 @@ function WeekTile(props: WeekTileChartProps) {
           size={g.symbolSize}
         />
       ))}
+      <SymptomMarks marks={g.symptoms} />
     </svg>
+  );
+  return (
+    <TapLayer
+      svg={svg}
+      width={g.width}
+      meals={null}
+      symptoms={props.onSymptomTap ? { marks: g.symptoms, onTap: props.onSymptomTap } : null}
+      timeZone={props.timeZone}
+      mealHeight="100%"
+    />
   );
 }
