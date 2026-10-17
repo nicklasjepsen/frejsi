@@ -84,7 +84,7 @@ describe("symptom routes", () => {
       expect(response.status).toBe(201);
       const body = (await response.json()) as Record<string, unknown>;
       expect(body).toEqual({
-        id: expect.any(String),
+        id: expect.any(String) as unknown,
         kind: "stomach-ache",
         ts: at.toISOString(),
         byUserId: user,
