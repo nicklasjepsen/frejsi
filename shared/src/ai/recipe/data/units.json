@@ -6,7 +6,11 @@
   { "unit": "cl", "aliases": ["cl", "centiliter"], "grams": 10 },
   { "unit": "dl", "aliases": ["dl", "deciliter"], "grams": 100 },
   { "unit": "l", "aliases": ["l", "liter", "liters", "litre", "litres", "ltr"], "grams": 1000 },
-  { "unit": "spsk", "aliases": ["spsk", "spsk.", "spiseske", "spiseskefuld", "spiseskeer"], "grams": 15 },
+  {
+    "unit": "spsk",
+    "aliases": ["spsk", "spsk.", "spiseske", "spiseskefuld", "spiseskeer"],
+    "grams": 15
+  },
   { "unit": "tsk", "aliases": ["tsk", "tsk.", "teske", "teskefuld", "teskeer"], "grams": 5 },
   { "unit": "tbsp", "aliases": ["tbsp", "tbsp.", "tablespoon", "tablespoons", "tbs"], "grams": 15 },
   { "unit": "tsp", "aliases": ["tsp", "tsp.", "teaspoon", "teaspoons"], "grams": 5 },

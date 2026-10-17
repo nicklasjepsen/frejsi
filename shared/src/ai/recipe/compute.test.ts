@@ -46,7 +46,9 @@ describe("computeRecipe (carbs per 100 g from the total and the yield; the two n
     });
   });
   it("keeps the numbers inside the food contract: per 100 g at most 100, portion grams 1 to 5000", () => {
-    expect(computeRecipe([{ grams: 10, carbs: 50 }], { yieldGrams: 10, yieldPortions: 1 }, labels)).toEqual({
+    expect(
+      computeRecipe([{ grams: 10, carbs: 50 }], { yieldGrams: 10, yieldPortions: 1 }, labels),
+    ).toEqual({
       totalCarbs: 50,
       baseGrams: 10,
       portions: [

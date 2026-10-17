@@ -5,7 +5,12 @@ import { FakeAiProvider, defaultFakeAnswer } from "./fake";
 describe("the fake provider's default script", () => {
   it("answers a plausible RecipeParse to a recipe completion and a recipe vision call", async () => {
     const fake = new FakeAiProvider(defaultFakeAnswer);
-    const request = { role: "everyday" as const, use: "recipe" as const, system: "x", outputSchema: RecipeParse };
+    const request = {
+      role: "everyday" as const,
+      use: "recipe" as const,
+      system: "x",
+      outputSchema: RecipeParse,
+    };
     const completed = await fake.complete({
       ...request,
       messages: [{ role: "user", content: [{ type: "text", text: "500 g mel" }] }],

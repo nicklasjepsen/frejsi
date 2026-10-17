@@ -15,6 +15,17 @@ interface Manifest {
   start_url: string;
   display: string;
   icons: { src: string; sizes: string; type: string; purpose?: string }[];
+  share_target?: {
+    action: string;
+    method: string;
+    enctype: string;
+    params: {
+      title?: string;
+      text?: string;
+      url?: string;
+      files?: { name: string; accept: string[] }[];
+    };
+  };
 }
 
 describe("manifest.webmanifest (plan §6)", () => {
@@ -25,6 +36,22 @@ describe("manifest.webmanifest (plan §6)", () => {
     expect(manifest.short_name).toBe("Frejsi");
     expect(manifest.display).toBe("standalone");
     expect(manifest.start_url).toBe("/");
+  });
+
+  it("declares the share target: POST /api/share as multipart with title, text, url and image files (v0.6.0 §6)", () => {
+    expect(manifest.share_target).toEqual({
+      action: "/api/share",
+      method: "POST",
+      enctype: "multipart/form-data",
+      params: {
+        title: "title",
+        text: "text",
+        url: "url",
+        files: [{ name: "files", accept: ["image/*"] }],
+      },
+    });
+    // Outside the locale middleware: a POST to a page would be redirected and its body lost.
+    expect(manifest.share_target?.action.startsWith("/api/")).toBe(true);
   });
 
   it("is Danish-first: lang da and a Danish description for the install prompt", () => {

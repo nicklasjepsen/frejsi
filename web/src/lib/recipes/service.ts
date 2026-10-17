@@ -56,7 +56,10 @@ function authorize(spaceId: string, session: SessionContext): void {
   // simpleMode shows verified foods only; a dish from a recipe is unverified by definition.
   if (session.simpleMode) throw new HttpError(400, "simple-mode");
 }
-function parse<T>(schema: { safeParse: (value: unknown) => { success: boolean; data?: T } }, value: unknown): T {
+function parse<T>(
+  schema: { safeParse: (value: unknown) => { success: boolean; data?: T } },
+  value: unknown,
+): T {
   const result = schema.safeParse(value);
   if (!result.success || result.data === undefined) throw new HttpError(400, "validation");
   return result.data;
@@ -85,7 +88,12 @@ async function review(
   spaceId: string,
   session: SessionContext,
   deps: ResolvedFoods,
-  parsed: { title: string; ingredients: ParsedLine[]; yieldPortions?: number | undefined; yieldGrams?: number | undefined },
+  parsed: {
+    title: string;
+    ingredients: ParsedLine[];
+    yieldPortions?: number | undefined;
+    yieldGrams?: number | undefined;
+  },
   source: RecipeSource,
   approx: boolean,
 ): Promise<RecipeReview> {
@@ -206,9 +214,20 @@ function portionAmount(label: string): { amount?: number; unit?: string } | null
 
 function foodFields(
   session: SessionContext,
-  fields: { title: string; ingredients: RecipeIngredient[]; yieldGrams?: number | undefined; yieldPortions?: number | undefined; source: RecipeSource; portionLabels?: PortionLabels | undefined },
+  fields: {
+    title: string;
+    ingredients: RecipeIngredient[];
+    yieldGrams?: number | undefined;
+    yieldPortions?: number | undefined;
+    source: RecipeSource;
+    portionLabels?: PortionLabels | undefined;
+  },
 ) {
-  const totals = computeRecipe(fields.ingredients, fields, labelsFor(session, fields.portionLabels));
+  const totals = computeRecipe(
+    fields.ingredients,
+    fields,
+    labelsFor(session, fields.portionLabels),
+  );
   return {
     name: fields.title,
     ...(totals.carbsPer100g === undefined ? {} : { carbsPer100g: totals.carbsPer100g }),
@@ -274,10 +293,14 @@ export async function recalcRecipe(
   const deps = resolve(input);
   const current = await getFood(spaceId, session, foodId, deps.foods);
   if (current.origin !== "recipe" || !current.recipe) throw new HttpError(400, "validation");
-  const yieldGrams = patch.yieldGrams === undefined ? current.recipe.yieldGrams : (patch.yieldGrams ?? undefined);
+  const yieldGrams =
+    patch.yieldGrams === undefined ? current.recipe.yieldGrams : (patch.yieldGrams ?? undefined);
   const yieldPortions =
-    patch.yieldPortions === undefined ? current.recipe.yieldPortions : (patch.yieldPortions ?? undefined);
-  if (yieldGrams === undefined && yieldPortions === undefined) throw new HttpError(400, "validation");
+    patch.yieldPortions === undefined
+      ? current.recipe.yieldPortions
+      : (patch.yieldPortions ?? undefined);
+  if (yieldGrams === undefined && yieldPortions === undefined)
+    throw new HttpError(400, "validation");
   const labels = patch.portionLabels ?? labelsFromPortions(current, session);
   const food = foodFields(session, {
     title: patch.title ?? current.name,

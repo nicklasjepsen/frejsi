@@ -5,7 +5,10 @@ import type {
   LookupResponse,
   LookupResult,
 } from "@frejsi/shared/schemas/food";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
+import Link from "next/link";
+
+import { localeHref, resolveLocale } from "@/lib/i18n/routing";
 
 import { FoodPhoto } from "../food/FoodPhoto";
 import { ListRow } from "../ui/ListRow";
@@ -20,7 +23,8 @@ export const isLibraryFood = (food: FoodView | FoodCandidate): food is FoodView 
 /**
  * The lookup's answer in the order the server resolved it (own library first, §4), each row with
  * its badge and source line, a notice per source that did not answer, and last the row
- * "Jeg kender tallet selv", which is always there (§4 step 5).
+ * "Jeg kender tallet selv", which is always there (§4 step 5), followed by "Fra opskrift", the
+ * manual path's way to a dish from a recipe (v0.6.0 plan §6).
  */
 export function LookupResults({
   response,
@@ -38,6 +42,8 @@ export function LookupResults({
   desktop?: boolean;
 }) {
   const t = useTranslations("log");
+  const recipe = useTranslations("recipe.waysIn");
+  const locale = resolveLocale(useLocale());
   const { line, sourceName } = useSourceLine();
   const down = Object.entries(response.sources).filter(([, status]) => DOWN.has(status));
   const manualName = response.manual.name ?? query.trim();
@@ -92,6 +98,16 @@ export function LookupResults({
               {manualName ? t("manual.subtitle", { q: manualName }) : t("manual.subtitleEmpty")}
             </span>
           </button>
+        </li>
+        <li className={styles.resultItem}>
+          <Link
+            href={localeHref(locale, "/recipe/new")}
+            className={styles.manualRow}
+            data-testid="from-recipe"
+          >
+            <strong>{recipe("fromRecipe")}</strong>
+            <span>{recipe("fromRecipeSubtitle")}</span>
+          </Link>
         </li>
       </ul>
     </div>

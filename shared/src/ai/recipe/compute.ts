@@ -22,7 +22,9 @@ function portion(label: string, grams: number | undefined, carbs: number): Porti
   const weight = grams === undefined ? undefined : Math.round(grams);
   return {
     label,
-    ...(weight !== undefined && weight >= 1 && weight <= MAX_PORTION_GRAMS ? { grams: weight } : {}),
+    ...(weight !== undefined && weight >= 1 && weight <= MAX_PORTION_GRAMS
+      ? { grams: weight }
+      : {}),
     carbs: rounded,
   };
 }
@@ -41,7 +43,8 @@ export function computeRecipe(
   const totalCarbs = Math.round(lines.reduce((sum, line) => sum + line.carbs, 0));
   const lineGrams = lines.reduce((sum, line) => sum + (line.grams ?? 0), 0);
   const baseGrams = yields.yieldGrams ?? (lineGrams > 0 ? Math.round(lineGrams) : undefined);
-  const per100 = baseGrams === undefined ? undefined : Math.round((totalCarbs / baseGrams) * 1000) / 10;
+  const per100 =
+    baseGrams === undefined ? undefined : Math.round((totalCarbs / baseGrams) * 1000) / 10;
   const portions: Portion[] = [];
   if (yields.yieldPortions !== undefined && yields.yieldPortions > 0) {
     const perPortion = totalCarbs / yields.yieldPortions;
@@ -50,7 +53,11 @@ export function computeRecipe(
       [labels.one, 1],
       [labels.half, 0.5],
     ] as const) {
-      const made = portion(label, grams === undefined ? undefined : grams * share, perPortion * share);
+      const made = portion(
+        label,
+        grams === undefined ? undefined : grams * share,
+        perPortion * share,
+      );
       if (made) portions.push(made);
     }
   }

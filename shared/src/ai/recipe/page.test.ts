@@ -67,9 +67,9 @@ describe("fetchRecipePage (https only, 2 MB and 10 s caps, no redirects off the 
     const pdf = vi.fn<Fetch>(() =>
       Promise.resolve(new Response("%PDF", { headers: { "content-type": "application/pdf" } })),
     );
-    await expect(fetchRecipePage("https://recipes.example/x", { fetch: pdf })).rejects.toMatchObject(
-      { code: "recipe-fetch-failed" },
-    );
+    await expect(
+      fetchRecipePage("https://recipes.example/x", { fetch: pdf }),
+    ).rejects.toMatchObject({ code: "recipe-fetch-failed" });
     const declared = vi.fn<Fetch>(() =>
       Promise.resolve(
         new Response("<p>x</p>", {

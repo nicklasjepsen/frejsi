@@ -59,7 +59,8 @@ export const POST = route("share.receive", async (request) => {
     }
   }
   const parsed = SharedRecipe.safeParse(share);
-  if (!parsed.success || Object.keys(parsed.data).length === 0) throw new HttpError(400, "validation");
+  if (!parsed.success || Object.keys(parsed.data).length === 0)
+    throw new HttpError(400, "validation");
   const id = shareStore().put(sessionId, parsed.data);
   log.info("share.received", { route: "share.receive", code: "ok", userId: session.userId });
   return redirect(request, `${localeHref(locale, "/recipe/new")}?share=${encodeURIComponent(id)}`);

@@ -73,7 +73,10 @@ async function readBounded(body: ReadableStream<Uint8Array> | null): Promise<str
  * host, 2 MB and 10 s. Runs only inside the explicit parse request (the lint-boundaries test).
  * Every failure is `recipe-fetch-failed`; the log line carries the code and nothing of the URL.
  */
-export async function fetchRecipePage(value: string, options: FetchPageOptions = {}): Promise<string> {
+export async function fetchRecipePage(
+  value: string,
+  options: FetchPageOptions = {},
+): Promise<string> {
   const fetch = options.fetch ?? globalThis.fetch;
   const controller = new AbortController();
   const timer = setTimeout(() => {
