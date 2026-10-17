@@ -1,4 +1,10 @@
 {
-  "title": "{child} spørger om et billede",
-  "body": "{dishName} · ca. {carbs} g · tryk for at tjekke"
+  "estimate": {
+    "title": "{child} spørger om et billede",
+    "body": "{dishName} · ca. {carbs} g · tryk for at tjekke"
+  },
+  "symptom": {
+    "title": "{child}: {kind}",
+    "body": "Logget kl. {time} · tryk for at se dagen"
+  }
 }

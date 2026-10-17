@@ -90,3 +90,49 @@ it("ties subscription deletion to session deletion at the database boundary", ()
   );
   expect(subscription).toContain("@@unique([userId, endpoint])");
 });
+
+it("places a symptom's logger: name, mode, the space's zone and kinds; null for a viewer or a stranger", async () => {
+  const users: Record<string, { name: string; simpleMode: boolean }> = {
+    child: { name: "Example Child", simpleMode: true },
+    adult: { name: "Example Adult", simpleMode: false },
+    viewer: { name: "Example Viewer", simpleMode: false },
+  };
+  const roles: Record<string, string> = { child: "carer", adult: "owner", viewer: "viewer" };
+  const db = {
+    space: {
+      findUnique: ({ where }: { where: { id: string } }) =>
+        Promise.resolve(
+          where.id === "s1"
+            ? {
+                timezone: "Europe/Copenhagen",
+                symptomKinds: JSON.stringify([
+                  { id: "custom:itchy", label: { da: "Kløe", en: "Itchy" } },
+                ]),
+              }
+            : null,
+        ),
+    },
+    user: {
+      findUnique: ({ where }: { where: { id: string } }) => Promise.resolve(users[where.id] ?? null),
+    },
+    membership: {
+      findUnique: ({ where }: { where: { userId_spaceId: { userId: string; spaceId: string } } }) =>
+        Promise.resolve(
+          where.userId_spaceId.spaceId === "s1" && roles[where.userId_spaceId.userId]
+            ? { role: roles[where.userId_spaceId.userId] }
+            : null,
+        ),
+    },
+  };
+  const repo = new PrismaPushRepository(db as unknown as PrismaClient);
+  expect(await repo.symptomLogger("s1", "child")).toEqual({
+    child: "Example Child",
+    simpleMode: true,
+    timezone: "Europe/Copenhagen",
+    symptomKinds: [{ id: "custom:itchy", label: { da: "Kløe", en: "Itchy" } }],
+  });
+  expect(await repo.symptomLogger("s1", "adult")).toMatchObject({ simpleMode: false });
+  expect(await repo.symptomLogger("s1", "viewer")).toBeNull();
+  expect(await repo.symptomLogger("s1", "stranger")).toBeNull();
+  expect(await repo.symptomLogger("s2", "child")).toBeNull();
+});
