@@ -19,7 +19,7 @@ export interface RecordedCall {
   body: unknown;
 }
 
-const OWN = new Set(["family", "manual"]);
+const OWN = new Set(["family", "manual", "recipe"]);
 
 function counts(foods: readonly FoodView[]): Record<string, number> {
   const result: Record<string, number> = {
@@ -127,6 +127,7 @@ export function fakeFoodsApi(initial: FoodView[], spaceId = "s1"): FakeFoodsApi 
         name: parsed.data.name,
         ...(parsed.data.carbsPer100g == null ? {} : { carbsPer100g: parsed.data.carbsPer100g }),
         portions: parsed.data.portions,
+        ...(parsed.data.category ? { category: parsed.data.category } : {}),
         origin: "family",
         verified: verify === true,
         favourite: parsed.data.favourite ?? false,
@@ -165,10 +166,12 @@ export function fakeFoodsApi(initial: FoodView[], spaceId = "s1"): FakeFoodsApi 
     if (method === "PATCH") {
       const parsed = UpdateFoodRequest.safeParse(body);
       if (!parsed.success) return error(400, "validation");
-      const { carbsPer100g, ...rest } = parsed.data;
+      const { carbsPer100g, category, ...rest } = parsed.data;
       Object.assign(food, rest);
       if (carbsPer100g === null) delete food.carbsPer100g;
       else if (carbsPer100g !== undefined) food.carbsPer100g = carbsPer100g;
+      if (category === null) delete food.category;
+      else if (category !== undefined) food.category = category;
       return json(200, food);
     }
     return error(405, "validation");

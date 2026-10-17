@@ -5,6 +5,7 @@
   "search": "Søg i mad",
   "searchDesktop": "Søg i biblioteket",
   "newFood": "Ny fødevare",
+  "newRecipe": "Ny ret fra opskrift",
   "filters": "Vis",
   "filter": {
     "all": "Alle",
@@ -19,20 +20,23 @@
     "off": "Fra Open Food Facts",
     "frida": "Fra Frida",
     "other": "Fra {origin}",
-    "ai": "AI fra billede"
+    "ai": "AI fra billede",
+    "recipe": "Fra en opskrift"
   },
   "sourceName": {
     "off": "Open Food Facts",
     "frida": "Frida",
     "family": "Egen ret",
     "manual": "Egen ret",
-    "ai": "AI fra billede"
+    "ai": "AI fra billede",
+    "recipe": "Opskrift"
   },
   "line": {
     "origin": {
       "family": "Egen ret",
       "manual": "Egen ret",
-      "frida": "Frida"
+      "frida": "Frida",
+      "recipe": "Opskrift"
     },
     "per100g": "{amount} g pr. 100 g",
     "portion": "{label} {amount} g"

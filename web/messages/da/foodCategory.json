@@ -1,0 +1,16 @@
+{
+  "label": "Kategori",
+  "none": "Ingen kategori",
+  "names": {
+    "bread": "Brød",
+    "fruit": "Frugt",
+    "vegetables": "Grønt",
+    "dairy": "Mælk og ost",
+    "starch": "Pasta, ris og kartofler",
+    "protein": "Kød, fisk og æg",
+    "sweets": "Slik og kage",
+    "snack": "Snacks",
+    "drink": "Drikke",
+    "mixed": "Blandet ret"
+  }
+}
