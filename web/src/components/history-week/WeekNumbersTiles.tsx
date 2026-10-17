@@ -34,6 +34,8 @@ export function WeekNumbersTiles({
         ? t("allNight", { count })
         : t("someNight", { count, night: atNight });
   const mean = n.bolusLead.meanMinutes;
+  // Issue #215: the figure shows only when a meal in the week has a stored bolus time.
+  const anyBolus = n.bolusLead.registered > 0;
   return (
     <section className={styles.numbers} aria-labelledby="week-numbers-title">
       <h2 id="week-numbers-title">{t("numbers")}</h2>
@@ -61,25 +63,27 @@ export function WeekNumbersTiles({
           value={empty ? missing : t("grams", { grams: n.carbsPerDay })}
           {...(!empty ? { footnote: t("totalMeals", { count: n.mealCount }) } : {})}
         />
-        <StatTile
-          size="week"
-          label={t("bolusBefore")}
-          value={
-            empty || mean === undefined
-              ? missing
-              : mean < 0
-                ? t("afterMeal", { minutes: -mean })
-                : t("minutes", { minutes: mean })
-          }
-          {...(!empty
-            ? {
-                footnote: t("registered", {
-                  registered: n.bolusLead.registered,
-                  total: n.bolusLead.of,
-                }),
-              }
-            : {})}
-        />
+        {anyBolus && (
+          <StatTile
+            size="week"
+            label={t("bolusBefore")}
+            value={
+              empty || mean === undefined
+                ? missing
+                : mean < 0
+                  ? t("afterMeal", { minutes: -mean })
+                  : t("minutes", { minutes: mean })
+            }
+            {...(!empty
+              ? {
+                  footnote: t("registered", {
+                    registered: n.bolusLead.registered,
+                    total: n.bolusLead.of,
+                  }),
+                }
+              : {})}
+          />
+        )}
       </StatGrid>
       <Notice>{t("notice")}</Notice>
     </section>

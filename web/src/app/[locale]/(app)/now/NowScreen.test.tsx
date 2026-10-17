@@ -608,7 +608,7 @@ describe("Nu · meal history on the day curve", () => {
   });
 
   // Issue #215: new meals carry no bolus time until a pump import adds one.
-  it("draws no triangle and no bolus time for meals without a stored one", async () => {
+  it("draws no triangle, no bolus time and no legend entry for meals without a stored one", async () => {
     api.meals = [lunch, apple];
     historyMeals = [
       { ...lunch, stats: emptyStats },
@@ -622,6 +622,10 @@ describe("Nu · meal history on the day curve", () => {
     expect(within(chart).getAllByTestId("meal-line")).toHaveLength(2);
     expect(within(chart).queryByTestId("bolus")).toBeNull();
     expect(desktop.queryByText(/Bolus \d/)).toBeNull();
+    // The legend's "Bolus givet" shows only when a meal in view has a stored time.
+    expect(desktop.getByText("Mål 4–10 mmol/L")).toBeInTheDocument();
+    expect(desktop.queryByText("Bolus givet")).toBeNull();
+    expect(screen.getByTestId("now-desktop").textContent).not.toMatch(/bolus/i);
   });
 
   it.each(["meal.created", "meal.updated", "meal.deleted"])(

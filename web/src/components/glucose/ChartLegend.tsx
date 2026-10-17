@@ -23,6 +23,8 @@ export type ChartLegendProps =
   | {
       /** Nu-Desktop: 14 px, "Måltid", "Bolus givet", "Mål 4–10 mmol/L". */
       variant: "day";
+      /** Whether a meal in view has a stored bolus time; without one the triangle entry is left out. */
+      bolus: boolean;
       target: { low: number; high: number };
       unit: GlucoseUnit;
     };
@@ -86,10 +88,12 @@ export function ChartLegend(props: ChartLegendProps) {
         <Plate size={12} />
         {t("legend.meal")}
       </li>
-      <li>
-        <Triangle size={10} />
-        {t("legend.bolusGiven")}
-      </li>
+      {props.bolus && (
+        <li>
+          <Triangle size={10} />
+          {t("legend.bolusGiven")}
+        </li>
+      )}
       <li>
         {g("targetWithUnit", {
           low: formatBound(props.target.low, props.unit, locale),

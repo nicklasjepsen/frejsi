@@ -24,7 +24,8 @@ export interface MealTilesProps {
  * The three tiles (plan §5): the peak with its time ("Top · 9,6 · efter 1 t 05 min"), time in
  * range over the three hours ("I mål 4–10 · 3 t · af 3 t", "indtil nu" while the window is open)
  * and the gap between the stored bolus time and the meal as a number with a position word. Desktop uses
- * the short footnotes ("efter 1 t 05", "før"). Nothing here is an amount.
+ * the short footnotes ("efter 1 t 05", "før"). Without a stored bolus time the third tile is left
+ * out (issue #215). Nothing here is an amount.
  */
 export function MealTiles({ stats, mealTs, target, unit, timeZone, size }: MealTilesProps) {
   const s = useTranslations("stats");
@@ -42,7 +43,7 @@ export function MealTiles({ stats, mealTs, target, unit, timeZone, size }: MealT
         : s(lead > 0 ? "lead.before" : "lead.after");
   return (
     <div className={styles.tiles} role="group" aria-label={t("tiles")} data-testid="meal-tiles">
-      <StatGrid columns={3}>
+      <StatGrid columns={lead === undefined ? 2 : 3}>
         {stats.peak ? (
           <PeakValue
             peak={{ mmol: stats.peak.mmol, ts: stats.peak.ts, mealTs }}
@@ -61,9 +62,7 @@ export function MealTiles({ stats, mealTs, target, unit, timeZone, size }: MealT
           value={tileDuration(s, inRange.minutes, style)}
           footnote={inRange.complete ? s("of", of) : s("ofUntilNow", of)}
         />
-        {lead === undefined ? (
-          <StatTile label={s("bolus")} value={s("missing")} footnote={s("lead.none")} />
-        ) : (
+        {lead !== undefined && (
           <StatTile
             label={s("bolus")}
             value={s("lead.minutes", { minutes: Math.abs(lead) })}

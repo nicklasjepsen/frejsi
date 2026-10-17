@@ -191,6 +191,38 @@ describe("MealStatsTable", () => {
     expect(screen.queryByRole("checkbox")).toBeNull();
   });
 
+  // Issue #215: the column shows only when a meal in view has a stored bolus time.
+  it("leaves out the bolus column when no meal in view has a stored bolus time", () => {
+    const withoutBolus = rows.map(
+      ({ bolusLeadMinutes: _row, stats: { bolusLeadMinutes: _stats, ...stats }, ...row }) => ({
+        ...row,
+        stats,
+      }),
+    );
+    mount(
+      <MealStatsTable
+        rows={withoutBolus}
+        currentMealId="today"
+        unit="mmol"
+        timeZone={zone}
+        now={now}
+        onOpen={() => undefined}
+      />,
+    );
+    const headers = screen.getAllByRole("columnheader").map((h) => h.textContent);
+    expect(headers).toEqual(["Dato", "Kulhydrat", "Top", "I mål af 3 t"]);
+    const first = screen
+      .getAllByRole("row")
+      .slice(1, 2)
+      .map((row) =>
+        within(row)
+          .getAllByRole("cell")
+          .map((c) => c.textContent),
+      );
+    expect(first).toEqual([["I dag 12:10", "50 g", "9,6", "3 t 00"]]);
+    expect(screen.getByRole("table").textContent).not.toMatch(/bolus/i);
+  });
+
   it("moves the selection with J/K and the arrow keys and opens a meal on Enter", () => {
     const onOpen = vi.fn();
     mount(

@@ -327,6 +327,51 @@ it("shows partial night episode counts and an after-meal mean without advice", a
   expect(await screen.findByText("3 gange, 1 om natten")).toBeVisible();
   expect(screen.getByText("5 min efter måltidet")).toBeVisible();
 });
+// Issue #215: the bolus figure and column show only when a meal in the week has a stored time.
+describe("bolus lead on the week (issue #215)", () => {
+  const withoutBolus = () => {
+    data.numbers.bolusLead = { registered: 0, of: data.numbers.bolusLead.of };
+    data.meals = data.meals.map(
+      ({ bolusLeadMinutes: _row, stats: { bolusLeadMinutes: _stats, ...stats }, ...meal }) => ({
+        ...meal,
+        stats,
+      }),
+    );
+  };
+
+  it("shows the bolus figure and column when a meal in the week has a stored time", async () => {
+    mount();
+    const numbers = await screen.findByRole("region", { name: "Ugens tal" });
+    expect(within(numbers).getByText("Bolus før måltid")).toBeVisible();
+    expect(within(numbers).getByText("9 min")).toBeVisible();
+    cleanup();
+    mount("maaltider");
+    const table = await screen.findByRole("table");
+    expect(
+      within(table)
+        .getAllByRole("columnheader")
+        .map((h) => h.textContent),
+    ).toEqual(["Dato", "Kulhydrat", "Bolus før", "Top", "I mål af 3 t"]);
+  });
+
+  it("leaves out the bolus figure and column when no meal in the week has one", async () => {
+    withoutBolus();
+    mount();
+    const numbers = await screen.findByRole("region", { name: "Ugens tal" });
+    expect(within(numbers).getByText("116 g")).toBeVisible();
+    expect(numbers.querySelectorAll('[data-part="label"]')).toHaveLength(3);
+    expect(numbers.textContent).not.toMatch(/bolus|registreret/i);
+    cleanup();
+    mount("maaltider");
+    const table = await screen.findByRole("table");
+    expect(
+      within(table)
+        .getAllByRole("columnheader")
+        .map((h) => h.textContent),
+    ).toEqual(["Dato", "Kulhydrat", "Top", "I mål af 3 t"]);
+    expect(table.textContent).not.toMatch(/bolus/i);
+  });
+});
 it.each(["member.updated", "member.removed"])(
   "clears a historical week and reauthorizes on %s",
   async (type) => {

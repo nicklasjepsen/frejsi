@@ -16,10 +16,8 @@
     "minutes": "{minutes} min",
     "before": "før måltidet",
     "after": "efter måltidet",
-    "afterShort": "{minutes} min efter",
-    "none": "ikke registreret"
+    "afterShort": "{minutes} min efter"
   },
-  "bolusBeforeMeal": "Bolus før måltid",
   "missing": "–",
   "grams": "{grams} g",
   "table": {

@@ -331,6 +331,10 @@ export function NowScreen({
                 <span className={styles.chartTitle}>{g("today")}</span>
                 <ChartLegend
                   variant="day"
+                  bolus={
+                    history.status === "ready" &&
+                    history.markers.some(({ bolusTs }) => Boolean(bolusTs))
+                  }
                   target={{ low: targetLow, high: targetHigh }}
                   unit={unit}
                 />
