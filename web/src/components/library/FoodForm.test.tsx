@@ -198,6 +198,69 @@ describe("FoodForm (the edit panel's fields)", () => {
     expect(api.calls.filter((call) => call.path !== "contributions")).toEqual([]);
   });
 
+  it("stops a per-100 g value with two decimals before sending, with its own message (issue 219)", () => {
+    mount({});
+    fireEvent.change(screen.getByLabelText("Navn"), { target: { value: "Eksempelkiks" } });
+    fireEvent.change(screen.getByLabelText("Kulhydrat pr. 100 g"), { target: { value: "12,34" } });
+    fireEvent.click(screen.getByRole("button", { name: "Gem" }));
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      "Skriv tallet med højst én decimal, fx 12,3.",
+    );
+    expect(screen.queryByText(/Kunne ikke gemme/)).not.toBeInTheDocument();
+    expect(api.calls).toEqual([]);
+  });
+
+  it("says a portion holds at most 1000 g of carbohydrate instead of 'Kunne ikke gemme' (issue 219)", () => {
+    mount({});
+    fireEvent.change(screen.getByLabelText("Navn"), { target: { value: "Eksempelkage" } });
+    fireEvent.change(screen.getByLabelText("Kulhydrat pr. 100 g"), { target: { value: "50" } });
+    const row = screen.getByTestId("portion-row");
+    fireEvent.change(within(row).getByLabelText("Portion"), { target: { value: "Hele kagen" } });
+    fireEvent.change(within(row).getByLabelText("g"), { target: { value: "2500" } });
+    fireEvent.click(screen.getByRole("button", { name: "Gem" }));
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      "En portion kan højst have 1000 g kulhydrat. Del den gerne i mindre portioner.",
+    );
+    expect(screen.queryByText(/Kunne ikke gemme/)).not.toBeInTheDocument();
+    expect(api.calls).toEqual([]);
+  });
+
+  it("explains a body the contract refuses without sending it, never as 'Kunne ikke gemme'", () => {
+    mount({});
+    // 150 × "æ" fits the field's 200 characters but folds to 300 ("ae"), which the contract refuses.
+    fireEvent.change(screen.getByLabelText("Navn"), { target: { value: "æ".repeat(150) } });
+    fireEvent.change(screen.getByLabelText("Kulhydrat pr. 100 g"), { target: { value: "40" } });
+    fireEvent.click(screen.getByRole("button", { name: "Gem" }));
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      "Noget i formularen kan ikke gemmes, som det står. Se navnet og tallene igen.",
+    );
+    expect(api.calls).toEqual([]);
+  });
+
+  it("reads a portion weight typed with a comma as a decimal, never as a bigger number", async () => {
+    const onSaved = vi.fn();
+    mount({ onSaved });
+    fireEvent.change(screen.getByLabelText("Navn"), { target: { value: "Eksempelbolle" } });
+    fireEvent.change(screen.getByLabelText("Kulhydrat pr. 100 g"), { target: { value: "40,5" } });
+    const row = screen.getByTestId("portion-row");
+    const grams = within(row).getByLabelText("g");
+    // A number field drops the comma in Chromium ("60,5" becomes 605); this one is text.
+    expect(grams).toHaveAttribute("type", "text");
+    expect(grams).toHaveAttribute("inputmode", "decimal");
+    fireEvent.change(within(row).getByLabelText("Portion"), { target: { value: "1 bolle" } });
+    fireEvent.change(grams, { target: { value: "60,5" } });
+    expect(within(row).getByText("25 g kulhydrat")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Gem" }));
+    await waitFor(() => {
+      expect(onSaved).toHaveBeenCalled();
+    });
+    expect(writes()[0]?.body).toMatchObject({
+      carbsPer100g: 40.5,
+      portions: [{ label: "1 bolle", grams: 60.5, carbs: 25 }],
+    });
+    expect(writes()[0]?.body).not.toHaveProperty("verified");
+  });
+
   it("keeps a fractional portion weight as it is", async () => {
     const onSaved = vi.fn();
     mount({
