@@ -70,7 +70,9 @@ export async function latestPumpStatusSince(
 /**
  * After `source-connect` wrote the credential as a version of `pump-<spaceId>`: stores `{ type,
  * secretRef, connectedBy }`, sets `connected`, clears the failure count, and emits `pump.status`
- * (in the glucose group) then `space.updated`. The glucose source is not touched.
+ * and nothing else: it travels in the glucose group, so a viewer cannot tell that a pump connection
+ * changed (no `space.updated`). Settings refreshes on `pump.status`. The glucose source is not
+ * touched.
  */
 export function savePumpSource(
   spaceId: string,
@@ -88,7 +90,6 @@ export function savePumpSource(
       },
     });
     await emit(spaceId, "pump.status", { status: "connected", since });
-    await emit(spaceId, "space.updated", { fields: ["pumpSource"] });
     return toPumpSettingsView(row, since);
   });
 }
@@ -96,7 +97,8 @@ export function savePumpSource(
 /**
  * "Afbryd": clears the config, so the pump cycle stops reading, and sets `not-configured`. The
  * stored boluses, their meal links and `lastPumpAt` stay, as a glucose source's readings do when
- * it is changed (plan "Not in v0.7.0"). Nothing to disconnect writes and emits nothing.
+ * it is changed (plan "Not in v0.7.0"). Emits `pump.status` only, as connecting does. Nothing to
+ * disconnect writes and emits nothing.
  */
 export function clearPumpSource(spaceId: string, deps: AuthDeps = {}): Promise<PumpSettingsView> {
   return run(deps, async (tx, emit, now) => {
@@ -111,7 +113,6 @@ export function clearPumpSource(spaceId: string, deps: AuthDeps = {}): Promise<P
       data: { pumpSource: null, pumpStatus: "not-configured", pumpFailures: 0 },
     });
     await emit(spaceId, "pump.status", { status: "not-configured", since });
-    await emit(spaceId, "space.updated", { fields: ["pumpSource"] });
     return toPumpSettingsView(row, since);
   });
 }
