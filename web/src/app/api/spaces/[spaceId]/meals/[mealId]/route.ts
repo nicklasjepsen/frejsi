@@ -10,7 +10,7 @@ interface Params {
 }
 export const GET = settingsRoute<Params>("meals.get", async (request, { spaceId, mealId }) => {
   const { session, deps } = await authorizeMeal(request, spaceId);
-  const meal = await getMeal(spaceId, mealId, session.locale, deps);
+  const meal = await getMeal(spaceId, mealId, session, deps);
   mealOutcome(spaceId, session.userId, meal.items.length);
   return json(meal);
 });
@@ -30,7 +30,7 @@ export const DELETE = settingsRoute<Params>(
   "meals.delete",
   async (request, { spaceId, mealId }) => {
     const { session, deps } = await authorizeMeal(request, spaceId);
-    await deleteMeal(spaceId, mealId, deps);
+    await deleteMeal(spaceId, mealId, session, deps);
     mealOutcome(spaceId, session.userId, 1);
     return noContent();
   },
