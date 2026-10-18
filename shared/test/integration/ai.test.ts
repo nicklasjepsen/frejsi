@@ -1,3 +1,4 @@
+import { readdirSync } from "node:fs";
 import path from "node:path";
 import { PrismaClient } from "@prisma/client";
 import { afterAll, beforeAll, expect, it } from "vitest";
@@ -40,13 +41,14 @@ it("applies the AI migration on top of the foundation and food migrations at com
   const applied = await db.$queryRaw<
     { migration_name: string }[]
   >`SELECT migration_name FROM _prisma_migrations WHERE finished_at IS NOT NULL ORDER BY migration_name`;
-  expect(applied.map((row) => row.migration_name)).toEqual([
-    "0001_foundation",
-    "0002_food",
-    "0003_ai",
-    "0004_theme",
-    "0005_feel",
-  ]);
+  // Every migration in the folder is applied, so a new one never needs this test edited.
+  const onDisk = readdirSync(path.join(path.dirname(SCHEMA), "migrations"), {
+    withFileTypes: true,
+  })
+    .filter((entry) => entry.isDirectory())
+    .map((entry) => entry.name)
+    .sort();
+  expect(applied.map((row) => row.migration_name)).toEqual(onDisk);
 });
 const vector = (a: number, b = 0) => [a, b, ...Array<number>(1022).fill(0)];
 it("round-trips 1024 dimensions, orders cosine matches, filters model and space, and rejects 1536 dimensions in SQL", async () => {

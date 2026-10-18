@@ -1,4 +1,5 @@
 // Release-only checks of the real SQL constraints and the web service/query implementations.
+import { readdirSync } from "node:fs";
 import path from "node:path";
 import { PrismaClient } from "@prisma/client";
 import { afterAll, beforeAll, expect, it, vi } from "vitest";
@@ -104,13 +105,14 @@ it("upgrades 0001_foundation to 0002_food with no schema drift", async () => {
   const applied = await db.$queryRaw<
     { migration_name: string }[]
   >`SELECT migration_name FROM _prisma_migrations WHERE finished_at IS NOT NULL AND rolled_back_at IS NULL ORDER BY migration_name`;
-  expect(applied.map((row) => row.migration_name)).toEqual([
-    "0001_foundation",
-    "0002_food",
-    "0003_ai",
-    "0004_theme",
-    "0005_feel",
-  ]);
+  // Every migration in the folder is applied, so a new one never needs this test edited.
+  const migrationsDir = path.join(path.dirname(SCHEMA), "migrations");
+  const onDisk = readdirSync(migrationsDir, { withFileTypes: true })
+    .filter((entry) => entry.isDirectory())
+    .map((entry) => entry.name)
+    .sort();
+  expect(onDisk[0]).toBe("0001_foundation");
+  expect(applied.map((row) => row.migration_name)).toEqual(onDisk);
   expect(await schemaDiff(scratch.url, db)).not.toMatch(/CREATE|ALTER|DROP/);
 });
 

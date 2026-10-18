@@ -595,6 +595,33 @@ describe("runPumpCycle: links", () => {
     });
   });
 
+  it("gives no pump meal to a bolus a person's meal let go of, even when a new record brings it into the matcher's view", async () => {
+    // A meal moved away from its bolus: the meal service unlinked it and set mealDismissed on the
+    // bolus, in the same commit (plan §6). The cycle sees both rows and must leave them alone.
+    const db = fakeDb({
+      spaces: [pumpSpace({ lastPumpAt: ago(3 * HOUR) })],
+      boluses: [
+        {
+          id: "b-released",
+          spaceId: "s1",
+          sourceId: "40",
+          ts: ago(3 * HOUR),
+          units: 2,
+          kind: "standard",
+          carbs: 45,
+          mealDismissed: true,
+        },
+      ],
+      meals: [personMeal("m-moved", ago(2 * HOUR), { pumpBolusId: null, bolusTs: null })],
+    });
+    const h = harness(db, {
+      s1: new FakePumpSource([bolus("41", ago(3 * HOUR - 10 * MINUTE))]),
+    });
+    await h.run();
+    await h.run(new Date(NOW.getTime() + HOUR));
+    expect(db.state.meals.map((m) => m.id)).toEqual(["m-moved"]);
+    expect(db.state.meals[0]?.pumpBolusId).toBeNull();
+  });
   it("never links one bolus to two meals, and leaves a link it was not asked about", async () => {
     const db = fakeDb({
       spaces: [pumpSpace({ lastPumpAt: ago(DAY) })],
