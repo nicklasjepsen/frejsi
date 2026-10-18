@@ -191,3 +191,16 @@
     border-color: var(--hairline);
   }
 }
+/* The symptom card's actions row ("Luk", "Slet"; a later "Ret" goes here) and its one question (#220). */
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+.confirm {
+  margin-top: 12px;
+}
+.confirm p {
+  margin: 0;
+}

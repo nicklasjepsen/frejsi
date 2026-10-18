@@ -54,6 +54,10 @@
   "by": "Logged by {name}",
   "at": "at {time}",
   "readings": "Readings around it",
+  "delete": "Delete",
+  "deleteConfirm": "Delete {kind} at {time}?",
+  "deleteKeep": "Keep",
+  "deleteFailed": "It was not deleted – try again",
   "say": {
     "title": "How you feel",
     "log": "Log how you feel",

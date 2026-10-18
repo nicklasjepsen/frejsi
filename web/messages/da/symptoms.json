@@ -54,6 +54,10 @@
   "by": "Logget af {name}",
   "at": "kl. {time}",
   "readings": "Tal omkring",
+  "delete": "Slet",
+  "deleteConfirm": "Slet {kind} kl. {time}?",
+  "deleteKeep": "Behold",
+  "deleteFailed": "Det blev ikke slettet – prøv igen",
   "say": {
     "title": "Hvordan du har det",
     "log": "Log hvordan du har det",
