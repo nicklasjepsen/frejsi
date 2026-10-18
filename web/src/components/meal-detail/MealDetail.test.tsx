@@ -80,8 +80,9 @@ function mount(props: Partial<MealDetailProps> = {}, locale: AppLocale = "da") {
 }
 
 const ready = () => screen.findByTestId("curve-card");
-/** The meal reads; the curve card's symptom reads (v0.6.0, #202) are counted elsewhere. */
-const mealCalls = () => api.calls.filter((call) => !call.includes("/symptoms"));
+/** The meal reads; the curve card's symptom (v0.6.0, #202) and pump-history reads are counted elsewhere. */
+const mealCalls = () =>
+  api.calls.filter((call) => !call.includes("/symptoms") && !call.includes("/pump"));
 const tile = (label: string) => {
   const tiles = within(screen.getByTestId("meal-tiles"));
   const node = tiles.getByText(label).parentElement;

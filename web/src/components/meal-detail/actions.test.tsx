@@ -25,7 +25,10 @@ let fake: FetchFake;
 let view: ReturnType<typeof curveView>;
 const writes = () => fake.calls.filter((c) => c.method !== "GET");
 /** The meal reads, without the curve card's symptom reads (v0.6.0 plan §5). */
-const reads = () => fake.calls.filter((c) => c.method === "GET" && !c.path.includes("/symptoms"));
+const reads = () =>
+  fake.calls.filter(
+    (c) => c.method === "GET" && !c.path.includes("/symptoms") && !c.path.includes("/pump?"),
+  );
 function mount(layout: "phone" | "desktop" = "phone") {
   return render(
     <I18nProvider locale="da" messages={getMessages("da")}>
