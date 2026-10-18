@@ -153,7 +153,11 @@ describe("a full pump cycle's log lines", () => {
       $transaction: () => Promise.reject(new Error(`database down near ${ADDRESS}`)),
     } as unknown as PumpDb;
     const lines: string[] = [];
-    const log = createLogger((line) => lines.push(line));
+    // A fixed clock: a real timestamp such as ":50.564Z" would match the units pattern below.
+    const log = createLogger(
+      (line) => lines.push(line),
+      () => NOW,
+    );
     const cycleDeps: Pick<PumpCycleDeps, "db" | "sources" | "sink"> & { now: () => Date } = {
       db,
       sources: createPumpSourceFactory({ secrets, fetch, log, now: () => NOW }),
