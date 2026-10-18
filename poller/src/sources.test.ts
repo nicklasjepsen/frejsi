@@ -2,16 +2,21 @@ import {
   createLogger,
   DexcomShareSource,
   glucoseSecretName,
+  NightscoutPumpSource,
   NightscoutSource,
+  pumpSecretName,
+  runPumpCycle,
+  type PumpDb,
   serializeCredential,
   serializeNightscoutCredential,
   type FetchLike,
 } from "@frejsi/shared";
 import { FakeGlucoseSource } from "@frejsi/shared/glucose/fake";
+import { MemoryEventSink } from "@frejsi/shared/events/memory";
 import { MemorySecrets } from "@frejsi/shared/secrets/memory";
 import { describe, expect, it } from "vitest";
 
-import { createSourceFactory } from "./sources";
+import { createPumpSourceFactory, createSourceFactory } from "./sources";
 
 const space = {
   id: "s1",
@@ -194,5 +199,127 @@ describe("createSourceFactory dispatch", () => {
     expect(await lazy(space, config)).toBeInstanceOf(FakeGlucoseSource);
     const off = createSourceFactory({ secrets, env: { FAKE_GLUCOSE_SOURCE: "0" } });
     await expect(off(space, config)).rejects.toMatchObject({ code: "secret-missing" });
+  });
+});
+
+describe("createPumpSourceFactory", () => {
+  const pumpSpace = {
+    id: "s1",
+    pumpSource: "{}",
+    pumpStatus: "connected",
+    pumpFailures: 0,
+    lastPumpAt: null,
+  };
+  const pumpCredential = {
+    url: "https://example-ns.example.invalid",
+    token: "<fixture-pump-token>",
+  };
+  const NOW = new Date("2026-10-15T18:00:00.000Z");
+
+  /** Records every request; answers an empty list, so the adapter is exercised but stores nothing. */
+  function recordingFetch() {
+    const calls: { url: URL; method: string; headers: Record<string, string> }[] = [];
+    const fetch: FetchLike = (input, init) => {
+      calls.push({
+        url: new URL(String(input)),
+        method: init?.method ?? "GET",
+        headers: init?.headers ?? {},
+      });
+      return Promise.resolve(new Response("[]", { status: 200 }));
+    };
+    return { fetch, calls };
+  }
+
+  it("builds a NightscoutPumpSource from the versioned pump-<spaceId> reference, on the injected transport", async () => {
+    const secrets = new MemorySecrets();
+    const ref = await secrets.set(
+      pumpSecretName("s1"),
+      serializeNightscoutCredential(pumpCredential),
+    );
+    // A newer version no config refers to yet is never read (#78).
+    await secrets.set(
+      pumpSecretName("s1"),
+      serializeNightscoutCredential({ ...pumpCredential, token: "<newer-token>" }),
+    );
+    const { fetch, calls } = recordingFetch();
+    const sources = createPumpSourceFactory({ secrets, fetch, now: () => NOW });
+    const source = await sources(pumpSpace, {
+      type: "nightscout",
+      secretRef: ref,
+      connectedBy: "u1",
+    });
+    expect(source).toBeInstanceOf(NightscoutPumpSource);
+    expect((source as NightscoutPumpSource).fetch).toBe(fetch);
+    await source.fetchBolusesSince(new Date(NOW.getTime() - 24 * 3_600_000));
+    expect(calls).toHaveLength(1);
+    expect(calls[0]?.method).toBe("GET");
+    expect(calls[0]?.url.pathname).toBe(["/api", "v1", "treatments.json"].join("/"));
+    expect(Object.values(calls[0]?.headers ?? {})).toContain(pumpCredential.token);
+    expect(calls[0]?.url.href).not.toContain(pumpCredential.token);
+  });
+
+  it("throws secret-missing and secret-invalid with the space id and no secret in the log", async () => {
+    const lines: string[] = [];
+    const secrets = new MemorySecrets({ [pumpSecretName("s2")]: "not a credential" });
+    const sources = createPumpSourceFactory({ secrets, log: createLogger((l) => lines.push(l)) });
+    await expect(
+      sources(pumpSpace, { type: "nightscout", secretRef: "pump-s1/9", connectedBy: "u1" }),
+    ).rejects.toMatchObject({ code: "secret-missing" });
+    await expect(
+      sources(
+        { ...pumpSpace, id: "s2" },
+        { type: "nightscout", secretRef: pumpSecretName("s2"), connectedBy: "u1" },
+      ),
+    ).rejects.toMatchObject({ code: "secret-invalid" });
+    expect(lines.join("\n")).toContain('"code":"secret-missing"');
+    expect(lines.join("\n")).toContain('"code":"secret-invalid"');
+    expect(lines.join("\n")).not.toContain("not a credential");
+  });
+
+  it("makes a missing or unreadable secret one failure for that space, and the others run", async () => {
+    const secrets = new MemorySecrets();
+    const ref = await secrets.set(
+      pumpSecretName("ok"),
+      serializeNightscoutCredential(pumpCredential),
+    );
+    await secrets.set(pumpSecretName("bad"), "{");
+    const spaces = [
+      { id: "gone", ref: `${pumpSecretName("gone")}/7` },
+      { id: "bad", ref: pumpSecretName("bad") },
+      { id: "ok", ref },
+    ].map(({ id, ref: secretRef }) => ({
+      id,
+      pumpSource: JSON.stringify({ type: "nightscout", secretRef, connectedBy: "u1" }),
+      pumpStatus: "connected",
+      pumpFailures: 0,
+      lastPumpAt: null,
+    }));
+    const failures: string[] = [];
+    const db = {
+      space: {
+        findMany: () => Promise.resolve(spaces),
+        update: (args: { where: { id: string } }) => {
+          failures.push(args.where.id);
+          return Promise.resolve({ pumpFailures: 1, pumpStatus: "connected" });
+        },
+      },
+      pumpBolus: { findMany: () => Promise.resolve([]) },
+      user: { findUnique: () => Promise.resolve({ locale: "da" }) },
+      $transaction: () => Promise.reject(new Error("no write expected")),
+    } as unknown as PumpDb;
+    const { fetch } = recordingFetch();
+    const outcomes = await runPumpCycle({
+      db,
+      sources: createPumpSourceFactory({ secrets, fetch, log: createLogger(() => undefined) }),
+      sink: new MemoryEventSink(),
+      now: () => NOW,
+      log: createLogger(() => undefined),
+    });
+    expect(outcomes.map((o) => [o.spaceId, o.outcome, o.code])).toEqual([
+      ["gone", "failed", "source-unavailable"],
+      ["bad", "failed", "source-unavailable"],
+      ["ok", "ok", "ok"],
+    ]);
+    expect(failures).toEqual(["gone", "bad"]);
   });
 });

@@ -1,6 +1,7 @@
 import {
   DexcomShareSource,
   log as defaultLog,
+  NightscoutPumpSource,
   NightscoutSource,
   parseCredential,
   parseNightscoutCredential,
@@ -9,6 +10,9 @@ import {
   type Logger,
   type PolledSourceConfig,
   type PollSpaceRow,
+  type PumpSourceConfig,
+  type PumpSourceFactory,
+  type PumpSpaceRow,
   type Secrets,
   type SourceFactory,
 } from "@frejsi/shared";
@@ -107,5 +111,46 @@ export function createSourceFactory(options: SourceFactoryOptions): SourceFactor
     });
     cache.set(space.id, { key, source });
     return source;
+  };
+}
+
+export interface PumpSourceFactoryOptions {
+  /** Or a function that builds it on the first read, so a cycle without pump spaces needs no vault. */
+  secrets: Secrets | (() => Secrets);
+  fetch?: FetchLike;
+  log?: Logger;
+  now?: () => Date;
+}
+
+/**
+ * The pump record's factory (v0.7.0 plan §5): the credential comes from Key Vault by the space's
+ * versioned `pump-<spaceId>/<version>` reference, the one `source-connect` answered for a pump
+ * connect, and becomes a `NightscoutPumpSource` on the allow-listed transport. That is the only
+ * source it builds: the config's `type` is `nightscout` and nothing else. No session is kept, so
+ * it is built from the secret on each cycle. A missing or unreadable secret throws, which the
+ * cycle counts as one failure of that space.
+ */
+export function createPumpSourceFactory(options: PumpSourceFactoryOptions): PumpSourceFactory {
+  let secrets: Secrets | undefined;
+  const log = options.log ?? defaultLog;
+  const common = {
+    ...(options.fetch ? { fetch: options.fetch } : {}),
+    ...(options.now ? { now: options.now } : {}),
+  };
+  return async (space: PumpSpaceRow, config: PumpSourceConfig) => {
+    secrets ??= typeof options.secrets === "function" ? options.secrets() : options.secrets;
+    const raw = await secrets.get(config.secretRef);
+    if (raw === undefined) {
+      log.warn("pump.secret-missing", { spaceId: space.id, code: "secret-missing" });
+      throw new SourceSecretError("secret-missing");
+    }
+    let credential;
+    try {
+      credential = parseNightscoutCredential(raw);
+    } catch {
+      log.warn("pump.secret-invalid", { spaceId: space.id, code: "secret-invalid" });
+      throw new SourceSecretError("secret-invalid");
+    }
+    return new NightscoutPumpSource({ ...credential, log, ...common });
   };
 }

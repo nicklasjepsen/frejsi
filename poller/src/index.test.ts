@@ -2,7 +2,7 @@ import { spawnSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 const pollerDir = path.resolve(import.meta.dirname, "..");
 const pkg = JSON.parse(readFileSync(path.join(pollerDir, "package.json"), "utf8")) as {
@@ -34,6 +34,7 @@ describe("poller build", () => {
     const entry = readFileSync(path.join(pollerDir, "src/index.ts"), "utf8");
     expect(entry).toContain('import "./functions/poll"');
     expect(entry).toContain('import "./functions/source-connect"');
+    expect(entry).toContain('import "./functions/pump-poll"');
     // The glob package.json#main names still matches the single bundle.
     expect(pkg.main).toBe("dist/{index,functions/*}.js");
   });
@@ -102,4 +103,28 @@ describe("poller build", () => {
       expect(result.status, result.stderr).toBe(0);
     },
   );
+});
+
+describe("the pump-poll function", () => {
+  it("registers its own timer every fifteen minutes, separate from the glucose poll", async () => {
+    const timer =
+      vi.fn<(name: string, options: { schedule: string; runOnStartup: boolean }) => void>();
+    vi.resetModules();
+    vi.doMock("@azure/functions", () => ({ app: { timer } }));
+    try {
+      await import("./functions/pump-poll");
+      await import("./functions/poll");
+    } finally {
+      vi.doUnmock("@azure/functions");
+    }
+    const registered = timer.mock.calls.map(([name, options]) => [
+      name,
+      options.schedule,
+      options.runOnStartup,
+    ]);
+    expect(registered).toEqual([
+      ["pump-poll", "0 */15 * * * *", false],
+      ["poll", "0 */5 * * * *", false],
+    ]);
+  });
 });
