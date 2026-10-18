@@ -63,7 +63,8 @@ function dropEditParam() {
  * tiles and the items. Read once from `GET meals/[id]/curve`; then the live feed's readings grow
  * the curve and the tiles are recomputed on the client. The feed is opened without its readings
  * window, so the screen calls `curve`, `negotiate` and `events` and nothing else (plan §8). The
- * curve is read again once the feed has its cursor, on `meal.updated` and on `space.updated`.
+ * curve is read again once the feed has its cursor, on `meal.updated`, on `space.updated` and on a
+ * `pump.meals` that lists the meal (v0.7.0).
  */
 export function MealDetail({
   spaceId,
@@ -103,6 +104,17 @@ export function MealDetail({
       router.refresh();
     },
   });
+  // A meal write elsewhere can re-match this meal's bolus, or remove it while it is an untouched
+  // pump meal; those changes go out as `pump.meals`, never as `meal.*` (v0.7.0 plan §6).
+  const { subscribe } = feed;
+  useEffect(
+    () =>
+      subscribe("pump.meals", ({ payload }) => {
+        if (payload.removed.includes(mealId)) toNow();
+        else if (payload.updated.includes(mealId)) void refresh();
+      }),
+    [subscribe, mealId, refresh, toNow],
+  );
   // Another meal closes the sheet; the first render keeps what the address asked for.
   const shownMealId = useRef(mealId);
   useEffect(() => {
