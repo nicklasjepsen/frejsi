@@ -163,3 +163,29 @@ export {
   NightscoutPumpSource,
   type NightscoutPumpSourceOptions,
 } from "./glucose/nightscout/index";
+export {
+  PUMP_CONCURRENCY,
+  PUMP_FAILURES_BEFORE_DISCONNECTED,
+  PUMP_FIRST_RUN_DAYS,
+  PUMP_MEAL_GRACE_MINUTES,
+  PUMP_OVERLAP_HOURS,
+  PUMP_WINDOW_HOURS,
+  pumpSinceFor,
+  runPumpCycle,
+  type PumpCycleDeps,
+  type PumpCycleOptions,
+  type PumpOutcomeCode,
+  type PumpSourceFactory,
+  type PumpSpaceOutcome,
+} from "./pump/poll-cycle";
+export {
+  PUMP_MEAL_SOURCE,
+  PUMP_TX_TIMEOUT_MS,
+  commitPumpDay,
+  createPumpWriter,
+  pumpMealData,
+  type PumpDb,
+  type PumpSpaceRow,
+  type PumpTx,
+  type PumpWriter,
+} from "./pump/store";

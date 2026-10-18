@@ -123,15 +123,24 @@ describe("matchBoluses (v0.7.0 plan §6)", () => {
       { mealId: "m2", bolusId: "b-old", bolusTs: at(0) },
     ]);
     // The bolus it kept is not given to another meal, and the other bolus is still up for grabs.
-    expect(pairs([linked, meal("m3", 7)], [bolus("b-new", 5)])).toEqual({ m1: "b-old", m3: "b-new" });
+    expect(pairs([linked, meal("m3", 7)], [bolus("b-new", 5)])).toEqual({
+      m1: "b-old",
+      m3: "b-new",
+    });
     const pumpMeal = meal("pm", 0, { source: "pump", pumpBolusId: "b-own", bolusTs: at(0) });
-    expect(matchBoluses([pumpMeal], [])).toEqual([{ mealId: "pm", bolusId: "b-own", bolusTs: at(0) }]);
+    expect(matchBoluses([pumpMeal], [])).toEqual([
+      { mealId: "pm", bolusId: "b-own", bolusTs: at(0) },
+    ]);
   });
 
   it("re-judges a stored link whose bolus was passed in: out of the window, it is cleared", () => {
     const linked = meal("m1", 0, { pumpBolusId: "b-far", bolusTs: at(-60) });
     expect(matchBoluses([linked], [bolus("b-far", -60)])).toEqual([]);
-    expect(diffLinks([linked], [])).toEqual({ set: [], clear: [{ mealId: "m1" }], removePumpMeals: [] });
+    expect(diffLinks([linked], [])).toEqual({
+      set: [],
+      clear: [{ mealId: "m1" }],
+      removePumpMeals: [],
+    });
   });
 
   it("gives the same result for shuffled input (200 random days)", () => {
