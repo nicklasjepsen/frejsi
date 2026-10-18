@@ -12,9 +12,9 @@
   "onDate": "{date} {time}",
   "age": {
     "justNow": "lige nu",
-    "minutes": "for {minutes} min siden",
-    "hours": "for {hours} t {minutes} min siden",
-    "wholeHours": "for {hours} t siden",
+    "minutes": "for {minutes} min. siden",
+    "hours": "for {hours, plural, one {# time} other {# timer}} {minutes} min. siden",
+    "wholeHours": "for {hours, plural, one {# time} other {# timer}} siden",
     "overADay": "for mere end et døgn siden"
   },
   "row": {
@@ -22,6 +22,7 @@
     "connectedNothing": "Forbundet · intet fra pumpen endnu"
   },
   "lag": "Frejsi kigger efter hvert 15. minut. Pumpen sender sin historik med op til en times forsinkelse.",
+  "ownerOnly": "Det er ejeren, der forbinder og afbryder.",
   "vaultNote": "Adressen og adgangen gemmes i en låst boks – aldrig i databasen.",
   "connect": "Forbind",
   "changeAccess": "Skift adgang",

@@ -641,7 +641,7 @@ describe("SettingsScreen · Pumpehistorik (v0.7.0 plan task 3, §9 item 5)", () 
   it("writes the newest record on the card and the row when connected, and the failure when disconnected", () => {
     mountAt({ ...connected, pump: pumpConnected });
     expect(screen.getByTestId("pump-latest")).toHaveTextContent(
-      "Senest fra pumpen: 11:58 · for 1 t 10 min siden",
+      "Senest fra pumpen: 11:58 · for 1 time 10 min. siden",
     );
     expect(screen.getByTestId("pump-row")).toHaveTextContent("Forbundet · senest fra pumpen 11:58");
     cleanup();

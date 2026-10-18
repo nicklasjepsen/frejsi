@@ -27,7 +27,7 @@ import styles from "./settings.module.css";
 
 /**
  * The clock the ages are read from: the server's for the first render (so the page hydrates as it
- * was rendered), then the browser's every 30 s, so "for 1 t 10 min siden" keeps growing while
+ * was rendered), then the browser's every 30 s, so "for 1 time 10 min. siden" keeps growing while
  * Settings stays open. A new `serverNow` (after a refresh) starts over from it.
  */
 function useTickingNow(serverNow: string): string {
@@ -85,7 +85,7 @@ export function usePumpText(
     return t("status.connected");
   }
 
-  /** "Senest fra pumpen: 11:58 · for 1 t 10 min siden", or null before a connection. */
+  /** "Senest fra pumpen: 11:58 · for 1 time 10 min. siden", or null before a connection. */
   function latest(): string | null {
     if (!configured) return null;
     if (!pump.lastPumpAt) return t("nothingYet");
@@ -282,6 +282,11 @@ export function PumpSourceCard({
         <Notice tone="sunken" role="alert">
           {errors(error)}
         </Notice>
+      )}
+      {!owner && (
+        <p className={styles.lead} data-testid="pump-owner-only">
+          {t("ownerOnly")}
+        </p>
       )}
       <p className={styles.lead}>{t("lag")}</p>
     </div>
