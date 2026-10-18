@@ -1,0 +1,39 @@
+{
+  "title": "Pump history",
+  "lead": "What the pump itself has recorded, read from a Nightscout site. Only owners and carers see it.",
+  "status": {
+    "notConfigured": "Not connected",
+    "connected": "Connected",
+    "disconnected": "Connection failing since {time}",
+    "disconnectedNoTime": "Connection failing"
+  },
+  "latest": "Latest from the pump: {when} · {age}",
+  "nothingYet": "Nothing from the pump yet",
+  "onDate": "{date} {time}",
+  "age": {
+    "justNow": "just now",
+    "minutes": "{minutes} min ago",
+    "hours": "{hours} h {minutes} min ago",
+    "wholeHours": "{hours} h ago",
+    "overADay": "more than a day ago"
+  },
+  "row": {
+    "connected": "Connected · latest from the pump {time}",
+    "connectedNothing": "Connected · nothing from the pump yet"
+  },
+  "lag": "Frejsi looks every 15 minutes. The pump sends its history up to an hour late.",
+  "vaultNote": "The address and the access are kept in a locked vault – never in the database.",
+  "connect": "Connect",
+  "changeAccess": "Change access",
+  "disconnect": "Disconnect",
+  "disconnectConfirm": "Disconnect the pump history? What has already been read stays.",
+  "disconnectYes": "Yes, disconnect",
+  "cancel": "Cancel",
+  "form": {
+    "title": "Connect pump history",
+    "lead": "Enter the address of the Nightscout site the pump uploads to, and an access that can only read. It may well be the same site as the glucose source.",
+    "submit": "Connect",
+    "submitting": "Connecting …"
+  },
+  "noRecentBoluses": "The access works, but the pump has sent nothing in the last day. Check that the upload from the pump to Nightscout is running, and that this is the right site."
+}

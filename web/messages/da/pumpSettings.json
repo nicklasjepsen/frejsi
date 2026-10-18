@@ -1,0 +1,39 @@
+{
+  "title": "Pumpehistorik",
+  "lead": "Det, pumpen selv har registreret, hentet fra en Nightscout-side. Kun ejere og hjælpere ser det.",
+  "status": {
+    "notConfigured": "Ikke forbundet",
+    "connected": "Forbundet",
+    "disconnected": "Forbindelsen svigter siden {time}",
+    "disconnectedNoTime": "Forbindelsen svigter"
+  },
+  "latest": "Senest fra pumpen: {when} · {age}",
+  "nothingYet": "Intet fra pumpen endnu",
+  "onDate": "{date} {time}",
+  "age": {
+    "justNow": "lige nu",
+    "minutes": "for {minutes} min siden",
+    "hours": "for {hours} t {minutes} min siden",
+    "wholeHours": "for {hours} t siden",
+    "overADay": "for mere end et døgn siden"
+  },
+  "row": {
+    "connected": "Forbundet · senest fra pumpen {time}",
+    "connectedNothing": "Forbundet · intet fra pumpen endnu"
+  },
+  "lag": "Frejsi kigger efter hvert 15. minut. Pumpen sender sin historik med op til en times forsinkelse.",
+  "vaultNote": "Adressen og adgangen gemmes i en låst boks – aldrig i databasen.",
+  "connect": "Forbind",
+  "changeAccess": "Skift adgang",
+  "disconnect": "Afbryd",
+  "disconnectConfirm": "Vil du afbryde forbindelsen til pumpehistorikken? Det, der allerede er hentet, bliver liggende.",
+  "disconnectYes": "Ja, afbryd",
+  "cancel": "Annullér",
+  "form": {
+    "title": "Forbind pumpehistorik",
+    "lead": "Skriv adressen på den Nightscout-side, som pumpen sender til, og en adgang, der kun kan læse. Det må gerne være den samme side som glukosekilden.",
+    "submit": "Forbind",
+    "submitting": "Forbinder …"
+  },
+  "noRecentBoluses": "Adgangen virker, men pumpen har ikke sendt noget det sidste døgn. Tjek, at overførslen fra pumpen til Nightscout kører, og at det er den rigtige side."
+}
