@@ -23,7 +23,10 @@ export function symptomsAround(
 ): { kind: SymptomKind; minutesAfterMeal: number }[] {
   const meal = Date.parse(mealTs);
   return symptoms
-    .map((s) => ({ kind: s.kind, minutesAfterMeal: Math.round((Date.parse(s.ts) - meal) / MINUTE_MS) }))
+    .map((s) => ({
+      kind: s.kind,
+      minutesAfterMeal: Math.round((Date.parse(s.ts) - meal) / MINUTE_MS),
+    }))
     .filter(
       (s) =>
         s.minutesAfterMeal >= -SYMPTOM_WINDOW_MINUTES.before &&
@@ -113,7 +116,8 @@ export function buildWeekInput(input: {
   timezone: string;
   numbers: WeekNumbers;
   days: WeekInsightInput["days"];
-  meals: MealStatsRow[];
+  /** `source: "pump"` marks an untouched pump meal: it never reaches a model (v0.7.0 plan §5). */
+  meals: (MealStatsRow & { source?: string | null | undefined })[];
   symptoms?: readonly { kind: SymptomKind }[];
 }): WeekInsightInput {
   const n = input.numbers;
@@ -138,16 +142,19 @@ export function buildWeekInput(input: {
       totalCarbs: d.totalCarbs,
       inRangePercent: d.inRangePercent,
     })),
-    meals: input.meals.slice(0, 40).map((m) => ({
-      ...localParts(m.ts, input.timezone),
-      title: m.title.slice(0, 200),
-      totalCarbs: m.totalCarbs,
-      peak: insightStats(m.stats).peak,
-      inRangePercent: m.stats.inRange.coveredMinutes
-        ? Math.round((m.stats.inRange.minutes / m.stats.inRange.coveredMinutes) * 100)
-        : undefined,
-      leadMinutes: m.stats.bolusLeadMinutes,
-    })),
+    meals: input.meals
+      .filter((m) => m.source !== "pump")
+      .slice(0, 40)
+      .map((m) => ({
+        ...localParts(m.ts, input.timezone),
+        title: m.title.slice(0, 200),
+        totalCarbs: m.totalCarbs,
+        peak: insightStats(m.stats).peak,
+        inRangePercent: m.stats.inRange.coveredMinutes
+          ? Math.round((m.stats.inRange.minutes / m.stats.inRange.coveredMinutes) * 100)
+          : undefined,
+        leadMinutes: m.stats.bolusLeadMinutes,
+      })),
     ...(input.symptoms && input.symptoms.length > 0
       ? { symptomCounts: symptomCounts(input.symptoms) }
       : {}),

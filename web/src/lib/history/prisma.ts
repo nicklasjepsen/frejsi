@@ -7,6 +7,7 @@ const include = {
     include: { food: { select: { portions: true, carbsPer100g: true } } },
   },
   byUser: { select: { id: true, name: true } },
+  pumpBolus: { select: { units: true, carbs: true } },
 };
 type Row = NonNullable<Awaited<ReturnType<PrismaHistoryRepository["readRow"]>>>;
 function meal(row: Row): HistoryMeal {
@@ -20,6 +21,11 @@ function meal(row: Row): HistoryMeal {
     bolusTs: row.bolusTs?.toISOString(),
     photoKey: row.photoKey ?? undefined,
     symbol: storedSymbol(row.symbol),
+    source: row.source,
+    pumpBolusId: row.pumpBolusId ?? undefined,
+    pumpBolus: row.pumpBolus
+      ? { units: row.pumpBolus.units.toNumber(), carbs: row.pumpBolus.carbs ?? undefined }
+      : undefined,
     items: row.items.map((item) => ({
       name: item.name,
       carbs: item.carbs,

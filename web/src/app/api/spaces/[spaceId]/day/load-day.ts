@@ -74,15 +74,29 @@ export function localDate(at: Date, timezone: string): string {
 }
 
 /**
+ * Leaves out the meals the pump record made that nobody has ticked: pump data, never shown to a
+ * viewer or in simpleMode (v0.7.0 plan §6). SQL's `source <> 'pump'` is not true for a NULL source,
+ * so an ordinary meal (source NULL) needs its own arm.
+ */
+export const NOT_PUMP_MEAL = { OR: [{ source: null }, { source: { not: "pump" } }] };
+
+export interface DayOptions {
+  /** Owners and carers outside simpleMode see untouched pump meals; nobody else does. */
+  pumpMeals: boolean;
+}
+
+/**
  * The meals of the space's local `date` (today in `Space.timezone` when null), newest first, with
  * the day's totals. The title is built from the items only: a note is free text and may say
- * anything, so it stays on the meal's own route.
+ * anything, so it stays on the meal's own route. Untouched pump meals are left out unless
+ * `options.pumpMeals` says the reader may see them; no pump field is ever selected.
  */
 export async function loadDay(
   spaceId: string,
   date: string | null,
   locale: Locale,
   deps: DayDeps,
+  options: DayOptions = { pumpMeals: false },
 ): Promise<DayView> {
   const space = await deps.db.space.findUnique({
     where: { id: spaceId },
@@ -94,7 +108,7 @@ export async function loadDay(
   const [start, end] = dayRange(day, timezone);
 
   const rows = await deps.db.meal.findMany({
-    where: { spaceId, ts: { gte: start, lt: end } },
+    where: { spaceId, ts: { gte: start, lt: end }, ...(options.pumpMeals ? {} : NOT_PUMP_MEAL) },
     orderBy: { ts: "desc" },
     select: {
       id: true,

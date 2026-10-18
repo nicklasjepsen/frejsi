@@ -229,3 +229,68 @@ describe("history read services", () => {
     expect((await loadHistoryWeek("s1", null, "en", deps)).numbers.inRangePercent).toBeUndefined();
   });
 });
+
+describe("the pump record in the history views (v0.7.0 plan §4)", () => {
+  function pumpSetup() {
+    const base = setup();
+    // The person's meal took the 21:20 bolus; a pump meal at 18:00 came from an unmatched one.
+    Object.assign(base.meal, {
+      pumpBolusId: "b-dinner",
+      pumpBolus: { units: 2.4, carbs: 45 },
+    });
+    const pumpMeal: HistoryMeal = {
+      id: "pump-meal",
+      spaceId: "s1",
+      ts: "2026-10-18T16:00:00.000Z",
+      totalCarbs: 30,
+      byUser: { id: "u1", name: "Fictional member" },
+      items: [{ name: "Carbs from the pump", carbs: 30 }],
+      bolusTs: "2026-10-18T16:00:00.000Z",
+      source: "pump",
+      pumpBolusId: "b-snack",
+      pumpBolus: { units: 1.5, carbs: 30 },
+    };
+    base.repo.meals.push(pumpMeal);
+    return { ...base, pumpMeal };
+  }
+  it("carries pumpBolusId and fromPump on the day's meals, and no units or pump carbs", async () => {
+    const { deps, meal, pumpMeal } = pumpSetup();
+    const day = await loadHistoryDay("s1", "2026-10-18", false, "en", deps);
+    const byId = new Map(day.meals.map((m) => [m.id, m]));
+    expect(byId.get(meal.id)).toMatchObject({ pumpBolusId: "b-dinner", bolusTs: meal.bolusTs });
+    expect(byId.get(meal.id)).not.toHaveProperty("fromPump");
+    expect(byId.get(pumpMeal.id)).toMatchObject({ pumpBolusId: "b-snack", fromPump: true });
+    expect(byId.get(pumpMeal.id)?.stats).not.toHaveProperty("bolusLeadMinutes");
+    expect(JSON.stringify(day)).not.toMatch(/bolusUnits|pumpCarbs|"source"/);
+  });
+  it("carries the bolus's units and carbs on the meal curve, and no lead for a pump meal", async () => {
+    const { deps, meal, pumpMeal } = pumpSetup();
+    const curve = await loadMealCurve("s1", meal.id, "en", deps);
+    expect(curve.meal).toMatchObject({
+      pumpBolusId: "b-dinner",
+      bolusUnits: 2.4,
+      pumpCarbs: 45,
+      bolusTs: meal.bolusTs,
+    });
+    expect(curve.meal).not.toHaveProperty("fromPump");
+    expect(curve.stats.bolusLeadMinutes).toBe(10);
+    const pump = await loadMealCurve("s1", pumpMeal.id, "en", deps);
+    expect(pump.meal).toMatchObject({ fromPump: true, pumpBolusId: "b-snack", bolusUnits: 1.5 });
+    expect(pump.stats).not.toHaveProperty("bolusLeadMinutes");
+  });
+  it("never offers an untouched pump meal as an earlier occurrence of the same dish", async () => {
+    const { repo, deps, pumpMeal } = pumpSetup();
+    repo.meals.push(
+      { ...pumpMeal, id: "pump-earlier", ts: "2026-10-17T16:00:00.000Z" },
+      { ...pumpMeal, id: "adopted-earlier", ts: "2026-10-16T16:00:00.000Z", source: null },
+    );
+    const curve = await loadMealCurve("s1", pumpMeal.id, "en", deps);
+    expect(curve.previous.map((p) => p.mealId)).toEqual(["adopted-earlier"]);
+  });
+  it("leaves pump meals out of the week's lead figures", async () => {
+    const { deps } = pumpSetup();
+    const week = await loadHistoryWeek("s1", "2026-10-12", "en", deps);
+    expect(week.numbers.bolusLead).toMatchObject({ registered: 1, meanMinutes: 10 });
+    expect(week.meals.find((m) => m.mealId === "pump-meal")).not.toHaveProperty("bolusLeadMinutes");
+  });
+});

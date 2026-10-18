@@ -99,7 +99,9 @@ export async function loadHistoryWeek(
         ts: meal.ts,
         title: mealTitle(row.items, undefined, locale),
         totalCarbs: meal.totalCarbs,
-        bolusLeadMinutes: stats.bolusLeadMinutes,
+        ...(stats.bolusLeadMinutes === undefined
+          ? {}
+          : { bolusLeadMinutes: stats.bolusLeadMinutes }),
         stats,
       };
     }),

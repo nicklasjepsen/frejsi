@@ -24,6 +24,8 @@ interface MealRow {
   bolusTs: Date | null;
   photoKey: string | null;
   symbol: string | null;
+  source?: string | null;
+  pumpBolusId?: string | null;
   items: {
     name: string;
     portionLabel: string | null;
@@ -49,17 +51,28 @@ function dayDb(): DayDb {
     ...base,
     meal: {
       findMany: (args: {
-        where: { spaceId: string; ts: { gte: Date; lt: Date } };
+        where: {
+          spaceId: string;
+          ts: { gte: Date; lt: Date };
+          OR?: { source: null | { not: string } }[];
+        };
         orderBy: { ts: "desc" | "asc" };
         select: Record<string, unknown>;
       }) => {
         mealQueries.push(args);
+        // SQL semantics: `source <> 'pump'` is not true for a NULL source, so null needs its own arm.
+        const sourceOk = (source: string | null) =>
+          !args.where.OR ||
+          args.where.OR.some((arm) =>
+            arm.source === null ? source === null : source !== null && source !== arm.source.not,
+          );
         const rows = meals
           .filter(
             (m) =>
               m.spaceId === args.where.spaceId &&
               m.ts.getTime() >= args.where.ts.gte.getTime() &&
-              m.ts.getTime() < args.where.ts.lt.getTime(),
+              m.ts.getTime() < args.where.ts.lt.getTime() &&
+              sourceOk(m.source ?? null),
           )
           .sort((a, b) => b.ts.getTime() - a.ts.getTime())
           .map((m) => {
@@ -226,6 +239,47 @@ describe("GET /api/spaces/:id/day?date= (plan §7)", () => {
     expect(JSON.stringify(body)).not.toMatch(/mmol|mg\/dl|6,2/i);
     const select = (mealQueries[0] as { select: Record<string, unknown> }).select;
     expect(Object.keys(select)).toContain("symbol");
+  });
+
+  it("leaves untouched pump meals out of a viewer's day and a simpleMode day, in the query (v0.7.0)", async () => {
+    addMeal({
+      id: "pump-meal",
+      ts: "2026-10-15T09:00:00.000Z",
+      byUserId: "owner-1",
+      source: "pump",
+      pumpBolusId: "b1",
+      bolusTs: new Date("2026-10-15T09:00:00.000Z"),
+      items: [{ name: "Kulhydrater fra pumpen", portionLabel: null, grams: null, carbs: 45, position: 0 }],
+    });
+    addMeal({
+      id: "linked",
+      ts: "2026-10-15T08:30:00.000Z",
+      byUserId: "owner-1",
+      pumpBolusId: "b2",
+      bolusTs: new Date("2026-10-15T08:25:00.000Z"),
+    });
+    fake.addMember("child-1", "s1", "carer");
+    const child = fake.users.find((user) => user.id === "child-1");
+    if (child) child.simpleMode = true;
+    const pumpKeys = ["source", "pumpBolusId", "fromPump", "bolusUnits", "pumpCarbs", "bolusTs"];
+    for (const session of ["sess-viewer-1", "sess-child-1"]) {
+      mealQueries = [];
+      const { res, body } = await day(session);
+      expect(res.status).toBe(200);
+      expect(body.meals.map((meal) => meal.id)).toEqual(["m3", "linked", "m2", "m1"]);
+      expect(body.totalCarbs).toBe(14 + 38 + 50 + 14);
+      expect(JSON.stringify(body)).not.toContain("pumpen");
+      for (const key of keysOf(body)) expect(pumpKeys, key).not.toContain(key);
+      const query = mealQueries[0] as { where: { OR?: unknown }; select: Record<string, unknown> };
+      expect(query.where.OR).toEqual([{ source: null }, { source: { not: "pump" } }]);
+      for (const key of pumpKeys) expect(Object.keys(query.select)).not.toContain(key);
+    }
+    // An owner or carer outside simpleMode has the pump meal in the day, still without a pump field.
+    for (const session of ["sess-owner-1", "sess-carer-1"]) {
+      const { body } = await day(session);
+      expect(body.meals.map((meal) => meal.id)).toContain("pump-meal");
+      for (const key of keysOf(body)) expect(pumpKeys, key).not.toContain(key);
+    }
   });
 
   it("lets a carer read it too", async () => {
