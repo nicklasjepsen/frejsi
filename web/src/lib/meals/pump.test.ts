@@ -135,6 +135,29 @@ describe("meal writes re-match the pump record", () => {
     expect(h.events.map((e) => e.type)).toEqual(["meal.created", "meal.updated", "meal.updated"]);
   });
 
+  it("keeps the pump's bolus time on a linked meal: a different or cleared time is refused", async () => {
+    const h = setup();
+    h.boluses.set("b1", bolus({ id: "b1", ts: t("11:58") }));
+    const lunch = await createMeal("s1", session, { ts: iso("12:00"), items }, h.deps);
+    expect(lunch.bolusTs).toBe(iso("11:58"));
+    h.events.length = 0;
+    for (const bolusTs of [iso("11:30"), null])
+      await expect(
+        updateMeal("s1", lunch.id, session, { bolusTs }, h.deps),
+      ).rejects.toMatchObject({ status: 400, code: "validation" });
+    expect(h.rows.get(lunch.id)).toMatchObject({ pumpBolusId: "b1", bolusTs: t("11:58") });
+    expect(h.events).toEqual([]);
+    // Sending the pump's own time back with an edit changes nothing about it.
+    const noted = await updateMeal(
+      "s1",
+      lunch.id,
+      session,
+      { bolusTs: iso("11:58"), note: "Fictional" },
+      h.deps,
+    );
+    expect(noted).toMatchObject({ bolusTs: iso("11:58"), pumpBolusId: "b1", note: "Fictional" });
+  });
+
   it("never takes a bolus that belongs to a meal outside the window", async () => {
     const h = setup();
     // A meal at 12:00 re-matches the meals from 10:45 to 13:15. The one at 10:50 is inside and

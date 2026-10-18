@@ -112,8 +112,7 @@ async function load(
  * meal. A simpleMode session gets none of it, and no `bolusTs` the pump filled in either.
  */
 function pumpFields(row: MealRecord, reader: MealReader) {
-  if (reader.simpleMode)
-    return row.bolusTs && !row.pumpBolusId ? { bolusTs: row.bolusTs } : {};
+  if (reader.simpleMode) return row.bolusTs && !row.pumpBolusId ? { bolusTs: row.bolusTs } : {};
   return {
     ...(row.bolusTs ? { bolusTs: row.bolusTs } : {}),
     ...(row.pumpBolusId ? { pumpBolusId: row.pumpBolusId } : {}),
@@ -308,9 +307,19 @@ export async function updateMeal(
     row = await deps.write(async (repo, emit, pump) => {
       const previous = visible(await repo.lock(spaceId, id), session);
       displacedKey = previous.photoKey;
+      const { bolusTs, ...rest } = changes;
+      // A linked meal's bolus time is the one the pump recorded, read-only (plan §7): it can be
+      // sent back unchanged with an edit, never set to another time or cleared.
+      const pumpTime = previous.pumpBolusId !== undefined && bolusTs !== undefined;
+      if (
+        pumpTime &&
+        (bolusTs === null || Date.parse(bolusTs) !== Date.parse(previous.bolusTs ?? ""))
+      )
+        throw new HttpError(400, "validation");
       // Adopting, or any edit by an owner or carer, makes a pump meal an ordinary meal.
       const saved = await repo.update(spaceId, id, {
-        ...changes,
+        ...rest,
+        ...(bolusTs !== undefined && !pumpTime ? { bolusTs } : {}),
         ...(previous.source === "pump" ? { source: null } : {}),
       });
       await emit(spaceId, "meal.updated", { mealId: id });
