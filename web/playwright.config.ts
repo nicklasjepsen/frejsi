@@ -51,6 +51,8 @@ const appProjects = [
   // the pump meal, and nothing of it for a viewer or simpleMode (issue 233).
   "pump-settings.spec.ts",
   "pump.spec.ts",
+  // v0.7.2: the curve's tooltip at both widths, light and dark (issue 243).
+  "curve-tooltip.spec.ts",
 ];
 
 export default defineConfig({
