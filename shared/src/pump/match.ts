@@ -64,12 +64,21 @@ interface Candidate {
  * from 45 minutes before the meal to 30 after; pairs are taken by the smallest distance, a tie
  * going to the bolus before the meal, then the earlier meal. Untouched pump meals keep the bolus
  * they were made from unless a person's meal takes it, and are never given another.
+ *
+ * A stored link whose bolus is not in `boluses` is kept as it is, for a person's meal as for a
+ * pump meal, and that meal takes part in no new pairing: the matcher cannot judge a bolus it was
+ * not given, and the database keeps a linked bolus from being deleted, so a missing bolus only
+ * means the caller did not load it. A caller that wants a link re-judged (a meal that moved, say)
+ * passes the meal's current bolus along with the boluses of the window.
  */
 export function matchBoluses(
   meals: readonly MatchMeal[],
   boluses: readonly MatchBolus[],
 ): MatchLink[] {
-  const people = meals.filter((meal) => !isUntouchedPumpMeal(meal));
+  const given = new Set(boluses.map((bolus) => bolus.id));
+  const keepsStoredLink = (meal: MatchMeal) =>
+    meal.pumpBolusId !== null && !given.has(meal.pumpBolusId);
+  const people = meals.filter((meal) => !isUntouchedPumpMeal(meal) && !keepsStoredLink(meal));
   const pool = boluses.filter((bolus) => attaches(bolus.kind));
   const candidates: Candidate[] = [];
   for (const meal of people) {
@@ -98,11 +107,13 @@ export function matchBoluses(
     links.push({ mealId: meal.id, bolusId: bolus.id, bolusTs: bolus.ts });
   }
   const bolusTimes = new Map(boluses.map((bolus) => [bolus.id, bolus.ts]));
-  // Earliest pump meal first, so the result does not depend on the input's order.
-  const pumpMeals = meals
-    .filter((meal) => isUntouchedPumpMeal(meal) && meal.pumpBolusId !== null)
+  // The meals that keep a stored link: those whose bolus the matcher was not given, and the
+  // untouched pump meals. Earliest first, so the result does not depend on the input's order.
+  const keepers = meals
+    .filter((meal) => meal.pumpBolusId !== null)
+    .filter((meal) => keepsStoredLink(meal) || isUntouchedPumpMeal(meal))
     .sort((a, b) => Date.parse(a.ts) - Date.parse(b.ts) || byId(a.id, b.id));
-  for (const meal of pumpMeals) {
+  for (const meal of keepers) {
     if (meal.pumpBolusId === null || takenBoluses.has(meal.pumpBolusId)) continue;
     takenBoluses.add(meal.pumpBolusId);
     links.push({

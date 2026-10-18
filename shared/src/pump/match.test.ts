@@ -106,6 +106,34 @@ describe("matchBoluses (v0.7.0 plan §6)", () => {
     expect(pairs([pumpMeal, meal("m1", 3)], [bolus("b-own", 0)])).toEqual({ m1: "b-own" });
   });
 
+  it("keeps a stored link whose bolus was not passed in, for a person's meal as for a pump meal", () => {
+    // The pump cycle and the meal service pass the boluses of a window; a link to a bolus outside
+    // it is not theirs to judge, and the database keeps a linked bolus from being deleted.
+    const linked = meal("m1", 0, { pumpBolusId: "b-old", bolusTs: at(-40) });
+    expect(matchBoluses([linked], [bolus("b-new", 5)])).toEqual([
+      { mealId: "m1", bolusId: "b-old", bolusTs: at(-40) },
+    ]);
+    expect(diffLinks([linked], matchBoluses([linked], [bolus("b-new", 5)]))).toEqual({
+      set: [],
+      clear: [],
+      removePumpMeals: [],
+    });
+    // Without a stored time the meal's own time stands in, as for a pump meal.
+    expect(matchBoluses([meal("m2", 0, { pumpBolusId: "b-old" })], [])).toEqual([
+      { mealId: "m2", bolusId: "b-old", bolusTs: at(0) },
+    ]);
+    // The bolus it kept is not given to another meal, and the other bolus is still up for grabs.
+    expect(pairs([linked, meal("m3", 7)], [bolus("b-new", 5)])).toEqual({ m1: "b-old", m3: "b-new" });
+    const pumpMeal = meal("pm", 0, { source: "pump", pumpBolusId: "b-own", bolusTs: at(0) });
+    expect(matchBoluses([pumpMeal], [])).toEqual([{ mealId: "pm", bolusId: "b-own", bolusTs: at(0) }]);
+  });
+
+  it("re-judges a stored link whose bolus was passed in: out of the window, it is cleared", () => {
+    const linked = meal("m1", 0, { pumpBolusId: "b-far", bolusTs: at(-60) });
+    expect(matchBoluses([linked], [bolus("b-far", -60)])).toEqual([]);
+    expect(diffLinks([linked], [])).toEqual({ set: [], clear: [{ mealId: "m1" }], removePumpMeals: [] });
+  });
+
   it("gives the same result for shuffled input (200 random days)", () => {
     let seed = 20261018;
     const random = () => {
@@ -140,9 +168,14 @@ describe("matchBoluses (v0.7.0 plan §6)", () => {
       expect(new Set(expected.map((link) => link.mealId)).size).toBe(expected.length);
       expect(new Set(expected.map((link) => link.bolusId)).size).toBe(expected.length);
       for (const link of expected) {
-        const kind = boluses.find((b) => b.id === link.bolusId)?.kind;
+        const known = boluses.find((b) => b.id === link.bolusId);
         const linkedMeal = meals.find((m) => m.id === link.mealId);
-        if (linkedMeal?.source !== "pump") expect(["standard", "extended"]).toContain(kind);
+        if (known === undefined) {
+          // A bolus the matcher was not given: the link is the stored one, kept as it was.
+          expect(link.bolusId).toBe(linkedMeal?.pumpBolusId);
+        } else if (linkedMeal?.source !== "pump") {
+          expect(["standard", "extended"]).toContain(known.kind);
+        }
       }
     }
   });
