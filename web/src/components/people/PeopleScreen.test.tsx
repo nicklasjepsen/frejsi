@@ -180,13 +180,13 @@ describe("PeopleScreen · the list (Personer-Telefon, Personer-Desktop)", () => 
     );
   });
 
-  it("is a table with the columns Person, Rolle, Visning, Enheder and Sidst set", () => {
+  it("is a table with the columns Person, Rolle, Visning, Apparater and Sidst set", () => {
     mount();
     expect(
       within(table())
         .getAllByRole("columnheader")
         .map((h) => h.textContent),
-    ).toEqual(["Person", "Rolle", "Visning", "Enheder", "Sidst set"]);
+    ).toEqual(["Person", "Rolle", "Visning", "Apparater", "Sidst set"]);
   });
 
   it("shows every member with (dig) on the current user, the role, the view, the devices and when they were last seen", () => {
@@ -266,7 +266,7 @@ describe("PeopleScreen · the list (Personer-Telefon, Personer-Desktop)", () => 
     expect(within(row).getByRole("button", { name: "Send igen" })).toBeInTheDocument();
   });
 
-  it("draws an add-a-device link as Ny enhed til {name}, not as a second invitation of the member", () => {
+  it("draws an add-a-device link as Nyt apparat til {name}, not as a second invitation of the member", () => {
     mount({
       initial: {
         ...view,
@@ -287,8 +287,8 @@ describe("PeopleScreen · the list (Personer-Telefon, Personer-Desktop)", () => 
     const rows = screen.getAllByTestId("invite-row");
     expect(rows).toHaveLength(2);
     const device = nth(rows, 1);
-    expect(device).toHaveAccessibleName("Ny enhed til Mette");
-    expect(within(device).getByText("Ny enhed til Mette")).toBeInTheDocument();
+    expect(device).toHaveAccessibleName("Nyt apparat til Mette");
+    expect(within(device).getByText("Nyt apparat til Mette")).toBeInTheDocument();
     expect(device).toHaveTextContent("Invitation sendt i dag · udløber om 7 dage");
     expect(within(device).getByRole("cell", { name: "Ejer" })).toBeInTheDocument();
     // Mette's own member row is untouched and still the one that opens.
@@ -299,8 +299,8 @@ describe("PeopleScreen · the list (Personer-Telefon, Personer-Desktop)", () => 
   it("renders the device notices for phone and desktop, naming the button as it reads", () => {
     mount();
     expect(screen.getByText(/Nyt telefonnummer eller ny telefon\?/)).toBeInTheDocument();
-    expect(screen.getByText(/Enheder: ny telefon = ny enhed/)).toHaveTextContent(
-      "»Tilføj en enhed«-link",
+    expect(screen.getByText(/Apparater: ny telefon = nyt apparat/)).toHaveTextContent(
+      "»Tilføj et apparat«-link",
     );
   });
 
@@ -368,7 +368,7 @@ describe("PeopleScreen · a member's devices and role (design gap: phone detail)
     fireEvent.click(rowOf("Alma"));
     expect(within(detail()).getByTestId("device")).toHaveTextContent("sidst set i dag 14:52");
     fireEvent.click(rowOf("Farmor Birthe"));
-    expect(within(detail()).getByTestId("device")).toHaveTextContent("Enhed");
+    expect(within(detail()).getByTestId("device")).toHaveTextContent("Apparat");
     expect(within(detail()).getByTestId("device")).toHaveTextContent("ikke brugt endnu");
   });
 
@@ -413,7 +413,7 @@ describe("PeopleScreen · a member's devices and role (design gap: phone detail)
     fireEvent.click(within(phone).getByRole("button", { name: "Ja, fjern" }));
     await waitFor(() => {
       expect(screen.getByRole("alert")).toHaveTextContent(
-        "Det er den sidste enhed, en ejer kan logge ind med. Tilføj først en ny enhed til en ejer, så rummet aldrig står uden en vej ind.",
+        "Det er det sidste apparat, en ejer kan logge ind med. Tilføj først et nyt apparat til en ejer, så rummet aldrig står uden en vej ind.",
       );
     });
     expect(navigation.push).not.toHaveBeenCalled();
@@ -424,7 +424,7 @@ describe("PeopleScreen · a member's devices and role (design gap: phone detail)
     api.createInvite.mockResolvedValue({ ...created, name: "Mette", forUserId: "u-mette" });
     mount();
     fireEvent.click(rowOf("Mette"));
-    fireEvent.click(within(detail()).getByRole("button", { name: "+ Tilføj en enhed" }));
+    fireEvent.click(within(detail()).getByRole("button", { name: "+ Tilføj et apparat" }));
     expect(api.createInvite).toHaveBeenCalledWith("s1", { forUserId: "u-mette" });
     await waitFor(() => {
       expect(
@@ -432,7 +432,7 @@ describe("PeopleScreen · a member's devices and role (design gap: phone detail)
       ).toBeInTheDocument();
     });
     expect(detail()).toHaveTextContent(
-      "Lad Mette scanne koden med den nye enhed, eller send linket til den.",
+      "Lad Mette scanne koden med det nye apparat, eller send linket til det.",
     );
     expect(detail()).toHaveTextContent("Gælder i 7 dage · kan bruges én gang");
     expect(within(detail()).getByTestId("invite-link")).toHaveTextContent(created.url);
@@ -451,7 +451,7 @@ describe("PeopleScreen · a member's devices and role (design gap: phone detail)
     expect(within(group).getByRole("radio", { name: /Hjælper/ })).toBeChecked();
     expect(group).toHaveTextContent("Logger måltider, godkender mad, ser kurven");
     expect(group).toHaveTextContent("Ser dagens måltider og kulhydrater. Aldrig glukose.");
-    expect(group).toHaveTextContent("Alt, inkl. personer, enheder og indstillinger");
+    expect(group).toHaveTextContent("Alt, inkl. personer, apparater og indstillinger");
     fireEvent.click(within(group).getByRole("radio", { name: /Ser med/ }));
     expect(api.changeRole).toHaveBeenCalledWith("s1", "u-birthe", "viewer");
     await waitFor(() => {
@@ -529,13 +529,13 @@ describe("PeopleScreen · a member's devices and role (design gap: phone detail)
       expect(screen.queryByRole("button", { name: "Invitér en person" })).toBeNull();
       expect(screen.queryByTestId("invite-panel")).toBeNull();
       expect(
-        screen.getByText("Kun ejere kan invitere, skifte roller og fjerne personer og enheder."),
+        screen.getByText("Kun ejere kan invitere, skifte roller og fjerne personer og apparater."),
       ).toBeInTheDocument();
       fireEvent.click(rowOf("Jonas"));
       expect(within(detail()).getAllByTestId("device")).toHaveLength(2);
       expect(within(detail()).queryByRole("group", { name: "Rolle" })).toBeNull();
       expect(within(detail()).queryByRole("button", { name: "Fjern" })).toBeNull();
-      expect(within(detail()).queryByRole("button", { name: "+ Tilføj en enhed" })).toBeNull();
+      expect(within(detail()).queryByRole("button", { name: "+ Tilføj et apparat" })).toBeNull();
       expect(screen.queryByRole("button", { name: "Send igen" })).toBeNull();
       cleanup();
     }
