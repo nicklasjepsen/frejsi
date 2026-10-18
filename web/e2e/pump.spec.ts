@@ -233,8 +233,9 @@ test("the owner ticks a pump meal, and it becomes an ordinary meal", async ({ pa
   expect((await dayMeals()).find((meal) => meal.id === pumpMeal.id)?.byUser.name).toBe("Pumpen");
   await page.goto("/da/history");
   await expect(page.getByTestId("history-day").first()).toBeVisible();
-  // Yesterday loads as "Tidligere dage" comes into view.
-  await page.getByRole("button", { name: "Tidligere dage" }).scrollIntoViewIfNeeded();
+  // Yesterday: "Forrige dag" on desktop; on the phone it loads as "Tidligere dage" comes into view.
+  if (desktop) await page.getByRole("button", { name: "Forrige dag" }).click();
+  else await page.getByRole("button", { name: "Tidligere dage" }).scrollIntoViewIfNeeded();
   const historyRow = page
     .getByTestId("history-day")
     .locator(`a[href$="/meal/${pumpMeal.id}"]`)
@@ -244,7 +245,7 @@ test("the owner ticks a pump meal, and it becomes an ordinary meal", async ({ pa
   await expect(historyRow).not.toContainText("Jonas");
 
   await page.goto(`/da/meal/${pumpMeal.id}`);
-  const metaLine = page.getByText(/· \d{2}:\d{2} · fra pumpen$/).filter({ visible: true });
+  const metaLine = page.getByText(/\d{2}:\d{2} · fra pumpen$/).filter({ visible: true });
   await expect(metaLine).toBeVisible();
   const badge = page.getByText("Fra pumpen · ikke tjekket", { exact: true }).filter({
     visible: true,
