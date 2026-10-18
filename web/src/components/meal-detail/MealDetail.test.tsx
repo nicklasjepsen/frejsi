@@ -80,8 +80,9 @@ function mount(props: Partial<MealDetailProps> = {}, locale: AppLocale = "da") {
 }
 
 const ready = () => screen.findByTestId("curve-card");
-/** The meal reads; the curve card's symptom reads (v0.6.0, #202) are counted elsewhere. */
-const mealCalls = () => api.calls.filter((call) => !call.includes("/symptoms"));
+/** The meal reads; the curve card's symptom (v0.6.0, #202) and pump-history reads are counted elsewhere. */
+const mealCalls = () =>
+  api.calls.filter((call) => !call.includes("/symptoms") && !call.includes("/pump"));
 const tile = (label: string) => {
   const tiles = within(screen.getByTestId("meal-tiles"));
   const node = tiles.getByText(label).parentElement;
@@ -620,6 +621,34 @@ describe("Måltid · live (plan §8)", () => {
     expect(navigation.push).toHaveBeenCalledWith("/da/now");
   });
 
+  // v0.7.0: a meal write elsewhere can re-match this meal's bolus; that goes out as pump.meals.
+  it("reads the curve again when pump.meals lists this meal, and goes to Nu when it removed it", async () => {
+    const pumpMeals = (payload: { updated: string[]; removed: string[] }) => {
+      for (const handler of live.handlers.get("pump.meals") ?? [])
+        (handler as unknown as (e: unknown) => void)({ payload: { created: [], ...payload } });
+    };
+    api.curve = curveView({ meal: mealView({ bolusUnits: 2.4, pumpBolusId: "b1" }) });
+    mount();
+    await ready();
+    act(() => {
+      pumpMeals({ updated: ["other"], removed: ["another"] });
+    });
+    expect(mealCalls()).toHaveLength(1);
+    expect(navigation.push).not.toHaveBeenCalled();
+    api.curve = curveView({ meal: mealView({ bolusTs: undefined }) });
+    act(() => {
+      pumpMeals({ updated: ["m1"], removed: [] });
+    });
+    await waitFor(() => {
+      expect(screen.queryByTestId("meal-bolus")).toBeNull();
+    });
+    expect(mealCalls()).toHaveLength(2);
+    act(() => {
+      pumpMeals({ updated: [], removed: ["m1"] });
+    });
+    expect(navigation.push).toHaveBeenCalledWith("/da/now");
+  });
+
   it("keeps the meal on screen when a refetch fails", async () => {
     mount();
     await ready();
@@ -632,6 +661,74 @@ describe("Måltid · live (plan §8)", () => {
     });
     expect(screen.getByTestId("curve-card")).toBeInTheDocument();
   });
+});
+
+describe("Måltid · the pump record (v0.7.0 plan §9)", () => {
+  /** The 11:58 bolus the pump record linked: 2.4 units, 45 g typed into the pump. */
+  const linked = (fields: Parameters<typeof mealView>[0] = {}) =>
+    mealView({
+      bolusTs: shift(MEAL_TS, -2),
+      bolusUnits: 2.4,
+      pumpCarbs: 45,
+      pumpBolusId: "b1",
+      ...fields,
+    });
+  it.each(["phone", "desktop"] as const)(
+    "%s: shows the bolus time with its units and 'Pumpen: 45 g' next to the logged total",
+    async (layout) => {
+      api.curve = curveView({ meal: linked() });
+      mount({ layout });
+      await ready();
+      expect(screen.getByText("Bolus 11:58 · 2,4 E")).toBeInTheDocument();
+      expect(screen.getByText(/Pumpen: 45 g/)).toBeInTheDocument();
+      if (layout === "phone")
+        expect(screen.getByText("50 g kulhydrat · 3 ting · Pumpen: 45 g")).toBeInTheDocument();
+      else {
+        const rows = [...screen.getByTestId("meal-items").querySelectorAll("li")];
+        expect(rows.at(-2)).toHaveTextContent("I alt50 g");
+        expect(rows.at(-1)).toHaveTextContent("Pumpen: 45 g");
+      }
+      expect(screen.queryByText("Fra pumpen · ikke tjekket")).toBeNull();
+      expect(screen.queryByRole("button", { name: "Det passer" })).toBeNull();
+    },
+  );
+  it("shows the units without 'Pumpen' when the bolus had no carbs, and nothing for a tapped time", async () => {
+    api.curve = curveView({ meal: linked({ pumpCarbs: undefined }) });
+    const { unmount } = mount();
+    await ready();
+    expect(screen.getByText("Bolus 11:58 · 2,4 E")).toBeInTheDocument();
+    expect(screen.queryByText(/Pumpen/)).toBeNull();
+    unmount();
+    api.curve = curveView({ meal: mealView({ bolusTs: shift(MEAL_TS, -2) }) });
+    mount();
+    await ready();
+    // The curve still draws the tapped time (CurveCard); the header shows no units for it.
+    expect(screen.queryByTestId("meal-bolus")).toBeNull();
+    expect(screen.queryByText(/\d E$/)).toBeNull();
+  });
+  it("says it in English with the unit letter U", async () => {
+    api.curve = curveView({ meal: linked() });
+    mount({ layout: "desktop" }, "en");
+    await ready();
+    expect(screen.getByText("Bolus 11:58 · 2.4 U")).toBeInTheDocument();
+    expect(screen.getByText("Pump: 45 g")).toBeInTheDocument();
+  });
+  it.each(["phone", "desktop"] as const)(
+    "%s: marks a pump meal 'Fra pumpen · ikke tjekket' with 'Det passer', no lead tile and no observation",
+    async (layout) => {
+      api.curve = curveView({
+        meal: linked({ bolusTs: MEAL_TS, fromPump: true, title: "Kulhydrater fra pumpen" }),
+      });
+      mount({ layout, aiEnabled: true });
+      await ready();
+      const badge = screen.getByText("Fra pumpen · ikke tjekket");
+      expect(badge).toHaveAttribute("data-variant", "unverified");
+      expect(screen.getByRole("button", { name: "Det passer" })).toBeVisible();
+      expect(within(screen.getByTestId("meal-tiles")).queryByText(/Bolus/)).toBeNull();
+      expect(screen.queryByText(/Observation/)).toBeNull();
+      expect(api.calls.some((call) => call.includes("/insight"))).toBe(false);
+    },
+  );
 });
 
 it("uses the typical fixture's 12-minute lead (sanity)", () => {

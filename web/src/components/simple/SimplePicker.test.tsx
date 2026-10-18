@@ -11,7 +11,7 @@ import { getMessages } from "@/lib/i18n/messages";
 import type { AppLocale } from "@/lib/i18n/routing";
 
 import { SimplePicker, type SimplePickerProps } from "./SimplePicker";
-import { fakeApi, food, type FakeApi } from "./test-support";
+import { fakeApi, food, meal, type FakeApi } from "./test-support";
 
 const navigation = vi.hoisted(() => ({ push: vi.fn() }));
 vi.mock("next/navigation", () => ({
@@ -284,5 +284,32 @@ describe("boundaries (plan task 9 hard rules)", () => {
   it("colours the picker from the tokens only, so dark mode and every accent follow", () => {
     const css = readFileSync(path.join(import.meta.dirname, "simple.module.css"), "utf8");
     expect(css).not.toMatch(/#[0-9a-f]{3,8}\b|rgba?\(/i);
+  });
+});
+
+describe("nothing from the pump in simpleMode (v0.7.0 plan §9)", () => {
+  it("shows no units, pump carbs or badge, even when the saved meal comes back with them", async () => {
+    api.created = {
+      ...meal("m-new", "2026-10-15T10:13:00.000Z", "Min madpakke", 42),
+      bolusTs: "2026-10-15T10:05:00.000Z",
+      bolusUnits: 2.4,
+      pumpCarbs: 45,
+      pumpBolusId: "b1",
+      fromPump: true,
+    };
+    mount();
+    fireEvent.click(await screen.findByRole("button", { name: /Min madpakke/ }));
+    fireEvent.click(screen.getByRole("button", { name: "Ja, det spiser jeg" }));
+    await waitFor(() => {
+      expect(navigation.push).toHaveBeenCalled();
+    });
+    const text = document.body.textContent;
+    for (const shown of [
+      /\d+[.,]?\d* (E|U)\b/,
+      /Pumpen|Pump:/,
+      /Fra pumpen|From the pump/,
+      /Bolus/,
+    ])
+      expect(text).not.toMatch(shown);
   });
 });

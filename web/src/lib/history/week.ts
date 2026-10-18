@@ -13,10 +13,20 @@ import {
   STATS_WINDOW_MINUTES,
   MINUTE_MS,
   type Locale,
+  type WeekNumbers,
 } from "@frejsi/shared";
 import { localDate } from "@/app/api/spaces/[spaceId]/day/load-day";
 import { dateAfter, requireSpace, untilNow } from "./views";
 import type { HistoryDeps } from "./types";
+
+/**
+ * An untouched pump meal has no lead (its time is the bolus's), so the week's lead figure counts
+ * only the meals a person logged or adopted: "registered 3 of 3", not "3 of 5" (plan task 5). The
+ * meal count and the carbs still include pump meals.
+ */
+function leadOfLoggedMeals(numbers: WeekNumbers, logged: number): WeekNumbers {
+  return { ...numbers, bolusLead: { ...numbers.bolusLead, of: logged } };
+}
 export async function loadHistoryWeek(
   spaceId: string,
   start: string | null,
@@ -81,15 +91,21 @@ export async function loadHistoryWeek(
     timezone: space.timezone,
     target: space.target,
     days,
-    numbers: weekStats({
-      readings,
-      previousWeekReadings,
-      meals: rows,
-      target: space.target,
-      weekRange: range,
-      timezone: space.timezone,
-      now,
-    }),
+    numbers: leadOfLoggedMeals(
+      weekStats({
+        readings,
+        previousWeekReadings,
+        meals: rows,
+        target: space.target,
+        weekRange: range,
+        timezone: space.timezone,
+        now,
+      }),
+      mealsInRange(
+        rows.filter((row) => row.source !== "pump"),
+        range,
+      ).length,
+    ),
     meals: mealsInRange(rows, range).map((meal) => {
       const row = rows.find((r) => r.id === meal.id);
       if (!row) throw new Error("History meal missing");
@@ -99,7 +115,9 @@ export async function loadHistoryWeek(
         ts: meal.ts,
         title: mealTitle(row.items, undefined, locale),
         totalCarbs: meal.totalCarbs,
-        bolusLeadMinutes: stats.bolusLeadMinutes,
+        ...(stats.bolusLeadMinutes === undefined
+          ? {}
+          : { bolusLeadMinutes: stats.bolusLeadMinutes }),
         stats,
       };
     }),

@@ -279,6 +279,29 @@ describe("day and week aggregation", () => {
     expect(empty).not.toHaveProperty("previousWeekInRangePercent");
     expect(empty.bolusLead).not.toHaveProperty("meanMinutes");
   });
+  it("gives a pump meal no lead, keeps a linked ordinary meal's lead, and the week's lead figures skip pump meals (v0.7.0)", () => {
+    // A pump meal's time is its bolus's time, so its lead would always be zero: none at all.
+    const pumpMeal = { ts, bolusTs: ts, source: "pump" };
+    expect(bolusLeadMinutes(pumpMeal)).toBeUndefined();
+    expect(mealStats([r(0)], pumpMeal, target, completed)).not.toHaveProperty("bolusLeadMinutes");
+    // An ordinary meal the pump record linked keeps its lead minutes as before.
+    expect(bolusLeadMinutes({ ts, bolusTs: at(-12), source: null })).toBe(12);
+    const from = at(0),
+      to = at(7 * 1440);
+    const week = weekStats({
+      readings: [],
+      previousWeekReadings: [],
+      meals: [
+        { id: "linked", ts: at(60), totalCarbs: 40, bolusTs: at(50), source: null },
+        { id: "pump", ts: at(120), totalCarbs: 45, bolusTs: at(120), source: "pump" },
+      ],
+      target,
+      weekRange: { from, to },
+      timezone: "Europe/Copenhagen",
+      now: to,
+    });
+    expect(week.bolusLead).toMatchObject({ meanMinutes: 10, registered: 1 });
+  });
   it("averages thirty-minute buckets relative to a passed day start", () => {
     const readings = Array.from({ length: 288 }, (_, i) => r(i * 5, i % 2 ? 8 : 6));
     const sampled = downsample(readings, 30, ts);

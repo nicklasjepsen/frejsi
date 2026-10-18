@@ -25,7 +25,10 @@ let fake: FetchFake;
 let view: ReturnType<typeof curveView>;
 const writes = () => fake.calls.filter((c) => c.method !== "GET");
 /** The meal reads, without the curve card's symptom reads (v0.6.0 plan §5). */
-const reads = () => fake.calls.filter((c) => c.method === "GET" && !c.path.includes("/symptoms"));
+const reads = () =>
+  fake.calls.filter(
+    (c) => c.method === "GET" && !c.path.includes("/symptoms") && !c.path.includes("/pump?"),
+  );
 function mount(layout: "phone" | "desktop" = "phone") {
   return render(
     <I18nProvider locale="da" messages={getMessages("da")}>
@@ -535,4 +538,49 @@ describe("the header's second action: 'Gem som opskrift' (v0.6.0 plan §6, task 
       expect(dish.compareDocumentPosition(recipe)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
     },
   );
+});
+
+describe("'Det passer' on a pump meal (v0.7.0 plan §9)", () => {
+  const pumpMeal = () =>
+    mealView({
+      title: "Kulhydrater fra pumpen",
+      bolusTs: MEAL_TS,
+      bolusUnits: 1.5,
+      pumpCarbs: 45,
+      pumpBolusId: "b1",
+      fromPump: true,
+    });
+  it.each(["phone", "desktop"] as const)(
+    "%s: sends PATCH { adopt: true }, and the badge goes away once the meal reloads",
+    async (layout) => {
+      view = { ...view, meal: pumpMeal() };
+      mount(layout);
+      expect(await screen.findByText("Fra pumpen · ikke tjekket")).toBeVisible();
+      const { fromPump: _gone, ...adopted } = pumpMeal();
+      fake.on("PATCH /api/spaces/s1/meals/m1", adopted);
+      view = { ...view, meal: adopted };
+      fireEvent.click(screen.getByRole("button", { name: "Det passer" }));
+      await waitFor(() => {
+        expect(screen.queryByText("Fra pumpen · ikke tjekket")).toBeNull();
+      });
+      expect(screen.queryByRole("button", { name: "Det passer" })).toBeNull();
+      expect(writes()).toEqual([
+        { method: "PATCH", path: "/api/spaces/s1/meals/m1", body: { adopt: true } },
+      ]);
+      expect(reads().map((c) => c.path)).toEqual([
+        "/api/spaces/s1/meals/m1/curve",
+        "/api/spaces/s1/meals/m1/curve",
+      ]);
+      expect(nav.push).not.toHaveBeenCalled();
+    },
+  );
+  it("keeps the badge and says so when the tick was not saved", async () => {
+    view = { ...view, meal: pumpMeal() };
+    fake.on("PATCH /api/spaces/s1/meals/m1", { error: { code: "internal", message: "x" } }, 500);
+    mount();
+    fireEvent.click(await screen.findByRole("button", { name: "Det passer" }));
+    expect(await screen.findByText("Det blev ikke gemt. Prøv igen om lidt.")).toBeVisible();
+    expect(screen.getByText("Fra pumpen · ikke tjekket")).toBeVisible();
+    expect(screen.getByRole("button", { name: "Det passer" })).toBeEnabled();
+  });
 });

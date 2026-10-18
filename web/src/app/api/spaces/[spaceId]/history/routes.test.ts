@@ -5,6 +5,8 @@ import { FakeLiveDb, captureLog, liveRequest, spaceContext } from "@/lib/live/te
 import { MemoryHistoryRepository } from "@/lib/history/memory";
 import { configureHistory } from "@/lib/history/server";
 import { GET as curve } from "../meals/[mealId]/curve/route";
+import { GET as insight } from "../meals/[mealId]/insight/route";
+import { GET as weekInsight } from "./week/insight/route";
 import { GET as day } from "./day/route";
 import { GET as week } from "./week/route";
 function required<T>(value: T | undefined): T {
@@ -126,5 +128,46 @@ describe("history route access and wire contracts", () => {
             ].includes(key),
         ),
       ).toEqual([]);
+  });
+});
+
+describe("simpleMode and pump meals on the history routes (v0.7.0)", () => {
+  function simple() {
+    fake.addMember("child", "s1", "carer");
+    const child = fake.users.find((user) => user.id === "child");
+    if (child) child.simpleMode = true;
+  }
+  it("refuses a simpleMode session on every history read, before any read: no simple screen calls them", async () => {
+    simple();
+    const all = [
+      ...handlers,
+      (session: string | null) =>
+        insight(liveRequest("s1", "meals/meal-private/insight", session), {
+          params: Promise.resolve({ spaceId: "s1", mealId: "meal-private" }),
+        }),
+      (session: string | null) =>
+        weekInsight(liveRequest("s1", "history/week/insight", session, { start: "2026-01-05" }), {
+          params: Promise.resolve({ spaceId: "s1" }),
+        }),
+    ];
+    for (const handler of all) {
+      const response = await handler("sess-child");
+      expect(response.status).toBe(403);
+      expect(await response.json()).toMatchObject({ error: { code: "forbidden" } });
+    }
+    expect(repo.calls).toEqual([]);
+  });
+  it("answers 409 pump-meal for an observation of a pump meal, before any provider is asked", async () => {
+    Object.assign(required(repo.meals[0]), {
+      source: "pump",
+      pumpBolusId: "b1",
+      pumpBolus: { units: 1.5, carbs: 40 },
+    });
+    const response = await insight(liveRequest("s1", "meals/meal-private/insight", "sess-owner"), {
+      params: Promise.resolve({ spaceId: "s1", mealId: "meal-private" }),
+    });
+    expect(response.status).toBe(409);
+    expect(await response.json()).toMatchObject({ error: { code: "pump-meal" } });
+    expect(logs.all()).not.toMatch(/units|carbs|pumpBolus/);
   });
 });

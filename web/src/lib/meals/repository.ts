@@ -33,6 +33,12 @@ export interface MealRecord extends Omit<MealData, "symbol"> {
   timezone: string;
   /** Always set by the Prisma repository (`unknown` for a row from before 0005). */
   symbol?: MealSymbol | undefined;
+  /** `"pump"` while the meal is one the pump record made and nobody has ticked or edited. */
+  source?: string | null | undefined;
+  /** The bolus the pump record gave this meal (v0.7.0 plan §6). */
+  pumpBolusId?: string | undefined;
+  /** What the linked bolus recorded, read through the link: never copied onto the meal. */
+  pumpBolus?: { units: number; carbs?: number | undefined } | undefined;
 }
 export interface MealChanges {
   ts?: string | undefined;
@@ -42,6 +48,8 @@ export interface MealChanges {
   note?: string | undefined;
   bolusTs?: string | null | undefined;
   photoKey?: string | undefined;
+  /** Null when a person adopts or edits a pump meal: from then on it is an ordinary meal. */
+  source?: null | undefined;
 }
 export interface MealRepository {
   food(spaceId: string, id: string): Promise<Food | null>;
@@ -55,6 +63,7 @@ const include = {
   items: { orderBy: { position: "asc" as const } },
   byUser: { select: { id: true, name: true } },
   space: { select: { timezone: true } },
+  pumpBolus: { select: { units: true, carbs: true } },
 };
 type MealRow = NonNullable<Awaited<ReturnType<PrismaMealRepository["readRow"]>>>;
 function record(row: MealRow): MealRecord {
@@ -70,6 +79,11 @@ function record(row: MealRow): MealRecord {
     photoKey: row.photoKey ?? undefined,
     byUser: row.byUser,
     timezone: row.space.timezone,
+    source: row.source ?? undefined,
+    pumpBolusId: row.pumpBolusId ?? undefined,
+    pumpBolus: row.pumpBolus
+      ? { units: row.pumpBolus.units.toNumber(), carbs: row.pumpBolus.carbs ?? undefined }
+      : undefined,
     items: row.items.map((item) => ({
       name: item.name,
       foodId: item.foodId ?? undefined,
@@ -161,6 +175,7 @@ export class PrismaMealRepository implements MealRepository {
             ...(fields.symbol !== undefined ? { symbol: fields.symbol } : {}),
             ...(fields.note !== undefined ? { note: fields.note } : {}),
             ...("photoKey" in fields ? { photoKey: fields.photoKey ?? null } : {}),
+            ...(fields.source === null ? { source: null } : {}),
             ...(ts ? { ts: new Date(ts) } : {}),
             ...(bolusTs !== undefined
               ? { bolusTs: bolusTs === null ? null : new Date(bolusTs) }

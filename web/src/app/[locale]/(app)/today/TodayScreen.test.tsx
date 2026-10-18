@@ -250,6 +250,33 @@ describe("I dag (Historik-Viewer)", () => {
     },
   );
 
+  it("fetches the day again on pump.meals, for an owner or carer whose feed carries it (v0.7.0 plan §6)", async () => {
+    await mount("da", "owner");
+    const before = dayCalls();
+    server.day = emptyDay;
+    act(() =>
+      sockets[0]?.receive({
+        spaceId: "s1",
+        seq: 21,
+        ts: T0.toISOString(),
+        type: "pump.meals",
+        payload: { updated: ["m3"], created: [], removed: [] },
+      }),
+    );
+    await flush();
+    expect(dayCalls()).toBe(before + 1);
+    expect(screen.getByText("Ingen måltider i dag endnu")).toBeVisible();
+  });
+
+  it.each(["owner", "carer", "viewer"] as const)(
+    "never asks a %s's day for the pump record",
+    async (role) => {
+      await mount("da", role);
+      expect(net.calls.length).toBeGreaterThan(2);
+      expect(net.calls.some((c) => c.includes("/pump"))).toBe(false);
+    },
+  );
+
   it("does not fetch the day for other events, and fetches it again on window focus", async () => {
     await mount();
     const before = dayCalls();

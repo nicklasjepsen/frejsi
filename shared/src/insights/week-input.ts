@@ -24,6 +24,8 @@ export interface WeekMeal {
   totalCarbs: number;
   title: string;
   bolusTs?: string | undefined;
+  /** `"pump"` for an untouched meal the pump record made; left out of the input (v0.7.0). */
+  source?: string | null | undefined;
 }
 export interface WeekSource {
   spaces(): Promise<WeekSpace[]>;
@@ -59,7 +61,7 @@ export async function buildWeekInsightInput(
 ): Promise<WeekInsightInput> {
   const range = weekRange(start, space.timezone);
   const previousFrom = dayRange(dateAfter(start, -7), space.timezone)[0];
-  const [readings, previousWeekReadings, rows, symptoms] = await Promise.all([
+  const [readings, previousWeekReadings, logged, symptoms] = await Promise.all([
     source.readingsBetween(
       space.id,
       new Date(+range.from - 600000),
@@ -73,6 +75,8 @@ export async function buildWeekInsightInput(
     source.mealsBetween(space.id, range.from, range.to, space.locale),
     source.symptomsBetween?.(space.id, range.from, range.to) ?? Promise.resolve([]),
   ]);
+  // Untouched pump meals are pump data: no model sees them, their carbs or their lead (plan §5).
+  const rows = logged.filter((meal) => meal.source !== "pump");
   const numbers = weekStats({
     readings,
     previousWeekReadings,
@@ -174,6 +178,7 @@ export class PrismaWeekSource implements WeekSource {
       ts: r.ts.toISOString(),
       totalCarbs: r.totalCarbs,
       bolusTs: r.bolusTs?.toISOString(),
+      source: r.source,
       title: mealTitle(r.items, undefined, locale),
     }));
   }
