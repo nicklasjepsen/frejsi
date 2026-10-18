@@ -1,10 +1,11 @@
 import "@testing-library/jest-dom/vitest";
 
-import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import da from "../../../messages/da";
+import en from "../../../messages/en";
 
 import { SymptomDetailCard } from "./SymptomDetailCard";
 import { SymptomRow } from "./SymptomRow";
@@ -20,7 +21,10 @@ const symptom = {
 };
 const zone = "Europe/Copenhagen";
 
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  vi.unstubAllGlobals();
+});
 
 describe("SymptomDetailCard (v0.6.0 plan §5)", () => {
   it("shows kind, severity, note, who logged it and the readings with their times, and closes", () => {
@@ -80,6 +84,105 @@ describe("SymptomDetailCard (v0.6.0 plan §5)", () => {
       </NextIntlClientProvider>,
     );
     expect(screen.getByRole("dialog", { name: "Kløe kl. 14:30" })).toBeInTheDocument();
+  });
+});
+
+describe("SymptomDetailCard delete (#220)", () => {
+  function renderCard(props: { spaceId?: string; mayDelete?: boolean; onClose?: () => void }) {
+    return render(
+      <NextIntlClientProvider locale="da" messages={da}>
+        <SymptomDetailCard
+          locale="da"
+          timeZone={zone}
+          symptom={symptom}
+          onClose={props.onClose ?? vi.fn()}
+          {...(props.spaceId ? { spaceId: props.spaceId } : {})}
+          {...(props.mayDelete !== undefined ? { mayDelete: props.mayDelete } : {})}
+        />
+      </NextIntlClientProvider>,
+    );
+  }
+
+  it("offers no delete unless the screen says the member may (simpleMode, viewer)", () => {
+    renderCard({});
+    expect(screen.queryByRole("button", { name: "Slet" })).toBeNull();
+    cleanup();
+    renderCard({ spaceId: "sp1", mayDelete: false });
+    expect(screen.queryByRole("button", { name: "Slet" })).toBeNull();
+    cleanup();
+    renderCard({ mayDelete: true });
+    expect(screen.queryByRole("button", { name: "Slet" })).toBeNull();
+  });
+
+  it("asks once in the card, and 'Behold' leaves everything as it was", () => {
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+    const onClose = vi.fn();
+    renderCard({ spaceId: "sp1", mayDelete: true, onClose });
+    const dialog = screen.getByRole("dialog");
+    fireEvent.click(within(dialog).getByRole("button", { name: "Slet" }));
+    expect(dialog).toHaveTextContent("Slet ondt i maven kl. 14:30?");
+    fireEvent.click(within(dialog).getByRole("button", { name: "Behold" }));
+    expect(dialog).not.toHaveTextContent("Slet ondt i maven kl. 14:30?");
+    expect(within(dialog).getByRole("button", { name: "Slet" })).toBeInTheDocument();
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(onClose).not.toHaveBeenCalled();
+  });
+
+  it("on confirm calls the DELETE route and closes the card", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response(null, { status: 204 }));
+    vi.stubGlobal("fetch", fetchMock);
+    const onClose = vi.fn();
+    renderCard({ spaceId: "sp1", mayDelete: true, onClose });
+    const dialog = screen.getByRole("dialog");
+    fireEvent.click(within(dialog).getByRole("button", { name: "Slet" }));
+    fireEvent.click(within(dialog).getByRole("button", { name: "Slet" }));
+    await waitFor(() => {
+      expect(onClose).toHaveBeenCalledTimes(1);
+    });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(fetchMock.mock.calls[0]?.[0]).toBe("/api/spaces/sp1/symptoms/s1");
+    expect((fetchMock.mock.calls[0]?.[1] as RequestInit).method).toBe("DELETE");
+  });
+
+  it("says so when the delete fails and keeps the card open", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi
+        .fn()
+        .mockResolvedValue(
+          new Response(JSON.stringify({ error: { code: "internal" } }), { status: 500 }),
+        ),
+    );
+    const onClose = vi.fn();
+    renderCard({ spaceId: "sp1", mayDelete: true, onClose });
+    const dialog = screen.getByRole("dialog");
+    fireEvent.click(within(dialog).getByRole("button", { name: "Slet" }));
+    fireEvent.click(within(dialog).getByRole("button", { name: "Slet" }));
+    expect(await within(dialog).findByRole("alert")).toHaveTextContent(
+      "Det blev ikke slettet – prøv igen",
+    );
+    expect(onClose).not.toHaveBeenCalled();
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+  });
+
+  it("asks in English too", () => {
+    render(
+      <NextIntlClientProvider locale="en" messages={en}>
+        <SymptomDetailCard
+          locale="en"
+          timeZone={zone}
+          symptom={symptom}
+          spaceId="sp1"
+          mayDelete
+          onClose={vi.fn()}
+        />
+      </NextIntlClientProvider>,
+    );
+    const dialog = screen.getByRole("dialog");
+    fireEvent.click(within(dialog).getByRole("button", { name: "Delete" }));
+    expect(dialog).toHaveTextContent("Delete stomach ache at 14:30?");
+    expect(within(dialog).getByRole("button", { name: "Keep" })).toBeInTheDocument();
   });
 });
 
