@@ -290,7 +290,9 @@ describe("the pump record in the history views (v0.7.0 plan §4)", () => {
   it("leaves pump meals out of the week's lead figures", async () => {
     const { deps } = pumpSetup();
     const week = await loadHistoryWeek("s1", "2026-10-12", "en", deps);
-    expect(week.numbers.bolusLead).toMatchObject({ registered: 1, meanMinutes: 10 });
+    // Neither side of "registered 1 of 1" counts the untouched pump meal; the meal count does.
+    expect(week.numbers.bolusLead).toEqual({ registered: 1, of: 1, meanMinutes: 10 });
+    expect(week.numbers.mealCount).toBe(2);
     expect(week.meals.find((m) => m.mealId === "pump-meal")).not.toHaveProperty("bolusLeadMinutes");
   });
 });
