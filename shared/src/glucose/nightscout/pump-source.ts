@@ -74,34 +74,41 @@ export class NightscoutPumpSource implements PumpSource {
 
   /**
    * Boluses recorded at or after `since`, oldest first, one per `pump_event_id`. Nightscout answers
-   * newest first; while a page comes back full the next one asks below the oldest record seen, at
-   * most five pages. A record that cannot be read is dropped and counted in one `pump.dropped` line.
+   * newest first; while a page comes back full the next one asks at or below the oldest time seen
+   * (`$lte`, so a record sharing that time beyond the page is not skipped) and the records already
+   * seen are dropped, at most five pages. A full page with nothing new ends the paging: every
+   * record left shares one time and the cursor cannot move. A record that cannot be read is
+   * dropped and counted in one `pump.dropped` line.
    */
   async fetchBolusesSince(since: Date): Promise<PumpBolus[]> {
     const count = pageCountFor(since, this.now());
     const bySourceId = new Map<string, PumpBolus>();
     let dropped = 0;
-    let below: string | undefined;
+    let atOrBelow: string | undefined;
     for (let index = 0; index < MAX_PAGES; index += 1) {
       const query = new URLSearchParams({
         "find[created_at][$gte]": since.toISOString(),
         "find[eventType]": BOLUS_EVENT_TYPE,
         count: String(count),
       });
-      if (below !== undefined) query.set("find[created_at][$lt]", below);
+      if (atOrBelow !== undefined) query.set("find[created_at][$lte]", atOrBelow);
       const page = await this.readPage(query, since);
       dropped += page.dropped;
+      let fresh = 0;
       for (const bolus of page.boluses) {
-        if (!bySourceId.has(bolus.sourceId)) bySourceId.set(bolus.sourceId, bolus);
+        if (bySourceId.has(bolus.sourceId)) continue;
+        bySourceId.set(bolus.sourceId, bolus);
+        fresh += 1;
       }
       if (page.rows < count || page.oldest === undefined) break;
+      if (atOrBelow !== undefined && fresh === 0) break;
       if (index === MAX_PAGES - 1) {
         // A guard against a runaway answer, not a cursor: records older than the fifth page are
         // not read, now or later. Five pages hold far more than a 14-day window of boluses.
         this.log?.warn("pump.page-cap", { count: MAX_PAGES * count, code: "page-cap" });
         break;
       }
-      below = page.oldest;
+      atOrBelow = page.oldest;
     }
     if (dropped > 0) this.log?.warn("pump.dropped", { count: dropped, code: "malformed" });
     return [...bySourceId.values()].sort(
@@ -174,13 +181,14 @@ function oldestOf(rows: readonly unknown[]): string | undefined {
 
 /**
  * The mapping of plan §5: `ts` from `created_at` (UTC), the units as recorded (two decimals, as the
- * column holds them), the kind from `notes`, the calculator's carbs only when above zero.
+ * column holds them), the kind from `notes`, the calculator's carbs only when they round to 1–1000 g.
  */
 function toBolus(entry: TreatmentEntry): PumpBolus | undefined {
-  const carbs =
-    entry.carbs !== undefined && Number.isFinite(entry.carbs) && entry.carbs > 0
-      ? Math.round(entry.carbs)
-      : undefined;
+  // Carbs outside the contract (a fraction that rounds to 0, more than 1000 g) are left out; the
+  // bolus itself is still a fact the pump recorded and is kept.
+  const rounded =
+    entry.carbs !== undefined && Number.isFinite(entry.carbs) ? Math.round(entry.carbs) : undefined;
+  const carbs = PumpBolus.shape.carbs.safeParse(rounded).success ? rounded : undefined;
   const parsed = PumpBolus.safeParse({
     sourceId: String(entry.pump_event_id),
     ts: new Date(Date.parse(entry.created_at)).toISOString(),

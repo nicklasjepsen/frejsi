@@ -179,6 +179,33 @@ describe("NightscoutPumpSource.fetchBolusesSince", () => {
     ]);
   });
 
+  it("keeps a bolus without carbs when its carbs are outside the contract", async () => {
+    const row = (id: string, carbs: number) => ({
+      eventType: "Combo Bolus",
+      created_at: "2026-10-15T12:00:00.000Z",
+      insulin: 2,
+      notes: "Standard Bolus",
+      carbs,
+      pump_event_id: id,
+    });
+    const h = pump({
+      body: JSON.stringify([row("small", 0.4), row("large", 1200), row("fraction", 12.6)]),
+    });
+    const boluses = await h.source.fetchBolusesSince(new Date("2026-10-15T00:00:00.000Z"));
+    expect(boluses).toEqual([
+      {
+        sourceId: "fraction",
+        ts: "2026-10-15T12:00:00.000Z",
+        units: 2,
+        kind: "standard",
+        carbs: 13,
+      },
+      { sourceId: "large", ts: "2026-10-15T12:00:00.000Z", units: 2, kind: "standard" },
+      { sourceId: "small", ts: "2026-10-15T12:00:00.000Z", units: 2, kind: "standard" },
+    ]);
+    expect(h.lines.join("\n")).not.toContain("pump.dropped");
+  });
+
   it("returns no key besides sourceId, ts, units, kind and carbs, and every bolus is a PumpBolus", async () => {
     const h = pump({ body: fixture("treatments-combo-bolus.json") });
     const boluses = await h.source.fetchBolusesSince(new Date("2026-10-15T00:00:00.000Z"));
@@ -230,13 +257,13 @@ describe("NightscoutPumpSource.fetchBolusesSince", () => {
     const newest = new Date(now.getTime() - HOUR);
     const h = pump((call, index) => {
       if (index === 0) return { body: page(PAGE_COUNT, newest, 1) };
-      const lt = call.url.searchParams.get("find[created_at][$lt]") ?? "";
-      return { body: page(3, new Date(Date.parse(lt) - 60_000), 1000) };
+      const lte = call.url.searchParams.get("find[created_at][$lte]") ?? "";
+      return { body: page(3, new Date(Date.parse(lte) - 60_000), 1000) };
     });
     const boluses = await h.source.fetchBolusesSince(new Date(now.getTime() - DAY));
     expect(h.calls).toHaveLength(2);
     const oldestOfFirst = new Date(newest.getTime() - (PAGE_COUNT - 1) * 60_000).toISOString();
-    expect(h.calls[1]?.url.searchParams.get("find[created_at][$lt]")).toBe(oldestOfFirst);
+    expect(h.calls[1]?.url.searchParams.get("find[created_at][$lte]")).toBe(oldestOfFirst);
     expect(h.calls[1]?.url.searchParams.get("find[created_at][$gte]")).toBe(
       new Date(now.getTime() - DAY).toISOString(),
     );
@@ -246,10 +273,57 @@ describe("NightscoutPumpSource.fetchBolusesSince", () => {
     expect(h.lines.join("\n")).not.toContain("pump.page-cap");
   });
 
+  it("asks $lte the oldest seen, so a record sharing that time beyond a full page is kept once", async () => {
+    const newest = new Date(now.getTime() - HOUR);
+    const full = JSON.parse(page(PAGE_COUNT, newest, 1)) as Record<string, unknown>[];
+    const oldest = full[full.length - 1];
+    if (!oldest) throw new Error("no page");
+    // The record beyond the page shares the oldest time; Nightscout repeats the boundary record.
+    const twin = { ...oldest, pump_event_id: "twin" };
+    const older = {
+      ...oldest,
+      created_at: new Date(Date.parse(String(oldest.created_at)) - 60_000).toISOString(),
+      pump_event_id: "older",
+    };
+    const h = pump((_call, index) =>
+      index === 0
+        ? { body: JSON.stringify(full) }
+        : { body: JSON.stringify([oldest, twin, older]) },
+    );
+    const boluses = await h.source.fetchBolusesSince(new Date(now.getTime() - DAY));
+    expect(h.calls).toHaveLength(2);
+    expect(h.calls[1]?.url.searchParams.get("find[created_at][$lte]")).toBe(oldest.created_at);
+    expect(h.calls[1]?.url.searchParams.has("find[created_at][$lt]")).toBe(false);
+    const ids = boluses.map((b) => b.sourceId);
+    expect(ids).toContain("twin");
+    expect(ids).toContain("older");
+    expect(ids.filter((id) => id === oldest.pump_event_id)).toHaveLength(1);
+    expect(boluses).toHaveLength(PAGE_COUNT + 2);
+  });
+
+  it("stops paging when a full page holds only records already seen", async () => {
+    const newest = new Date(now.getTime() - HOUR);
+    // Every record at one time: $lte cannot move past them, so the same page comes back.
+    const same = JSON.stringify(
+      Array.from({ length: PAGE_COUNT }, (_, i) => ({
+        eventType: "Combo Bolus",
+        created_at: newest.toISOString(),
+        insulin: 1,
+        notes: "Automatic Bolus",
+        pump_event_id: String(i + 1),
+      })),
+    );
+    const h = pump({ body: same });
+    const boluses = await h.source.fetchBolusesSince(new Date(now.getTime() - DAY));
+    expect(h.calls).toHaveLength(2);
+    expect(boluses).toHaveLength(PAGE_COUNT);
+  });
+
   it("stops after five full pages and logs the sixth as pump.page-cap", async () => {
     const h = pump((call) => {
-      const lt = call.url.searchParams.get("find[created_at][$lt]");
-      const newest = lt === null ? new Date(now.getTime() - HOUR) : new Date(Date.parse(lt) - 1000);
+      const lte = call.url.searchParams.get("find[created_at][$lte]");
+      const newest =
+        lte === null ? new Date(now.getTime() - HOUR) : new Date(Date.parse(lte) - 1000);
       return { body: page(PAGE_COUNT, newest, Math.floor(newest.getTime() / 1000)) };
     });
     const boluses = await h.source.fetchBolusesSince(new Date(now.getTime() - DAY));
