@@ -6,6 +6,7 @@ import { log, startTelemetry } from "@frejsi/shared";
 // @frejsi/shared: the telemetry started below is the one the timer tracks reading.stored through,
 // and there is one Prisma client. app.setup() may run after registration; only startup is final.
 import "./functions/poll";
+import "./functions/pump-poll";
 import "./functions/source-connect";
 import "./functions/weekly-insight";
 import "./functions/enrich-foods";
