@@ -15,8 +15,13 @@ const writers = new Set([
   "delete",
   "deleteMany",
 ]);
+// The only writers of meal and mealItem. The pump cycle's store makes pump meals, sets and clears
+// their links, and removes an untouched pump meal a person's meal replaced; plan §6 puts those
+// writes in shared/src/pump/store.ts, in the cycle's own Serializable transaction (#224).
+const PUMP_STORE = "shared/src/pump/store.ts";
+const allowed = (file: string) => file.startsWith("web/src/lib/meals/") || file === PUMP_STORE;
 function violations(file: string, code: string): string[] {
-  if (file.startsWith("web/src/lib/meals/") || /\.test\.tsx?$/.test(file)) return [];
+  if (allowed(file) || /\.test\.tsx?$/.test(file)) return [];
   const found: string[] = [];
   const tree = ts.createSourceFile(file, code, ts.ScriptTarget.Latest, true);
   function visit(node: ts.Node) {
@@ -46,6 +51,7 @@ describe("meal write boundary", () => {
     expect(violations("web/src/app/api/route.ts", code)).toHaveLength(2);
     expect(violations("web/src/lib/meals/repository.ts", code)).toEqual([]);
     expect(violations("web/scripts/seed.ts", code)).toHaveLength(2);
+    expect(violations(PUMP_STORE, code)).toEqual([]);
     expect(
       ["web/src", "web/scripts", "shared/src", "poller/src"]
         .flatMap(files)
@@ -55,5 +61,11 @@ describe("meal write boundary", () => {
           ),
         ),
     ).toEqual([]);
+  });
+  it("lets only the pump store through: another shared file, or a lookalike path, is still refused", () => {
+    const code = "tx.meal.create({}); tx.meal.updateMany({}); tx.mealItem.deleteMany({});";
+    expect(violations("shared/src/pump/poll-cycle.ts", code)).toHaveLength(3);
+    expect(violations("shared/src/pump/store-extra.ts", code)).toHaveLength(3);
+    expect(violations("poller/src/shared/src/pump/store.ts", code)).toHaveLength(3);
   });
 });
