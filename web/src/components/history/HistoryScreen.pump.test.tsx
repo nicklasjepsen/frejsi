@@ -10,6 +10,7 @@ import { fakeSocketFactory } from "@/lib/live/test-support";
 
 import da from "../../../messages/da";
 import { HistoryScreen } from "./HistoryScreen";
+import { beforeInstant } from "./useSymptomRange";
 import { ViewerDays } from "./ViewerDays";
 
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn(), refresh: vi.fn() }) }));
@@ -154,7 +155,8 @@ describe("history day with the pump record (v0.7.0 plan §9)", () => {
     expect(screen.getByTestId("pump-reach-caption")).toHaveTextContent("Pumpe til 11:58");
     const day = history(TODAY);
     expect(pumpCalls()).toEqual([
-      `/api/spaces/s1/pump?${new URLSearchParams({ from: day.from, to: day.to }).toString()}`,
+      // Half-open, like the symptoms: a bolus at the next midnight belongs to the next day only.
+      `/api/spaces/s1/pump?${new URLSearchParams({ from: day.from, to: beforeInstant(day.to) }).toString()}`,
     ]);
   });
 

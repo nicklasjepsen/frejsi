@@ -80,8 +80,13 @@ export function DaySection({
   const symptomRange = useSymptomRange(spaceId, day.from, beforeInstant(day.to), subscribe);
   const symptoms = symptomRange.status === "ready" ? symptomRange.symptoms : [];
   // The day's pump record (v0.7.0 plan §9), read again on `pump.*`; never for a viewer or in
-  // simpleMode, and the route refuses both anyway.
-  const pumpHistory = usePumpHistory(spaceId, day.from, day.to, { subscribe, role, simpleMode });
+  // simpleMode, and the route refuses both anyway. Half-open like the symptoms: a bolus at the
+  // next midnight belongs to the next day only.
+  const pumpHistory = usePumpHistory(spaceId, day.from, beforeInstant(day.to), {
+    subscribe,
+    role,
+    simpleMode,
+  });
   const pump =
     pumpHistory.status === "ready"
       ? { boluses: pumpHistory.boluses, reach: pumpHistory.reach }
