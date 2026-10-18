@@ -275,16 +275,13 @@ describe("dosing vocabulary (the hard rule: Frejsi never computes or suggests in
     expect(findUnitAmounts([other("{count} enheder")]).map((f) => f.amount)).toEqual([
       "{count} enheder",
     ]);
-    expect(
-      findUnitAmounts([other("{count, plural, one {# enhed} other {# enheder}}")]),
-    ).toHaveLength(1);
     expect(findUnitAmounts([other("1.5 U"), other("3 IE"), other("# units")])).toHaveLength(3);
     // A number next to something else, or a device count, is not an amount of insulin.
     expect(
       findUnitAmounts([
         other("ca. {carbs} g"),
         other("6,2 mmol/L"),
-        other("{count, plural, one {# apparat} other {# apparater}}"),
+        other("{count, plural, one {# enhed} other {# enheder}}"),
         other("{count, plural, one {# device} other {# devices}}"),
         other("Enheder"),
         other("Vitamin E"),

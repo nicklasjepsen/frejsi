@@ -114,10 +114,12 @@ export const SUGGESTION_WORDS = [
 /**
  * A number, an ICU `#` or a `{…}` placeholder followed by a unit word: "2 E", "{count} enheder",
  * "# units". Fails in every message file outside the pump-history files and in the push copy, so
- * an amount of insulin cannot appear anywhere but pump history. Device copy says "apparater".
+ * an amount of insulin cannot appear anywhere but pump history. An ICU `# enhed`/`# enheder` is
+ * the passkey device count, so `#` pairs only with the abbreviations and `units`, never with the
+ * Danish word for a device (owner, 2026-10-18).
  */
 export const UNIT_AMOUNT =
-  /(?<![\p{L}\p{N}_])(?:\p{N}+(?:[.,]\p{N}+)?|\{[^{}]*\}|#)\s*(?:E|U|IE|IU|[Ee]nhed(?:er)?|[Uu]nits?)(?![\p{L}\p{N}_])/u;
+  /(?<![\p{L}\p{N}_])(?:(?:\p{N}+(?:[.,]\p{N}+)?|\{[^{}]*\})\s*(?:E|U|IE|IU|[Ee]nhed(?:er)?|[Uu]nits?)|#\s*(?:E|U|IE|IU|[Uu]nits?))(?![\p{L}\p{N}_])/u;
 
 export interface DosingFinding {
   where: string;
