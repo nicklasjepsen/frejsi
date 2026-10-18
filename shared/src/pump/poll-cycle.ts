@@ -327,15 +327,22 @@ async function announce(spaceId: string, totals: ImportTotals, deps: Resolved): 
 /** A success resets the counter and, when the record was disconnected, says it is connected again. */
 async function markConnected(space: PumpSpaceRow, deps: Resolved): Promise<SourceStatus> {
   if (space.pumpStatus === "connected" && space.pumpFailures === 0) return "connected";
-  await deps.write((tx, emit) =>
-    writePumpStatus(tx, emit, {
+  // The snapshot is from before the fetch; a concurrent cycle may have disconnected the space
+  // since. The transaction is Serializable, so the status read here is the one the write moves from.
+  await deps.write(async (tx, emit) => {
+    const current = await tx.space.findUnique({
+      where: { id: space.id },
+      select: { pumpStatus: true },
+    });
+    if (!current) return false;
+    return writePumpStatus(tx, emit, {
       spaceId: space.id,
-      from: space.pumpStatus,
+      from: current.pumpStatus,
       to: "connected",
       resetFailures: true,
       since: deps.now(),
-    }),
-  );
+    });
+  });
   return "connected";
 }
 

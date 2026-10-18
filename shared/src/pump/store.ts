@@ -139,6 +139,10 @@ export interface PumpTx extends EmitTx {
 /** A status write: the column moves only from the status it was decided against. */
 export interface StatusTx extends EmitTx {
   space: EmitTx["space"] & {
+    findUnique(args: {
+      where: { id: string };
+      select: { pumpStatus: true };
+    }): Promise<{ pumpStatus: string } | null>;
     updateMany(args: {
       where: { id: string; pumpStatus: string; pumpFailures?: number };
       data: { pumpStatus: string; pumpFailures?: number };
