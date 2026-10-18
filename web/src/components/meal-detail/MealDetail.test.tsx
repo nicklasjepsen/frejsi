@@ -620,6 +620,34 @@ describe("Måltid · live (plan §8)", () => {
     expect(navigation.push).toHaveBeenCalledWith("/da/now");
   });
 
+  // v0.7.0: a meal write elsewhere can re-match this meal's bolus; that goes out as pump.meals.
+  it("reads the curve again when pump.meals lists this meal, and goes to Nu when it removed it", async () => {
+    const pumpMeals = (payload: { updated: string[]; removed: string[] }) => {
+      for (const handler of live.handlers.get("pump.meals") ?? [])
+        (handler as unknown as (e: unknown) => void)({ payload: { created: [], ...payload } });
+    };
+    api.curve = curveView({ meal: mealView({ bolusUnits: 2.4, pumpBolusId: "b1" }) });
+    mount();
+    await ready();
+    act(() => {
+      pumpMeals({ updated: ["other"], removed: ["another"] });
+    });
+    expect(mealCalls()).toHaveLength(1);
+    expect(navigation.push).not.toHaveBeenCalled();
+    api.curve = curveView({ meal: mealView({ bolusTs: undefined }) });
+    act(() => {
+      pumpMeals({ updated: ["m1"], removed: [] });
+    });
+    await waitFor(() => {
+      expect(screen.queryByTestId("meal-bolus")).toBeNull();
+    });
+    expect(mealCalls()).toHaveLength(2);
+    act(() => {
+      pumpMeals({ updated: [], removed: ["m1"] });
+    });
+    expect(navigation.push).toHaveBeenCalledWith("/da/now");
+  });
+
   it("keeps the meal on screen when a refetch fails", async () => {
     mount();
     await ready();
