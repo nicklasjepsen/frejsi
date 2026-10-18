@@ -1,7 +1,7 @@
 "use client";
 
 import type { GlucoseUnit } from "@frejsi/shared/schemas/glucose";
-import type { MealCurveView } from "@frejsi/shared/schemas/history";
+import type { MealCurveView, MealStats } from "@frejsi/shared/schemas/history";
 import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
@@ -13,7 +13,7 @@ import { Button, PageHeader } from "@/components/ui";
 import { localeHref, type AppLocale } from "@/lib/i18n/routing";
 import { useLiveFeed } from "@/lib/live/useLiveFeed";
 
-import { fetchMealCurve } from "./api";
+import { adoptMeal, fetchMealCurve } from "./api";
 import { EditMealSheet } from "./EditMealSheet";
 import { CompareSection } from "./CompareSection";
 import { MealNav } from "./MealNav";
@@ -153,6 +153,7 @@ export function MealDetail({
             setEditing(true);
           }}
           onOpen={openMeal}
+          onAdopted={refresh}
           spaceId={spaceId}
         />
       ) : (
@@ -174,6 +175,45 @@ export function MealDetail({
   );
 }
 
+/**
+ * "Det passer" (v0.7.0 plan §9): an owner or carer ticks a meal the pump record made, and it
+ * becomes an ordinary meal. The meal is read again; its badge goes once the read says so.
+ */
+function AdoptButton({
+  spaceId,
+  mealId,
+  onAdopted,
+}: {
+  spaceId: string;
+  mealId: string;
+  onAdopted: () => Promise<unknown>;
+}) {
+  const t = useTranslations("pumpMeal");
+  const [state, setState] = useState<"idle" | "saving" | "failed">("idle");
+  const adopt = async () => {
+    setState("saving");
+    try {
+      await adoptMeal(spaceId, mealId);
+    } catch {
+      setState("failed");
+      return;
+    }
+    await onAdopted();
+    setState("idle");
+  };
+  return (
+    <>
+      <Button variant="secondary" disabled={state === "saving"} onClick={() => void adopt()}>
+        {t("adopt")}
+      </Button>
+      {state === "failed" && <p role="status">{t("adoptFailed")}</p>}
+    </>
+  );
+}
+
+/** A pump meal's time is its bolus's time: the lead would always read zero, so there is none. */
+const withoutLead = ({ bolusLeadMinutes: _lead, ...stats }: MealStats): MealStats => stats;
+
 function Ready({
   aiEnabled,
   feed,
@@ -185,6 +225,7 @@ function Ready({
   unit,
   onEdit,
   onOpen,
+  onAdopted,
   spaceId,
 }: {
   aiEnabled: boolean;
@@ -197,14 +238,17 @@ function Ready({
   unit: GlucoseUnit;
   onEdit: () => void;
   onOpen: (id: string) => void;
+  onAdopted: () => Promise<unknown>;
   spaceId: string;
 }) {
   const [together, setTogether] = useState(true);
   const clock = useNow();
   const curve = liveCurve(view, live, clock);
+  const fromPump = view.meal.fromPump === true;
+  const stats = fromPump ? withoutLead(curve.stats) : curve.stats;
   const tiles = (
     <MealTiles
-      stats={curve.stats}
+      stats={stats}
       mealTs={view.meal.ts}
       target={view.target}
       unit={unit}
@@ -226,18 +270,23 @@ function Ready({
       subscribe={feed.subscribe}
     />
   );
-  const observation = aiEnabled ? (
-    <Observation
-      spaceId={spaceId}
-      mealId={view.meal.id}
-      complete={curve.stats.inRange.complete}
-      size={size}
-      feed={feed}
-    />
-  ) : null;
+  // No model narrates a pump meal (plan §5): the route answers 409, and the screen never asks.
+  const observation =
+    aiEnabled && !fromPump ? (
+      <Observation
+        spaceId={spaceId}
+        mealId={view.meal.id}
+        complete={curve.stats.inRange.complete}
+        size={size}
+        feed={feed}
+      />
+    ) : null;
   const saveDish = (
     <SaveAsDish key={view.meal.id} spaceId={spaceId} meal={view.meal} locale={locale} />
   );
+  const adopt = fromPump ? (
+    <AdoptButton spaceId={spaceId} mealId={view.meal.id} onAdopted={onAdopted} />
+  ) : undefined;
   if (size === "phone") {
     return (
       <>
@@ -247,6 +296,7 @@ function Ready({
           onEdit={onEdit}
           backHref={localeHref(locale, "/now")}
           saveDish={saveDish}
+          adopt={adopt}
         />
         {card}
         {tiles}
@@ -265,8 +315,14 @@ function Ready({
             timeZone={timeZone}
             onEdit={onEdit}
             saveDish={saveDish}
+            adopt={adopt}
           />
-          <MealItems items={view.meal.items} total={view.meal.totalCarbs} size="desktop" />
+          <MealItems
+            items={view.meal.items}
+            total={view.meal.totalCarbs}
+            pumpCarbs={view.meal.pumpCarbs}
+            size="desktop"
+          />
           {tiles}
         </section>
         <section className={styles.main}>
@@ -274,7 +330,7 @@ function Ready({
           {together && (
             <CompareSection
               view={view}
-              stats={curve.stats}
+              stats={stats}
               unit={unit}
               timeZone={timeZone}
               now={clock}
