@@ -1,8 +1,8 @@
 // Enums are String columns validated by the Zod enums in
 // src/schemas/; JSON is NVarChar(Max) parsed with Zod (the SQL Server connector has no Json).
 // Foundation: 0001_foundation. Food: 0002_food. AI: 0003_ai. Theme: 0004_theme. Feel: 0005_feel.
-// Each migration's end state is kept as a snapshot (foundation.prisma, food.prisma, ai.prisma,
-// theme.prisma) so `prisma:check` can diff one step at a time.
+// Pump: 0006_pump. Each migration's end state is kept as a snapshot (foundation.prisma,
+// food.prisma, ai.prisma, theme.prisma, feel.prisma) so `prisma:check` can diff one step at a time.
 
 generator client {
   provider      = "prisma-client-js"
@@ -55,6 +55,12 @@ model Space {
   aiEnabled      Boolean   @default(false)
   aiProvider     String?
   symptomKinds   String    @default("[]") @db.NVarChar(Max)
+  // The pump record's own connection (v0.7.0 plan §3): a PumpSourceConfig as JSON, its status, its
+  // failure count and the newest stored bolus's time. Separate from the glucose source on purpose.
+  pumpSource     String?   @db.NVarChar(Max)
+  pumpStatus     String    @default("not-configured")
+  pumpFailures   Int       @default(0)
+  lastPumpAt     DateTime?
   createdAt      DateTime  @default(now())
 
   subjectUser       User?              @relation("SpaceSubject", fields: [subjectUserId], references: [id], onDelete: NoAction, onUpdate: NoAction)
@@ -68,6 +74,7 @@ model Space {
   insights          Insight[]
   pushSubscriptions PushSubscription[]
   symptoms          Symptom[]
+  pumpBoluses       PumpBolus[]
 }
 
 model Membership {
@@ -205,22 +212,53 @@ model Food {
 }
 
 model Meal {
-  id         String    @id @default(cuid())
-  spaceId    String
-  ts         DateTime
-  byUserId   String
-  totalCarbs Int
-  note       String?   @db.NVarChar(500)
-  bolusTs    DateTime?
-  photoKey   String?   @db.NVarChar(200)
-  symbol     String?   @db.NVarChar(20)
-  createdAt  DateTime  @default(now())
-  updatedAt  DateTime  @updatedAt
+  id          String    @id @default(cuid())
+  spaceId     String
+  ts          DateTime
+  byUserId    String
+  totalCarbs  Int
+  note        String?   @db.NVarChar(500)
+  bolusTs     DateTime?
+  photoKey    String?   @db.NVarChar(200)
+  symbol      String?   @db.NVarChar(20)
+  // v0.7.0 plan §3: the bolus the pump record gave this meal (its units are read through the link,
+  // never copied here), and "pump" while the meal is one the poller made from pump carbs that
+  // nobody has ticked or edited. Not unique: SQL Server treats NULLs as equal in a unique index;
+  // one bolus per meal is kept by the matcher inside a Serializable transaction.
+  pumpBolusId String?
+  source      String?   @db.NVarChar(20)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 
-  space  Space      @relation(fields: [spaceId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  byUser User       @relation(fields: [byUserId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  items  MealItem[]
+  space     Space      @relation(fields: [spaceId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  byUser    User       @relation(fields: [byUserId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  pumpBolus PumpBolus? @relation(fields: [pumpBolusId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  items     MealItem[]
 
+  @@index([spaceId, ts])
+  @@index([pumpBolusId])
+}
+
+// What the pump delivered, imported read-only from the pump record (v0.7.0 plan §3). `kind` is a
+// PumpBolusKind; `units` is what the pump recorded and is never computed from. `sourceId` is the
+// record's own id (Nightscout's `pump_event_id`), the idempotency key. `carbs` are the grams typed
+// into the pump's calculator, null when 0 or absent. `mealDismissed` is set when a carer deleted
+// the pump meal made from this bolus, so none is made again. Owners and carers only, never a viewer.
+model PumpBolus {
+  id            String   @id @default(cuid())
+  spaceId       String
+  sourceId      String   @db.NVarChar(100)
+  ts            DateTime
+  units         Decimal  @db.Decimal(5, 2)
+  kind          String   @db.NVarChar(20)
+  carbs         Int?
+  mealDismissed Boolean  @default(false)
+  createdAt     DateTime @default(now())
+
+  space Space  @relation(fields: [spaceId], references: [id], onDelete: Cascade)
+  meals Meal[]
+
+  @@unique([spaceId, sourceId])
   @@index([spaceId, ts])
 }
 
