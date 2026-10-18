@@ -563,3 +563,19 @@ describe("symptoms on the week (v0.6.0 plan §5)", () => {
     expect(await screen.findByText("Ingen symptomer denne uge")).toBeVisible();
   });
 });
+it("hands the space's unit to the tiles, so a tile reads its day under the pointer (issue 243)", async () => {
+  mount();
+  const days = await screen.findByRole("region", { name: "Ugens dage" });
+  const tile = days.querySelector<HTMLElement>(`[data-date="${data.days[0]?.date ?? ""}"]`);
+  if (!tile) throw new Error("Expected the first tile");
+  if (typeof window.PointerEvent === "undefined") {
+    Object.defineProperty(window, "PointerEvent", { value: MouseEvent, configurable: true });
+  }
+  // The tile's chart laid out at the design's 120×64, so a pixel is a viewBox unit.
+  const rect = vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockReturnValue(
+    DOMRect.fromRect({ x: 0, y: 0, width: 120, height: 64 }),
+  );
+  fireEvent.pointerMove(tile, { clientX: 60, clientY: 30 });
+  expect(screen.getByTestId("curve-tooltip")).toHaveTextContent(/mmol\/L · kl\. \d\d:\d\d · /);
+  rect.mockRestore();
+});
