@@ -157,8 +157,9 @@ async function view(row: MealRecord, who: Locale | MealReader, deps: MealDeps): 
 }
 /**
  * Matches the meals around `times` to the pump record again, in the write's transaction, and
- * emits `pump.meals` for every other meal that changed. Returns the person's own meal as it now
- * is (its link may have changed), or null when it is gone.
+ * emits `pump.meals` for every other meal that changed. `released` is the bolus the person's own
+ * meal held before the write; `rematch` dismisses it when the write leaves it with no meal.
+ * Returns the person's own meal as it now is (its link may have changed), or null when it is gone.
  */
 async function matchPump(
   pump: PumpLinks | undefined,
@@ -167,9 +168,10 @@ async function matchPump(
   spaceId: string,
   times: string[],
   own: string,
+  released?: string,
 ): Promise<MealRecord | null> {
   if (!pump) return repo.find(spaceId, own);
-  const changed = await rematch(pump, spaceId, times, own);
+  const changed = await rematch(pump, spaceId, times, own, released);
   if (changed) await emit(spaceId, "pump.meals", changed);
   return repo.find(spaceId, own);
 }
@@ -324,7 +326,17 @@ export async function updateMeal(
       });
       await emit(spaceId, "meal.updated", { mealId: id });
       if (Date.parse(saved.ts) === Date.parse(previous.ts)) return saved;
-      return (await matchPump(pump, repo, emit, spaceId, [previous.ts, saved.ts], id)) ?? saved;
+      return (
+        (await matchPump(
+          pump,
+          repo,
+          emit,
+          spaceId,
+          [previous.ts, saved.ts],
+          id,
+          previous.pumpBolusId,
+        )) ?? saved
+      );
     });
   } catch (error) {
     await cleanup(key, deps);
@@ -334,8 +346,9 @@ export async function updateMeal(
   return view(row, session, deps);
 }
 /**
- * Deleting a meal frees its bolus for the meals around it. Deleting an untouched pump meal also
- * sets `mealDismissed` on its bolus, so the pump cycle never makes it again (plan §6).
+ * Deleting a meal frees its bolus for the meals around it. When no meal takes it, or the meal was
+ * an untouched pump meal, the bolus gets `mealDismissed`, so the pump cycle never makes a meal
+ * from carbs a person removed (plan §6).
  */
 export async function deleteMeal(
   spaceId: string,
@@ -350,7 +363,16 @@ export async function deleteMeal(
       await pump?.dismiss(spaceId, previous.pumpBolusId);
     await repo.delete(spaceId, id);
     await emit(spaceId, "meal.deleted", { mealId: id });
-    await matchPump(pump, repo, emit, spaceId, [previous.ts], id);
+    const pumpMeal = previous.source === "pump";
+    await matchPump(
+      pump,
+      repo,
+      emit,
+      spaceId,
+      [previous.ts],
+      id,
+      pumpMeal ? undefined : previous.pumpBolusId,
+    );
     return previous.photoKey;
   });
   await cleanup(displacedKey, deps);

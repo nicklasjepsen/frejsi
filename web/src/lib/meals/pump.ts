@@ -104,12 +104,18 @@ export class PrismaPumpLinks implements PumpLinks {
  * with every bolus any of them could take and the bolus each holds now (so its link is judged
  * again). A bolus held by a meal outside that set stays with it. Returns the `pump.meals` payload
  * for every meal changed besides `own`, or null when nothing else changed.
+ *
+ * `released` is the bolus `own` held before the write. When the write leaves it with no meal and
+ * `own` with no bolus (moved out of the window, or deleted), the person has decided about those
+ * carbs: the bolus is dismissed, so the pump cycle does not make a second meal from them. A meal
+ * that swaps one bolus for another leaves the first free.
  */
 export async function rematch(
   links: PumpLinks,
   spaceId: string,
   times: readonly string[],
   own?: string,
+  released?: string,
 ): Promise<z.infer<typeof PumpMealsPayload> | null> {
   const reach = (BEFORE_MINUTES + AFTER_MINUTES) * MINUTE;
   const mealRanges = [...new Set(times)].map((ts) => ({
@@ -130,9 +136,19 @@ export async function rematch(
   for (const link of diff.set) await links.link(spaceId, link.mealId, link.bolusId, link.bolusTs);
   for (const { mealId } of diff.clear) await links.unlink(spaceId, mealId);
   for (const { mealId } of diff.removePumpMeals) await links.removePumpMeal(spaceId, mealId);
-  const updated = [
-    ...new Set([...diff.set, ...diff.clear].map((change) => change.mealId)),
-  ].filter((id) => id !== own);
+  if (released) {
+    const holds = new Map(
+      meals.flatMap((meal) => (meal.pumpBolusId ? [[meal.id, meal.pumpBolusId]] : [])),
+    );
+    for (const link of diff.set) holds.set(link.mealId, link.bolusId);
+    for (const { mealId } of [...diff.clear, ...diff.removePumpMeals]) holds.delete(mealId);
+    const ownHolds = own !== undefined && holds.has(own);
+    if (!ownHolds && ![...holds.values()].includes(released))
+      await links.dismiss(spaceId, released);
+  }
+  const updated = [...new Set([...diff.set, ...diff.clear].map((change) => change.mealId))].filter(
+    (id) => id !== own,
+  );
   const removed = diff.removePumpMeals.map((change) => change.mealId).filter((id) => id !== own);
   return updated.length || removed.length ? { updated, created: [], removed } : null;
 }

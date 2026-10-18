@@ -1,6 +1,7 @@
 // Release-only: the web meal service's pump matching against SQL Server (v0.7.0 plan §6). A meal
-// logged after a stored carb bolus takes it and the untouched pump meal is removed; a pump meal a
-// carer deletes dismisses its bolus. Each write commits with its event rows, or not at all.
+// logged after a stored carb bolus takes it and the untouched pump meal is removed; a meal moved
+// away from its bolus, and a pump meal a carer deletes, dismiss the bolus. Each write commits with
+// its event rows, or not at all.
 import { PrismaClient } from "@prisma/client";
 import { afterAll, beforeAll, expect, it } from "vitest";
 
@@ -131,6 +132,11 @@ it("links a meal logged after a carb bolus and removes the untouched pump meal, 
   expect(await db.meal.findUniqueOrThrow({ where: { id: view.id } })).toMatchObject({
     pumpBolusId: null,
     bolusTs: null,
+  });
+  // The moved meal keeps the carbs and no meal takes the bolus: it is dismissed in the same
+  // commit, so the pump cycle makes no second meal from it.
+  expect(await db.pumpBolus.findUniqueOrThrow({ where: { id: bolus.id } })).toMatchObject({
+    mealDismissed: true,
   });
 });
 

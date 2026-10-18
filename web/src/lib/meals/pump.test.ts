@@ -142,9 +142,10 @@ describe("meal writes re-match the pump record", () => {
     expect(lunch.bolusTs).toBe(iso("11:58"));
     h.events.length = 0;
     for (const bolusTs of [iso("11:30"), null])
-      await expect(
-        updateMeal("s1", lunch.id, session, { bolusTs }, h.deps),
-      ).rejects.toMatchObject({ status: 400, code: "validation" });
+      await expect(updateMeal("s1", lunch.id, session, { bolusTs }, h.deps)).rejects.toMatchObject({
+        status: 400,
+        code: "validation",
+      });
     expect(h.rows.get(lunch.id)).toMatchObject({ pumpBolusId: "b1", bolusTs: t("11:58") });
     expect(h.events).toEqual([]);
     // Sending the pump's own time back with an edit changes nothing about it.
@@ -182,11 +183,52 @@ describe("meal writes re-match the pump record", () => {
     expect(h.rows.has("pm1")).toBe(false);
     expect(h.boluses.get("b1")?.mealDismissed).toBe(true);
     expect(h.events).toEqual([{ type: "meal.deleted", payload: { mealId: "pm1" } }]);
-    // An ordinary meal's delete dismisses nothing.
+  });
+
+  it("dismisses a bolus a person's own meal lets go of when no meal takes it, so the cycle makes no second meal", async () => {
+    // An untouched pump meal at 11:50 moved to 12:50 leaves its bolus's window and keeps the
+    // carbs; were the bolus left free, the pump cycle would make a second 45 g meal at 11:50.
+    const h = setup();
+    withPumpMeal(h);
+    const moved = await updateMeal("s1", "pm1", session, { ts: iso("12:50") }, h.deps);
+    expect(moved).not.toHaveProperty("pumpBolusId");
+    expect(h.rows.get("pm1")).toMatchObject({ source: null, pumpBolusId: null, totalCarbs: 45 });
+    expect(h.boluses.get("b1")?.mealDismissed).toBe(true);
+    expect(h.events).toEqual([{ type: "meal.updated", payload: { mealId: "pm1" } }]);
+
+    // Deleting an ordinary meal that held a carb bolus: the person removed those carbs.
     h.boluses.set("b2", bolus({ id: "b2", ts: t("18:00"), carbs: 30 }));
     const dinner = await createMeal("s1", session, { ts: iso("18:05"), items }, h.deps);
+    expect(dinner.pumpBolusId).toBe("b2");
     await deleteMeal("s1", dinner.id, session, h.deps);
+    expect(h.boluses.get("b2")?.mealDismissed).toBe(true);
+  });
+
+  it("dismisses nothing when another meal takes the bolus, or the moved meal takes another one", async () => {
+    const h = setup();
+    h.boluses.set("b1", bolus({ id: "b1", ts: t("11:50"), carbs: 45 }));
+    h.boluses.set("b2", bolus({ id: "b2", ts: t("15:00"), carbs: 30 }));
+    h.rows.set("snack", mealRow({ id: "snack", ts: t("12:20") }));
+    const lunch = await createMeal("s1", session, { ts: iso("11:55"), items }, h.deps);
+    expect(lunch.pumpBolusId).toBe("b1");
+    // Moved onto the 15:00 bolus: the meal now accounts for b2, and the snack takes b1.
+    const moved = await updateMeal("s1", lunch.id, session, { ts: iso("15:05") }, h.deps);
+    expect(moved.pumpBolusId).toBe("b2");
+    expect(h.rows.get("snack")?.pumpBolusId).toBe("b1");
+    expect(h.boluses.get("b1")?.mealDismissed).toBe(false);
     expect(h.boluses.get("b2")?.mealDismissed).toBe(false);
+
+    // With no snack, the 11:50 bolus stays free once the meal swaps it for b2: its carbs are not
+    // the meal's, so the pump cycle may still make a meal from them.
+    const alone = setup();
+    alone.boluses.set("b1", bolus({ id: "b1", ts: t("11:50"), carbs: 45 }));
+    alone.boluses.set("b2", bolus({ id: "b2", ts: t("15:00"), carbs: 30 }));
+    const meal = await createMeal("s1", session, { ts: iso("11:55"), items }, alone.deps);
+    expect(meal.pumpBolusId).toBe("b1");
+    expect(
+      (await updateMeal("s1", meal.id, session, { ts: iso("15:05") }, alone.deps)).pumpBolusId,
+    ).toBe("b2");
+    expect(alone.boluses.get("b1")).toMatchObject({ mealDismissed: false });
   });
 
   it("retries once on a serialization failure without the first attempt's events", async () => {
