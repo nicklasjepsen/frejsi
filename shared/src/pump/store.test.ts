@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 
+import type { EmitFn } from "../events/emit";
 import { MemoryEventSink } from "../events/memory";
 import { createLogger } from "../log";
 import {
@@ -9,8 +10,10 @@ import {
   PUMP_TX_TIMEOUT_MS,
   pumpMealData,
   splitByDay,
+  writePumpStatus,
   type PumpDb,
   type PumpTx,
+  type StatusTx,
 } from "./store";
 
 const now = new Date("2026-10-15T18:00:00.000Z");
@@ -190,5 +193,58 @@ describe("splitByDay", () => {
 
   it("gives nothing for nothing", () => {
     expect(splitByDay([])).toEqual([]);
+  });
+});
+
+describe("writePumpStatus", () => {
+  /** One space row; `updateMany` applies only when every `where` field still matches it. */
+  function statusTx(row: { pumpStatus: string; pumpFailures: number }) {
+    const emitted: string[] = [];
+    const tx = {
+      space: {
+        updateMany: (args: { where: Record<string, unknown>; data: Record<string, unknown> }) => {
+          const { id: _id, ...conditions } = args.where;
+          const fits = Object.entries(conditions).every(
+            ([key, value]) => row[key as keyof typeof row] === value,
+          );
+          if (fits) Object.assign(row, args.data);
+          return Promise.resolve({ count: fits ? 1 : 0 });
+        },
+      },
+    } as unknown as StatusTx;
+    const emit = ((_spaceId: string, type: string) => {
+      emitted.push(type);
+      return Promise.resolve({});
+    }) as unknown as EmitFn;
+    return { tx, emit, emitted, row };
+  }
+
+  it("flips to disconnected and emits pump.status when the row is as the failure saw it", async () => {
+    const h = statusTx({ pumpStatus: "connected", pumpFailures: 3 });
+    const changed = await writePumpStatus(h.tx, h.emit, {
+      spaceId: "s1",
+      from: "connected",
+      to: "disconnected",
+      failures: 3,
+      since: now,
+    });
+    expect(changed).toBe(true);
+    expect(h.row.pumpStatus).toBe("disconnected");
+    expect(h.emitted).toEqual(["pump.status"]);
+  });
+
+  it("leaves a source an overlapping success just reset, and tells no one", async () => {
+    // A failing cycle counted to three; a successful one reset the counter before it could flip.
+    const h = statusTx({ pumpStatus: "connected", pumpFailures: 0 });
+    const changed = await writePumpStatus(h.tx, h.emit, {
+      spaceId: "s1",
+      from: "connected",
+      to: "disconnected",
+      failures: 3,
+      since: now,
+    });
+    expect(changed).toBe(false);
+    expect(h.row.pumpStatus).toBe("connected");
+    expect(h.emitted).toEqual([]);
   });
 });

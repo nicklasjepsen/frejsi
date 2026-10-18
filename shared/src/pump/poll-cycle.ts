@@ -358,6 +358,8 @@ async function markFailed(space: PumpSpaceRow, deps: Resolved): Promise<SourceSt
         spaceId: space.id,
         from: row.pumpStatus,
         to: "disconnected",
+        // A success that reset the counter after this increment is fresher and stays.
+        failures: row.pumpFailures,
         since: deps.now(),
       }),
     );
