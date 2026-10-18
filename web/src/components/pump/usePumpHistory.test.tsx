@@ -6,7 +6,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { FeedEventType } from "@/lib/live/live-feed";
 
-import { PUMP_REFRESH_ON, usePumpHistory } from "./usePumpHistory";
+import { PUMP_RECHECK_MS, PUMP_REFRESH_ON, usePumpHistory } from "./usePumpHistory";
 
 const FROM = "2026-10-14T22:00:00.000Z";
 const TO = "2026-10-15T22:00:00.000Z";
@@ -159,5 +159,88 @@ describe("usePumpHistory (v0.7.0 plan §4, §6)", () => {
       handlers.get("pump.imported")?.();
     });
     await ready();
+  });
+
+  describe("recovering without an event", () => {
+    const failing = () => Response.json({ error: { code: "internal" } }, { status: 500 });
+    const settle = () =>
+      act(async () => {
+        await vi.advanceTimersByTimeAsync(0);
+      });
+    const status = () => screen.getByTestId("probe").getAttribute("data-status");
+
+    beforeEach(() => {
+      vi.useFakeTimers({ now: new Date("2026-10-15T12:00:00.000Z") });
+    });
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    it("reads a failed first read again on the recheck, without waiting for a pump event", async () => {
+      answer = failing;
+      render(<Probe />);
+      await settle();
+      expect(status()).toBe("failed");
+      answer = () => Response.json(view);
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(PUMP_RECHECK_MS);
+      });
+      expect(status()).toBe("ready");
+      expect(screen.getByTestId("probe")).toHaveTextContent("b1:0.6,b2:2.4");
+      expect(calls).toHaveLength(2);
+    });
+
+    it("keeps trying while the read keeps failing", async () => {
+      answer = failing;
+      render(<Probe />);
+      await settle();
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(PUMP_RECHECK_MS);
+      });
+      expect(status()).toBe("failed");
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(PUMP_RECHECK_MS);
+      });
+      expect(calls).toHaveLength(3);
+    });
+
+    it("keeps the drawn boluses when a refresh after an event fails, and retries it", async () => {
+      render(<Probe />);
+      await settle();
+      expect(status()).toBe("ready");
+      answer = failing;
+      act(() => {
+        handlers.get("pump.imported")?.();
+      });
+      await settle();
+      expect(calls).toHaveLength(2);
+      expect(status()).toBe("ready");
+      expect(screen.getByTestId("probe")).toHaveTextContent("b1:0.6,b2:2.4");
+      answer = () => Response.json({ ...view, boluses: [view.boluses[0]] });
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(PUMP_RECHECK_MS);
+      });
+      expect(calls).toHaveLength(3);
+      expect(screen.getByTestId("probe")).toHaveTextContent("b1:0.6");
+      expect(screen.getByTestId("probe")).not.toHaveTextContent("b2");
+    });
+
+    it("does not read again on the recheck once a read has succeeded", async () => {
+      render(<Probe />);
+      await settle();
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(PUMP_RECHECK_MS * 3);
+      });
+      expect(calls).toHaveLength(1);
+    });
+
+    it("shows the failure, not the last window's boluses, when a new window's read fails", async () => {
+      const { rerender } = render(<Probe />);
+      await settle();
+      answer = failing;
+      rerender(<Probe from="2026-10-13T22:00:00.000Z" />);
+      await settle();
+      expect(status()).toBe("failed");
+    });
   });
 });
