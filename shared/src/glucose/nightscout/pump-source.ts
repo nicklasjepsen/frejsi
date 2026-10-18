@@ -76,9 +76,9 @@ export class NightscoutPumpSource implements PumpSource {
    * Boluses recorded at or after `since`, oldest first, one per `pump_event_id`. Nightscout answers
    * newest first; while a page comes back full the next one asks at or below the oldest time seen
    * (`$lte`, so a record sharing that time beyond the page is not skipped) and the records already
-   * seen are dropped, at most five pages. A full page with nothing new ends the paging: every
-   * record left shares one time and the cursor cannot move. A record that cannot be read is
-   * dropped and counted in one `pump.dropped` line.
+   * seen are dropped, at most five pages. A full page whose oldest time is the cursor's own ends
+   * the paging: every record on it shares that time and the cursor cannot move. A record that
+   * cannot be read is dropped and counted in one `pump.dropped` line.
    */
   async fetchBolusesSince(since: Date): Promise<PumpBolus[]> {
     const count = pageCountFor(since, this.now());
@@ -94,14 +94,12 @@ export class NightscoutPumpSource implements PumpSource {
       if (atOrBelow !== undefined) query.set("find[created_at][$lte]", atOrBelow);
       const page = await this.readPage(query, since);
       dropped += page.dropped;
-      let fresh = 0;
       for (const bolus of page.boluses) {
-        if (bySourceId.has(bolus.sourceId)) continue;
-        bySourceId.set(bolus.sourceId, bolus);
-        fresh += 1;
+        if (!bySourceId.has(bolus.sourceId)) bySourceId.set(bolus.sourceId, bolus);
       }
       if (page.rows < count || page.oldest === undefined) break;
-      if (atOrBelow !== undefined && fresh === 0) break;
+      // Every record of a full page at the cursor's own time: asking again would return it again.
+      if (atOrBelow !== undefined && Date.parse(page.oldest) === Date.parse(atOrBelow)) break;
       if (index === MAX_PAGES - 1) {
         // A guard against a runaway answer, not a cursor: records older than the fifth page are
         // not read, now or later. Five pages hold far more than a 14-day window of boluses.
