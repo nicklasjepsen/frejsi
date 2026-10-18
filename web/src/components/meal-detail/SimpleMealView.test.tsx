@@ -43,7 +43,7 @@ vi.mock("next/navigation", () => ({
 }));
 
 import { SimpleMealView } from "./SimpleMealView";
-import { MEAL_TS, curveView, mealApi, shift, type MealApi } from "./test-support";
+import { MEAL_TS, curveView, mealApi, mealView, shift, type MealApi } from "./test-support";
 
 let api: MealApi;
 
@@ -130,5 +130,32 @@ describe("Måltid · simpleMode (Maaltid-Simpel, the non-AI part)", () => {
       live.emit("meal.deleted", "m1");
     });
     expect(navigation.push).toHaveBeenCalledWith("/da/now");
+  });
+});
+
+describe("nothing from the pump in simpleMode (v0.7.0 plan §9)", () => {
+  it("shows no units, pump carbs or badge, even when given a view that has them", async () => {
+    api.meal = mealView({
+      bolusTs: shift(MEAL_TS, -2),
+      bolusUnits: 2.4,
+      pumpCarbs: 45,
+      pumpBolusId: "b1",
+      fromPump: true,
+    });
+    mount();
+    expect(await screen.findByText("Du spiste kl. 12:00")).toBeInTheDocument();
+    const view = screen.getByTestId("simple-meal");
+    for (const shown of [
+      /2,4/,
+      /\d E\b/,
+      /Pumpen/,
+      /45 g/,
+      /Fra pumpen/,
+      /ikke tjekket/,
+      /Bolus/,
+      /11:58/,
+    ])
+      expect(view.textContent).not.toMatch(shown);
+    expect(screen.queryByRole("button", { name: "Det passer" })).toBeNull();
   });
 });
