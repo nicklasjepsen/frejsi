@@ -5,6 +5,7 @@ import { MemoryPhotoStore } from "@frejsi/shared/photos/memory";
 import { FakeLiveDb, captureLog } from "@/lib/live/test-support";
 import type { MealRecord, MealRepository } from "@/lib/meals/repository";
 import { configureMeals } from "@/lib/meals/server";
+import { bolus, mealRow, writerHarness } from "@/lib/meals/test-support";
 import { POST } from "./route";
 import { GET, PATCH, DELETE } from "./[mealId]/route";
 import { PUT, DELETE as DELETE_PHOTO } from "./[mealId]/photo/route";
@@ -268,5 +269,115 @@ describe("meal routes", () => {
     expect((await DELETE_PHOTO(request("DELETE"), ctx(id))).status).toBe(503);
     expect(events).toEqual(["meal.created"]);
     expect(logs.all()).not.toMatch(/Fictional|toast|data:image/);
+  });
+});
+
+describe("pump meals on the meal routes (v0.7.0 plan §6)", () => {
+  const t = (hhmm: string) => new Date(`2026-10-15T${hhmm}:00.000Z`);
+  function pumpSetup() {
+    auth.addMember("owner", "s1", "owner");
+    auth.addMember("child", "s1", "carer");
+    const child = auth.users.find((user) => user.id === "child");
+    if (child) child.simpleMode = true;
+    const h = writerHarness();
+    h.boluses.set("b1", bolus({ id: "b1", ts: t("11:50"), units: 2.4, carbs: 45 }));
+    h.boluses.set("b2", bolus({ id: "b2", ts: t("07:55"), units: 1.5, carbs: 20 }));
+    h.rows.set(
+      "pm1",
+      mealRow({
+        id: "pm1",
+        ts: t("11:50"),
+        totalCarbs: 45,
+        source: "pump",
+        pumpBolusId: "b1",
+        bolusTs: t("11:50"),
+      }),
+    );
+    h.rows.set(
+      "breakfast",
+      mealRow({ id: "breakfast", ts: t("08:00"), pumpBolusId: "b2", bolusTs: t("07:55") }),
+    );
+    h.rows.set("tapped", mealRow({ id: "tapped", ts: t("18:00"), bolusTs: t("17:50") }));
+    configureMeals({ sessionDb: auth.db, repo: h.repo, photos, write: h.write, now: () => clock });
+    return h;
+  }
+  const body = async (response: Response) => (await response.json()) as Record<string, unknown>;
+
+  it.each(["owner", "carer"])(
+    "%s adopts a pump meal with 'Det passer': source cleared, meal.updated",
+    async (user) => {
+      const h = pumpSetup();
+      expect(await body(await GET(request("GET", user), ctx("pm1")))).toMatchObject({
+        fromPump: true,
+        bolusUnits: 2.4,
+        pumpCarbs: 45,
+      });
+      const adopted = await PATCH(request("PATCH", user, { adopt: true }), ctx("pm1"));
+      expect(adopted.status).toBe(200);
+      const view = await body(adopted);
+      expect(view).not.toHaveProperty("fromPump");
+      expect(view).toMatchObject({ pumpBolusId: "b1", bolusUnits: 2.4, pumpCarbs: 45 });
+      expect(h.rows.get("pm1")?.source).toBeNull();
+      expect(h.events.map((e) => e.type)).toEqual(["meal.updated"]);
+      expect(h.sink.published.map((p) => p.group)).toEqual(["space-s1"]);
+    },
+  );
+  it("clears source on any other edit of a pump meal, and adopt on an ordinary meal changes nothing", async () => {
+    const h = pumpSetup();
+    const edited = await PATCH(
+      request("PATCH", "carer", { items: [{ name: "Fictional pasta", carbs: 50 }] }),
+      ctx("pm1"),
+    );
+    expect(edited.status).toBe(200);
+    expect(await body(edited)).not.toHaveProperty("fromPump");
+    expect(h.rows.get("pm1")).toMatchObject({ source: null, totalCarbs: 50 });
+    expect(h.events.map((e) => e.type)).toEqual(["meal.updated"]);
+    const before = structuredClone(h.rows.get("breakfast"));
+    const noop = await PATCH(request("PATCH", "carer", { adopt: true }), ctx("breakfast"));
+    expect(noop.status).toBe(200);
+    expect(await body(noop)).toMatchObject({ id: "breakfast", pumpBolusId: "b2" });
+    expect(h.rows.get("breakfast")).toEqual(before);
+    expect(h.events).toHaveLength(1);
+    expect(h.isolation).toHaveLength(1);
+  });
+  it("sets mealDismissed when an owner or carer deletes a pump meal", async () => {
+    const h = pumpSetup();
+    expect((await DELETE(request("DELETE", "owner"), ctx("pm1"))).status).toBe(204);
+    expect(h.boluses.get("b1")?.mealDismissed).toBe(true);
+    expect(h.events.map((e) => e.type)).toEqual(["meal.deleted"]);
+    expect((await DELETE(request("DELETE", "viewer"), ctx("breakfast"))).status).toBe(403);
+    expect(h.boluses.get("b2")?.mealDismissed).toBe(false);
+  });
+  it("answers 404 to simpleMode for a pump meal and shows it no pump field on any meal", async () => {
+    const h = pumpSetup();
+    for (const [handler, method, payload] of [
+      [GET, "GET", undefined],
+      [PATCH, "PATCH", { adopt: true }],
+      [PATCH, "PATCH", { note: "Fictional" }],
+      [DELETE, "DELETE", undefined],
+    ] as const) {
+      const response = await handler(request(method, "child", payload), ctx("pm1"));
+      expect(response.status, method).toBe(404);
+      expect(await body(response)).toHaveProperty("error.code", "not-found");
+    }
+    expect(h.rows.get("pm1")?.source).toBe("pump");
+    expect(h.boluses.get("b1")?.mealDismissed).toBe(false);
+    expect(h.events).toEqual([]);
+    const linked = await body(await GET(request("GET", "child"), ctx("breakfast")));
+    for (const key of ["bolusUnits", "pumpCarbs", "pumpBolusId", "fromPump", "bolusTs"])
+      expect(linked, key).not.toHaveProperty(key);
+    // A bolus time tapped before v0.7.0 is not from the pump and stays as it was.
+    expect(await body(await GET(request("GET", "child"), ctx("tapped")))).toHaveProperty(
+      "bolusTs",
+      t("17:50").toISOString(),
+    );
+    // The same meal for a carer outside simpleMode carries the pump record.
+    expect(await body(await GET(request("GET", "carer"), ctx("breakfast")))).toMatchObject({
+      bolusTs: t("07:55").toISOString(),
+      bolusUnits: 1.5,
+      pumpCarbs: 20,
+      pumpBolusId: "b2",
+    });
+    expect(logs.all()).not.toMatch(/2\.4|1\.5|Fictional/);
   });
 });

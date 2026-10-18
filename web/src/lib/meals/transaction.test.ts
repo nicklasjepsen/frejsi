@@ -140,7 +140,7 @@ describe("atomic meal writes and events", () => {
               test.deps,
             )
           : operation === "delete"
-            ? deleteMeal("s1", meal.id, test.deps)
+            ? deleteMeal("s1", meal.id, session, test.deps)
             : setMealPhoto(
                 "s1",
                 meal.id,
@@ -174,7 +174,7 @@ describe("atomic meal writes and events", () => {
     const paused = test.pauseNext();
     const replacing = setMealPhoto("s1", meal.id, session, png, test.deps);
     await paused.ready;
-    const deleting = deleteMeal("s1", meal.id, test.deps);
+    const deleting = deleteMeal("s1", meal.id, session, test.deps);
     paused.resume();
     await Promise.all([replacing, deleting]);
     expect(test.photos.photos.size).toBe(0);
