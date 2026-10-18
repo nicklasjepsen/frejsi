@@ -400,6 +400,9 @@ function TapLayer({
       : t("mealAt", { time });
   const left = (x: number) => `${(x / width) * 100}%`;
   const targets = symptomTargets(symptoms?.marks ?? [], width, pxPerUnit);
+  // Pump markers close together share the space between them the same way, so a tap on one never
+  // opens its neighbour.
+  const pumpBoxes = symptomTargets(pumpTargets, width, pxPerUnit);
   return (
     <div className={styles.tapLayer} ref={layer}>
       {svg}
@@ -435,12 +438,16 @@ function TapLayer({
           }}
         />
       ))}
-      {pumpTargets.map((target) => (
+      {pumpTargets.map((target, index) => (
         <button
           key={target.id}
           type="button"
           className={styles.pumpTap}
-          style={{ left: left(target.x), top: `calc(${baseline} - 30px)` }}
+          style={{
+            left: `${pumpBoxes[index]?.left ?? 0}px`,
+            width: `${pumpBoxes[index]?.width ?? TAP_WIDTH}px`,
+            top: `calc(${baseline} - 30px)`,
+          }}
           aria-label={target.name}
           aria-expanded={openPump === target.id}
           aria-controls={openPump === target.id ? popoverId : undefined}
@@ -459,7 +466,7 @@ function TapLayer({
           id={popoverId}
           role="status"
           className={styles.pumpPopover}
-          style={{ left: left(open.x), top: `calc(${baseline} - 34px)` }}
+          style={{ left: `${open.x * pxPerUnit}px`, top: `calc(${baseline} - 34px)` }}
           data-anchor={open.x < width * 0.2 ? "start" : open.x > width * 0.8 ? "end" : "middle"}
           data-testid="pump-popover"
         >

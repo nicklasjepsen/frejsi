@@ -118,6 +118,25 @@ describe("pump markers on the day curve (v0.7.0 plan §9)", () => {
     expect(screen.queryByTestId("pump-popover")).toBeNull();
   });
 
+  it("gives two boluses close together a target each, splitting the space between them", () => {
+    const close: PumpBolusView[] = [
+      { id: "a1", ts: "2026-10-15T10:00:00.000Z", units: 0.2, kind: "automatic" },
+      { id: "a2", ts: "2026-10-15T10:05:00.000Z", units: 0.3, kind: "automatic" },
+    ];
+    mount(<GlucoseChart {...dayProps} size="phone" pump={{ boluses: close }} />);
+    const [first, second] = screen.getAllByTestId("pump-tap");
+    const box = (el: HTMLElement | undefined) => ({
+      left: parseFloat(el?.style.left ?? "0"),
+      width: parseFloat(el?.style.width ?? "0"),
+    });
+    const a = box(first);
+    const b = box(second);
+    // Five minutes apart on a 9-hour phone curve is under 3 px: neither covers the other.
+    expect(a.left + a.width).toBeLessThanOrEqual(b.left + 0.01);
+    expect(a.width).toBeGreaterThan(0);
+    expect(b.width).toBeGreaterThan(0);
+  });
+
   it("closes the popover on a tap anywhere else", () => {
     mount(<GlucoseChart {...dayProps} size="phone" pump={{ boluses }} />);
     fireEvent.click(screen.getByRole("button", { name: "Bolus 11:58 · 2,4 E" }));

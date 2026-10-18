@@ -268,17 +268,16 @@
   border-radius: 50%;
 }
 
-/* The pump markers' 44 px tap targets, centred on the marker at the baseline, and the popover that
-   a tap opens above it: "Bolus 11:58 · 2,4 E" (v0.7.0 plan §9). */
+/* The pump markers' 44 px tap targets on the baseline, and the popover a tap opens above the
+   marker: "Bolus 11:58 · 2,4 E" (v0.7.0 plan §9). `left` and `width` are set inline so neighbours
+   share the space between them, as the symptom targets do. */
 .pumpTap {
   position: absolute;
-  width: 44px;
   height: 44px;
   padding: 0;
   border: 0;
   background: transparent;
   cursor: pointer;
-  transform: translateX(-50%);
 }
 
 .pumpTap:focus-visible {
