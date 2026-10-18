@@ -90,13 +90,14 @@ export function CurveCard({
   );
   const symptoms = symptomRange.status === "ready" ? symptomRange.symptoms : [];
   // The window's pump record: the meal's own bolus with its units, and the automatic boluses in
-  // the window as hollow markers (v0.7.0 plan §9). Read for a meal the pump record has reached
-  // (it carries its bolus link), so a space without a pump never asks on every meal it opens.
+  // the window as hollow markers (v0.7.0 plan §9). Read for every meal's window, linked or not, so
+  // Control-IQ's own boluses show on every meal curve; the hook itself never reads for a viewer or
+  // a simpleMode session, and the route refuses both.
   const pumpHistory = usePumpHistory(spaceId ?? "", view.window.from, view.window.to, {
     subscribe,
     role,
     simpleMode,
-    enabled: spaceId !== undefined && view.meal.pumpBolusId !== undefined,
+    enabled: spaceId !== undefined,
   });
   const pump =
     pumpHistory.status === "ready"
