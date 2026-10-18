@@ -7,6 +7,7 @@ import {
   UserSettings,
   prisma,
   type PrismaClient,
+  type PumpSettingsView,
   type SessionContext,
   type SpaceSettings,
 } from "@frejsi/shared";
@@ -16,6 +17,10 @@ import {
   toSourceView,
   toSpaceSettings,
 } from "@/app/api/spaces/[spaceId]/settings/space-settings";
+import {
+  latestPumpStatusSince,
+  toPumpSettingsView,
+} from "@/app/api/spaces/[spaceId]/pump-source/pump-settings";
 import type { ShellSpace } from "@/components/shell/load-shell";
 
 import type { SourceView } from "./contracts";
@@ -38,6 +43,11 @@ export interface SettingsData {
   /** Null for a viewer: the space section is not theirs (plan task 9, §2). */
   space: SpaceSettings | null;
   source: SourceView | null;
+  /**
+   * The pump record's card (v0.7.0 plan task 3). Null, or absent, for a viewer and for a
+   * simpleMode session: the pump record is for owners and carers outside simpleMode only.
+   */
+  pump?: PumpSettingsView | null;
   me: SettingsPerson;
   /** Owners get every member oldest first; everyone else only themselves. */
   people: SettingsPerson[];
@@ -80,11 +90,14 @@ export async function loadSettingsData(
 
   let space: SpaceSettings | null = null;
   let source: SourceView | null = null;
+  let pump: PumpSettingsView | null = null;
   if (role !== "viewer") {
     const row = await db.space.findUnique({ where: { id: spaceId } });
     if (!row) throw new HttpError(404, "not-found");
     space = toSpaceSettings(row);
     source = toSourceView(row, await latestSourceStatusSince(db, spaceId));
+    if (!session.simpleMode)
+      pump = toPumpSettingsView(row, await latestPumpStatusSince(db, spaceId));
   }
 
   return {
@@ -95,6 +108,7 @@ export async function loadSettingsData(
     role,
     space,
     source,
+    pump,
     me,
     people,
   };

@@ -24,6 +24,19 @@ export const PORT = Number(process.env.E2E_PORT ?? 3100);
 export const BLOB_PORT = PORT + 1;
 export const ORIGIN = `http://localhost:${String(PORT)}`;
 
+/**
+ * The local `source-connect` stub (v0.7.0 plan task 3), started by the global setup. The app under
+ * test sends every connect here and never to a real function or a real Nightscout. Set on import:
+ * `playwright.config.ts` imports this file before it launches the web server, and the server's
+ * environment is `process.env` plus the config's own, so the stub's address always wins over a
+ * value in the developer's shell. The key is fictional; the stub checks it.
+ */
+export const SOURCE_CONNECT_PORT = PORT + 2;
+export const SOURCE_CONNECT_STUB = `http://127.0.0.1:${String(SOURCE_CONNECT_PORT)}`;
+export const SOURCE_CONNECT_KEY = "e2e-fictional-function-key";
+process.env.SOURCE_CONNECT_URL = `${SOURCE_CONNECT_STUB}/api/source-connect`;
+process.env.SOURCE_CONNECT_KEY = SOURCE_CONNECT_KEY;
+
 /** The release sets the tag as `TAG`; the build check compares `/api/health` with it. */
 export function expectedVersion(env = process.env): string {
   return env.NEXT_PUBLIC_APP_VERSION ?? env.TAG ?? "e2e";
