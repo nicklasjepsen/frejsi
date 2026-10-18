@@ -78,12 +78,12 @@ normal day plus three hours (a first run's 14 days, or a catch-up after a long o
 **Paging.** Nightscout answers newest first. While a page comes back full, the next one adds
 `find[created_at][$lte]=<oldest created_at seen>` and drops the `pump_event_id`s already read, so a
 record that shares the boundary's time but did not fit on the full page is still read. A full page
-with nothing new ends the paging (every record left has one time). At most five pages: when the
-fifth is full too, the adapter stops and logs `pump.page-cap` with the count. The cap is a guard
-against a runaway answer, not a cursor: records older than the fifth page are not read, by this
-cycle or a later one. Five pages are 1000 records on a normal window and 5000 on a first run,
-where tconnectsync writes a few dozen boluses a day; a `pump.page-cap` line means the site holds
-something other than one pump's record, and is worth a look.
+whose oldest time is the cursor's own ends the paging (the cursor cannot move). At most five
+pages: when the fifth is full too, the adapter stops and logs `pump.page-cap` with the count. The
+cap is a guard against a runaway answer, not a cursor: records older than the fifth page are not
+read, by this cycle or a later one. Five pages are 1000 records on a normal window and 5000 on a
+first run, where tconnectsync writes a few dozen boluses a day; a `pump.page-cap` line means the
+site holds something other than one pump's record, and is worth a look.
 
 **The window** is the pump cycle's: `since = max(now − 14 d, min(now − 24 h, lastPumpAt − 3 h))`.
 Tandem's upload lags by up to an hour and can arrive in a burst; a full day every cycle plus three

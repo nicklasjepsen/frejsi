@@ -301,7 +301,31 @@ describe("NightscoutPumpSource.fetchBolusesSince", () => {
     expect(boluses).toHaveLength(PAGE_COUNT + 2);
   });
 
-  it("stops paging when a full page holds only records already seen", async () => {
+  it("keeps paging past a full page of unreadable records while the time still moves", async () => {
+    const newest = new Date(now.getTime() - HOUR);
+    const first = page(PAGE_COUNT, newest, 1);
+    // The second page is full of records that cannot be read, a minute apart: nothing new, but
+    // the cursor moves, so the valid records below them are still read.
+    const unreadable = (from: Date) =>
+      JSON.stringify(
+        (JSON.parse(page(PAGE_COUNT, from, 5000)) as Record<string, unknown>[]).map((row) => ({
+          ...row,
+          insulin: "1",
+        })),
+      );
+    const h = pump((call, index) => {
+      const lte = Date.parse(call.url.searchParams.get("find[created_at][$lte]") ?? "");
+      if (index === 0) return { body: first };
+      if (index === 1) return { body: unreadable(new Date(lte - 60_000)) };
+      return { body: page(2, new Date(lte - 60_000), 9000) };
+    });
+    const boluses = await h.source.fetchBolusesSince(new Date(now.getTime() - DAY));
+    expect(h.calls).toHaveLength(3);
+    expect(boluses.map((b) => b.sourceId)).toEqual(expect.arrayContaining(["9000", "9001"]));
+    expect(boluses).toHaveLength(PAGE_COUNT + 2);
+  });
+
+  it("stops paging when a full page sits at the cursor's own time", async () => {
     const newest = new Date(now.getTime() - HOUR);
     // Every record at one time: $lte cannot move past them, so the same page comes back.
     const same = JSON.stringify(
