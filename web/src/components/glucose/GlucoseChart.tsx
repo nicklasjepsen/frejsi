@@ -5,7 +5,7 @@ import { formatUnits } from "@frejsi/shared/pump/units";
 import type { MealSymbol } from "@frejsi/shared/schemas/food";
 import type { PumpBolusKind } from "@frejsi/shared/schemas/pump";
 import { useLocale, useTranslations } from "next-intl";
-import { useEffect, useId, useRef, useState, type ReactNode } from "react";
+import { useEffect, useId, useState, type ReactNode } from "react";
 
 import { FoodSymbol } from "@/components/food/FoodSymbol";
 import { resolveLocale, type AppLocale } from "@/lib/i18n/routing";
@@ -352,7 +352,9 @@ function TapLayer({
 }) {
   const t = useTranslations("chart");
   const categories = useTranslations("foodCategory");
-  const layer = useRef<HTMLDivElement>(null);
+  // A callback ref: the layer mounts only once there is a target, which may be after the curve
+  // (the pump record and the symptoms arrive later), and the measurement must follow it.
+  const [layer, setLayer] = useState<HTMLDivElement | null>(null);
   const popoverId = useId();
   const [openPump, setOpenPump] = useState<string | null>(null);
   // A tap anywhere outside the pump targets closes the popover.
@@ -371,7 +373,7 @@ function TapLayer({
   // first layout (and on the server) the SVG's own units stand in for pixels.
   const [pxPerUnit, setPxPerUnit] = useState(1);
   useEffect(() => {
-    const node = layer.current;
+    const node = layer;
     if (!node || typeof ResizeObserver === "undefined") return;
     const measure = () => {
       const rendered = node.getBoundingClientRect().width;
@@ -383,7 +385,7 @@ function TapLayer({
     return () => {
       observer.disconnect();
     };
-  }, [width]);
+  }, [layer, width]);
   const pumpTargets = pump?.targets ?? [];
   if (
     (!meals || meals.marks.length === 0) &&
@@ -399,12 +401,15 @@ function TapLayer({
       ? t("mealWithCategory", { category: categories(`names.${symbol}`), time })
       : t("mealAt", { time });
   const left = (x: number) => `${(x / width) * 100}%`;
-  const targets = symptomTargets(symptoms?.marks ?? [], width, pxPerUnit);
-  // Pump markers close together share the space between them the same way, so a tap on one never
-  // opens its neighbour.
-  const pumpBoxes = symptomTargets(pumpTargets, width, pxPerUnit);
+  // Symptom diamonds and pump markers both sit on the baseline: their targets are laid out
+  // together, so two close together share the space between them and a tap on one never opens
+  // its neighbour, whichever kind it is.
+  const symptomMarks = symptoms?.marks ?? [];
+  const boxes = symptomTargets([...symptomMarks, ...pumpTargets], width, pxPerUnit);
+  const targets = boxes.slice(0, symptomMarks.length);
+  const pumpBoxes = boxes.slice(symptomMarks.length);
   return (
-    <div className={styles.tapLayer} ref={layer}>
+    <div className={styles.tapLayer} ref={setLayer}>
       {svg}
       {meals?.marks.map((meal) => (
         <button
