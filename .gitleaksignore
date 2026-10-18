@@ -7,3 +7,8 @@
 # Key Vault Secrets Officer built-in role definition ID (public, in the ARM reference); the
 # constant was named KV_SECRETS_OFFICER, and "secret" next to a GUID matches generic-api-key.
 infra/test/bicep.test.mjs:generic-api-key:128
+
+# The SHA-1 hex of the fictional string "fixture-api-secret", pinned in the Nightscout pump-source
+# test so the test does not compute a SHA-1 itself (CodeQL flags that). Public, derived from a
+# made-up value.
+shared/src/glucose/nightscout/pump-source.test.ts:generic-api-key:21
