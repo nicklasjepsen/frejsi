@@ -1,8 +1,10 @@
 // The geometry of the glucose curve (tokens.json#chart): time → x across the plot, mmol → y, the
 // target band, the curve split at gaps, the end dot and the time ticks. Pure, so the sparkline
 // and the day curve are tested as numbers.
+import { formatUnits } from "@frejsi/shared/pump/units";
 import type { MealSymbol } from "@frejsi/shared/schemas/food";
 import type { GlucoseUnit, Reading } from "@frejsi/shared/schemas/index";
+import type { PumpBolusKind, PumpBolusView } from "@frejsi/shared/schemas/pump";
 
 import type { AppLocale } from "@/lib/i18n/routing";
 import { formatClock } from "@/lib/i18n/time";
@@ -32,6 +34,144 @@ export interface ChartMeal {
   ts: string;
   bolusTs?: string;
   symbol?: MealSymbol;
+  /** The pump bolus this meal's `bolusTs` came from: drawn once, by the pump marker (v0.7.0). */
+  pumpBolusId?: string;
+}
+
+/**
+ * The pump record for a curve (v0.7.0 plan §9): what the pump delivered, drawn as history with its
+ * time and units, and how far the record reaches (`lastPumpAt`), so the upload's lag is never read
+ * as "no bolus". Owners and carers outside simpleMode only; the screens never pass it otherwise.
+ */
+export interface ChartPump {
+  boluses: readonly PumpBolusView[];
+  reach?: string | undefined;
+}
+
+/**
+ * A pump bolus on a curve: standard and extended as the terracotta triangle (`triangle`),
+ * automatic and other as the 7 px hollow marker in the text colour (`hollow`,
+ * tokens.json#chart.autoBolusMarker). `label` is the units above a manual triangle where the
+ * curve has room for it.
+ */
+export interface ChartPumpMark {
+  id: string;
+  ts: string;
+  kind: PumpBolusKind;
+  shape: "triangle" | "hollow";
+  units: number;
+  x: number;
+  path: string;
+  clock: string;
+  label?: { text: string; y: number };
+}
+
+/** The reach tick (tokens.json#chart.pumpReach): where the pump record ends, as a time. */
+export interface ChartPumpReach {
+  x: number;
+  clock: string;
+}
+
+/** The units label's size above a manual triangle (v0.7.0 plan §9). */
+export const PUMP_LABEL_SIZE = 11;
+/** The label's baseline sits this far above the plot's baseline, clear of the triangle's apex. */
+const PUMP_LABEL_LIFT = 11;
+
+/** Only these attach to a meal; they are the meal colour's triangle on the curve. */
+export function isManualBolus(kind: PumpBolusKind): boolean {
+  return kind === "standard" || kind === "extended";
+}
+
+/** The 7 px hollow marker (tokens.json#chart.autoBolusMarker): apex up, base on the baseline. */
+function hollowPath(x: number, baseline: number): string {
+  return `M${x} ${round(baseline - 6)} L${round(x + 3.5)} ${round(baseline + 1)} H${round(x - 3.5)} Z`;
+}
+
+function pumpMark(
+  bolus: PumpBolusView,
+  x: number,
+  baseline: number,
+  timeZone: string,
+  label: { locale: AppLocale } | null,
+): ChartPumpMark {
+  const manual = isManualBolus(bolus.kind);
+  return {
+    id: bolus.id,
+    ts: bolus.ts,
+    kind: bolus.kind,
+    shape: manual ? "triangle" : "hollow",
+    units: bolus.units,
+    x,
+    path: manual ? trianglePath(x, baseline) : hollowPath(x, baseline),
+    clock: formatClock(new Date(bolus.ts), timeZone),
+    ...(manual && label
+      ? {
+          label: {
+            text: formatUnits(bolus.units, label.locale),
+            y: round(baseline - PUMP_LABEL_LIFT),
+          },
+        }
+      : {}),
+  };
+}
+
+/** The newest reading's time among those the curve draws, or null. */
+function newestMs(readings: readonly { ts: string }[]): number | null {
+  let newest: number | null = null;
+  for (const r of readings) {
+    const t = new Date(r.ts).getTime();
+    if (newest === null || t > newest) newest = t;
+  }
+  return newest;
+}
+
+/** The reach tick when the record ends inside the window and before the newest reading drawn. */
+function pumpReach(
+  reach: string | undefined,
+  inside: (ts: string) => boolean,
+  x: (ts: string) => number,
+  newest: number | null,
+  timeZone: string,
+): ChartPumpReach | null {
+  if (reach === undefined || newest === null || !inside(reach)) return null;
+  if (new Date(reach).getTime() >= newest) return null;
+  return { x: x(reach), clock: formatClock(new Date(reach), timeZone) };
+}
+
+/** The ids of the pump boluses in the list: a meal linked to one is drawn by the pump marker. */
+function pumpIds(pump: ChartPump | undefined): Set<string> {
+  return new Set((pump?.boluses ?? []).map((b) => b.id));
+}
+
+/**
+ * Which bolus markers a day curve or sparkline draws, for its legend: the meal's own triangle
+ * (`bolus`, "Bolus givet"), a manual pump triangle (`pumpBolus`, "Bolus (pumpe)") and a hollow
+ * marker (`autoBolus`, "Automatisk bolus"). The same rules as `chartGeometry`.
+ */
+export function chartMarkers(input: {
+  meals?: readonly ChartMeal[] | undefined;
+  pump?: ChartPump | undefined;
+  from: Date;
+  to: Date;
+}): { bolus: boolean; pumpBolus: boolean; autoBolus: boolean } {
+  const fromMs = input.from.getTime();
+  const toMs = input.to.getTime();
+  const inside = (ts: string) => {
+    const t = new Date(ts).getTime();
+    return t >= fromMs && t <= toMs;
+  };
+  const ids = pumpIds(input.pump);
+  const drawn = (input.pump?.boluses ?? []).filter((b) => inside(b.ts));
+  return {
+    bolus: (input.meals ?? []).some(
+      (meal) =>
+        meal.bolusTs !== undefined &&
+        inside(meal.bolusTs) &&
+        !(meal.pumpBolusId !== undefined && ids.has(meal.pumpBolusId)),
+    ),
+    pumpBolus: drawn.some((b) => isManualBolus(b.kind)),
+    autoBolus: drawn.some((b) => !isManualBolus(b.kind)),
+  };
 }
 
 /** The symbol's size at the marker: 12 px at the phone sizes, 16 px on desktop (plan §7). */
@@ -98,6 +238,8 @@ export interface ChartInput {
   meals?: readonly ChartMeal[] | undefined;
   /** Symptom diamonds on the time axis (plan §5). */
   symptoms?: readonly ChartSymptom[] | undefined;
+  /** The pump record (v0.7.0 plan §9); the sparkline and the day curve draw it. */
+  pump?: ChartPump | undefined;
 }
 
 export interface ChartGeometry {
@@ -125,6 +267,11 @@ export interface ChartGeometry {
   symbolSize: number;
   /** Symptom diamonds inside the window, centred on the baseline. */
   symptoms: ChartSymptomMark[];
+  /** Pump boluses inside the window, on the baseline (v0.7.0 plan §9). */
+  pumpMarks: ChartPumpMark[];
+  pumpLabelSize: number;
+  /** The reach tick, or null when the record is not behind the newest reading in view. */
+  reach: ChartPumpReach | null;
 }
 
 const round = (n: number) => Math.round(n * 10) / 10;
@@ -164,8 +311,11 @@ export function chartGeometry(input: ChartInput): ChartGeometry {
       ...(meal.symbol !== undefined ? { symbol: meal.symbol } : {}),
       lineTop: meal.symbol !== undefined ? round(markerTop + symbolSize / 2 + 2) : markerTop,
     }));
+  const linked = pumpIds(input.pump);
   const boluses = (input.meals ?? []).flatMap((meal) =>
-    meal.bolusTs !== undefined && inside(meal.bolusTs)
+    meal.bolusTs !== undefined &&
+    inside(meal.bolusTs) &&
+    !(meal.pumpBolusId !== undefined && linked.has(meal.pumpBolusId))
       ? [
           {
             mealId: meal.mealId,
@@ -179,6 +329,19 @@ export function chartGeometry(input: ChartInput): ChartGeometry {
 
   const last = inWindow.at(-1);
   const end = last ? { x: x(last.ts), y: y(last.mmol) } : null;
+  // Units above the manual triangles on the desktop day curve only; the phone opens a popover.
+  const labelled = input.variant === "day" && input.size !== "phone";
+  const pumpMarks = (input.pump?.boluses ?? [])
+    .filter((bolus) => inside(bolus.ts))
+    .map((bolus) =>
+      pumpMark(
+        bolus,
+        x(bolus.ts),
+        size.plotHeight,
+        input.timeZone,
+        labelled ? { locale: input.locale } : null,
+      ),
+    );
 
   return {
     width: size.width,
@@ -202,6 +365,9 @@ export function chartGeometry(input: ChartInput): ChartGeometry {
     markerTop,
     symbolSize,
     symptoms: symptomMarks(input.symptoms, inside, x, size.plotHeight),
+    pumpMarks,
+    pumpLabelSize: PUMP_LABEL_SIZE,
+    reach: pumpReach(input.pump?.reach, inside, x, newestMs(inWindow), input.timeZone),
   };
 }
 
@@ -293,6 +459,12 @@ export interface MealChartInput {
   readings: readonly Reading[];
   mealTs: string;
   bolusTs?: string;
+  /** The pump bolus the meal's `bolusTs` came from (v0.7.0): its units label the triangle. */
+  pumpBolusId?: string | undefined;
+  /** The meal's linked bolus units from the meal view, used while the pump list is not there. */
+  bolusUnits?: number | undefined;
+  /** The pump record: the automatic and other boluses in the window are hollow markers. */
+  pump?: ChartPump | undefined;
   /** The meal's food symbol, drawn above the plot on the meal line (plan §7). */
   symbol?: MealSymbol;
   /** Symptoms; those within the −1 h/+4 h window are drawn on the axis (plan §5). */
@@ -322,7 +494,18 @@ export interface MealChartGeometry {
   /** The symbol's box, its bottom at `plotTop` (clamped to the top edge on the phone). */
   symbol: { symbol: MealSymbol; x: number; y: number; size: number } | null;
   mealClock: string;
-  bolus: { x: number; path: string; clock: string } | null;
+  /** The meal's own bolus; with `units` and `label` when it came from the pump (v0.7.0). */
+  bolus: {
+    x: number;
+    path: string;
+    clock: string;
+    units?: number;
+    label?: { text: string; y: number };
+  } | null;
+  /** The hollow markers: automatic and other pump boluses in the window (v0.7.0 plan §9). */
+  pumpMarks: ChartPumpMark[];
+  pumpLabelSize: number;
+  reach: ChartPumpReach | null;
   /** Hours relative to the meal, −1 to +4; 0 is the meal time. */
   ticks: { hours: number; x: number; anchor: "start" | "middle" | "end" }[];
   axisY: number;
@@ -371,6 +554,12 @@ export function mealChartGeometry(input: MealChartInput): MealChartGeometry {
   const y = fixedY(size.plotTop, size.baseline);
   const readings = inMealWindow(input.mealTs, input.readings, input.now.getTime());
   const last = readings.at(-1);
+  const inside = (ts: string) => inMealWindowAt(input.mealTs, ts);
+  const own =
+    input.pumpBolusId === undefined
+      ? undefined
+      : input.pump?.boluses.find((bolus) => bolus.id === input.pumpBolusId);
+  const ownUnits = input.pumpBolusId === undefined ? undefined : (own?.units ?? input.bolusUnits);
   // A tap outside the −1 h/+4 h window is not drawn: the chart has no place for it.
   const bolusX =
     input.bolusTs !== undefined && inMealWindowAt(input.mealTs, input.bolusTs)
@@ -411,7 +600,21 @@ export function mealChartGeometry(input: MealChartInput): MealChartGeometry {
             x: bolusX,
             path: trianglePath(bolusX, size.baseline),
             clock: formatClock(new Date(input.bolusTs), input.timeZone),
+            ...(ownUnits !== undefined
+              ? {
+                  units: ownUnits,
+                  label: {
+                    text: formatUnits(ownUnits, input.locale),
+                    y: round(size.baseline - PUMP_LABEL_LIFT),
+                  },
+                }
+              : {}),
           },
+    pumpMarks: mealPumpBoluses(input.mealTs, input.pump, input.pumpBolusId).map((bolus) =>
+      pumpMark(bolus, x(bolus.ts), size.baseline, input.timeZone, null),
+    ),
+    pumpLabelSize: PUMP_LABEL_SIZE,
+    reach: pumpReach(input.pump?.reach, inside, x, newestMs(readings), input.timeZone),
     ticks: [-1, 0, 1, 2, 3, 4].map((hours) => ({
       hours,
       x: round(((hours + 1) / 5) * size.plotWidth),
@@ -426,6 +629,29 @@ export function mealChartGeometry(input: MealChartInput): MealChartGeometry {
       size.baseline,
     ),
   };
+}
+
+/**
+ * The pump boluses a meal curve draws besides its own: the automatic and other ones in its window.
+ * A standard or extended bolus there belongs to a meal of its own and is drawn on that meal's curve.
+ */
+function mealPumpBoluses(
+  mealTs: string,
+  pump: ChartPump | undefined,
+  ownId: string | undefined,
+): PumpBolusView[] {
+  return (pump?.boluses ?? []).filter(
+    (bolus) => bolus.id !== ownId && !isManualBolus(bolus.kind) && inMealWindowAt(mealTs, bolus.ts),
+  );
+}
+
+/** Which pump markers a meal curve draws besides its own bolus, for its legend. */
+export function mealChartMarkers(input: {
+  mealTs: string;
+  pump?: ChartPump | undefined;
+  pumpBolusId?: string | undefined;
+}): { autoBolus: boolean } {
+  return { autoBolus: mealPumpBoluses(input.mealTs, input.pump, input.pumpBolusId).length > 0 };
 }
 
 // ---------------------------------------------------------------------------------------------

@@ -19,12 +19,18 @@ export type ChartLegendProps =
       /** Whether previous curves are drawn behind. */
       previous: boolean;
       timeZone: string;
+      /** Whether the curve draws a hollow pump marker (v0.7.0 plan §9). */
+      autoBolus?: boolean;
     }
   | {
       /** Nu-Desktop: 14 px, "Måltid", "Bolus givet", "Mål 4–10 mmol/L". */
       variant: "day";
       /** Whether a meal in view has a stored bolus time; without one the triangle entry is left out. */
       bolus: boolean;
+      /** Whether the curve draws a manual pump bolus: "Bolus (pumpe)" (v0.7.0 plan §9). */
+      pumpBolus?: boolean;
+      /** Whether the curve draws an automatic or other pump bolus: "Automatisk bolus". */
+      autoBolus?: boolean;
       target: { low: number; high: number };
       unit: GlucoseUnit;
     };
@@ -46,6 +52,15 @@ function Triangle({ size }: { size: number }) {
   );
 }
 
+/** The hollow marker's swatch (tokens.json#chart.autoBolusMarker). */
+function Hollow({ size }: { size: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 10 10" aria-hidden="true" data-swatch="hollow">
+      <path className={styles.autoBolus} d="M5 2 L8.5 9 H1.5 Z" />
+    </svg>
+  );
+}
+
 /**
  * The two drawn chart legends (plan §7), composed from one message key per entry so the dosing
  * test sees each whole string. "Bolus 11:58" is the `log.bolus.at` key; the triangle is a time.
@@ -55,6 +70,7 @@ export function ChartLegend(props: ChartLegendProps) {
   const t = useTranslations("chart");
   const log = useTranslations("log");
   const g = useTranslations("glucose");
+  const pump = useTranslations("pump");
   const locale = resolveLocale(useLocale());
   if (props.variant === "meal") {
     return (
@@ -67,6 +83,12 @@ export function ChartLegend(props: ChartLegendProps) {
           <li>
             <Triangle size={9} />
             {log("bolus.at", { time: formatClock(new Date(props.bolusTs), props.timeZone) })}
+          </li>
+        )}
+        {props.autoBolus === true && (
+          <li>
+            <Hollow size={9} />
+            {pump("legend.automatic")}
           </li>
         )}
         {props.previous && (
@@ -92,6 +114,18 @@ export function ChartLegend(props: ChartLegendProps) {
         <li>
           <Triangle size={10} />
           {t("legend.bolusGiven")}
+        </li>
+      )}
+      {props.pumpBolus === true && (
+        <li>
+          <Triangle size={10} />
+          {pump("legend.bolus")}
+        </li>
+      )}
+      {props.autoBolus === true && (
+        <li>
+          <Hollow size={10} />
+          {pump("legend.automatic")}
         </li>
       )}
       <li>

@@ -1,0 +1,11 @@
+{
+  "marker": {
+    "bolus": "Bolus {time} · {units}",
+    "automatic": "Automatic bolus {time} · {units}"
+  },
+  "legend": {
+    "bolus": "Bolus (pump)",
+    "automatic": "Automatic bolus"
+  },
+  "reach": "Pump record until {time}"
+}
