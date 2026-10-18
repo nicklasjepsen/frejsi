@@ -100,19 +100,24 @@ describe("PumpSourceCard · Pumpehistorik (plan §9 item 5)", () => {
     mount(connected);
     expect(screen.getByTestId("pump-status")).toHaveTextContent("Forbundet");
     expect(screen.getByTestId("pump-latest")).toHaveTextContent(
-      "Senest fra pumpen: 11:58 · for 1 t 10 min siden",
+      "Senest fra pumpen: 11:58 · for 1 time 10 min. siden",
     );
     expect(card()).toHaveTextContent("op til en times forsinkelse");
     expect(within(card()).getByRole("button", { name: "Skift adgang" })).toBeVisible();
     expect(within(card()).getByRole("button", { name: "Afbryd" })).toBeVisible();
   });
 
+  it("writes one hour in the singular, as the glucose age does", () => {
+    mount(connected, { now: "2026-10-15T10:58:00.000Z" });
+    expect(screen.getByTestId("pump-latest")).toHaveTextContent("11:58 · for 1 time siden");
+  });
+
   it("writes the age in whole hours, minutes and just now, and names another day's date", () => {
     mount(connected, { now: "2026-10-15T11:58:00.000Z" });
-    expect(screen.getByTestId("pump-latest")).toHaveTextContent("11:58 · for 2 t siden");
+    expect(screen.getByTestId("pump-latest")).toHaveTextContent("11:58 · for 2 timer siden");
     cleanup();
     mount(connected, { now: "2026-10-15T10:20:00.000Z" });
-    expect(screen.getByTestId("pump-latest")).toHaveTextContent("11:58 · for 22 min siden");
+    expect(screen.getByTestId("pump-latest")).toHaveTextContent("11:58 · for 22 min. siden");
     cleanup();
     mount(connected, { now: "2026-10-15T09:58:20.000Z" });
     expect(screen.getByTestId("pump-latest")).toHaveTextContent("11:58 · lige nu");
@@ -204,10 +209,23 @@ describe("PumpSourceCard · Pumpehistorik (plan §9 item 5)", () => {
     expect(screen.getByTestId("pump-latest")).toHaveTextContent("Senest fra pumpen: 11:58");
     expect(within(card()).queryAllByRole("button")).toEqual([]);
     expect(within(card()).queryAllByRole("link")).toEqual([]);
+    expect(screen.getByTestId("pump-owner-only")).toHaveTextContent(
+      "Det er ejeren, der forbinder og afbryder.",
+    );
     cleanup();
     mount(notConfigured, { owner: false });
     expect(screen.getByTestId("pump-status")).toHaveTextContent("Ikke forbundet");
     expect(within(card()).queryAllByRole("button")).toEqual([]);
+    expect(screen.getByTestId("pump-owner-only")).toBeVisible();
+    cleanup();
+    mount(connected, { owner: false, locale: "en" });
+    expect(screen.getByTestId("pump-owner-only")).toHaveTextContent(
+      "Only the owner connects and disconnects.",
+    );
+    cleanup();
+    // An owner has the buttons and needs no such line.
+    mount(connected);
+    expect(screen.queryByTestId("pump-owner-only")).toBeNull();
   });
 
   it("reads the same in English", () => {
@@ -226,12 +244,12 @@ describe("PumpSourceCard · Pumpehistorik (plan §9 item 5)", () => {
     try {
       vi.setSystemTime(new Date(NOW));
       mount(connected);
-      expect(screen.getByTestId("pump-latest")).toHaveTextContent("for 1 t 10 min siden");
+      expect(screen.getByTestId("pump-latest")).toHaveTextContent("for 1 time 10 min. siden");
       act(() => {
         vi.setSystemTime(new Date("2026-10-15T11:20:00.000Z"));
         vi.advanceTimersByTime(30_000);
       });
-      expect(screen.getByTestId("pump-latest")).toHaveTextContent("for 1 t 22 min siden");
+      expect(screen.getByTestId("pump-latest")).toHaveTextContent("for 1 time 22 min. siden");
     } finally {
       vi.useRealTimers();
     }
