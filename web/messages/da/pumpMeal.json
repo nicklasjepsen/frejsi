@@ -1,0 +1,8 @@
+{
+  "bolus": "Bolus {time} · {units}",
+  "pumpCarbs": "Pumpen: {grams} g",
+  "besideTotal": "{total} · Pumpen: {grams} g",
+  "badge": "Fra pumpen · ikke tjekket",
+  "adopt": "Det passer",
+  "adoptFailed": "Det blev ikke gemt. Prøv igen om lidt."
+}

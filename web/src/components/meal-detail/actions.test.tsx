@@ -536,3 +536,48 @@ describe("the header's second action: 'Gem som opskrift' (v0.6.0 plan §6, task 
     },
   );
 });
+
+describe("'Det passer' on a pump meal (v0.7.0 plan §9)", () => {
+  const pumpMeal = () =>
+    mealView({
+      title: "Kulhydrater fra pumpen",
+      bolusTs: MEAL_TS,
+      bolusUnits: 1.5,
+      pumpCarbs: 45,
+      pumpBolusId: "b1",
+      fromPump: true,
+    });
+  it.each(["phone", "desktop"] as const)(
+    "%s: sends PATCH { adopt: true }, and the badge goes away once the meal reloads",
+    async (layout) => {
+      view = { ...view, meal: pumpMeal() };
+      mount(layout);
+      expect(await screen.findByText("Fra pumpen · ikke tjekket")).toBeVisible();
+      const { fromPump: _gone, ...adopted } = pumpMeal();
+      fake.on("PATCH /api/spaces/s1/meals/m1", adopted);
+      view = { ...view, meal: adopted };
+      fireEvent.click(screen.getByRole("button", { name: "Det passer" }));
+      await waitFor(() => {
+        expect(screen.queryByText("Fra pumpen · ikke tjekket")).toBeNull();
+      });
+      expect(screen.queryByRole("button", { name: "Det passer" })).toBeNull();
+      expect(writes()).toEqual([
+        { method: "PATCH", path: "/api/spaces/s1/meals/m1", body: { adopt: true } },
+      ]);
+      expect(reads().map((c) => c.path)).toEqual([
+        "/api/spaces/s1/meals/m1/curve",
+        "/api/spaces/s1/meals/m1/curve",
+      ]);
+      expect(nav.push).not.toHaveBeenCalled();
+    },
+  );
+  it("keeps the badge and says so when the tick was not saved", async () => {
+    view = { ...view, meal: pumpMeal() };
+    fake.on("PATCH /api/spaces/s1/meals/m1", { error: { code: "internal", message: "x" } }, 500);
+    mount();
+    fireEvent.click(await screen.findByRole("button", { name: "Det passer" }));
+    expect(await screen.findByText("Det blev ikke gemt. Prøv igen om lidt.")).toBeVisible();
+    expect(screen.getByText("Fra pumpen · ikke tjekket")).toBeVisible();
+    expect(screen.getByRole("button", { name: "Det passer" })).toBeEnabled();
+  });
+});
