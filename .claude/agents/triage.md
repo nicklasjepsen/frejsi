@@ -23,9 +23,11 @@ cheap, a wrong close is not.
   `plugin:food-source` or `plugin:glucose-source`, `help wanted`, and point at `CONTRIBUTING.md`.
 - **question**: label `question`; answer it in one comment if the answer is in the spec or docs,
   with the link; otherwise `needs-owner`.
-- **out of scope by a hard rule** (asks for insulin dosing, ratios, corrections, bolus advice;
-  pump control; anything that shows glucose to a viewer): label `wontfix` and comment with the one
-  paragraph from `CONTRIBUTING.md` on why, kindly. Do not close; the owner closes.
+- **out of scope by a hard rule** (asks for an insulin input, a calculation, a ratio, a correction,
+  bolus advice; pump control; anything that shows glucose to a viewer): label `wontfix` and comment
+  with the one paragraph from `CONTRIBUTING.md` on why, kindly. Do not close; the owner closes. A
+  request to show more of the pump's own record (pump history, read-only, since v0.7.0) is not out of
+  scope by the rule: treat it as a feature idea.
 - **security**: looks like a vulnerability report (auth bypass, token leak, data exposure). Label
   `security` and `needs-owner`. Do not discuss details in the comment; thank them and say the owner
   will follow up. Never paste the report anywhere else.

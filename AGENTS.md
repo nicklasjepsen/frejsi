@@ -7,3 +7,8 @@ rules of your own beside it.
 
 The working rules (hard rules, stack, conventions) are in `CLAUDE.md`. How the agent teams build
 this project, and what they must never do, is in `docs/agent-workflow.md`. All of it applies to you.
+
+One hard rule has one exception since v0.7.0 (#216): Frejsi never computes, suggests or lets anyone
+enter insulin, but it may show **pump history**, the time and delivered units of a bolus the pump
+recorded, read-only, to owners and carers outside simpleMode, never to a viewer, never to an AI
+model. The full wording is under "Hard rules" in `CLAUDE.md`; nothing else about the rule is looser.

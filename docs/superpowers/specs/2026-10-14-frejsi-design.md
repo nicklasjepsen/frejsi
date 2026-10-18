@@ -25,10 +25,10 @@ It was started for a 9-year-old newly diagnosed with type 1 diabetes (Tandem pum
 
 **Non-goals (deliberate):**
 
-- **No insulin dosing.** Frejsi never computes, suggests or displays insulin units, ratios or corrections. Users look up carbs here and enter them in their pump/pen. Clinical and legal choice; enforced in code (see §5).
+- **No insulin dosing.** Frejsi never computes, suggests or lets anyone enter insulin: no input field, no calculation, no ratio, no correction, no "you should", not in code, AI output schemas, prompts or copy. Users look up carbs here and enter them in their pump/pen. Clinical and legal choice; enforced in code (see §5). *Amended 2026-10-18 (#216, v0.7.0):* the one exception is **pump history**, the time and delivered units of a bolus the pump recorded, imported read-only, shown to owners and carers outside simpleMode, never to a viewer, never to an AI model. Showing what the pump delivered is allowed; setting or advising a dose is not. Until then the only insulin concept was `bolusTs`, a time a carer tapped.
 - Does not replace the CGM app or the pump app.
 - **Never writes to a glucose service.** Glucose sources are read-only: no uploads, no follower or alert changes, even when the credential would allow it (hard rule, enforced in code: the Dexcom adapter calls only allow-listed endpoints).
-- No pump data in v1 (Tandem has no real-time API; must not block).
+- No pump data in v1 (Tandem has no real-time API; must not block). *Amended 2026-10-18 (#216, v0.7.0):* the pump record reaches Frejsi through Nightscout (tconnectsync uploads the Tandem pump's boluses there), read-only, as its own `PumpSource` beside the glucose source; boluses and the pump's own carbs only, no basal, no pump control, ever.
 - No native apps. Web app (installable PWA on phones; regular web app on desktop) only.
 
 ---
@@ -83,7 +83,8 @@ Core concept: a **space** is the circle around one person with diabetes. A user 
 | `invites` | `token, spaceId, role, name, forUserId?, createdBy, expiresAt (7 d), usedAt?` | `forUserId` set ⇒ "add a device" to an existing user |
 | `passkeys` | `id, userId, credentialId, publicKey, counter, deviceName, createdAt` | WebAuthn |
 | `foods` | `id, spaceId?, name, carbsPer100g, portions (json), barcode?, photoBlob?, origin, verified, verifiedBy?, createdBy, embedding (vector), updatedAt` | `spaceId = null` ⇒ shared cache. `origin`: `family \| off \| frida \| ai \| manual` |
-| `meals` | `id, spaceId, ts, byUserId, totalCarbs, note?, bolusTs?, photoBlob?` | `bolusTs` entered by a carer; makes pre-bolus timing visible on the curve |
+| `meals` | `id, spaceId, ts, byUserId, totalCarbs, note?, bolusTs?, photoBlob?, pumpBolusId?, source?` | `bolusTs` makes pre-bolus timing visible on the curve. Originally tapped by a carer; since 2026-10-18 (#216, v0.7.0) it comes from the pump record through `pumpBolusId`, the bolus the matcher gave the meal, and the tap is gone. `source = "pump"` marks a meal the poller made from the pump's carbs that nobody has ticked or edited yet |
+| `pump_boluses` | `id, spaceId, sourceId, ts, units, kind, carbs?, mealDismissed` | *Added 2026-10-18 (#216, v0.7.0).* What the pump delivered, imported read-only: the record's own id (idempotency), the time, the delivered units (the one place a unit amount is stored, never computed from), the kind (`standard`, `extended`, `automatic`, `other`), the calculator's carbs. Owners and carers only, never a viewer, never a model. Unique on `(spaceId, sourceId)` |
 | `meal_items` | `id, mealId, foodId?, name, grams, carbs` | snapshot of name/carbs at the time (foods may change later) |
 | `readings` | `spaceId, ts, mmol, trend, source` | PK `(spaceId, ts)`; clustered. Raw stream, never edited. ~105k rows/year/space |
 | `events` | `spaceId, seq, type, payload (json), ts` | the live feed, source of truth for clients (see §3b) |
@@ -197,7 +198,7 @@ Results from 3–5 are stored in `foods` with `origin` and `verified: false`.
 
 **Hard rules (in code, not in the prompt):**
 
-- AI never produces insulin units, ratios or "take X". The output schema has no such field; a test fails if dosing vocabulary appears in insight text.
+- AI never produces insulin units, ratios or "take X". The output schema has no such field; a test fails if dosing vocabulary appears in insight text. *Unchanged by the pump-history exception of 2026-10-18 (#216):* nothing of the pump record (units, pump carbs, an untouched pump meal) ever enters an AI input, and a unit amount in a model answer is rejected; the exception is for showing, not for the model.
 - Everything AI has touched is unverified until a human ticks it.
 - Raw readings are never sent to the model — only computed statistics. Photos and text are sent only when the user actively taps.
 - Per-space daily cap on calls (e.g. 50) so a bug can't become a bill.

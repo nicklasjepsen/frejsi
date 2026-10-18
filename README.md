@@ -28,7 +28,7 @@ What is still to come is on the [roadmap](#roadmap). People who are not on Azure
 
 ## What it will never do
 
-**Frejsi never calculates, suggests or displays insulin doses.** You look up carbs here and enter them in your pump or pen. This is a deliberate clinical and legal boundary, enforced in code.
+**Frejsi never computes, suggests or lets anyone enter insulin.** No input field, no calculation, no ratio, no correction, no "you should". You look up carbs here and enter them in your pump or pen. The one exception is pump history: the time and delivered units of a bolus your pump recorded, imported read-only, shown to owners and carers (never to a viewer, never to an AI model). Showing what the pump delivered is allowed; setting or advising a dose is not. This is a deliberate clinical and legal boundary, enforced in code.
 
 ## Deploy your own
 

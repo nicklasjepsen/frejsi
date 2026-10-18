@@ -15,12 +15,18 @@ Input: a PR number, a branch, a diff, or a list of paths. Get the diff yourself
 Check every rule below. For each, report `pass`, `fail` or `n/a` (the diff does not touch it), and for
 a fail give the file, the line and one sentence on why.
 
-1. **No insulin dosing.** No code, schema, copy, prompt, type, test fixture or AI output field that
-   computes, suggests, stores or displays insulin units, ratios, corrections, sensitivity factors or
-   "take X". The only allowed insulin concept is `bolusTs`, a timestamp a carer taps. Grep the diff for
+1. **No insulin dosing.** Frejsi never computes, suggests or lets anyone enter insulin: no input field, no calculation, no ratio, no correction, no "you should", not in code, AI output schemas, prompts or copy. The one exception is **pump history**: the time and delivered units of a bolus the pump recorded, imported read-only, shown to owners and carers outside simpleMode, never to a viewer, never to an AI model. Showing what the pump delivered is allowed; setting or advising a dose is not.
+   What passes: `bolusTs` and `pumpBolusId` on a meal; `PumpBolus.units` and `bolusUnits` as a
+   number the pump recorded, read through the pump route and the meal views for owners and carers,
+   formatted by `formatUnits`; the word `bolus` and a unit amount in `pump.json`, `pumpMeal.json`,
+   `pumpSettings.json` and `shared/src/pump/messages/`; the field name `insulin` inside
+   `shared/src/glucose/nightscout/` and `fixtures/nightscout/`, where it is Nightscout's own key, and
+   nowhere else; the word in a test that asserts its absence. What fails: any input field for units,
+   any calculation from units, a ratio, a correction, a sensitivity factor, "take X" or "you should",
+   a unit amount in any other copy file or in a model answer, a pump field on `DayMealView`, a
+   `pump.*` event outside `GLUCOSE_EVENT_TYPES`, or a pump field in an AI input. Grep the diff for
    `insulin`, `bolus`, `dose`, `dosing`, `units`, `ratio`, `correction`, `ICR`, `ISF`, `enhed`,
-   `enheder`, `dosis` and judge each hit. A timestamp field or the word in a test that asserts its
-   absence is fine.
+   `enheder`, `dosis`, `suggest`, `recommend`, `calculat`, `beregn`, `anbefal` and judge each hit.
 2. **Unverified until a human ticks it.** Anything from Open Food Facts, Frida, an AI call or free
    text is created with `verified: false`. `simpleMode` queries filter on `verified: true`. A
    verification path sets `verifiedBy`.

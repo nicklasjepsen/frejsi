@@ -25,7 +25,13 @@ Check:
    Insight copy is observation, never advice: no "you should", "take", "next time give".
 5. **No dosing vocabulary anywhere** in copy, prompts, schemas, evals or fixtures: insulin units,
    ratios, corrections, "dosis", "enheder", "ICR", "ISF", "bolus" (allowed only as a stored time:
-   "Bolus 11:58", the lead in minutes and the labels on its allow-list, never an amount).
+   "Bolus 11:58", the lead in minutes and the labels on its allow-list). The one exception is pump
+   history: in `web/messages/{da,en}/pump.json`, `pumpMeal.json`, `pumpSettings.json` and
+   `shared/src/pump/messages/` the word "bolus" and a unit amount the pump recorded ("2,4 E" /
+   "2.4 U", from `formatUnits`) may appear, never advice: no "bør", "giv", "tag", "næste gang",
+   "should", "give", "take", "next time", nothing calculated or recommended, and every other dosing
+   word still fails there. Read those files line by line. The Nightscout fixtures' `insulin` key is
+   the vendor's own and is allowed.
 6. **Roles in copy.** Nothing shown to a `viewer` mentions glucose. Owner-only actions say so.
 7. **Units and format.** mmol/L with one decimal by default; mg/dL as an integer when the space
    selects it. Danish decimal comma in `da`, point in `en`. Dates and times via the formatter, not

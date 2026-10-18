@@ -25,7 +25,9 @@ flow are the app's.
   unique and stable inside your source (`usda:170393`), `carbsPer100g` to one decimal (or portions),
   and optionally a `barcode` and `portions`. A candidate has no `verified` field. Whatever you return
   reaches the library with `verified: false` until a person ticks it; do not try to mark it.
-- A source returns carbohydrates and names. Nothing about insulin, ever.
+- A source returns carbohydrates and names. Nothing about insulin, ever: Frejsi never computes,
+  suggests or lets anyone enter it, and the one place it shows what a pump delivered (pump
+  history) is nowhere near a food source.
 
 ## The steps
 
@@ -84,7 +86,8 @@ flow are the app's.
 - No personal data in logs: use `log` from `shared/src/log.ts`, which takes an allow-list of keys.
 - Nothing Danish hard-coded: a locale, country or language comes from `env` or from the `locale`
   argument. `shared/src/i18n-literals.test.ts` and the Danish-letters lint enforce it.
-- No insulin units, ratios, corrections or suggestions, in code, README, fixtures or messages.
+- Nothing that computes, suggests or lets anyone enter insulin: no input, calculation, ratio,
+  correction or suggestion, in code, README, fixtures or messages.
 - The vendor is never named outside the plugin's folder, its fixtures, its two message keys and the
   registry line.
 
