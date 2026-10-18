@@ -402,6 +402,9 @@ describe("the week tile's tooltip (issue 243)", () => {
     );
     fireEvent.pointerLeave(area, { pointerType: "mouse" });
     expect(tip()).toBeNull();
+    // Over the tile's footer, below the 64 px chart, it still reads the time under the pointer.
+    fireEvent.pointerMove(area, { clientX: 60, clientY: 90 });
+    expect(tip()).toHaveTextContent("kl. 12:00 · for 3 timer 13 min. siden");
   });
 
   it("is no tab stop and takes no touch: the tile's own link opens the day", () => {
