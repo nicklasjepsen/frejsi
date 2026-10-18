@@ -310,6 +310,7 @@ export function HistoryWeekScreen({
             onlyWithSymptoms={symptomsOnly && symptomRange.status === "ready"}
             onSymptomTap={setActiveSymptomId}
             symptomLabel={labelOf}
+            unit={unit}
           />
           {activeSymptom && (
             <SymptomDetailCard
