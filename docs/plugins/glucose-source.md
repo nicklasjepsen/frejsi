@@ -83,6 +83,36 @@ database and never calls `emit()`.
    tests for the poller wiring beside the existing ones in `poller/src/`. Add a route test that a
    viewer is refused (`403`) before anything is sent.
 
+## A pump source
+
+The pump record (v0.7.0) is a second, separate read: what the pump delivered, shown as pump history.
+It is not a glucose source and never passes through one. A space connects it on its own (Settings →
+Pumpehistorik), with its own status, failure count and secret (`pump-<spaceId>`), beside whatever its
+glucose source is.
+
+- **The contract.** `PumpSource` in `shared/src/pump/types.ts` has two reads:
+  `fetchBolusesSince(since)`, the boluses recorded at or after `since`, oldest first, each a
+  `PumpBolus` (`shared/src/schemas/pump.ts`: the record's own id as `sourceId`, `ts`, the delivered
+  `units`, the `kind` and, when the pump's calculator had them, `carbs`); and `probe()`, which checks
+  the credential like a glucose source's. Return nothing else: the adapter picks the fields it needs
+  and drops the rest of the record.
+- **Read-only, on the allow-list.** A pump adapter reads the pump record and never writes to it or
+  to anything else on the service. `NightscoutPumpSource`
+  (`shared/src/glucose/nightscout/pump-source.ts`) is the one there is: it reads
+  `GET /api/v1/treatments.json` filtered on `eventType=Combo Bolus` (what tconnectsync uploads for a
+  Tandem pump) through the same transport as the glucose adapter, and `READ_ONLY_ENDPOINTS` grew by
+  exactly that `GET`. `POST`, `PUT` and `DELETE` on the same path are refused before `fetch` is
+  called (`transport.test.ts`).
+- **Behind the interface.** The pump cycle (`runPumpCycle` in `shared/src/pump/`) knows `PumpSource` and
+  nothing else; a lint rule refuses an import of `shared/src/glucose/nightscout/` from
+  `shared/src/pump/`. The adapter is built in `poller/src/sources.ts` (`createPumpSourceFactory`) from
+  the versioned `pump-<spaceId>` reference, and probed by `source-connect` for a body with
+  `purpose: "pump"`. Another pump route later (a file import, another uploader) is another
+  `PumpSource`.
+- **The adapter stores nothing.** Storing a bolus idempotently, linking it to a meal, making a meal
+  from pump carbs and emitting the events are the cycle's; the adapter never touches the database
+  and never calls `emit()`.
+
 ## Rules your plugin keeps
 
 - Read-only, on an allow-list.

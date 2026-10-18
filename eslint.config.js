@@ -53,7 +53,7 @@ const dexcomHost = [
 ];
 
 /** The Nightscout paths and auth header live in the adapter folder only (plan §2, §5). */
-const NIGHTSCOUT_LITERAL = "api\\/v1\\/entries|verifyauth|api-secret";
+const NIGHTSCOUT_LITERAL = "api\\/v1\\/(?:entries|treatments)|verifyauth|api-secret";
 const nightscoutMessage =
   "The Nightscout paths and auth header live in shared/src/glucose/nightscout/ only (plan §2).";
 const nightscoutProtocol = [
@@ -81,6 +81,34 @@ const glucoseFetchCallers = [
   "shared/src/glucose/**/*.test.ts",
   "shared/src/glucose/**/test-server.ts",
 ];
+
+/**
+ * The pump cycle knows `PumpSource`, not an adapter (v0.7.0 plan §5): nothing under
+ * shared/src/pump/ imports from shared/src/glucose/nightscout/. Its own rule, so it adds to the
+ * folder's import restrictions instead of replacing them.
+ */
+const pumpAdapterMessage =
+  "shared/src/pump/ knows PumpSource, not Nightscout: the adapter is built in poller/src/sources.ts (v0.7.0 plan §5).";
+const pumpBoundaryRule = {
+  meta: { type: "problem", schema: [] },
+  create(context) {
+    if (!context.filename.replaceAll("\\", "/").includes("/shared/src/pump/")) return {};
+    const check = (source) => {
+      if (
+        source &&
+        typeof source.value === "string" &&
+        /glucose\/nightscout(?:\/|$)/.test(source.value)
+      )
+        context.report({ node: source, message: pumpAdapterMessage });
+    };
+    return {
+      ImportDeclaration: (node) => check(node.source),
+      ExportNamedDeclaration: (node) => check(node.source),
+      ExportAllDeclaration: (node) => check(node.source),
+      ImportExpression: (node) => check(node.source),
+    };
+  },
+};
 
 /** AI boundaries use a separate rule so every existing restriction remains active. */
 const aiBoundaryRule = {
@@ -330,6 +358,12 @@ export const boundaries = [
       },
     },
     rules: { "frejsi-push/vendor": "error" },
+  },
+  {
+    name: "frejsi/boundaries/pump",
+    files: ["shared/src/pump/**/*.ts"],
+    plugins: { "frejsi-pump": { rules: { adapter: pumpBoundaryRule } } },
+    rules: { "frejsi-pump/adapter": "error" },
   },
   {
     name: "frejsi/boundaries/ai",

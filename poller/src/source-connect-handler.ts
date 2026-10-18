@@ -1,13 +1,18 @@
 import type { HttpRequest, HttpResponseInit, InvocationContext } from "@azure/functions";
 import {
-  ConnectSourceRequest,
   DexcomShareSource,
   glucoseSecretName,
   log as defaultLog,
+  NightscoutPumpSource,
   NightscoutSource,
+  pumpSecretName,
   serializeCredential,
   serializeNightscoutCredential,
+  SourceConnectBody,
   type ApiError,
+  type ConnectPumpRequest,
+  type ConnectPumpResult,
+  type ConnectSourceRequest,
   type ConnectSourceResult,
   type FetchLike,
   type GlucoseSource,
@@ -34,6 +39,15 @@ export interface ProbeOutcome {
   recentReadings?: number;
 }
 
+/** What a pump probe needs: the pump connect request without its `spaceId` and `purpose`. */
+export type PumpProbeRequest = Omit<ConnectPumpRequest, "spaceId" | "purpose">;
+
+/** The pump probe's verdict and, when the token worked, how many boluses the last day held. */
+export interface PumpProbeOutcome {
+  result: ProbeResult;
+  recentBoluses?: number;
+}
+
 export interface SourceConnectDeps {
   secrets: Secrets;
   /**
@@ -41,6 +55,8 @@ export interface SourceConnectDeps {
    * names, with `fetch` and `now` below.
    */
   probe?: (request: ProbeRequest) => Promise<ProbeOutcome>;
+  /** The same for a pump connect; defaults to `NightscoutPumpSource` with `fetch` and `now`. */
+  pumpProbe?: (request: PumpProbeRequest) => Promise<PumpProbeOutcome>;
   log?: Logger;
   /** What the default probe's adapter fetches with; for tests. */
   fetch?: FetchLike;
@@ -112,6 +128,37 @@ export async function probeAndReadRecent(
   }
 }
 
+/**
+ * The default pump probe (v0.7.0 plan §5): `verifyauth`, then a day of Combo Bolus treatments on
+ * the same site. Zero boluses with a working token is the form's warning: tconnectsync is not
+ * running, or the address is another site.
+ */
+export async function probePumpAndReadRecent(
+  request: PumpProbeRequest,
+  options: AdapterOptions,
+): Promise<PumpProbeOutcome> {
+  const source = new NightscoutPumpSource({
+    url: request.url,
+    token: request.token,
+    apiSecret: request.apiSecret,
+    ...options,
+  });
+  const result = await source.probe();
+  if (result !== "ok") return { result };
+  const now = options.now ?? (() => new Date());
+  try {
+    const boluses = await source.fetchBolusesSince(
+      new Date(now().getTime() - RECENT_READINGS_WINDOW_MS),
+    );
+    return { result, recentBoluses: boluses.length };
+  } catch (error) {
+    // The token worked; the read is what the form warns from. The adapter has logged the status.
+    const code = error instanceof Error && "code" in error ? String(error.code) : "unknown";
+    options.log?.warn("pump-connect.recent-failed", { code });
+    return { result };
+  }
+}
+
 /** `deps` as adapter options, without the keys that are not set (exactOptionalPropertyTypes). */
 function adapterOptions(deps: SourceConnectDeps, log: Logger): AdapterOptions {
   return {
@@ -135,6 +182,15 @@ function serializeSecret(request: ProbeRequest): string {
   }
 }
 
+/** The pump credential as stored as a version of `pump-<spaceId>`: the same shape as the glucose one. */
+function serializePumpSecret(request: PumpProbeRequest): string {
+  return serializeNightscoutCredential({
+    url: request.url,
+    ...(request.token === undefined ? {} : { token: request.token }),
+    ...(request.apiSecret === undefined ? {} : { apiSecret: request.apiSecret }),
+  });
+}
+
 const validation = (): HttpResponseInit => {
   const body: ApiError = {
     error: { code: "validation", message: "The request is not a ConnectSourceRequest." },
@@ -153,12 +209,52 @@ const validation = (): HttpResponseInit => {
  * that carries the reference: a connect whose database write fails leaves the previous reference
  * and its credential in place, and two owners connecting at once each get their own reference, so
  * one request's region can never be saved with the other's credential.
+ *
+ * A body with `purpose: "pump"` (v0.7.0 plan §5) is the pump record's own connection: it probes the
+ * Nightscout site, reads a day of boluses and writes a new version of `pump-<spaceId>`, answering
+ * `{ result, secretRef, recentBoluses }`. It is parsed strictly and first, so it can never be read
+ * as a glucose connect and never writes `glucose-<spaceId>`.
  */
 export function createSourceConnectHandler(deps: SourceConnectDeps) {
   const log = deps.log ?? defaultLog;
   const probe =
     deps.probe ??
     ((request: ProbeRequest) => probeAndReadRecent(request, adapterOptions(deps, log)));
+  const pumpProbe =
+    deps.pumpProbe ??
+    ((request: PumpProbeRequest) => probePumpAndReadRecent(request, adapterOptions(deps, log)));
+
+  /** A pump connect writes `pump-<spaceId>` and nothing else; it never reaches the glucose secret. */
+  const connectPump = async (data: ConnectPumpRequest): Promise<HttpResponseInit> => {
+    const { spaceId, purpose: _purpose, ...probeRequest } = data;
+    let outcome: PumpProbeOutcome;
+    try {
+      outcome = await pumpProbe(probeRequest);
+    } catch {
+      outcome = { result: "unreachable" };
+    }
+    if (outcome.result !== "ok") {
+      log.warn("pump-connect.failed", { spaceId, code: outcome.result });
+      const result: ConnectPumpResult = { result: outcome.result };
+      return { status: 200, jsonBody: result };
+    }
+    const secretRef = await deps.secrets.set(
+      pumpSecretName(spaceId),
+      serializePumpSecret(probeRequest),
+    );
+    log.info("pump-connect.ok", {
+      spaceId,
+      code: "ok",
+      ...(outcome.recentBoluses === undefined ? {} : { count: outcome.recentBoluses }),
+    });
+    if (outcome.recentBoluses === 0) log.warn("pump-connect.no-recent-boluses", { spaceId });
+    const result: ConnectPumpResult = {
+      result: "ok",
+      secretRef,
+      ...(outcome.recentBoluses === undefined ? {} : { recentBoluses: outcome.recentBoluses }),
+    };
+    return { status: 200, jsonBody: result };
+  };
 
   return async (request: HttpRequest, _context: InvocationContext): Promise<HttpResponseInit> => {
     let json: unknown;
@@ -168,12 +264,14 @@ export function createSourceConnectHandler(deps: SourceConnectDeps) {
       log.warn("source-connect.rejected", { code: "validation" });
       return validation();
     }
-    const parsed = ConnectSourceRequest.safeParse(json);
+    // Pump first: a body that carries `purpose` is only ever a pump connect (v0.7.0 plan §4).
+    const parsed = SourceConnectBody.safeParse(json);
     if (!parsed.success) {
       log.warn("source-connect.rejected", { code: "validation" });
       return validation();
     }
-    const { data } = parsed;
+    if (parsed.data.purpose === "pump") return connectPump(parsed.data.request);
+    const data: ConnectSourceRequest = parsed.data.request;
     if (data.type === "manual") {
       // Choosing Manuelt writes no credential; the Settings route handles it itself.
       log.warn("source-connect.rejected", { code: "validation" });
