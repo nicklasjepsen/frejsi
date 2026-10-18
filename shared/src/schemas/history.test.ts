@@ -124,6 +124,29 @@ describe("history contracts", () => {
       expect(schema.safeParse({ ...(valid as object), unexpected: true }).success).toBe(false);
     },
   );
+  it("carries pumpBolusId and fromPump on DayHistoryMeal and the meal curve, for owners and carers (v0.7.0 plan §4)", () => {
+    const pumpMeal = { ...meal, stats, pumpBolusId: "b1", fromPump: true };
+    expect(history.DayHistoryMeal.parse(pumpMeal)).toEqual(pumpMeal);
+    expect(history.DayHistoryMeal.parse({ ...meal, stats })).not.toHaveProperty("pumpBolusId");
+    expect(history.DayHistoryMeal.safeParse({ ...meal, stats, fromPump: false }).success).toBe(
+      false,
+    );
+    expect(history.DayHistoryMeal.safeParse({ ...meal, stats, pumpBolusId: "" }).success).toBe(
+      false,
+    );
+    // The history meal shows no units: they are read on meal detail, through MealView.
+    expect(history.DayHistoryMeal.safeParse({ ...meal, stats, bolusUnits: 2.4 }).success).toBe(
+      false,
+    );
+    const curveMeal = {
+      ...meal,
+      pumpBolusId: "b1",
+      fromPump: true,
+      bolusUnits: 2.4,
+      pumpCarbs: 45,
+    };
+    expect(history.MealCurveView.parse({ ...curve, meal: curveMeal }).meal).toEqual(curveMeal);
+  });
   it("rejects extra nested reading keys while keeping timestamps", () => {
     expect(
       history.MealCurveView.safeParse({
@@ -416,8 +439,19 @@ describe("history contracts", () => {
       "bolusTs",
       "bolusLead",
       "bolusLeadMinutes",
+      // v0.7.0: the pump record is glucose-side data; the viewer's day gains none of it.
+      "units",
+      "bolusUnits",
+      "pumpCarbs",
+      "pumpBolusId",
+      "fromPump",
+      "kind",
+      "pump",
+      "source",
+      "reach",
     ]);
     expect(keys(DayView).filter(([, key]) => forbidden.has(key ?? ""))).toEqual([]);
+    expect(keys(DayView).filter(([, key]) => /pump/i.test(key ?? ""))).toEqual([]);
   });
   it("keeps statistics independent of clocks, frameworks, conversions and regional constants", () => {
     const dir = new URL("../stats/", import.meta.url);

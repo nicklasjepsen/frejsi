@@ -76,3 +76,62 @@ describe("the meal symbol on the views (v0.6.0 plan §4)", () => {
     expect(DayHistoryMeal.parse({ ...dayMeal, symbol: "mixed", stats }).symbol).toBe("mixed");
   });
 });
+
+describe("the pump fields on the views (v0.7.0 plan §4)", () => {
+  const meal = {
+    id: "m1",
+    ts: "2026-10-18T10:00:00.000Z",
+    title: "Fictional toast",
+    slot: "lunch",
+    totalCarbs: 18,
+    byUser: { id: "u1", name: "Example Person" },
+    items: [{ name: "Fictional toast", carbs: 18 }],
+  };
+  it("MealView carries the linked bolus's units and carbs, its id and the pump-meal mark", () => {
+    const withPump = {
+      ...meal,
+      bolusTs: "2026-10-18T09:50:00.000Z",
+      bolusUnits: 2.4,
+      pumpCarbs: 45,
+      pumpBolusId: "b1",
+      fromPump: true,
+    };
+    expect(MealView.parse(withPump)).toEqual(withPump);
+    expect(MealView.parse(meal)).not.toHaveProperty("bolusUnits");
+    expect(MealView.safeParse({ ...meal, bolusUnits: 50.01 }).success).toBe(false);
+    expect(MealView.safeParse({ ...meal, bolusUnits: 1.125 }).success).toBe(false);
+    expect(MealView.safeParse({ ...meal, pumpCarbs: 0 }).success).toBe(false);
+    expect(MealView.safeParse({ ...meal, pumpCarbs: 4.5 }).success).toBe(false);
+    expect(MealView.safeParse({ ...meal, fromPump: false }).success).toBe(false);
+    expect(MealView.safeParse({ ...meal, pumpBolusId: "" }).success).toBe(false);
+  });
+  it("DayMealView, the viewer's meal, gains none of them", () => {
+    for (const extra of [
+      { bolusUnits: 2.4 },
+      { pumpCarbs: 45 },
+      { pumpBolusId: "b1" },
+      { fromPump: true },
+      { bolusTs: "2026-10-18T09:50:00.000Z" },
+    ])
+      expect(DayMealView.safeParse({ ...meal, ...extra }).success, JSON.stringify(extra)).toBe(
+        false,
+      );
+  });
+  it("UpdateMealRequest accepts adopt: true and nothing else for adopt", () => {
+    expect(UpdateMealRequest.parse({ adopt: true })).toEqual({ adopt: true });
+    expect(UpdateMealRequest.safeParse({ adopt: false }).success).toBe(false);
+    expect(UpdateMealRequest.safeParse({ adopt: "yes" }).success).toBe(false);
+    expect(
+      CreateMealRequest.safeParse({ items: [{ name: "Fictional toast", carbs: 12 }], adopt: true })
+        .success,
+    ).toBe(false);
+    // A person never sets the pump fields by hand; the matcher does.
+    for (const extra of [
+      { pumpBolusId: "b1" },
+      { bolusUnits: 2 },
+      { fromPump: true },
+      { source: "pump" },
+    ])
+      expect(UpdateMealRequest.safeParse(extra).success, JSON.stringify(extra)).toBe(false);
+  });
+});

@@ -18,6 +18,14 @@ export function glucoseSecretName(spaceId: string): string {
   return `glucose-${spaceId}`;
 }
 
+/**
+ * The Key Vault name for a space's pump-record credential (v0.7.0 plan §4), beside the glucose
+ * one: the pump connection has its own secret, status and failure count.
+ */
+export function pumpSecretName(spaceId: string): string {
+  return `pump-${spaceId}`;
+}
+
 /** A parsed reference: the secret's name and, when it names a version, that version. */
 export interface SecretRef {
   name: string;

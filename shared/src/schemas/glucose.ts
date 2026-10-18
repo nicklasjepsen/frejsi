@@ -54,8 +54,12 @@ export const GlucoseSourceConfig = z.discriminatedUnion("type", [
 ]);
 export type GlucoseSourceConfig = z.infer<typeof GlucoseSourceConfig>;
 
-/** An https URL with no query, fragment or userinfo: a token in the URL would reach every log. */
-const NightscoutUrl = z
+/**
+ * An https URL with no query, fragment or userinfo: a token in the URL would reach every log.
+ * Exported for `ConnectPumpRequest` (`schemas/pump.ts`), which connects a pump record on the same
+ * Nightscout rules.
+ */
+export const NightscoutUrl = z
   .url({ protocol: /^https$/, hostname: z.regexes.domain })
   .max(2048)
   .refine(
@@ -70,13 +74,14 @@ const NightscoutUrl = z
     message: "The URL has no query or fragment.",
   });
 
-const oneOfTokenOrApiSecret = (value: {
+/** Exactly one of `token` and `apiSecret`; shared with the pump connect (`schemas/pump.ts`). */
+export const oneOfTokenOrApiSecret = (value: {
   token?: string | undefined;
   apiSecret?: string | undefined;
 }) => (value.token === undefined) !== (value.apiSecret === undefined);
-const oneOfMessage = { message: "Exactly one of token and apiSecret.", path: ["token"] };
+export const oneOfMessage = { message: "Exactly one of token and apiSecret.", path: ["token"] };
 
-const nightscoutSecrets = {
+export const nightscoutSecrets = {
   token: z.string().min(1).max(200).optional(),
   apiSecret: z.string().min(1).max(200).optional(),
 };

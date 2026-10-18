@@ -43,6 +43,8 @@ describe("ApiError", () => {
       "recipe-fetch-failed",
       "recipe-unreadable",
       "share-expired",
+      "pump-not-configured",
+      "pump-meal",
     ]);
   });
 

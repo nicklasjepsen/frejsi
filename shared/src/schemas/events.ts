@@ -34,6 +34,9 @@ export const EventType = z.enum([
   "symptom.created",
   "symptom.updated",
   "symptom.deleted",
+  "pump.imported",
+  "pump.meals",
+  "pump.status",
 ]);
 export type EventType = z.infer<typeof EventType>;
 
@@ -102,6 +105,25 @@ export const SymptomCreatedPayload = z.strictObject({
   byUserId: z.string().min(1),
 });
 export const SymptomIdPayload = z.strictObject({ symptomId: z.string().min(1) });
+/**
+ * The pump record (v0.7.0 plan §4). All three travel in the glucose group, so a viewer never hears
+ * when pump data arrives. `pump.imported`: one per space per cycle that stored anything, counts and
+ * the range only. `pump.meals`: every meal change the pump caused (a link set or cleared, a pump
+ * meal made or removed), ids only; a pump meal never emits `meal.created`. `pump.status`: the
+ * connection, like `source.status`.
+ */
+export const PumpImportedPayload = z.strictObject({
+  count: z.number().int().nonnegative(),
+  from: z.iso.datetime(),
+  to: z.iso.datetime(),
+});
+const mealIds = z.array(z.string().min(1));
+export const PumpMealsPayload = z.strictObject({
+  updated: mealIds,
+  created: mealIds,
+  removed: mealIds,
+});
+export const PumpStatusPayload = z.strictObject({ status: SourceStatus, since: z.iso.datetime() });
 
 /** One payload schema per type. `emit()` validates against this map before it writes. */
 export const EventPayloads = {
@@ -132,6 +154,9 @@ export const EventPayloads = {
   "symptom.created": SymptomCreatedPayload,
   "symptom.updated": SymptomIdPayload,
   "symptom.deleted": SymptomIdPayload,
+  "pump.imported": PumpImportedPayload,
+  "pump.meals": PumpMealsPayload,
+  "pump.status": PumpStatusPayload,
 } as const satisfies Record<EventType, z.ZodType>;
 
 export type EventPayload<T extends EventType> = z.infer<(typeof EventPayloads)[T]>;
@@ -174,13 +199,23 @@ export const EventEnvelope = z.discriminatedUnion("type", [
   envelope("symptom.created"),
   envelope("symptom.updated"),
   envelope("symptom.deleted"),
+  envelope("pump.imported"),
+  envelope("pump.meals"),
+  envelope("pump.status"),
 ]);
 export type EventEnvelope = z.infer<typeof EventEnvelope>;
 export type EventEnvelopeOf<T extends EventType> = Extract<EventEnvelope, { type: T }>;
 
 /**
  * The event types that carry or concern glucose: published to the glucose group a viewer cannot
- * join, and filtered out of a viewer's events page in the query (CLAUDE.md hard rules).
+ * join, and filtered out of a viewer's events page in the query (CLAUDE.md hard rules). The pump
+ * record is glucose-side data (v0.7.0): a viewer never learns that it exists.
  */
-export const GLUCOSE_EVENT_TYPES: readonly EventType[] = ["reading", "readings.imported"];
+export const GLUCOSE_EVENT_TYPES: readonly EventType[] = [
+  "reading",
+  "readings.imported",
+  "pump.imported",
+  "pump.meals",
+  "pump.status",
+];
 export const isGlucoseEvent = (type: EventType): boolean => GLUCOSE_EVENT_TYPES.includes(type);

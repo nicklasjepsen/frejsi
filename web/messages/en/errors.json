@@ -45,6 +45,8 @@
     "symptom-not-found": "That symptom no longer exists – it may already have been deleted.",
     "recipe-fetch-failed": "We couldn't fetch the page. Check the address, or paste the recipe as text.",
     "recipe-unreadable": "We couldn't find a recipe on that page. Try pasting the ingredients as text.",
-    "share-expired": "The shared content has expired. Share it again from the app you came from."
+    "share-expired": "The shared content has expired. Share it again from the app you came from.",
+    "pump-not-configured": "Pump history is not set up for this space yet. An owner can connect it in Settings.",
+    "pump-meal": "That meal comes from the pump and has not been checked yet. Tap “That's right”, or edit it, and it becomes an ordinary meal."
   }
 }
