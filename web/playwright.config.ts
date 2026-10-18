@@ -53,6 +53,8 @@ const appProjects = [
   "pump.spec.ts",
   // v0.7.2: a new food on the phone saves and is back in the list (issue 219); phone only.
   "food-phone.spec.ts",
+  // v0.7.2: the curve's tooltip at both widths, light and dark (issue 243).
+  "curve-tooltip.spec.ts",
 ];
 
 export default defineConfig({
