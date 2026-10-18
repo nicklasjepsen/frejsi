@@ -1,9 +1,11 @@
 "use client";
 
 import type { GlucoseUnit, Reading } from "@frejsi/shared";
+import { formatUnits } from "@frejsi/shared/pump/units";
 import type { MealSymbol } from "@frejsi/shared/schemas/food";
+import type { PumpBolusKind } from "@frejsi/shared/schemas/pump";
 import { useLocale, useTranslations } from "next-intl";
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useId, useState, type ReactNode } from "react";
 
 import { FoodSymbol } from "@/components/food/FoodSymbol";
 import { resolveLocale, type AppLocale } from "@/lib/i18n/routing";
@@ -15,6 +17,9 @@ import {
   weekTileGeometry,
   type ChartGeometry,
   type ChartMeal,
+  type ChartPump,
+  type ChartPumpMark,
+  type ChartPumpReach,
   type ChartSymptom,
   type ChartSymptomMark,
   type MealChartSize,
@@ -32,6 +37,11 @@ interface CurveBase {
   targetHigh: number;
   unit: GlucoseUnit;
   timeZone: string;
+  /**
+   * The pump record (v0.7.0 plan §9): each bolus at its time with its units, and the reach tick.
+   * Owners and carers outside simpleMode only; the screens never pass it otherwise.
+   */
+  pump?: ChartPump;
 }
 
 export interface SparklineChartProps extends CurveBase {
@@ -64,8 +74,14 @@ export interface MealChartProps {
   /** The readings around the meal, each with its `ts`; those after `now` are not drawn. */
   readings: readonly Reading[];
   mealTs: string;
-  /** The time of the bolus tap: a time marker only, never an amount. */
+  /** The meal's bolus time: from the pump record (v0.7.0) or an old tap. */
   bolusTs?: string;
+  /** The pump bolus `bolusTs` came from: its recorded units label the triangle (v0.7.0). */
+  pumpBolusId?: string | undefined;
+  /** The linked bolus's units from the meal view, while the pump list has not arrived. */
+  bolusUnits?: number | undefined;
+  /** The pump record: automatic and other boluses in the window are hollow markers. */
+  pump?: ChartPump | undefined;
   /** The meal's food symbol, above the plot on the meal line (v0.6.0 plan §7). */
   symbol?: MealSymbol;
   /** Symptoms; those within the window are diamonds on the axis (plan §5). */
@@ -184,6 +200,99 @@ function SymptomMarks({ marks }: { marks: readonly ChartSymptomMark[] }) {
   ));
 }
 
+/**
+ * The pump boluses (v0.7.0 plan §9): standard and extended in the meal's bolus colour, automatic
+ * and other as the hollow marker in the text colour; the units above a manual triangle where the
+ * curve has room. Hidden from the accessibility tree: each has its own named button above.
+ */
+function PumpMarks({ marks, labelSize }: { marks: readonly ChartPumpMark[]; labelSize: number }) {
+  return marks.map((mark) => (
+    <g key={mark.id} aria-hidden="true">
+      <path
+        className={mark.shape === "triangle" ? styles.bolus : styles.autoBolus}
+        d={mark.path}
+        aria-hidden="true"
+        data-testid="pump-bolus"
+        data-shape={mark.shape}
+        data-kind={mark.kind}
+      />
+      {mark.label && (
+        <text
+          className={styles.pumpLabel}
+          x={mark.x}
+          y={mark.label.y}
+          fontSize={labelSize}
+          textAnchor="middle"
+          data-testid="pump-label"
+        >
+          {mark.label.text}
+        </text>
+      )}
+    </g>
+  ));
+}
+
+/** The dotted reach tick and its caption, "Pumpe til 11:58": a time, never a reading. */
+function PumpReach({
+  reach,
+  top,
+  bottom,
+  width,
+  labelSize,
+  caption,
+}: {
+  reach: ChartPumpReach | null;
+  top: number;
+  bottom: number;
+  width: number;
+  labelSize: number;
+  caption: string;
+}) {
+  if (!reach) return null;
+  // Left of the tick, where the record is; right of it when the tick is near the left edge.
+  const before = reach.x > width * 0.3;
+  return (
+    <g aria-hidden="true">
+      <line
+        className={styles.pumpReach}
+        x1={reach.x}
+        y1={top}
+        x2={reach.x}
+        y2={bottom}
+        data-testid="pump-reach"
+      />
+      <text
+        className={styles.chartLabel}
+        x={before ? reach.x - 4 : reach.x + 4}
+        y={top + labelSize}
+        fontSize={labelSize}
+        textAnchor={before ? "end" : "start"}
+        data-testid="pump-reach-caption"
+      >
+        {caption}
+      </text>
+    </g>
+  );
+}
+
+/** A pump marker's name and popover text: "Bolus 11:58 · 2,4 E", "Automatisk bolus 03:10 · 0,6 E". */
+function usePumpName(): (mark: { kind: PumpBolusKind; clock: string; units: number }) => string {
+  const t = useTranslations("pump");
+  const locale = resolveLocale(useLocale());
+  return (mark) =>
+    t(mark.kind === "automatic" ? "marker.automatic" : "marker.bolus", {
+      time: mark.clock,
+      units: formatUnits(mark.units, locale),
+    });
+}
+
+/** The marker a pump tap target sits on: its x and the name it carries. */
+interface PumpTarget {
+  id: string;
+  x: number;
+  name: string;
+}
+
 /** The tap target's width in px; neighbours closer than this share the space between them. */
 const TAP_WIDTH = 44;
 
@@ -227,6 +336,7 @@ function TapLayer({
   width,
   meals,
   symptoms,
+  pump = null,
   timeZone,
   mealHeight,
 }: {
@@ -234,18 +344,36 @@ function TapLayer({
   width: number;
   meals: { marks: ChartGeometry["meals"]; onTap: (mealId: string) => void } | null;
   symptoms: { marks: readonly ChartSymptomMark[]; onTap: (symptomId: string) => void } | null;
+  /** The pump markers' targets and where the baseline is, as a share of the chart's height. */
+  pump?: { targets: readonly PumpTarget[]; baseline: number } | null;
   timeZone: string;
   /** The meal target's height as a share of the chart's height. */
   mealHeight: string;
 }) {
   const t = useTranslations("chart");
   const categories = useTranslations("foodCategory");
-  const layer = useRef<HTMLDivElement>(null);
+  // A callback ref: the layer mounts only once there is a target, which may be after the curve
+  // (the pump record and the symptoms arrive later), and the measurement must follow it.
+  const [layer, setLayer] = useState<HTMLDivElement | null>(null);
+  const popoverId = useId();
+  const [openPump, setOpenPump] = useState<string | null>(null);
+  // A tap anywhere outside the pump targets closes the popover.
+  useEffect(() => {
+    if (openPump === null) return;
+    const close = (event: Event) => {
+      const target = event.target;
+      if (!(target instanceof Element && target.closest("[data-pump-tap]"))) setOpenPump(null);
+    };
+    document.addEventListener("pointerdown", close);
+    return () => {
+      document.removeEventListener("pointerdown", close);
+    };
+  }, [openPump]);
   // The rendered width, so neighbouring targets can share the pixels between them; before the
   // first layout (and on the server) the SVG's own units stand in for pixels.
   const [pxPerUnit, setPxPerUnit] = useState(1);
   useEffect(() => {
-    const node = layer.current;
+    const node = layer;
     if (!node || typeof ResizeObserver === "undefined") return;
     const measure = () => {
       const rendered = node.getBoundingClientRect().width;
@@ -257,18 +385,31 @@ function TapLayer({
     return () => {
       observer.disconnect();
     };
-  }, [width]);
-  if ((!meals || meals.marks.length === 0) && (!symptoms || symptoms.marks.length === 0))
+  }, [layer, width]);
+  const pumpTargets = pump?.targets ?? [];
+  if (
+    (!meals || meals.marks.length === 0) &&
+    (!symptoms || symptoms.marks.length === 0) &&
+    pumpTargets.length === 0
+  )
     return svg;
+  const open = pumpTargets.find((target) => target.id === openPump) ?? null;
+  const baseline = `${((pump?.baseline ?? 1) * 100).toFixed(2)}%`;
   // "Måltid, Brød, kl. 12:10" for a known symbol; "Måltid kl. 12:10" for unknown or none.
   const mealName = (symbol: MealSymbol | undefined, time: string) =>
     symbol !== undefined && symbol !== "unknown"
       ? t("mealWithCategory", { category: categories(`names.${symbol}`), time })
       : t("mealAt", { time });
   const left = (x: number) => `${(x / width) * 100}%`;
-  const targets = symptomTargets(symptoms?.marks ?? [], width, pxPerUnit);
+  // Symptom diamonds and pump markers both sit on the baseline: their targets are laid out
+  // together, so two close together share the space between them and a tap on one never opens
+  // its neighbour, whichever kind it is.
+  const symptomMarks = symptoms?.marks ?? [];
+  const boxes = symptomTargets([...symptomMarks, ...pumpTargets], width, pxPerUnit);
+  const targets = boxes.slice(0, symptomMarks.length);
+  const pumpBoxes = boxes.slice(symptomMarks.length);
   return (
-    <div className={styles.tapLayer} ref={layer}>
+    <div className={styles.tapLayer} ref={setLayer}>
       {svg}
       {meals?.marks.map((meal) => (
         <button
@@ -302,6 +443,41 @@ function TapLayer({
           }}
         />
       ))}
+      {pumpTargets.map((target, index) => (
+        <button
+          key={target.id}
+          type="button"
+          className={styles.pumpTap}
+          style={{
+            left: `${pumpBoxes[index]?.left ?? 0}px`,
+            width: `${pumpBoxes[index]?.width ?? TAP_WIDTH}px`,
+            top: `calc(${baseline} - 30px)`,
+          }}
+          aria-label={target.name}
+          aria-expanded={openPump === target.id}
+          aria-controls={openPump === target.id ? popoverId : undefined}
+          data-testid="pump-tap"
+          data-pump-tap=""
+          onClick={() => {
+            setOpenPump((current) => (current === target.id ? null : target.id));
+          }}
+          onKeyDown={(event) => {
+            if (event.key === "Escape") setOpenPump(null);
+          }}
+        />
+      ))}
+      {open && (
+        <p
+          id={popoverId}
+          role="status"
+          className={styles.pumpPopover}
+          style={{ left: `${open.x * pxPerUnit}px`, top: `calc(${baseline} - 34px)` }}
+          data-anchor={open.x < width * 0.2 ? "start" : open.x > width * 0.8 ? "end" : "middle"}
+          data-testid="pump-popover"
+        >
+          {open.name}
+        </p>
+      )}
     </div>
   );
 }
@@ -360,7 +536,11 @@ function CurveChart(props: SparklineChartProps | DayChartProps) {
     size: day?.size,
     meals: day?.meals,
     symptoms: day?.symptoms,
+    pump: props.pump,
   });
+  const pumpT = useTranslations("pump");
+  const pumpName = usePumpName();
+  const reachText = g.reach ? pumpT("reach", { time: g.reach.clock }) : null;
   const label =
     props.label ??
     (day?.labelKind === "history"
@@ -377,7 +557,7 @@ function CurveChart(props: SparklineChartProps | DayChartProps) {
       viewBox={`0 0 ${g.width} ${g.height}`}
       width="100%"
       role="img"
-      aria-label={withBoluses(label, bolusText)}
+      aria-label={withBoluses(label, reachText ? [...bolusText, reachText] : bolusText)}
       data-variant={props.variant}
     >
       <Band g={g} />
@@ -413,6 +593,15 @@ function CurveChart(props: SparklineChartProps | DayChartProps) {
           data-testid="bolus"
         />
       ))}
+      <PumpMarks marks={g.pumpMarks} labelSize={g.pumpLabelSize} />
+      <PumpReach
+        reach={g.reach}
+        top={0}
+        bottom={g.plotHeight}
+        width={g.plotWidth}
+        labelSize={g.labelSize}
+        caption={reachText ?? ""}
+      />
       <Segments segments={g.segments} />
       {g.end && (
         <circle className={styles.endDot} cx={g.end.x} cy={g.end.y} r="5" data-testid="end-dot" />
@@ -438,6 +627,10 @@ function CurveChart(props: SparklineChartProps | DayChartProps) {
       width={g.width}
       meals={day?.onMealTap ? { marks: g.meals, onTap: day.onMealTap } : null}
       symptoms={day?.onSymptomTap ? { marks: g.symptoms, onTap: day.onSymptomTap } : null}
+      pump={{
+        targets: g.pumpMarks.map((mark) => ({ id: mark.id, x: mark.x, name: pumpName(mark) })),
+        baseline: g.plotHeight / g.height,
+      }}
       timeZone={props.timeZone}
       mealHeight={`${(g.plotHeight / g.height) * 100}%`}
     />
@@ -449,19 +642,32 @@ function MealChart(props: MealChartProps) {
   const t = useTranslations("chart");
   const log = useTranslations("log");
   const g = mealChartGeometry({ ...props, locale });
+  const pumpT = useTranslations("pump");
+  const pumpName = usePumpName();
+  const reachText = g.reach ? pumpT("reach", { time: g.reach.clock }) : null;
+  // The meal's own bolus with its units is named by its button; a tapped one by the chart's name.
+  const own = g.bolus;
+  const ownTarget =
+    own?.units !== undefined
+      ? {
+          id: "meal-bolus",
+          x: own.x,
+          name: pumpName({ kind: "standard", clock: own.clock, units: own.units }),
+        }
+      : null;
   // The desktop label names the previous curves (Maaltid-Desktop); the phone one does not.
   const label =
     props.size === "desktop" && props.previous.length > 0
       ? t("aria.mealWithPrevious", { count: props.previous.length })
       : t("aria.meal");
-  const bolusText = g.bolus ? [log("bolus.at", { time: g.bolus.clock })] : [];
+  const bolusText = g.bolus && !ownTarget ? [log("bolus.at", { time: g.bolus.clock })] : [];
   const svg = (
     <svg
       className={styles.chart}
       viewBox={`0 0 ${g.width} ${g.height}`}
       width="100%"
       role="img"
-      aria-label={withBoluses(label, bolusText)}
+      aria-label={withBoluses(label, reachText ? [...bolusText, reachText] : bolusText)}
       data-variant="meal"
       data-size={props.size}
     >
@@ -508,6 +714,28 @@ function MealChart(props: MealChartProps) {
       {g.bolus && (
         <path className={styles.bolus} d={g.bolus.path} aria-hidden="true" data-testid="bolus" />
       )}
+      {g.bolus?.label && (
+        <text
+          className={styles.pumpLabel}
+          x={g.bolus.x}
+          y={g.bolus.label.y}
+          fontSize={g.pumpLabelSize}
+          textAnchor="middle"
+          aria-hidden="true"
+          data-testid="pump-label"
+        >
+          {g.bolus.label.text}
+        </text>
+      )}
+      <PumpMarks marks={g.pumpMarks} labelSize={g.pumpLabelSize} />
+      <PumpReach
+        reach={g.reach}
+        top={g.meal.top}
+        bottom={g.meal.bottom}
+        width={g.plotWidth}
+        labelSize={g.labelSize}
+        caption={reachText ?? ""}
+      />
       <Segments segments={g.segments} />
       {g.end && (
         <circle className={styles.endDot} cx={g.end.x} cy={g.end.y} r="5" data-testid="end-dot" />
@@ -540,6 +768,13 @@ function MealChart(props: MealChartProps) {
       width={g.width}
       meals={null}
       symptoms={props.onSymptomTap ? { marks: g.symptoms, onTap: props.onSymptomTap } : null}
+      pump={{
+        targets: [
+          ...(ownTarget ? [ownTarget] : []),
+          ...g.pumpMarks.map((mark) => ({ id: mark.id, x: mark.x, name: pumpName(mark) })),
+        ],
+        baseline: g.meal.bottom / g.height,
+      }}
       timeZone={props.timeZone}
       mealHeight="100%"
     />

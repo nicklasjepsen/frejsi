@@ -1,6 +1,7 @@
 // The browser side of the two meal reads this screen makes (v0.3.0 plan §6): `GET meals/[id]/curve`
 // for owners and carers, `GET meals/[id]` for the simpleMode view, which shows no glucose and so
-// never asks for any. Answers are parsed with the strict contracts, so nothing the contract does
+// never asks for any; and "Det passer" on a pump meal, `PATCH meals/[id]` with `{ adopt: true }`
+// (v0.7.0 plan §9). Answers are parsed with the strict contracts, so nothing the contract does
 // not name reaches a screen. Schema modules, not the @frejsi/shared barrel: this is bundled for
 // the browser.
 import { ApiError, type ApiErrorCode } from "@frejsi/shared/schemas/api";
@@ -25,11 +26,18 @@ async function read<T extends z.ZodType>(
   path: string,
   schema: T,
   signal?: AbortSignal,
+  write?: { method: "PATCH"; body: unknown },
 ): Promise<z.infer<T>> {
   let response: Response;
   try {
     response = await fetch(path, {
-      headers: { accept: "application/json" },
+      ...(write
+        ? {
+            method: write.method,
+            headers: { accept: "application/json", "content-type": "application/json" },
+            body: JSON.stringify(write.body),
+          }
+        : { headers: { accept: "application/json" } }),
       credentials: "same-origin",
       ...(signal ? { signal } : {}),
     });
@@ -68,4 +76,12 @@ export function fetchMeal(
   signal?: AbortSignal,
 ): Promise<MealView> {
   return read(mealPath(spaceId, mealId), MealView, signal);
+}
+
+/** "Det passer": a person ticks a meal the pump record made, and it becomes an ordinary meal. */
+export function adoptMeal(spaceId: string, mealId: string): Promise<MealView> {
+  return read(mealPath(spaceId, mealId), MealView, undefined, {
+    method: "PATCH",
+    body: { adopt: true },
+  });
 }

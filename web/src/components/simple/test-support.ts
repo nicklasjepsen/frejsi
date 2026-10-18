@@ -63,6 +63,8 @@ export interface FakeApi {
   simpleMode: boolean;
   /** "METHOD path-suffix" pairs that answer 500, e.g. "POST meals", "GET day". */
   failing: Set<string>;
+  /** What `POST meals` answers; a test may hand it a view with fields the picker must not show. */
+  created: unknown;
 }
 
 export function fakeApi(
@@ -76,6 +78,7 @@ export function fakeApi(
     simpleMode: init.simpleMode ?? false,
     date: "2026-10-15",
     failing: new Set(),
+    created: { id: "m-new" },
     fetch: async (input: RequestInfo | URL, init: RequestInit = {}) => {
       await Promise.resolve();
       const url = new URL(
@@ -125,7 +128,7 @@ export function fakeApi(
         const parsed = CreateMealRequest.safeParse(body);
         if (!parsed.success) return error(400, "validation");
         if (api.simpleMode && parsed.data.bolusTs !== undefined) return error(400, "simple-mode");
-        return json(201, { id: "m-new" });
+        return json(201, api.created);
       }
       return error(404, "not-found");
     },

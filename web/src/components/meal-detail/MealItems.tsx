@@ -23,14 +23,18 @@ export function useItemLine(): (item: MealItemView) => string {
 export function MealItems({
   items,
   total,
+  pumpCarbs,
   size,
 }: {
   items: readonly MealItemView[];
   /** Desktop only: the "I alt" row. */
   total?: number;
+  /** Desktop only: "Pumpen: 45 g" under "I alt", the carbs typed into the pump (v0.7.0 plan §9). */
+  pumpCarbs?: number | undefined;
   size: "phone" | "desktop";
 }) {
   const t = useTranslations("mealDetail");
+  const pump = useTranslations("pumpMeal");
   const line = useItemLine();
   return (
     <ul className={styles.items} data-size={size} data-testid="meal-items">
@@ -48,6 +52,11 @@ export function MealItems({
           <span className={styles.carbs} data-part="carbs">
             {t("grams", { grams: total })}
           </span>
+        </li>
+      )}
+      {total !== undefined && pumpCarbs !== undefined && (
+        <li className={styles.item} data-part="pump-carbs">
+          <span>{pump("pumpCarbs", { grams: pumpCarbs })}</span>
         </li>
       )}
     </ul>

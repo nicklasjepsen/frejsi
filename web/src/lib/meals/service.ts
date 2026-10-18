@@ -10,6 +10,7 @@ import {
   mealSlot,
   mealSymbol,
   mealTitle,
+  type EmitFn,
   type Locale,
   type MealItemInput,
   type SessionContext,
@@ -28,7 +29,13 @@ import {
   type MealSnapshot,
 } from "./repository";
 
+import { rematch, type PumpLinks } from "./pump";
 import { createMealWriter, type MealWriter } from "./transaction";
+
+/** Who reads a meal: the language, and whether the pump record may be shown (plan §4). */
+export type MealReader = Pick<SessionContext, "locale" | "simpleMode">;
+const asReader = (who: Locale | MealReader): MealReader =>
+  typeof who === "string" ? { locale: who, simpleMode: false } : who;
 
 export interface MealDeps {
   repo: MealRepository;
@@ -81,12 +88,46 @@ async function snapshots(
     }),
   );
 }
-async function load(spaceId: string, id: string, deps: MealDeps): Promise<MealRecord> {
-  const row = await deps.repo.find(spaceId, id);
-  if (!row) throw new HttpError(404, "not-found");
+/**
+ * simpleMode shows nothing new (plan §4): a meal the pump record made and nobody has ticked does
+ * not exist for a simpleMode session, enforced here for every read and write of the meal.
+ */
+function visible(row: MealRecord, reader: MealReader): MealRecord {
+  if (reader.simpleMode && row.source === "pump") throw new HttpError(404, "not-found");
   return row;
 }
-async function view(row: MealRecord, locale: Locale, deps: MealDeps): Promise<MealView> {
+async function load(
+  spaceId: string,
+  id: string,
+  deps: MealDeps,
+  reader: MealReader,
+): Promise<MealRecord> {
+  const row = await deps.repo.find(spaceId, id);
+  if (!row) throw new HttpError(404, "not-found");
+  return visible(row, reader);
+}
+/**
+ * What the pump recorded for the meal, to owners and carers outside simpleMode only: the linked
+ * bolus's units and calculator carbs, its id, and `fromPump` while the meal is an untouched pump
+ * meal. A simpleMode session gets none of it, and no `bolusTs` the pump filled in either.
+ */
+function pumpFields(row: MealRecord, reader: MealReader) {
+  if (reader.simpleMode) return row.bolusTs && !row.pumpBolusId ? { bolusTs: row.bolusTs } : {};
+  return {
+    ...(row.bolusTs ? { bolusTs: row.bolusTs } : {}),
+    ...(row.pumpBolusId ? { pumpBolusId: row.pumpBolusId } : {}),
+    ...(row.pumpBolusId && row.pumpBolus
+      ? {
+          bolusUnits: row.pumpBolus.units,
+          ...(row.pumpBolus.carbs ? { pumpCarbs: row.pumpBolus.carbs } : {}),
+        }
+      : {}),
+    ...(row.source === "pump" ? { fromPump: true as const } : {}),
+  };
+}
+async function view(row: MealRecord, who: Locale | MealReader, deps: MealDeps): Promise<MealView> {
+  const reader = asReader(who);
+  const locale = reader.locale;
   const items = row.items.map(({ name, portionLabel, grams, carbs }) => ({
     name,
     portionLabel,
@@ -106,13 +147,33 @@ async function view(row: MealRecord, locale: Locale, deps: MealDeps): Promise<Me
     totalCarbs: row.totalCarbs,
     symbol: row.symbol ?? "unknown",
     note: row.note,
-    bolusTs: row.bolusTs,
     byUser: row.byUser,
     items,
     title: mealTitle(items, row.note, locale),
     slot: mealSlot(row.ts, row.timezone),
     photo,
+    ...pumpFields(row, reader),
   });
+}
+/**
+ * Matches the meals around `times` to the pump record again, in the write's transaction, and
+ * emits `pump.meals` for every other meal that changed. `released` is the bolus the person's own
+ * meal held before the write; `rematch` dismisses it when the write leaves it with no meal.
+ * Returns the person's own meal as it now is (its link may have changed), or null when it is gone.
+ */
+async function matchPump(
+  pump: PumpLinks | undefined,
+  repo: MealRepository,
+  emit: EmitFn,
+  spaceId: string,
+  times: string[],
+  own: string,
+  released?: string,
+): Promise<MealRecord | null> {
+  if (!pump) return repo.find(spaceId, own);
+  const changed = await rematch(pump, spaceId, times, own, released);
+  if (changed) await emit(spaceId, "pump.meals", changed);
+  return repo.find(spaceId, own);
 }
 function parsed<T>(
   schema: { safeParse(input: unknown): { success: true; data: T } | { success: false } },
@@ -170,11 +231,12 @@ async function cleanup(key: string | undefined, deps: MealDeps): Promise<void> {
 export async function getMeal(
   spaceId: string,
   id: string,
-  locale: Locale,
+  who: Locale | MealReader,
   overrides: Partial<MealDeps> = {},
 ): Promise<MealView> {
   const deps = mealDeps(overrides);
-  return view(await load(spaceId, id, deps), locale, deps);
+  const reader = asReader(who);
+  return view(await load(spaceId, id, deps, reader), reader, deps);
 }
 export async function createMeal(
   spaceId: string,
@@ -190,8 +252,8 @@ export async function createMeal(
   const key = data.photoDataUrl ? await upload(spaceId, id, data.photoDataUrl, deps) : undefined;
   let row: MealRecord;
   try {
-    row = await deps.write(async (repo, emit) => {
-      const saved = await repo.create({
+    row = await deps.write(async (repo, emit, pump) => {
+      const created = await repo.create({
         id,
         spaceId,
         byUserId: session.userId,
@@ -206,16 +268,16 @@ export async function createMeal(
       });
       await emit(spaceId, "meal.created", {
         mealId: id,
-        ts: saved.ts,
-        totalCarbs: saved.totalCarbs,
+        ts: created.ts,
+        totalCarbs: created.totalCarbs,
       });
-      return saved;
+      return (await matchPump(pump, repo, emit, spaceId, [created.ts], id)) ?? created;
     });
   } catch (error) {
     await cleanup(key, deps);
     throw error;
   }
-  return view(row, session.locale, deps);
+  return view(row, session, deps);
 }
 export async function updateMeal(
   spaceId: string,
@@ -227,8 +289,17 @@ export async function updateMeal(
   const deps = mealDeps(overrides);
   const data = parsed(UpdateMealRequest, input);
   checkTimestamp(session, data);
-  await load(spaceId, id, deps);
-  const { items: requested, photoDataUrl, ...fields } = data;
+  const current = await load(spaceId, id, deps, session);
+  const { items: requested, photoDataUrl, adopt, ...fields } = data;
+  // "Det passer" on a meal that is not a pump meal changes nothing (plan §6).
+  const adoptOnly =
+    adopt === true && requested === undefined && !photoDataUrl && Object.keys(fields).length === 0;
+  if (adoptOnly && current.source !== "pump") return view(current, session, deps);
+  // A request that changes nothing leaves a pump meal untouched: only "Det passer" or a real edit
+  // makes it an ordinary meal.
+  const nothing =
+    adopt !== true && requested === undefined && !photoDataUrl && Object.keys(fields).length === 0;
+  if (nothing) return view(current, session, deps);
   const changes: MealChanges = { ...fields };
   if (requested) {
     changes.items = await snapshots(spaceId, session, requested, deps.repo);
@@ -240,30 +311,73 @@ export async function updateMeal(
   let displacedKey: string | undefined;
   let row: MealRecord;
   try {
-    row = await deps.write(async (repo, emit) => {
-      const previous = await repo.lock(spaceId, id);
+    row = await deps.write(async (repo, emit, pump) => {
+      const previous = visible(await repo.lock(spaceId, id), session);
       displacedKey = previous.photoKey;
-      const saved = await repo.update(spaceId, id, changes);
+      const { bolusTs, ...rest } = changes;
+      // A linked meal's bolus time is the one the pump recorded, read-only (plan §7): it can be
+      // sent back unchanged with an edit, never set to another time or cleared.
+      const pumpTime = previous.pumpBolusId !== undefined && bolusTs !== undefined;
+      if (
+        pumpTime &&
+        (bolusTs === null || Date.parse(bolusTs) !== Date.parse(previous.bolusTs ?? ""))
+      )
+        throw new HttpError(400, "validation");
+      // Adopting, or any edit by an owner or carer, makes a pump meal an ordinary meal.
+      const saved = await repo.update(spaceId, id, {
+        ...rest,
+        ...(bolusTs !== undefined && !pumpTime ? { bolusTs } : {}),
+        ...(previous.source === "pump" ? { source: null } : {}),
+      });
       await emit(spaceId, "meal.updated", { mealId: id });
-      return saved;
+      if (Date.parse(saved.ts) === Date.parse(previous.ts)) return saved;
+      return (
+        (await matchPump(
+          pump,
+          repo,
+          emit,
+          spaceId,
+          [previous.ts, saved.ts],
+          id,
+          previous.pumpBolusId,
+        )) ?? saved
+      );
     });
   } catch (error) {
     await cleanup(key, deps);
     throw error;
   }
   if (key) await cleanup(displacedKey, deps);
-  return view(row, session.locale, deps);
+  return view(row, session, deps);
 }
+/**
+ * Deleting a meal frees its bolus for the meals around it. When no meal takes it, or the meal was
+ * an untouched pump meal, the bolus gets `mealDismissed`, so the pump cycle never makes a meal
+ * from carbs a person removed (plan §6).
+ */
 export async function deleteMeal(
   spaceId: string,
   id: string,
+  session: MealReader,
   overrides: Partial<MealDeps> = {},
 ): Promise<void> {
   const deps = mealDeps(overrides);
-  const displacedKey = await deps.write(async (repo, emit) => {
-    const previous = await repo.lock(spaceId, id);
+  const displacedKey = await deps.write(async (repo, emit, pump) => {
+    const previous = visible(await repo.lock(spaceId, id), session);
+    if (previous.source === "pump" && previous.pumpBolusId)
+      await pump?.dismiss(spaceId, previous.pumpBolusId);
     await repo.delete(spaceId, id);
     await emit(spaceId, "meal.deleted", { mealId: id });
+    const pumpMeal = previous.source === "pump";
+    await matchPump(
+      pump,
+      repo,
+      emit,
+      spaceId,
+      [previous.ts],
+      id,
+      pumpMeal ? undefined : previous.pumpBolusId,
+    );
     return previous.photoKey;
   });
   await cleanup(displacedKey, deps);
@@ -277,15 +391,18 @@ export async function setMealPhoto(
 ): Promise<MealView> {
   const deps = mealDeps(overrides);
   if (!deps.photos) throw new HttpError(503, "photo-unavailable");
-  await load(spaceId, id, deps);
+  await load(spaceId, id, deps, session);
   const key = dataUrl === null ? undefined : await upload(spaceId, id, dataUrl, deps);
   let displacedKey: string | undefined;
   let row: MealRecord;
   try {
     row = await deps.write(async (repo, emit) => {
-      const previous = await repo.lock(spaceId, id);
+      const previous = visible(await repo.lock(spaceId, id), session);
       displacedKey = previous.photoKey;
-      const saved = await repo.update(spaceId, id, { photoKey: key });
+      const saved = await repo.update(spaceId, id, {
+        photoKey: key,
+        ...(previous.source === "pump" ? { source: null } : {}),
+      });
       await emit(spaceId, "meal.updated", { mealId: id });
       return saved;
     });
@@ -294,5 +411,5 @@ export async function setMealPhoto(
     throw error;
   }
   await cleanup(displacedKey, deps);
-  return view(row, session.locale, deps);
+  return view(row, session, deps);
 }

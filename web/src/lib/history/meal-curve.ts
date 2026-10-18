@@ -32,7 +32,9 @@ export async function loadMealCurve(
         ts: meal.ts,
         title: mealTitle(meal.items, meal.note, locale),
         totalCarbs: meal.totalCarbs,
-        bolusLeadMinutes: stats.bolusLeadMinutes,
+        ...(stats.bolusLeadMinutes === undefined
+          ? {}
+          : { bolusLeadMinutes: stats.bolusLeadMinutes }),
         stats,
         readings,
       };

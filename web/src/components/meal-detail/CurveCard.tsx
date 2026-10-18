@@ -2,6 +2,7 @@
 
 import type { GlucoseUnit, Reading } from "@frejsi/shared/schemas/glucose";
 import type { MealCurveView } from "@frejsi/shared/schemas/history";
+import type { Role } from "@frejsi/shared/schemas/index";
 import { useLocale, useTranslations } from "next-intl";
 import { useState } from "react";
 
@@ -9,10 +10,12 @@ import {
   ChartCaption,
   ChartLegend,
   GlucoseChart,
+  mealChartMarkers,
   readingsAround,
   useAgeText,
 } from "@/components/glucose";
 import { SymptomDetailCard } from "@/components/history/SymptomDetailCard";
+import { usePumpHistory } from "@/components/pump/usePumpHistory";
 import { useSymptomRange } from "@/components/history/useSymptomRange";
 import { useKindLabel } from "@/components/symptoms/kinds";
 import { ChipGroup } from "@/components/ui";
@@ -44,6 +47,13 @@ export interface CurveCardProps {
    */
   spaceId?: string;
   subscribe?: (type: FeedEventType, handler: () => void) => () => void;
+  /**
+   * The meal page mounts the curve for owners and carers outside simpleMode only (a viewer is
+   * redirected, simpleMode gets the calm view), so the defaults name that member. With a space,
+   * the window's pump record is read for them (v0.7.0 plan §9) and never for anyone else.
+   */
+  role?: Role;
+  simpleMode?: boolean;
 }
 
 /**
@@ -64,6 +74,8 @@ export function CurveCard({
   onTogetherChange,
   spaceId,
   subscribe,
+  role = "owner",
+  simpleMode = false,
 }: CurveCardProps) {
   const t = useTranslations("mealDetail");
   const glucose = useTranslations("glucose");
@@ -77,6 +89,19 @@ export function CurveCard({
     spaceId !== undefined,
   );
   const symptoms = symptomRange.status === "ready" ? symptomRange.symptoms : [];
+  // The window's pump record: the meal's own bolus with its units, and the automatic boluses in
+  // the window as hollow markers (v0.7.0 plan §9). Read for a meal the pump record has reached
+  // (it carries its bolus link), so a space without a pump never asks on every meal it opens.
+  const pumpHistory = usePumpHistory(spaceId ?? "", view.window.from, view.window.to, {
+    subscribe,
+    role,
+    simpleMode,
+    enabled: spaceId !== undefined && view.meal.pumpBolusId !== undefined,
+  });
+  const pump =
+    pumpHistory.status === "ready"
+      ? { boluses: pumpHistory.boluses, reach: pumpHistory.reach }
+      : undefined;
   const kindLabel = useKindLabel(locale, symptomRange.kinds);
   const [activeSymptomId, setActiveSymptomId] = useState<string | null>(null);
   const activeSymptom = symptoms.find((symptom) => symptom.id === activeSymptomId) ?? null;
@@ -113,6 +138,9 @@ export function CurveCard({
         mealTs={view.meal.ts}
         {...(view.meal.bolusTs !== undefined ? { bolusTs: view.meal.bolusTs } : {})}
         {...(view.meal.symbol !== undefined ? { symbol: view.meal.symbol } : {})}
+        pumpBolusId={view.meal.pumpBolusId}
+        bolusUnits={view.meal.bolusUnits}
+        pump={pump}
         symptoms={symptoms.map((symptom) => ({
           id: symptom.id,
           ts: symptom.ts,
@@ -134,6 +162,11 @@ export function CurveCard({
           {...(view.meal.bolusTs !== undefined ? { bolusTs: view.meal.bolusTs } : {})}
           previous={drawn.length > 0}
           timeZone={timeZone}
+          {...mealChartMarkers({
+            mealTs: view.meal.ts,
+            pump,
+            pumpBolusId: view.meal.pumpBolusId,
+          })}
         />
       )}
       <ChartCaption

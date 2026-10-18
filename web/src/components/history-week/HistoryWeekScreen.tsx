@@ -146,6 +146,12 @@ export function HistoryWeekScreen({
       subscribe("meal.created", refresh),
       subscribe("meal.updated", refresh),
       subscribe("meal.deleted", refresh),
+      // A meal the pump record made, linked or removed (v0.7.0 plan §6): any week, an old one
+      // too, since a first pump read reaches back two weeks. Only an owner's or carer's feed
+      // carries it; the week's tiles draw no pump markers.
+      subscribe("pump.meals", () => {
+        void load();
+      }),
       subscribe("member.updated", revalidate),
       subscribe("member.removed", revalidate),
       subscribe("space.updated", revalidate),

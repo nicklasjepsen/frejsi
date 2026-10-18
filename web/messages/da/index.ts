@@ -22,6 +22,8 @@ import nav from "./nav.json";
 import now from "./now.json";
 import passkey from "./passkey.json";
 import people from "./people.json";
+import pump from "./pump.json";
+import pumpMeal from "./pumpMeal.json";
 import pumpSettings from "./pumpSettings.json";
 import recipe from "./recipe.json";
 import roles from "./roles.json";
@@ -58,6 +60,8 @@ const messages = {
   now,
   passkey,
   people,
+  pump,
+  pumpMeal,
   pumpSettings,
   recipe,
   roles,

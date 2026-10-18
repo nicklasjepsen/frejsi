@@ -12,6 +12,7 @@ import { FoodSymbol } from "@/components/food/FoodSymbol";
 import { PhotoTile } from "@/components/food/PhotoTile";
 import {
   ChartLegend,
+  chartMarkers,
   dayStart,
   formatBound,
   formatDayTitle,
@@ -25,6 +26,7 @@ import {
 import { SymptomDetailCard } from "@/components/history/SymptomDetailCard";
 import { beforeInstant, useSymptomRange } from "@/components/history/useSymptomRange";
 import { ManualReadingButton, ManualReadingSheet, useManualReading } from "@/components/manual";
+import { usePumpHistory } from "@/components/pump";
 import { FeelButton } from "@/components/symptoms/FeelButton";
 import { useKindLabel } from "@/components/symptoms/kinds";
 import { HeaderSlot } from "@/components/shell/HeaderSlot";
@@ -47,6 +49,8 @@ import { useNowFoods } from "./useNowFoods";
 const SPARKLINE_HOURS = 3;
 const DAY_START_HOUR = 6;
 const WINDOW_HOURS = 24;
+/** A local day from 06:00 to 06:00 is 25 hours long when daylight saving ends. */
+const LONGEST_DAY_HOURS = 25;
 /** The "Min mad" tiles on Nu-Simpel-Desktop: two rows of four. */
 const MY_FOOD_TILES = 8;
 
@@ -147,6 +151,21 @@ export function NowScreen({
   );
   const symptoms = symptomRange.status === "ready" ? symptomRange.symptoms : [];
   const kindLabel = useKindLabel(locale, symptomRange.kinds);
+  // The pump record for both curves (v0.7.0 plan §9): from three hours before the day's 06:00,
+  // so the sparkline is covered too, to the longest local day later (25 hours, the night the
+  // clocks go back). The bounds move once a day, so the window is read once and again on
+  // `pump.*`. Never for a viewer or a simpleMode session (the route refuses both anyway).
+  const pumpDay = dayStart(now, zone, DAY_START_HOUR).getTime();
+  const pumpHistory = usePumpHistory(
+    spaceId,
+    new Date(pumpDay - SPARKLINE_HOURS * 60 * 60 * 1000).toISOString(),
+    new Date(pumpDay + LONGEST_DAY_HOURS * 60 * 60 * 1000).toISOString(),
+    { subscribe: feed.subscribe, role, simpleMode, enabled: feed.loaded },
+  );
+  const pump =
+    pumpHistory.status === "ready"
+      ? { boluses: pumpHistory.boluses, reach: pumpHistory.reach }
+      : undefined;
   const [activeSymptomId, setActiveSymptomId] = useState<string | null>(null);
   const activeSymptom = symptoms.find((symptom) => symptom.id === activeSymptomId) ?? null;
 
@@ -245,6 +264,15 @@ export function NowScreen({
   }
 
   const sparklineFrom = new Date(now.getTime() - SPARKLINE_HOURS * 60 * 60 * 1000);
+  const dayMeals = (history.status === "ready" ? history.markers : []).map(
+    ({ id: mealId, ts, bolusTs, symbol, pumpBolusId }) => ({
+      mealId,
+      ts,
+      ...(bolusTs ? { bolusTs } : {}),
+      ...(symbol !== undefined ? { symbol } : {}),
+      ...(pumpBolusId !== undefined ? { pumpBolusId } : {}),
+    }),
+  );
   const latestDayReading = feed.readings.reduce<typeof feed.latest>((latest, reading) => {
     const ts = new Date(reading.ts).getTime();
     return ts >= dayFrom.getTime() && ts <= now.getTime() && (!latest || reading.ts > latest.ts)
@@ -295,6 +323,7 @@ export function NowScreen({
               timeZone={zone}
               variant="sparkline"
               label={g("chartLast3h")}
+              {...(pump ? { pump } : {})}
             />
           </Card>
         </section>
@@ -331,16 +360,9 @@ export function NowScreen({
                 <span className={styles.chartTitle}>{g("today")}</span>
                 <ChartLegend
                   variant="day"
-                  bolus={
-                    history.status === "ready" &&
-                    history.markers.some(({ bolusTs }) => {
-                      // Only a triangle the curve draws: before 06:00 the markers hold all of
-                      // yesterday, but the curve starts at dayFrom.
-                      if (!bolusTs) return false;
-                      const at = new Date(bolusTs).getTime();
-                      return at >= dayFrom.getTime() && at <= now.getTime();
-                    })
-                  }
+                  // Only the markers the curve draws: before 06:00 the meal markers hold all of
+                  // yesterday, but the curve starts at dayFrom.
+                  {...chartMarkers({ meals: dayMeals, pump, from: dayFrom, to: now })}
                   target={{ low: targetLow, high: targetHigh }}
                   unit={unit}
                 />
@@ -354,14 +376,8 @@ export function NowScreen({
                 unit={unit}
                 timeZone={zone}
                 variant="day"
-                meals={(history.status === "ready" ? history.markers : []).map(
-                  ({ id: mealId, ts, bolusTs, symbol }) => ({
-                    mealId,
-                    ts,
-                    ...(bolusTs ? { bolusTs } : {}),
-                    ...(symbol !== undefined ? { symbol } : {}),
-                  }),
-                )}
+                meals={dayMeals}
+                {...(pump ? { pump } : {})}
                 onMealTap={(id) => {
                   router.push(mealHref(locale, id));
                 }}

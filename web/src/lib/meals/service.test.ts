@@ -222,7 +222,7 @@ describe("meal services", () => {
     await setMealPhoto("s1", meal.id, session, null, deps);
     expect(photos.photos.size).toBe(0);
     await setMealPhoto("s1", meal.id, session, png, deps);
-    await deleteMeal("s1", meal.id, deps);
+    await deleteMeal("s1", meal.id, session, deps);
     expect(rows.size).toBe(0);
     expect(photos.photos.size).toBe(0);
     expect(events.map((e) => e.type)).toEqual([
@@ -252,7 +252,7 @@ describe("meal services", () => {
     ).rejects.toMatchObject({ code: "photo-type" });
     const meal = await createMeal("s1", session, { items: [{ name: "Toast", carbs: 5 }] }, deps);
     await expect(getMeal("s2", meal.id, "en", deps)).rejects.toMatchObject({ code: "not-found" });
-    await expect(deleteMeal("s2", meal.id, deps)).rejects.toMatchObject({ code: "not-found" });
+    await expect(deleteMeal("s2", meal.id, session, deps)).rejects.toMatchObject({ code: "not-found" });
     expect(events).toHaveLength(1);
   });
 });

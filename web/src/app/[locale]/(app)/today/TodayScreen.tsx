@@ -41,8 +41,8 @@ type DayState =
  * routes it calls are `day`, `members`, `negotiate` and `events`; nothing of glucose is fetched or
  * drawn (plan §7, task 8). The notice explains the viewer's view to the viewer; an owner or carer
  * who opens the page is not told what they can see as »ser med«.
- * The day is fetched again on every `meal.*` and `space.updated` event (the timezone may have
- * changed), when the feed has its cursor, on focus, after a failed read and when the space's day
+ * The day is fetched again on every `meal.*`, `pump.meals` and `space.updated` event (the timezone
+ * may have changed), when the feed has its cursor, on focus, after a failed read and when the space's day
  * turns at midnight; the latter two are checked every 30 seconds.
  */
 export function TodayScreen({
@@ -123,6 +123,9 @@ export function TodayScreen({
       subscribe("meal.updated", refresh),
       subscribe("meal.deleted", refresh),
       subscribe("space.updated", refresh),
+      // A meal the pump record made, linked or removed (v0.7.0 plan §6). It travels in the
+      // glucose group: an owner's or carer's feed delivers it, a viewer's never does.
+      subscribe("pump.meals", refresh),
     ];
     return () => {
       for (const off of offs) off();

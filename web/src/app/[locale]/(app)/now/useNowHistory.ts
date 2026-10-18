@@ -17,12 +17,17 @@ type Subscribe = (type: FeedEventType, handler: () => void) => () => void;
 /** How often the hook checks whether the space's day has turned or a failed read needs a retry. */
 export const DAY_RECHECK_MS = 30_000;
 
-/** The events after which the day is read again (plan §7: "refetch on `meal.*` events"). */
-const REFRESH_ON: FeedEventType[] = [
+/**
+ * The events after which the day is read again (plan §7: "refetch on `meal.*` events"), and
+ * `pump.meals`: a meal the pump record made, linked or removed (v0.7.0 plan §6). It travels in the
+ * glucose group, so only an owner's or a carer's feed delivers it.
+ */
+export const NOW_HISTORY_REFRESH_ON: FeedEventType[] = [
   "meal.created",
   "meal.updated",
   "meal.deleted",
   "space.updated",
+  "pump.meals",
 ];
 
 /** Owner/carer-only Now metadata. Live readings remain exclusively in useLiveFeed. */
@@ -103,7 +108,7 @@ export function useNowHistory(
   useEffect(() => {
     if (!subscribe) return;
     const refresh = () => void load();
-    const offs = REFRESH_ON.map((type) => subscribe(type, refresh));
+    const offs = NOW_HISTORY_REFRESH_ON.map((type) => subscribe(type, refresh));
     return () => {
       for (const off of offs) off();
     };

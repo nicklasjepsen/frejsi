@@ -16,12 +16,17 @@ type Subscribe = (type: FeedEventType, handler: () => void) => () => void;
 /** How often the hook checks whether the space's day has turned or a failed read needs a retry. */
 export const DAY_RECHECK_MS = 30_000;
 
-/** The events after which the day is read again (plan §7: "refetch on `meal.*` events"). */
+/**
+ * The events after which the day is read again (plan §7: "refetch on `meal.*` events"), and
+ * `pump.meals` for the meals the pump record makes, links or removes (v0.7.0 plan §6); that one
+ * travels in the glucose group, so only an owner's or a carer's feed delivers it.
+ */
 const REFRESH_ON: FeedEventType[] = [
   "meal.created",
   "meal.updated",
   "meal.deleted",
   "space.updated",
+  "pump.meals",
 ];
 
 /**

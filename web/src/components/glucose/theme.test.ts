@@ -46,11 +46,13 @@ describe("glucose styles use tokens only (Nu-Moerk, Farve-Nu-*)", () => {
         "--accent-base",
         "--accent-strong",
         "--accent-tint",
+        "--card-shadow",
         "--font-body-stack",
         "--gridline",
         "--hairline",
         "--meal-bolus-marker",
         "--meal-marker",
+        "--surface",
         "--text",
         "--text-muted",
       ]
@@ -129,6 +131,17 @@ describe("the meal and week curves in dark mode and the five accents (v0.3.0 pla
     expect(block(glucoseCss, ".bolus {")).toContain("var(--meal-bolus-marker)");
     expect(block(glucoseCss, ".tickMeal {")).toContain("var(--meal-bolus-marker)");
     expect(block(glucoseCss, ".band {")).toContain("var(--accent-band)");
+  });
+
+  it("draws an automatic bolus hollow in the text colour at 60 %, never the meal colour (v0.7.0 plan §9)", () => {
+    const hollow = block(glucoseCss, ".autoBolus {");
+    expect(hollow).toContain("fill: none");
+    expect(hollow).toContain("stroke: var(--text)");
+    expect(hollow).toContain("stroke-opacity: 0.6");
+    expect(hollow).not.toContain("meal");
+    expect(block(glucoseCss, ".pumpReach {")).toContain("stroke: var(--text-muted)");
+    expect(block(glucoseCss, ".pumpReach {")).toContain("stroke-dasharray");
+    expect(block(glucoseCss, ".pumpLabel {")).toContain("var(--meal-bolus-marker)");
   });
 
   it("lets an accent change the band only: no accent block touches the curve, meal or gridline colours", () => {
