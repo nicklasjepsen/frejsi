@@ -15,6 +15,7 @@ import {
   chartGeometry,
   mealChartGeometry,
   weekTileGeometry,
+  WEEK_TILE,
   type ChartGeometry,
   type ChartMeal,
   type ChartPump,
@@ -25,8 +26,11 @@ import {
   type MealChartSize,
   type PreviousCurve,
 } from "./chart";
+import { CurveTooltip, type TooltipModel } from "./CurveTooltip";
 import { capitalize } from "./format";
 import styles from "./glucose.module.css";
+import type { TipMark } from "./tooltip";
+import { useNow } from "./useNow";
 
 interface CurveBase {
   readings: Reading[];
@@ -67,6 +71,8 @@ export interface DayChartProps extends CurveBase {
    */
   label?: string;
   labelKind?: "now" | "history";
+  /** The clock the tooltip's age is read from; without one it ticks on its own (`useNow`). */
+  now?: Date;
 }
 
 export interface MealChartProps {
@@ -112,6 +118,11 @@ export interface WeekTileChartProps {
   to: Date;
   target: { low: number; high: number };
   timeZone: string;
+  /**
+   * The tile's tooltip (issue 243), in the space's unit, its age read from `now` (or a clock of its
+   * own). Without it the tile stays silent rather than guess the unit.
+   */
+  tooltip?: { unit: GlucoseUnit; now?: Date };
 }
 
 export type GlucoseChartProps =
@@ -286,6 +297,16 @@ function usePumpName(): (mark: { kind: PumpBolusKind; clock: string; units: numb
     });
 }
 
+/** A meal line's name: "Måltid, Brød, kl. 12:10" for a known symbol; "Måltid kl. 12:10" otherwise. */
+function useMealName(): (symbol: MealSymbol | undefined, time: string) => string {
+  const t = useTranslations("chart");
+  const categories = useTranslations("foodCategory");
+  return (symbol, time) =>
+    symbol !== undefined && symbol !== "unknown"
+      ? t("mealWithCategory", { category: categories(`names.${symbol}`), time })
+      : t("mealAt", { time });
+}
+
 /** The marker a pump tap target sits on: its x and the name it carries. */
 interface PumpTarget {
   id: string;
@@ -351,7 +372,7 @@ function TapLayer({
   mealHeight: string;
 }) {
   const t = useTranslations("chart");
-  const categories = useTranslations("foodCategory");
+  const mealName = useMealName();
   // A callback ref: the layer mounts only once there is a target, which may be after the curve
   // (the pump record and the symptoms arrive later), and the measurement must follow it.
   const [layer, setLayer] = useState<HTMLDivElement | null>(null);
@@ -395,11 +416,6 @@ function TapLayer({
     return svg;
   const open = pumpTargets.find((target) => target.id === openPump) ?? null;
   const baseline = `${((pump?.baseline ?? 1) * 100).toFixed(2)}%`;
-  // "Måltid, Brød, kl. 12:10" for a known symbol; "Måltid kl. 12:10" for unknown or none.
-  const mealName = (symbol: MealSymbol | undefined, time: string) =>
-    symbol !== undefined && symbol !== "unknown"
-      ? t("mealWithCategory", { category: categories(`names.${symbol}`), time })
-      : t("mealAt", { time });
   const left = (x: number) => `${(x / width) * 100}%`;
   // Symptom diamonds and pump markers both sit on the baseline: their targets are laid out
   // together, so two close together share the space between them and a tap on one never opens
@@ -540,6 +556,8 @@ function CurveChart(props: SparklineChartProps | DayChartProps) {
   });
   const pumpT = useTranslations("pump");
   const pumpName = usePumpName();
+  const mealName = useMealName();
+  const ticking = useNow();
   const reachText = g.reach ? pumpT("reach", { time: g.reach.clock }) : null;
   const label =
     props.label ??
@@ -621,7 +639,7 @@ function CurveChart(props: SparklineChartProps | DayChartProps) {
       ))}
     </svg>
   );
-  return (
+  const layer = (
     <TapLayer
       svg={svg}
       width={g.width}
@@ -635,6 +653,52 @@ function CurveChart(props: SparklineChartProps | DayChartProps) {
       mealHeight={`${(g.plotHeight / g.height) * 100}%`}
     />
   );
+  // The sparkline stays silent (issue 243): the day curve alone reads under the pointer.
+  if (!day) return layer;
+  const marks: TipMark[] = [
+    ...g.meals.map((meal) => ({
+      id: `meal-${meal.mealId}`,
+      x: meal.x,
+      y: null,
+      name: mealName(meal.symbol, formatClock(new Date(meal.ts), props.timeZone)),
+    })),
+    ...g.boluses.map((bolus) => ({
+      id: `bolus-${bolus.mealId}`,
+      x: bolus.x,
+      y: g.plotHeight,
+      name: log("bolus.at", { time: bolus.clock }),
+    })),
+    ...g.pumpMarks.map((mark) => ({
+      id: mark.id,
+      x: mark.x,
+      y: g.plotHeight,
+      name: pumpName(mark),
+    })),
+    ...g.symptoms.map((mark) => ({
+      id: `symptom-${mark.id}`,
+      x: mark.x,
+      y: g.plotHeight,
+      name: t("symptomAt", {
+        kind: mark.label,
+        time: formatClock(new Date(mark.ts), props.timeZone),
+      }),
+    })),
+  ];
+  const model: TooltipModel = {
+    mode: "full",
+    width: g.width,
+    height: g.height,
+    plotWidth: g.plotWidth,
+    plotTop: 0,
+    plotBottom: g.plotHeight,
+    points: g.points,
+    marks,
+    previous: [],
+    unit: props.unit,
+    timeZone: props.timeZone,
+    now: day.now ?? ticking,
+  };
+  return <CurveTooltip model={model}>{layer}</CurveTooltip>;
 }
 
 function MealChart(props: MealChartProps) {
@@ -644,6 +708,7 @@ function MealChart(props: MealChartProps) {
   const g = mealChartGeometry({ ...props, locale });
   const pumpT = useTranslations("pump");
   const pumpName = usePumpName();
+  const mealName = useMealName();
   const reachText = g.reach ? pumpT("reach", { time: g.reach.clock }) : null;
   // The meal's own bolus with its units is named by its button; a tapped one by the chart's name.
   const own = g.bolus;
@@ -762,7 +827,7 @@ function MealChart(props: MealChartProps) {
       ))}
     </svg>
   );
-  return (
+  const layer = (
     <TapLayer
       svg={svg}
       width={g.width}
@@ -779,10 +844,64 @@ function MealChart(props: MealChartProps) {
       mealHeight="100%"
     />
   );
+  const dateOf = new Intl.DateTimeFormat(NUMBER_LOCALE[locale], {
+    day: "numeric",
+    month: "long",
+    timeZone: props.timeZone,
+  });
+  const marks: TipMark[] = [
+    { id: "meal", x: g.meal.x, y: null, name: mealName(props.symbol, g.mealClock) },
+    ...(g.bolus
+      ? [
+          {
+            id: "meal-bolus",
+            x: g.bolus.x,
+            y: g.meal.bottom,
+            name: ownTarget?.name ?? log("bolus.at", { time: g.bolus.clock }),
+          },
+        ]
+      : []),
+    ...g.pumpMarks.map((mark) => ({
+      id: mark.id,
+      x: mark.x,
+      y: g.meal.bottom,
+      name: pumpName(mark),
+    })),
+    ...g.symptoms.map((mark) => ({
+      id: `symptom-${mark.id}`,
+      x: mark.x,
+      y: g.meal.bottom,
+      name: t("symptomAt", {
+        kind: mark.label,
+        time: formatClock(new Date(mark.ts), props.timeZone),
+      }),
+    })),
+  ];
+  const model: TooltipModel = {
+    mode: "full",
+    width: g.width,
+    height: g.height,
+    plotWidth: g.plotWidth,
+    plotTop: g.meal.top,
+    plotBottom: g.meal.bottom,
+    points: g.points,
+    marks,
+    // An earlier occurrence is named by its date, never by a value (it has no age on this curve).
+    previous: g.previousPoints.map((p) => ({
+      name: t("tooltip.previous", { date: dateOf.format(new Date(p.mealTs)) }),
+      points: p.points,
+    })),
+    unit: props.unit,
+    timeZone: props.timeZone,
+    now: props.now,
+  };
+  return <CurveTooltip model={model}>{layer}</CurveTooltip>;
 }
 
 function WeekTile(props: WeekTileChartProps) {
   const locale = resolveLocale(useLocale());
+  const t = useTranslations("chart");
+  const ticking = useNow();
   const g = weekTileGeometry(props);
   const weekday = capitalize(
     new Intl.DateTimeFormat(NUMBER_LOCALE[locale], {
@@ -845,7 +964,7 @@ function WeekTile(props: WeekTileChartProps) {
       <SymptomMarks marks={g.symptoms} />
     </svg>
   );
-  return (
+  const layer = (
     <TapLayer
       svg={svg}
       width={g.width}
@@ -855,4 +974,30 @@ function WeekTile(props: WeekTileChartProps) {
       mealHeight="100%"
     />
   );
+  if (!props.tooltip) return layer;
+  const day = capitalize(
+    new Intl.DateTimeFormat(NUMBER_LOCALE[locale], {
+      weekday: "long",
+      day: "numeric",
+      month: "long",
+      timeZone: props.timeZone,
+    }).format(props.from),
+    locale,
+  );
+  const model: TooltipModel = {
+    mode: "hover",
+    width: g.width,
+    height: g.height,
+    plotWidth: g.width,
+    plotTop: WEEK_TILE.plotTop,
+    plotBottom: WEEK_TILE.baseline,
+    points: g.points,
+    marks: [],
+    previous: [],
+    unit: props.tooltip.unit,
+    timeZone: props.timeZone,
+    now: props.tooltip.now ?? ticking,
+    prefix: (reading) => t("tooltip.day", { day, reading }),
+  };
+  return <CurveTooltip model={model}>{layer}</CurveTooltip>;
 }

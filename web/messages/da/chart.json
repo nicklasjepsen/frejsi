@@ -17,5 +17,10 @@
   "mealAt": "Måltid kl. {time}",
   "lastReading": "sidste måling {age}",
   "mealWithCategory": "Måltid, {category}, kl. {time}",
-  "symptomAt": "{kind} kl. {time}"
+  "symptomAt": "{kind} kl. {time}",
+  "tooltip": {
+    "keys": "Brug piletasterne til at gå langs kurven.",
+    "previous": "Tidligere gang, {date}",
+    "day": "{day} · {reading}"
+  }
 }
