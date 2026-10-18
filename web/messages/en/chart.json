@@ -17,5 +17,10 @@
   "mealAt": "Meal at {time}",
   "lastReading": "last reading {age}",
   "mealWithCategory": "Meal, {category}, at {time}",
-  "symptomAt": "{kind} at {time}"
+  "symptomAt": "{kind} at {time}",
+  "tooltip": {
+    "keys": "Use the arrow keys to move along the curve.",
+    "previous": "Earlier time, {date}",
+    "day": "{day} · {reading}"
+  }
 }

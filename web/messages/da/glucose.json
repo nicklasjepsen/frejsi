@@ -35,5 +35,9 @@
     "lastReading": "{source} · sidste måling {time}",
     "noReading": "{source} · ingen måling endnu",
     "none": "Ingen glukosekilde valgt endnu"
+  },
+  "tooltip": {
+    "reading": "{value} {unit} · {trend} · kl. {time} · {age}",
+    "readingNoTrend": "{value} {unit} · kl. {time} · {age}"
   }
 }
