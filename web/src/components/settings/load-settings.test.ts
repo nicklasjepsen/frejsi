@@ -44,39 +44,33 @@ function setup() {
     lastSeq: 2,
   });
   const person = { createdAt: T0 };
-  fake
-    .rows("user")
-    .push({
-      id: "u-owner",
-      name: "Example Owner",
-      simpleMode: false,
-      accent: "olive",
-      theme: "system",
-      locale: "da",
-      ...person,
-    });
-  fake
-    .rows("user")
-    .push({
-      id: "u-child",
-      name: "Example Subject",
-      simpleMode: true,
-      accent: "plum",
-      theme: "system",
-      locale: "da",
-      ...person,
-    });
-  fake
-    .rows("user")
-    .push({
-      id: "u-viewer",
-      name: "Example Viewer",
-      simpleMode: false,
-      accent: "sea",
-      theme: "system",
-      locale: "en",
-      ...person,
-    });
+  fake.rows("user").push({
+    id: "u-owner",
+    name: "Example Owner",
+    simpleMode: false,
+    accent: "olive",
+    theme: "system",
+    locale: "da",
+    ...person,
+  });
+  fake.rows("user").push({
+    id: "u-child",
+    name: "Example Subject",
+    simpleMode: true,
+    accent: "plum",
+    theme: "system",
+    locale: "da",
+    ...person,
+  });
+  fake.rows("user").push({
+    id: "u-viewer",
+    name: "Example Viewer",
+    simpleMode: false,
+    accent: "sea",
+    theme: "system",
+    locale: "en",
+    ...person,
+  });
   const at = (minutes: number) => new Date(T0.getTime() + minutes * 60_000);
   fake
     .rows("membership")
@@ -179,5 +173,97 @@ describe("loadSettingsData (plan task 9)", () => {
     fake.tables.event = [];
     const data = await loadSettingsData(session("u-owner", "owner"), shell, db);
     expect(data.source?.since).toBeNull();
+  });
+});
+
+describe("loadSettingsData · the pump record (v0.7.0 plan task 3)", () => {
+  const pumpEvent = (seq: number, status: string, since: string) => ({
+    spaceId: "s1",
+    seq,
+    type: "pump.status",
+    payload: JSON.stringify({ status, since }),
+    ts: T0,
+  });
+  const withPump = (fake: FakeAuthDb, columns: Record<string, unknown>) => {
+    Object.assign(fake.rows("space")[0] ?? {}, columns);
+  };
+
+  it("is not configured, with no times, before a pump record is connected", async () => {
+    const { fake, db } = setup();
+    withPump(fake, { pumpSource: null, pumpStatus: "not-configured", lastPumpAt: null });
+    const data = await loadSettingsData(session("u-owner", "owner"), shell, db);
+    expect(data.pump).toEqual({ status: "not-configured", configured: false });
+  });
+
+  it("is connected with the newest record and the time of the last status change, never the reference", async () => {
+    const { fake, db } = setup();
+    withPump(fake, {
+      pumpSource: JSON.stringify({
+        type: "nightscout",
+        secretRef: "pump-s1/0123abcd",
+        connectedBy: "u-owner",
+      }),
+      pumpStatus: "connected",
+      lastPumpAt: new Date("2026-10-15T09:58:00.000Z"),
+    });
+    fake.rows("event").push(pumpEvent(3, "connected", "2026-10-15T07:45:00.000Z"));
+    const data = await loadSettingsData(session("u-owner", "owner"), shell, db);
+    expect(data.pump).toEqual({
+      status: "connected",
+      since: "2026-10-15T07:45:00.000Z",
+      lastPumpAt: "2026-10-15T09:58:00.000Z",
+      configured: true,
+    });
+    expect(JSON.stringify(data)).not.toContain("pump-s1");
+  });
+
+  it("is disconnected since the latest pump.status event, whatever order the rows come in, and not the glucose one", async () => {
+    const { fake, db } = setup();
+    withPump(fake, {
+      pumpSource: JSON.stringify({
+        type: "nightscout",
+        secretRef: "pump-s1",
+        connectedBy: "u-owner",
+      }),
+      pumpStatus: "disconnected",
+      lastPumpAt: new Date("2026-10-15T06:58:00.000Z"),
+    });
+    fake.rows("event").push(pumpEvent(5, "disconnected", "2026-10-15T12:05:00.000Z"));
+    fake.rows("event").push(pumpEvent(4, "connected", "2026-10-15T05:00:00.000Z"));
+    const data = await loadSettingsData(
+      session("u-child", "carer"),
+      { ...shell, role: "carer" },
+      db,
+    );
+    expect(data.pump).toEqual({
+      status: "disconnected",
+      since: "2026-10-15T12:05:00.000Z",
+      lastPumpAt: "2026-10-15T06:58:00.000Z",
+      configured: true,
+    });
+    // The glucose source keeps its own `since`.
+    expect(data.source?.since).toBe("2026-10-15T07:30:00.000Z");
+  });
+
+  it("gives a viewer no pump record at all", async () => {
+    const { fake, db } = setup();
+    withPump(fake, { pumpStatus: "connected", lastPumpAt: new Date("2026-10-15T06:58:00.000Z") });
+    const data = await loadSettingsData(
+      session("u-viewer", "viewer"),
+      { ...shell, role: "viewer" },
+      db,
+    );
+    expect(data.pump).toBeNull();
+    expect(JSON.stringify(data)).not.toMatch(/06:58|lastPumpAt|connected/);
+  });
+
+  it("gives a simpleMode session no pump record, owner or carer", async () => {
+    const { fake, db } = setup();
+    withPump(fake, { pumpStatus: "connected", lastPumpAt: new Date("2026-10-15T06:58:00.000Z") });
+    const simple = { ...session("u-child", "carer"), simpleMode: true };
+    const data = await loadSettingsData(simple, { ...shell, role: "carer" }, db);
+    expect(data.pump).toBeNull();
+    const simpleOwner = { ...session("u-owner", "owner"), simpleMode: true };
+    expect((await loadSettingsData(simpleOwner, shell, db)).pump).toBeNull();
   });
 });

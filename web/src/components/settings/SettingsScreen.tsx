@@ -22,6 +22,7 @@ import { localeHref, type AppLocale } from "@/lib/i18n/routing";
 import type { UserSettingsPatch } from "./contracts";
 import { Row, SegmentedControl, Switch } from "./controls";
 import type { SettingsData, SettingsPerson } from "./load-settings";
+import { PumpRow, PumpSourceCard } from "./PumpSourceCard";
 import { useServerState } from "./server-state";
 import { SourceCards } from "./SourceCards";
 import { useSourceText } from "./source-text";
@@ -218,6 +219,15 @@ export function SettingsScreen({
                   testId="source-row"
                   {...(isOwner ? { href: settingsHref("/source") } : {})}
                 />
+                {data.pump && (
+                  <PumpRow
+                    pump={data.pump}
+                    timezone={data.timezone}
+                    now={now}
+                    locale={locale}
+                    href={settingsHref("/pump")}
+                  />
+                )}
               </Card>
               <div className={cx(styles.desktopOnly, styles.fill)}>
                 <SourceCards
@@ -231,6 +241,20 @@ export function SettingsScreen({
                   onSwitched={switchedSource}
                 />
               </div>
+              {/* The pump record is its own connection, under the glucose source (v0.7.0 plan
+              §9 item 5); the loader gives it to owners and carers outside simpleMode only. */}
+              {data.pump && (
+                <div className={cx(styles.desktopOnly, styles.fill)}>
+                  <PumpSourceCard
+                    locale={locale}
+                    spaceId={data.spaceId}
+                    pump={data.pump}
+                    timezone={data.timezone}
+                    now={now}
+                    owner={isOwner}
+                  />
+                </div>
+              )}
             </section>
           )}
 

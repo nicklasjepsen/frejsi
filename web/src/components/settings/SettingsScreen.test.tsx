@@ -605,3 +605,83 @@ it("switches AI off through the API, immediately re-renders the phone suffix and
   ]);
   expect(screen.getByTestId("import-row")).toHaveAttribute("href", "/da/settings/import");
 });
+
+describe("SettingsScreen · Pumpehistorik (v0.7.0 plan task 3, §9 item 5)", () => {
+  // 13:08 in Copenhagen; the newest record is from 11:58.
+  const PUMP_NOW = "2026-10-15T11:08:00.000Z";
+  const pumpConnected = {
+    status: "connected" as const,
+    since: "2026-10-15T06:00:00.000Z",
+    lastPumpAt: "2026-10-15T09:58:00.000Z",
+    configured: true,
+  };
+  const mountAt = (data: SettingsData) =>
+    render(
+      <I18nProvider locale="da" messages={getMessages("da")} timeZone="Europe/Copenhagen">
+        <SettingsScreen locale="da" data={data} now={PUMP_NOW} api={fakeApi().api} />
+      </I18nProvider>,
+    );
+
+  it("puts the card beside the glucose source on desktop and a row leading to settings/pump on the phone", () => {
+    mountAt({ ...connected, pump: { status: "not-configured", configured: false } });
+    const section = screen.getByTestId("source-section");
+    const pumpCard = within(section).getByTestId("pump-card");
+    expect(within(pumpCard).getByRole("heading", { name: "Pumpehistorik" })).toBeInTheDocument();
+    expect(within(pumpCard).getByTestId("pump-status")).toHaveTextContent("Ikke forbundet");
+    expect(within(pumpCard).getByRole("button", { name: "Forbind" })).toBeInTheDocument();
+    // The card follows the glucose cards inside the same desktop column.
+    const cards = within(section).getByTestId("source-card");
+    expect(cards.compareDocumentPosition(pumpCard) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    const row = within(section).getByTestId("pump-row");
+    expect(row).toHaveTextContent("Pumpehistorik");
+    expect(row).toHaveTextContent("Ikke forbundet");
+    expect(row).toHaveAttribute("href", "/da/settings/pump");
+  });
+
+  it("writes the newest record on the card and the row when connected, and the failure when disconnected", () => {
+    mountAt({ ...connected, pump: pumpConnected });
+    expect(screen.getByTestId("pump-latest")).toHaveTextContent(
+      "Senest fra pumpen: 11:58 · for 1 t 10 min siden",
+    );
+    expect(screen.getByTestId("pump-row")).toHaveTextContent("Forbundet · senest fra pumpen 11:58");
+    cleanup();
+    mountAt({
+      ...connected,
+      pump: { ...pumpConnected, status: "disconnected", since: "2026-10-15T12:05:00.000Z" },
+    });
+    expect(screen.getByTestId("pump-status")).toHaveTextContent("Forbindelsen svigter siden 14:05");
+    expect(screen.getByTestId("pump-row")).toHaveTextContent("Forbindelsen svigter siden 14:05");
+  });
+
+  it("shows a carer the status without the form: no button on the card, the row still opens the page", () => {
+    mountAt({ ...connected, role: "carer", me: grandma, people: [grandma], pump: pumpConnected });
+    const pumpCard = screen.getByTestId("pump-card");
+    expect(within(pumpCard).getByTestId("pump-status")).toHaveTextContent("Forbundet");
+    expect(within(pumpCard).queryAllByRole("button")).toEqual([]);
+    expect(screen.queryByTestId("pump-form")).toBeNull();
+    expect(screen.getByTestId("pump-row")).toHaveAttribute("href", "/da/settings/pump");
+  });
+
+  it("shows nothing of the pump to a viewer, nor when the loader gave no pump (simpleMode)", () => {
+    const { container } = mountAt({
+      ...connected,
+      role: "viewer",
+      space: null,
+      source: null,
+      pump: null,
+      me: viewer,
+      people: [viewer],
+    });
+    expect(screen.queryByTestId("pump-card")).toBeNull();
+    expect(screen.queryByTestId("pump-row")).toBeNull();
+    expect(container.textContent).not.toMatch(/Pumpehistorik|pumpen/);
+    cleanup();
+    mountAt({ ...connected, pump: null });
+    expect(screen.queryByTestId("pump-card")).toBeNull();
+    expect(screen.queryByTestId("pump-row")).toBeNull();
+    cleanup();
+    const { pump: _none, ...withoutPump } = { ...connected, pump: null };
+    mountAt(withoutPump);
+    expect(screen.queryByTestId("pump-card")).toBeNull();
+  });
+});
