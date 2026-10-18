@@ -34,6 +34,8 @@ export const UpdateMealRequest = z
     ...requestFields,
     // Omitted means unchanged; null explicitly clears a saved timestamp.
     bolusTs: z.iso.datetime().nullable().optional(),
+    /** "Det passer": an owner or carer adopts a meal the pump record made (v0.7.0 plan §6). */
+    adopt: z.literal(true).optional(),
   })
   .partial();
 export type UpdateMealRequest = z.infer<typeof UpdateMealRequest>;
@@ -57,10 +59,20 @@ const viewFields = {
    */
   symbol: MealSymbol.optional(),
 };
+const twoDecimals = (value: number) => Math.abs(value * 100 - Math.round(value * 100)) < 1e-6;
+/**
+ * Owners and carers outside simpleMode only (v0.7.0 plan §4). `bolusUnits` and `pumpCarbs` are read
+ * through the linked bolus: what the pump recorded, never computed. `fromPump` marks a meal the
+ * poller made from pump carbs that nobody has ticked or edited yet. `DayMealView` has none of them.
+ */
 export const MealView = z.strictObject({
   ...viewFields,
   bolusTs: z.iso.datetime().optional(),
   note: z.string().max(500).optional(),
+  bolusUnits: z.number().min(0).max(50).refine(twoDecimals, "units have two decimals").optional(),
+  pumpCarbs: z.number().int().min(1).max(1000).optional(),
+  pumpBolusId: z.string().min(1).optional(),
+  fromPump: z.literal(true).optional(),
 });
 export type MealView = z.infer<typeof MealView>;
 export const DayMealView = z.strictObject(viewFields);

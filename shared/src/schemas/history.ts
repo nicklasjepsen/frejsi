@@ -70,6 +70,9 @@ export type MealCurveView = z.infer<typeof MealCurveView>;
 export const DayHistoryMeal = DayMealView.extend({
   bolusTs: timestamp.optional(),
   stats: MealStats,
+  /** The curve draws a meal's bolus once by its id; `fromPump` is the pump-meal badge (v0.7.0). */
+  pumpBolusId: z.string().min(1).optional(),
+  fromPump: z.literal(true).optional(),
 });
 export type DayHistoryMeal = z.infer<typeof DayHistoryMeal>;
 export const DayHistoryView = z.strictObject({

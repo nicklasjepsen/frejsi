@@ -40,6 +40,9 @@ export const samplePayloads: { [T in EventType]: EventPayload<T> } = {
   "symptom.created": { symptomId: "sy1", ts, kind: "tired", byUserId: "u1" },
   "symptom.updated": { symptomId: "sy1" },
   "symptom.deleted": { symptomId: "sy1" },
+  "pump.imported": { count: 12, from: ts, to: ts },
+  "pump.meals": { updated: ["m1"], created: ["m2"], removed: [] },
+  "pump.status": { status: "disconnected", since: ts },
 };
 
 describe("EventEnvelope", () => {
@@ -72,6 +75,9 @@ describe("EventEnvelope", () => {
       "symptom.created",
       "symptom.updated",
       "symptom.deleted",
+      "pump.imported",
+      "pump.meals",
+      "pump.status",
     ]);
     expect(Object.keys(EventPayloads).sort()).toEqual([...EventType.options].sort());
   });
@@ -195,7 +201,13 @@ describe("symptom.* (v0.6.0 plan §4)", () => {
     if (created.type !== "symptom.created") throw new Error("expected symptom.created");
     expect(Object.keys(created.payload).sort()).toEqual(["byUserId", "kind", "symptomId", "ts"]);
     for (const type of ["symptom.updated", "symptom.deleted"] as const) {
-      const parsed = EventEnvelope.parse({ spaceId: "s1", seq: 5, ts, type, payload: { symptomId: "sy1" } });
+      const parsed = EventEnvelope.parse({
+        spaceId: "s1",
+        seq: 5,
+        ts,
+        type,
+        payload: { symptomId: "sy1" },
+      });
       if (parsed.type !== type) throw new Error(`expected ${type}`);
       expect(Object.keys(parsed.payload)).toEqual(["symptomId"]);
     }
@@ -208,12 +220,84 @@ describe("symptom.* (v0.6.0 plan §4)", () => {
       ).toBe(false);
     }
     expect(
-      EventPayloads["symptom.created"].safeParse({ ...samplePayloads["symptom.created"], kind: "sad" })
-        .success,
+      EventPayloads["symptom.created"].safeParse({
+        ...samplePayloads["symptom.created"],
+        kind: "sad",
+      }).success,
     ).toBe(false);
     // Viewers receive them: a symptom carries no glucose.
-    expect(GLUCOSE_EVENT_TYPES).toEqual(["reading", "readings.imported"]);
+    expect(GLUCOSE_EVENT_TYPES).toEqual([
+      "reading",
+      "readings.imported",
+      "pump.imported",
+      "pump.meals",
+      "pump.status",
+    ]);
     for (const type of ["symptom.created", "symptom.updated", "symptom.deleted"] as const)
       expect(isGlucoseEvent(type)).toBe(false);
+  });
+});
+
+describe("pump.* (v0.7.0 plan §4)", () => {
+  it("comes after symptom.deleted, in the order the plan appends them", () => {
+    const options = EventType.options;
+    const at = (type: EventType) => options.indexOf(type);
+    expect(at("pump.imported")).toBe(at("symptom.deleted") + 1);
+    expect(at("pump.meals")).toBe(at("pump.imported") + 1);
+    expect(at("pump.status")).toBe(at("pump.meals") + 1);
+    expect(options.length).toBe(at("pump.status") + 1);
+  });
+
+  it("is a glucose-group event, every one of them, so a viewer's group never carries them", () => {
+    for (const type of ["pump.imported", "pump.meals", "pump.status"] as const) {
+      expect(isGlucoseEvent(type), type).toBe(true);
+      expect(GLUCOSE_EVENT_TYPES).toContain(type);
+    }
+    expect(isGlucoseEvent("meal.updated")).toBe(false);
+  });
+
+  it("carries counts and a range, meal ids, or a status: never units, carbs or a time per bolus", () => {
+    const imported = EventEnvelope.parse({
+      spaceId: "s1",
+      seq: 8,
+      ts,
+      type: "pump.imported",
+      payload: samplePayloads["pump.imported"],
+    });
+    if (imported.type !== "pump.imported") throw new Error("expected pump.imported");
+    expect(Object.keys(imported.payload).sort()).toEqual(["count", "from", "to"]);
+    const meals = EventEnvelope.parse({
+      spaceId: "s1",
+      seq: 9,
+      ts,
+      type: "pump.meals",
+      payload: samplePayloads["pump.meals"],
+    });
+    if (meals.type !== "pump.meals") throw new Error("expected pump.meals");
+    expect(meals.payload).toEqual({ updated: ["m1"], created: ["m2"], removed: [] });
+    const status = EventEnvelope.parse({
+      spaceId: "s1",
+      seq: 10,
+      ts,
+      type: "pump.status",
+      payload: samplePayloads["pump.status"],
+    });
+    if (status.type !== "pump.status") throw new Error("expected pump.status");
+    expect(status.payload.status).toBe("disconnected");
+    for (const type of ["pump.imported", "pump.meals", "pump.status"] as const) {
+      for (const key of ["units", "bolusUnits", "carbs", "boluses", "mmol", "kind", "sourceId"]) {
+        expect(
+          EventPayloads[type].safeParse({ ...samplePayloads[type], [key]: 1 }).success,
+          `${type}.${key}`,
+        ).toBe(false);
+      }
+    }
+    expect(EventPayloads["pump.meals"].safeParse({ updated: [], created: [] }).success).toBe(false);
+    expect(EventPayloads["pump.imported"].safeParse({ count: -1, from: ts, to: ts }).success).toBe(
+      false,
+    );
+    expect(EventPayloads["pump.status"].safeParse({ status: "online", since: ts }).success).toBe(
+      false,
+    );
   });
 });

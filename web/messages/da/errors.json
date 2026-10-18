@@ -45,6 +45,8 @@
     "symptom-not-found": "Det symptom findes ikke længere – måske er det allerede slettet.",
     "recipe-fetch-failed": "Vi kunne ikke hente siden. Tjek adressen, eller indsæt opskriften som tekst.",
     "recipe-unreadable": "Vi kunne ikke finde en opskrift på siden. Prøv at indsætte ingredienserne som tekst.",
-    "share-expired": "Det delte indhold er udløbet. Del det igen fra den app, du kom fra."
+    "share-expired": "Det delte indhold er udløbet. Del det igen fra den app, du kom fra.",
+    "pump-not-configured": "Pumpe-historik er ikke sat op for rummet endnu. En ejer kan forbinde den under Indstillinger.",
+    "pump-meal": "Det måltid kommer fra pumpen og er ikke tjekket endnu. Tryk »Det passer«, eller ret det, så bliver det et almindeligt måltid."
   }
 }

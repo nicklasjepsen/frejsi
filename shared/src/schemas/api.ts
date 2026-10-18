@@ -40,6 +40,8 @@ export const ApiErrorCode = z.enum([
   "recipe-fetch-failed",
   "recipe-unreadable",
   "share-expired",
+  "pump-not-configured",
+  "pump-meal",
 ]);
 export type ApiErrorCode = z.infer<typeof ApiErrorCode>;
 
