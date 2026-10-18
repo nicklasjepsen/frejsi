@@ -343,6 +343,54 @@ describe("NightscoutPumpSource.fetchBolusesSince", () => {
     expect(boluses).toHaveLength(PAGE_COUNT);
   });
 
+  it("counts an unreadable record at the page boundary once, though the next page repeats it", async () => {
+    const newest = new Date(now.getTime() - HOUR);
+    const full = JSON.parse(page(PAGE_COUNT, newest, 1)) as Record<string, unknown>[];
+    const last = full[full.length - 1];
+    if (!last) throw new Error("no page");
+    // The oldest record of the full page has no pump_event_id; $lte returns it again.
+    const { pump_event_id: _id, ...unreadable } = last;
+    full[full.length - 1] = unreadable;
+    const older = {
+      ...last,
+      created_at: new Date(Date.parse(String(last.created_at)) - 60_000).toISOString(),
+      pump_event_id: "older",
+    };
+    const h = pump((_call, index) =>
+      index === 0
+        ? { body: JSON.stringify(full) }
+        : { body: JSON.stringify([unreadable, older]) },
+    );
+    const boluses = await h.source.fetchBolusesSince(new Date(now.getTime() - DAY));
+    expect(h.calls).toHaveLength(2);
+    expect(boluses).toHaveLength(PAGE_COUNT);
+    const lines = h.lines.map((l) => JSON.parse(l) as Record<string, unknown>);
+    expect(lines).toEqual([
+      expect.objectContaining({ level: "warn", msg: "pump.dropped", count: 1 }),
+    ]);
+  });
+
+  it("counts a full page of unreadable records at the cursor's own time once", async () => {
+    const newest = new Date(now.getTime() - HOUR);
+    const same = JSON.stringify(
+      Array.from({ length: PAGE_COUNT }, (_, i) => ({
+        eventType: "Combo Bolus",
+        created_at: newest.toISOString(),
+        insulin: "1",
+        notes: "Automatic Bolus",
+        pump_event_id: String(i + 1),
+      })),
+    );
+    const h = pump({ body: same });
+    const boluses = await h.source.fetchBolusesSince(new Date(now.getTime() - DAY));
+    expect(h.calls).toHaveLength(2);
+    expect(boluses).toEqual([]);
+    const lines = h.lines.map((l) => JSON.parse(l) as Record<string, unknown>);
+    expect(lines).toEqual([
+      expect.objectContaining({ level: "warn", msg: "pump.dropped", count: PAGE_COUNT }),
+    ]);
+  });
+
   it("stops after five full pages and logs the sixth as pump.page-cap", async () => {
     const h = pump((call) => {
       const lte = call.url.searchParams.get("find[created_at][$lte]");

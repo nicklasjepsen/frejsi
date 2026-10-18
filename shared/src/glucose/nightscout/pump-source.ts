@@ -30,12 +30,16 @@ export interface NightscoutPumpSourceOptions extends Pick<NightscoutCredential, 
   timeoutMs?: number;
 }
 
-/** One page as read: the boluses it held, how many rows it had, and the oldest `created_at`. */
+/**
+ * One page as read: the boluses it held, how many rows it had, the oldest `created_at`, and one
+ * key per record it could not read (its `_id`, or the row itself when it has none), so a record
+ * that `$lte` returns on the next page again is counted once.
+ */
 interface Page {
   rows: number;
   oldest: string | undefined;
   boluses: PumpBolus[];
-  dropped: number;
+  dropped: string[];
 }
 
 /**
@@ -78,12 +82,13 @@ export class NightscoutPumpSource implements PumpSource {
    * (`$lte`, so a record sharing that time beyond the page is not skipped) and the records already
    * seen are dropped, at most five pages. A full page whose oldest time is the cursor's own ends
    * the paging: every record on it shares that time and the cursor cannot move. A record that
-   * cannot be read is dropped and counted in one `pump.dropped` line.
+   * cannot be read is dropped and counted once, however many pages return it, in one
+   * `pump.dropped` line.
    */
   async fetchBolusesSince(since: Date): Promise<PumpBolus[]> {
     const count = pageCountFor(since, this.now());
     const bySourceId = new Map<string, PumpBolus>();
-    let dropped = 0;
+    const dropped = new Set<string>();
     let atOrBelow: string | undefined;
     for (let index = 0; index < MAX_PAGES; index += 1) {
       const query = new URLSearchParams({
@@ -93,7 +98,7 @@ export class NightscoutPumpSource implements PumpSource {
       });
       if (atOrBelow !== undefined) query.set("find[created_at][$lte]", atOrBelow);
       const page = await this.readPage(query, since);
-      dropped += page.dropped;
+      for (const key of page.dropped) dropped.add(key);
       for (const bolus of page.boluses) {
         if (!bySourceId.has(bolus.sourceId)) bySourceId.set(bolus.sourceId, bolus);
       }
@@ -108,7 +113,9 @@ export class NightscoutPumpSource implements PumpSource {
       }
       atOrBelow = page.oldest;
     }
-    if (dropped > 0) this.log?.warn("pump.dropped", { count: dropped, code: "malformed" });
+    if (dropped.size > 0) {
+      this.log?.warn("pump.dropped", { count: dropped.size, code: "malformed" });
+    }
     return [...bySourceId.values()].sort(
       (a, b) => Date.parse(a.ts) - Date.parse(b.ts) || (a.sourceId < b.sourceId ? -1 : 1),
     );
@@ -197,15 +204,23 @@ function toBolus(entry: TreatmentEntry): PumpBolus | undefined {
   return parsed.success ? parsed.data : undefined;
 }
 
+/** Nightscout's own `_id` when the row has one, else the row as sent; never logged. */
+function droppedKey(row: unknown): string {
+  if (typeof row === "object" && row !== null && "_id" in row && typeof row._id === "string") {
+    return `id:${row._id}`;
+  }
+  return `row:${JSON.stringify(row)}`;
+}
+
 function toPage(rows: readonly unknown[], since: Date): Page {
   const boluses: PumpBolus[] = [];
-  let dropped = 0;
+  const dropped: string[] = [];
   for (const row of rows) {
     if (isOtherType(row)) continue;
     const entry = TreatmentEntry.safeParse(row);
     const bolus = entry.success ? toBolus(entry.data) : undefined;
     if (bolus === undefined) {
-      dropped += 1;
+      dropped.push(droppedKey(row));
       continue;
     }
     if (Date.parse(bolus.ts) >= since.getTime()) boluses.push(bolus);
