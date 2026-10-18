@@ -62,6 +62,14 @@ export function SymptomDetailCard({
   const [confirming, setConfirming] = useState(false);
   const [busy, setBusy] = useState(false);
   const [failed, setFailed] = useState(false);
+  // A screen keeps the card mounted when another marker or row is tapped: a question asked
+  // about one symptom never carries over to the next.
+  const [shownId, setShownId] = useState(symptom.id);
+  if (shownId !== symptom.id) {
+    setShownId(symptom.id);
+    setConfirming(false);
+    setFailed(false);
+  }
   const deletable = mayDelete && spaceId !== undefined;
   const time = formatClock(new Date(symptom.ts), timeZone);
   const confirmDelete = async () => {

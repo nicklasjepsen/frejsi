@@ -114,6 +114,31 @@ describe("SymptomDetailCard delete (#220)", () => {
     expect(screen.queryByRole("button", { name: "Slet" })).toBeNull();
   });
 
+  it("drops the question when the card moves to another symptom", () => {
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+    const card = (shown: typeof symptom) => (
+      <NextIntlClientProvider locale="da" messages={da}>
+        <SymptomDetailCard
+          locale="da"
+          timeZone={zone}
+          symptom={shown}
+          onClose={vi.fn()}
+          spaceId="sp1"
+          mayDelete
+        />
+      </NextIntlClientProvider>
+    );
+    const { rerender } = render(card(symptom));
+    fireEvent.click(within(screen.getByRole("dialog")).getByRole("button", { name: "Slet" }));
+    expect(screen.getByRole("dialog")).toHaveTextContent("Slet ondt i maven kl. 14:30?");
+    rerender(card({ ...symptom, id: "s2", ts: "2026-10-14T13:00:00.000Z" }));
+    const dialog = screen.getByRole("dialog");
+    expect(dialog).not.toHaveTextContent("Slet ondt i maven");
+    expect(within(dialog).queryByRole("button", { name: "Behold" })).toBeNull();
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
   it("asks once in the card, and 'Behold' leaves everything as it was", () => {
     const fetchMock = vi.fn();
     vi.stubGlobal("fetch", fetchMock);
