@@ -4,7 +4,7 @@ import type { Reading } from "@frejsi/shared";
 import type { PumpBolusView } from "@frejsi/shared/schemas/pump";
 import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import type { ReactNode } from "react";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { I18nProvider } from "@/lib/i18n/Provider";
 import { getMessages } from "@/lib/i18n/messages";
@@ -18,9 +18,16 @@ const FROM = new Date("2026-10-15T04:00:00.000Z"); // 06:00
 const T0 = new Date("2026-10-15T13:13:00.000Z"); // 15:13
 const reading = (ts: string, mmol = 6): Reading => ({ ts, mmol, trend: "flat" });
 const readings = [reading("2026-10-15T12:00:00.000Z"), reading("2026-10-15T13:10:00.000Z")];
+const lunchBolus: PumpBolusView = {
+  id: "lunch",
+  ts: "2026-10-15T09:58:00.000Z", // 11:58
+  units: 2.4,
+  kind: "standard",
+  mealId: "m1",
+};
 const boluses: PumpBolusView[] = [
   { id: "auto", ts: "2026-10-15T05:10:00.000Z", units: 0.6, kind: "automatic" }, // 07:10
-  { id: "lunch", ts: "2026-10-15T09:58:00.000Z", units: 2.4, kind: "standard", mealId: "m1" }, // 11:58
+  lunchBolus,
   { id: "ext", ts: "2026-10-15T11:20:00.000Z", units: 1.25, kind: "extended" }, // 13:20
 ];
 const mount = (node: ReactNode, locale: AppLocale = "da") =>
@@ -135,6 +142,64 @@ describe("pump markers on the day curve (v0.7.0 plan §9)", () => {
     expect(a.left + a.width).toBeLessThanOrEqual(b.left + 0.01);
     expect(a.width).toBeGreaterThan(0);
     expect(b.width).toBeGreaterThan(0);
+  });
+
+  it("measures the rendered width when the pump markers arrive after the curve", () => {
+    vi.stubGlobal(
+      "ResizeObserver",
+      class {
+        observe() {
+          return undefined;
+        }
+        disconnect() {
+          return undefined;
+        }
+      },
+    );
+    const rect = vi
+      .spyOn(HTMLElement.prototype, "getBoundingClientRect")
+      .mockReturnValue({ width: 652 } as DOMRect);
+    try {
+      const props = { ...dayProps, size: "phone" as const };
+      const { rerender } = mount(<GlucoseChart {...props} />);
+      rerender(
+        <I18nProvider locale="da" messages={getMessages("da")}>
+          <GlucoseChart {...props} pump={{ boluses: [lunchBolus] }} />
+        </I18nProvider>,
+      );
+      const marker = document.querySelector("[data-testid=pump-bolus]");
+      const x = Number(/^M([\d.]+) /.exec(marker?.getAttribute("d") ?? "")?.[1]);
+      const tap = screen.getByTestId("pump-tap");
+      // Twice the viewBox width: the target is centred on twice the marker's x.
+      const centre = parseFloat(tap.style.left) + parseFloat(tap.style.width) / 2;
+      expect(centre).toBeCloseTo(x * 2, 0);
+    } finally {
+      rect.mockRestore();
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it("keeps a symptom and a bolus at the same time each tappable, side by side", () => {
+    mount(
+      <GlucoseChart
+        {...dayProps}
+        size="phone"
+        pump={{ boluses: [lunchBolus] }}
+        symptoms={[{ id: "s1", ts: "2026-10-15T09:58:00.000Z", kind: "nausea", label: "Kvalme" }]}
+        onSymptomTap={() => undefined}
+      />,
+    );
+    const symptom = screen.getByTestId("symptom-tap");
+    const pump = screen.getByTestId("pump-tap");
+    const span = (el: HTMLElement) => [
+      parseFloat(el.style.left),
+      parseFloat(el.style.left) + parseFloat(el.style.width),
+    ];
+    const [sl, sr] = span(symptom);
+    const [pl, pr] = span(pump);
+    expect((sr ?? 0) <= (pl ?? 0) + 0.01 || (pr ?? 0) <= (sl ?? 0) + 0.01).toBe(true);
+    expect((sr ?? 0) - (sl ?? 0)).toBeGreaterThan(0);
+    expect((pr ?? 0) - (pl ?? 0)).toBeGreaterThan(0);
   });
 
   it("closes the popover on a tap anywhere else", () => {
