@@ -295,6 +295,11 @@ export async function updateMeal(
   const adoptOnly =
     adopt === true && requested === undefined && !photoDataUrl && Object.keys(fields).length === 0;
   if (adoptOnly && current.source !== "pump") return view(current, session, deps);
+  // A request that changes nothing leaves a pump meal untouched: only "Det passer" or a real edit
+  // makes it an ordinary meal.
+  const nothing =
+    adopt !== true && requested === undefined && !photoDataUrl && Object.keys(fields).length === 0;
+  if (nothing) return view(current, session, deps);
   const changes: MealChanges = { ...fields };
   if (requested) {
     changes.items = await snapshots(spaceId, session, requested, deps.repo);

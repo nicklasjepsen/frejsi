@@ -340,6 +340,15 @@ describe("pump meals on the meal routes (v0.7.0 plan §6)", () => {
     expect(h.events).toHaveLength(1);
     expect(h.isolation).toHaveLength(1);
   });
+  it("leaves an untouched pump meal alone when the request changes nothing", async () => {
+    const h = pumpSetup();
+    const before = structuredClone(h.rows.get("pm1"));
+    const res = await PATCH(request("PATCH", "carer", {}), ctx("pm1"));
+    expect(res.status).toBe(200);
+    expect(await body(res)).toMatchObject({ id: "pm1", fromPump: true });
+    expect(h.rows.get("pm1")).toEqual(before);
+    expect(h.events).toHaveLength(0);
+  });
   it("sets mealDismissed when an owner or carer deletes a pump meal", async () => {
     const h = pumpSetup();
     expect((await DELETE(request("DELETE", "owner"), ctx("pm1"))).status).toBe(204);
