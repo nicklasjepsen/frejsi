@@ -105,3 +105,21 @@ describe("chartGeometry (tokens.json#chart)", () => {
     expect(g.ticks.map((t) => t.label)).toEqual(["13:00", "14:00", "15:00", "15:40"]);
   });
 });
+
+describe("the points the tooltip snaps to (issue 243)", () => {
+  it("gives each drawn reading its place in the viewBox, with its time and trend", () => {
+    const g = chartGeometry({
+      ...base,
+      readings: [
+        reading(minutesAgo(200), 7),
+        reading(minutesAgo(90), 6),
+        reading(minutesAgo(0), 8),
+      ],
+    });
+    // The first reading is outside the 3-hour window and is not drawn, so it cannot be pointed at.
+    expect(g.points).toEqual([
+      { ts: minutesAgo(90), mmol: 6, trend: "flat", x: 148, y: 80 },
+      { ts: minutesAgo(0), mmol: 8, trend: "flat", x: 296, y: 60 },
+    ]);
+  });
+});
