@@ -139,6 +139,8 @@ function fakeDb(initial: Partial<State> = {}) {
             .map((s) => pick(s, args.select)),
         );
       },
+      findUnique: (args: { where: { id: string }; select: Record<string, true> }) =>
+        Promise.resolve(pick(space(args.where.id), args.select)),
       update: (args: {
         where: { id: string };
         data: Record<string, { increment: number }>;
@@ -683,6 +685,25 @@ describe("runPumpCycle: status", () => {
     expect(db.state.spaces[0]).toMatchObject({ pumpStatus: "connected", pumpFailures: 0 });
     expect(db.state.events.map((e) => e.type)).toEqual(["pump.status", "pump.status"]);
     expect(db.state.events.at(-1)?.payload).toEqual({ status: "connected", since: iso(NOW) });
+  });
+
+  it("reads the status again when a concurrent cycle disconnected the space after this one fetched", async () => {
+    const db = fakeDb({
+      spaces: [pumpSpace({ lastPumpAt: ago(DAY), pumpFailures: 2 })],
+    });
+    const source = new FakePumpSource([], {
+      onFetch: () => {
+        // The other timer invocation commits the third failure while this fetch is in flight.
+        Object.assign(db.state.spaces[0] as object, { pumpStatus: "disconnected", pumpFailures: 3 });
+        return () => undefined;
+      },
+    });
+    const [outcome] = await harness(db, { s1: source }).run();
+    expect(outcome).toMatchObject({ outcome: "ok", status: "connected" });
+    expect(db.state.spaces[0]).toMatchObject({ pumpStatus: "connected", pumpFailures: 0 });
+    expect(db.state.events.map((e) => [e.type, e.payload])).toEqual([
+      ["pump.status", { status: "connected", since: iso(NOW) }],
+    ]);
   });
 
   it("does not count a failure of its own database writes against the source", async () => {
