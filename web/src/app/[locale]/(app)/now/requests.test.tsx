@@ -8,9 +8,9 @@ import { fakeFetch, FakeSocket, jsonResponse } from "@/lib/live/test-support";
 import { TodayScreen } from "../today/TodayScreen";
 import NowPage from "./page";
 
-const session = vi.hoisted(() => ({ role: "owner" }));
+const session = vi.hoisted(() => ({ role: "owner", simpleMode: false }));
 vi.mock("@/components/shell/shell-session", () => ({
-  getShellSession: () => Promise.resolve({ simpleMode: false }),
+  getShellSession: () => Promise.resolve({ simpleMode: session.simpleMode }),
   getShell: () =>
     Promise.resolve({ space: { id: "s1", role: session.role, timezone: "Europe/Copenhagen" } }),
 }));
@@ -43,6 +43,7 @@ let net: ReturnType<typeof fakeFetch>;
 let sockets: FakeSocket[];
 beforeEach(() => {
   vi.useFakeTimers({ now, toFake: ["Date"] });
+  session.simpleMode = false;
   sockets = [];
   vi.stubGlobal(
     "WebSocket",
@@ -91,6 +92,7 @@ beforeEach(() => {
         latest: null,
       }),
     "/members": () => jsonResponse({ members: [], invites: [] }),
+    "/pump": () => jsonResponse({ boluses: [], status: "connected" }),
   });
   vi.stubGlobal("fetch", net.fetch);
 });
@@ -135,8 +137,17 @@ it.each(["owner", "carer"] as const)(
         // The desktop curve's symptoms (v0.6.0 plan §5): kinds, times and names, never a reading.
         "symptoms",
         "symptoms/kinds",
+        // The pump record for both curves (v0.7.0 plan §9), owners and carers only.
+        "pump",
       ]),
     );
+    // One window, read once: from 03:00 (three hours before the day's 06:00) to 06:00 tomorrow.
+    expect(net.calls.filter((url) => url.includes("/pump"))).toEqual([
+      `/api/spaces/s1/pump?${new URLSearchParams({
+        from: "2026-10-14T01:00:00.000Z",
+        to: "2026-10-15T04:00:00.000Z",
+      }).toString()}`,
+    ]);
     expect(net.calls.filter((url) => url.includes("/history/"))).toEqual([
       "/api/spaces/s1/history/day?readings=0",
     ]);
@@ -145,6 +156,26 @@ it.each(["owner", "carer"] as const)(
     ]);
   },
 );
+
+it("a simpleMode session on Now never asks for the pump record", async () => {
+  session.role = "carer";
+  session.simpleMode = true;
+  const page = await NowPage({ params: Promise.resolve({ locale: "da" }) });
+  render(
+    <I18nProvider locale="da" messages={getMessages("da")}>
+      {page}
+    </I18nProvider>,
+  );
+  await screen.findByTestId("now-simple");
+  await waitFor(() => {
+    expect(sockets).toHaveLength(1);
+  });
+  act(() => sockets[0]?.open());
+  await waitFor(() => {
+    expect(net.calls.some((url) => url.includes("/events?"))).toBe(true);
+  });
+  expect(net.calls.filter((url) => url.includes("/pump"))).toEqual([]);
+});
 
 it("redirects a viewer to their meal-only day, with their own history navigation and no chart or peak", async () => {
   session.role = "viewer";

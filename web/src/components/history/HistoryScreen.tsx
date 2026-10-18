@@ -1,6 +1,7 @@
 "use client";
 import { DayHistoryView } from "@frejsi/shared/schemas/history";
 import type { GlucoseUnit } from "@frejsi/shared/schemas/glucose";
+import type { Role } from "@frejsi/shared/schemas/index";
 import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -29,6 +30,13 @@ export interface HistoryProps {
   today: string;
   initialDate: string;
   aiEnabled?: boolean;
+  /**
+   * The page renders this screen for owners and carers outside simpleMode only (a viewer gets
+   * `ViewerDays`, a simpleMode session is sent to Nu), so the defaults name that member; the day
+   * sections read the pump record only for them, and the route refuses anyone else.
+   */
+  role?: Role;
+  simpleMode?: boolean;
   fetch?: typeof fetch;
   socketFactory?: SocketFactory;
 }
@@ -42,6 +50,8 @@ export function HistoryScreen({
   fetch: fetchImpl,
   socketFactory,
   aiEnabled = false,
+  role = "owner",
+  simpleMode = false,
 }: HistoryProps & { unit: GlucoseUnit }) {
   const t = useTranslations("history");
   const router = useRouter();
@@ -152,6 +162,9 @@ export function HistoryScreen({
     const recheckAccess = () => {
       void refreshAll();
     };
+    const refreshShown = () => {
+      void refreshAll();
+    };
     const refreshMembership = () => {
       recheckAccess();
       router.refresh();
@@ -160,6 +173,9 @@ export function HistoryScreen({
       subscribe("meal.created", refresh),
       subscribe("meal.updated", refresh),
       subscribe("meal.deleted", refresh),
+      // A meal the pump record made, linked or removed (v0.7.0 plan §6), on any day shown: a late
+      // upload can reach back. Only an owner's or carer's feed carries it.
+      subscribe("pump.meals", refreshShown),
       subscribe("space.updated", () => {
         recheckAccess();
         router.refresh();
@@ -284,6 +300,8 @@ export function HistoryScreen({
                 liveReadings={feed.readings}
                 onNavigate={navigate}
                 subscribe={subscribe}
+                role={role}
+                simpleMode={simpleMode}
                 symptomsOnly={symptomsOnly}
                 {...(desktop ? {} : { headerExtra: symptomsChip })}
               />

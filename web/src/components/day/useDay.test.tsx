@@ -76,6 +76,25 @@ describe("useDay (Nu's meal regions)", () => {
     expect(dayReads()).toBe(3);
   });
 
+  it("reads again on pump.meals: a meal the pump record made, linked or removed (v0.7.0 plan §6)", async () => {
+    render(<Probe loaded />);
+    await settle();
+    expect(dayReads()).toBe(1);
+    api.meals = [];
+    act(() => {
+      emit("pump.meals");
+    });
+    await settle();
+    expect(dayReads()).toBe(2);
+    expect(screen.getByTestId("probe")).toHaveTextContent("2026-10-15:0");
+    // pump.imported alone changes no meal: the day is not read for it.
+    act(() => {
+      emit("pump.imported");
+    });
+    await settle();
+    expect(dayReads()).toBe(2);
+  });
+
   it("reads the new day when the space's day turns at midnight", async () => {
     render(<Probe loaded />);
     await settle();
