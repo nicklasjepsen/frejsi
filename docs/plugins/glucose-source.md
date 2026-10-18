@@ -92,7 +92,9 @@ database and never calls `emit()`.
 - A `viewer` never receives glucose; the existing routes already enforce it.
 - No raw readings to an AI model; your adapter has nothing to do with AI.
 - Nothing Danish hard-coded; the unit and the time zone come from the space.
-- No insulin units, ratios, corrections or suggestions anywhere.
+- Nothing computes, suggests or lets anyone enter insulin. A glucose source returns readings only;
+  what the pump delivered is a separate, read-only `PumpSource` (`shared/src/pump/types.ts`) and
+  never passes through a glucose source.
 
 ## Pull request checklist
 

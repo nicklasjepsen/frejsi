@@ -48,8 +48,10 @@ the row to the `events` table, then publishes the event to Web PubSub. A lint ru
 Events go to one of two Web PubSub groups per space:
 
 - `space-<id>`: every member, viewers included. Meals, foods, settings, people.
-- `space-<id>-glucose`: owners and carers only. The `reading` and `readings.imported` events
-  (`GLUCOSE_EVENT_TYPES` in `shared/src/schemas/events.ts`).
+- `space-<id>-glucose`: owners and carers only. The `reading` and `readings.imported` events, and
+  since v0.7.0 the pump record's `pump.imported`, `pump.meals` and `pump.status`
+  (`GLUCOSE_EVENT_TYPES` in `shared/src/schemas/events.ts`), so a viewer never learns that pump
+  data exists or arrived.
 
 A client token carries only the user id. The hub's `connect` handler (`web/src/app/api/pubsub/`) looks
 up the member's current role when a socket opens and joins exactly the groups that role allows, so a
@@ -85,6 +87,27 @@ registry that decides what is switched on, and a fake for tests.
 
 Glucose sources are read-only: Frejsi never writes to a CGM or a glucose service, and each adapter
 calls only the endpoints on its own allow-list.
+
+### `PumpSource`: where the pump record comes from (v0.7.0)
+
+- The interface: `shared/src/pump/types.ts`. `fetchBolusesSince(since)` returns the boluses the pump
+  recorded, oldest first, each a `PumpBolus` (`shared/src/schemas/pump.ts`): the record's own
+  `sourceId`, its `ts`, the delivered `units`, the `kind` (`standard`, `extended`, `automatic`,
+  `other`) and the calculator's `carbs`. `probe()` is the same as a glucose source's. Read-only, like
+  a glucose source; the cycle knows the interface, not the vendor.
+- The data model: `PumpBolus` (unique on `(spaceId, sourceId)`, so re-polling adds nothing;
+  `mealDismissed` when a carer deleted the pump meal made from it), `Space.pumpSource`
+  (`PumpSourceConfig`: the type, the secret reference `pump-<spaceId>/<version>`, who connected it),
+  `Space.pumpStatus`, `Space.pumpFailures`, `Space.lastPumpAt`, and on `Meal` the `pumpBolusId` the
+  matcher gave it and `source = "pump"` while it is an untouched meal made from pump carbs.
+- The rules: `matchBoluses` and `diffLinks` in `shared/src/pump/match.ts` pair each meal with at
+  most one standard or extended bolus from 45 minutes before to 30 after, nearest first; an
+  automatic bolus never attaches. `formatUnits` in `shared/src/pump/units.ts` is the only unit
+  display ("2,4 E" / "2.4 U").
+- Who sees it: owners and carers outside simpleMode, through the meal views (`MealView.bolusUnits`,
+  `pumpCarbs`, `pumpBolusId`, `fromPump`) and the pump route. `DayMealView`, the viewer's meal,
+  carries none of it; the three `pump.*` events are glucose-group events; nothing of the pump record
+  enters an AI input (`shared/src/dosing.test.ts` walks `InsightInput` and `WeekInsightInput`).
 
 ### `FoodSource` and `FoodContributor`: where foods come from
 
@@ -188,8 +211,9 @@ that proves it on probe files (`shared/src/events/lint-boundaries.test.ts` and t
 
 These are checked in review and by tests; see [CLAUDE.md](../CLAUDE.md).
 
-- **No insulin dosing.** No units, ratios, corrections or suggestions, in code, copy, prompts or
-  fixtures. A plugin returns carbohydrates and glucose, nothing else.
+- **No insulin dosing.** Frejsi never computes, suggests or lets anyone enter insulin: no input field, no calculation, no ratio, no correction, no "you should", not in code, AI output schemas, prompts or copy. The one exception is **pump history**: the time and delivered units of a bolus the pump recorded, imported read-only, shown to owners and carers outside simpleMode, never to a viewer, never to an AI model. Showing what the pump delivered is allowed; setting or advising a dose is not.
+  A food plugin returns carbohydrates, a glucose plugin returns readings; only a `PumpSource` returns
+  what the pump delivered, and it computes nothing from it.
 - **Unverified until a human ticks it.** Anything a food source returns reaches the library with
   `verified: false`; the plugin cannot say otherwise. `simpleMode` shows verified foods only.
 - **A glucose value never travels or renders without its timestamp.** `Reading` has no schema for a

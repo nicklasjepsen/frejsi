@@ -260,8 +260,9 @@ creates worktrees, issues, tags or PRs before showing the plan and getting an OK
 - Deploy production by any path other than `release.yml` on a tag. Never `az` from a session.
 - Create Azure resources outside `infra/`. Infra is Bicep in a PR; the release pipeline applies it.
 - Put secrets, real people or real health data anywhere in the repo, fixtures or logs.
-- Add anything that computes, suggests or displays insulin. The test fails; the guardian fails; the
-  PR is closed.
+- Add anything that computes, suggests or lets anyone enter insulin. Pump history (the time and
+  delivered units of a bolus the pump recorded, read-only, never to a viewer or an AI model) is the
+  one exception, in its own files; everything else fails the test, the guardian and the PR.
 - Widen a lane. If the task is wrong, open an issue labelled `needs-owner` and say why.
 
 ## 10. Triage and housekeeping, in the background

@@ -4,7 +4,7 @@
 
 ## What this is
 
-An open-source (AGPL-3.0) web app for one person with diabetes and the people around them: carb lookup (Danish products, barcodes, own dishes), a child-friendly `simpleMode`, and meals shown on the live glucose curve. **Mobile and desktop are both first-class** — installable PWA on phones for logging in the moment, a full desktop layout for review and admin; one responsive codebase, layouts designed per breakpoint. **It never computes or suggests insulin.**
+An open-source (AGPL-3.0) web app for one person with diabetes and the people around them: carb lookup (Danish products, barcodes, own dishes), a child-friendly `simpleMode`, and meals shown on the live glucose curve. **Mobile and desktop are both first-class** — installable PWA on phones for logging in the moment, a full desktop layout for review and admin; one responsive codebase, layouts designed per breakpoint. **It never computes, suggests or lets anyone enter insulin; it may show what the pump delivered, as pump history.**
 
 ## Where things stand
 
@@ -58,7 +58,7 @@ Azure: owner's Proxus subscription, **dedicated resource group `frejsi`** (West 
 
 ## Hard rules
 
-- **No insulin dosing anywhere.** No units, ratios, corrections or suggestions — not in code, not in AI output schemas, not in copy. A test asserts dosing vocabulary is absent from AI insight text.
+- **No insulin dosing.** Frejsi never computes, suggests or lets anyone enter insulin: no input field, no calculation, no ratio, no correction, no "you should", not in code, AI output schemas, prompts or copy. The one exception is **pump history**: the time and delivered units of a bolus the pump recorded, imported read-only, shown to owners and carers outside simpleMode, never to a viewer, never to an AI model. Showing what the pump delivered is allowed; setting or advising a dose is not. (Owner, 2026-10-18, #216.) A test asserts dosing vocabulary is absent from AI insight text, that a unit amount appears only in the pump-history copy, and that no schema key or enum value suggests anything (`shared/src/dosing.test.ts`).
 - Anything from OFF, Frida, AI or free text is `verified: false` until a human ticks it. `simpleMode` shows verified foods only.
 - A glucose value is never rendered without its age.
 - `viewer` role never receives glucose data — enforce in the API, not the UI.
