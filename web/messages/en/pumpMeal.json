@@ -5,5 +5,7 @@
   "badge": "From the pump · not checked",
   "adopt": "That's right",
   "adoptFailed": "That was not saved. Try again in a moment.",
-  "by": "the pump"
+  "by": "the pump",
+  "metaPhone": "{day} {time} · from the pump",
+  "metaDesktop": "{date} · {time} · from the pump"
 }

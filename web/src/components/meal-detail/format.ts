@@ -9,6 +9,7 @@ import { formatClock } from "@/lib/i18n/time";
 
 type StatsT = ReturnType<typeof useTranslations<"stats">>;
 type DetailT = ReturnType<typeof useTranslations<"mealDetail">>;
+type PumpMealT = ReturnType<typeof useTranslations<"pumpMeal">>;
 
 /** "3 t" for whole hours (as drawn in the tiles), else "1 t 20 min" / "1 t 20" / "45 min". */
 export function tileDuration(t: StatsT, minutes: number, style: DurationStyle): string {
@@ -30,6 +31,7 @@ interface MetaMeal {
  */
 export function phoneMeta(
   t: DetailT,
+  pump: PumpMealT,
   stats: StatsT,
   meal: MetaMeal,
   now: Date,
@@ -38,16 +40,17 @@ export function phoneMeta(
 ): string {
   const day = relativeDay(stats, meal.ts, now, timeZone, locale);
   const time = formatClock(new Date(meal.ts), timeZone);
-  if (meal.fromPump) return t("metaPhonePump", { day, time });
+  if (meal.fromPump) return pump("metaPhone", { day, time });
   return t("metaPhone", { day, time, name: meal.byUser.name });
 }
 
 /**
  * Maaltid-Desktop: "Onsdag 14. oktober · 12:10 · logget af Jonas"; "… · fra pumpen" for an
- * untouched pump meal (#244).
+ * untouched pump meal (#244), from the pump's own copy file.
  */
 export function desktopMeta(
   t: DetailT,
+  pump: PumpMealT,
   meal: MetaMeal,
   timeZone: string,
   locale: AppLocale,
@@ -55,6 +58,6 @@ export function desktopMeta(
   const at = new Date(meal.ts);
   const date = formatDayTitle(at, timeZone, locale);
   const time = formatClock(at, timeZone);
-  if (meal.fromPump) return t("metaDesktopPump", { date, time });
+  if (meal.fromPump) return pump("metaDesktop", { date, time });
   return t("metaDesktop", { date, time, name: meal.byUser.name });
 }
