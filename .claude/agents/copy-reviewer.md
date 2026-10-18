@@ -36,8 +36,8 @@ Check:
 7. **Units and format.** mmol/L with one decimal by default; mg/dL as an integer when the space
    selects it. Danish decimal comma in `da`, point in `en`. Dates and times via the formatter, not
    string-built.
-8. **Consistent terms.** Use the project's words: "rum" / "space", "pårørende" / "carer",
-   "ejer" / "owner", "kigger" / "viewer", "madbibliotek" / "library", "måltid" / "meal",
+8. **Consistent terms.** Use the project's words: "rum" / "space", "hjælper" / "carer",
+   "ejer" / "owner", "ser med" / "viewer", "madbibliotek" / "library", "måltid" / "meal",
    "portion" / "portion", "bekræftet" / "verified". Flag a synonym that drifts.
 
 Output, nothing else:
