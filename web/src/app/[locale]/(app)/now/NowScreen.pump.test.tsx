@@ -257,6 +257,20 @@ describe("Nu with the pump record (v0.7.0 plan §9)", () => {
     });
   });
 
+  it("covers the whole local day on the night daylight saving ends, when it is 25 hours long", async () => {
+    // 05:30 in Copenhagen on 25 October 2026, after the clocks went back: the day began at
+    // 06:00 the day before, 24 h 30 min ago.
+    const at = new Date("2026-10-25T04:30:00.000Z");
+    vi.setSystemTime(at);
+    mount();
+    await waitFor(() => {
+      expect(pumpCalls()).toHaveLength(1);
+    });
+    const query = new URL(pumpCalls()[0] ?? "", "https://frejsi.example").searchParams;
+    expect(Date.parse(query.get("from") ?? "")).toBeLessThan(at.getTime() - 24 * 3_600_000);
+    expect(Date.parse(query.get("to") ?? "")).toBeGreaterThanOrEqual(at.getTime());
+  });
+
   it("never asks for the pump record in simpleMode", async () => {
     mount({ simpleMode: true });
     await screen.findByTestId("now-simple");

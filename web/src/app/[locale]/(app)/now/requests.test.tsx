@@ -141,11 +141,12 @@ it.each(["owner", "carer"] as const)(
         "pump",
       ]),
     );
-    // One window, read once: from 03:00 (three hours before the day's 06:00) to 06:00 tomorrow.
+    // One window, read once: from 03:00 (three hours before the day's 06:00) to 25 hours after
+    // that 06:00, the longest local day.
     expect(net.calls.filter((url) => url.includes("/pump"))).toEqual([
       `/api/spaces/s1/pump?${new URLSearchParams({
         from: "2026-10-14T01:00:00.000Z",
-        to: "2026-10-15T04:00:00.000Z",
+        to: "2026-10-15T05:00:00.000Z",
       }).toString()}`,
     ]);
     expect(net.calls.filter((url) => url.includes("/history/"))).toEqual([

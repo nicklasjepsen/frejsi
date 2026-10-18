@@ -49,6 +49,8 @@ import { useNowFoods } from "./useNowFoods";
 const SPARKLINE_HOURS = 3;
 const DAY_START_HOUR = 6;
 const WINDOW_HOURS = 24;
+/** A local day from 06:00 to 06:00 is 25 hours long when daylight saving ends. */
+const LONGEST_DAY_HOURS = 25;
 /** The "Min mad" tiles on Nu-Simpel-Desktop: two rows of four. */
 const MY_FOOD_TILES = 8;
 
@@ -150,14 +152,14 @@ export function NowScreen({
   const symptoms = symptomRange.status === "ready" ? symptomRange.symptoms : [];
   const kindLabel = useKindLabel(locale, symptomRange.kinds);
   // The pump record for both curves (v0.7.0 plan §9): from three hours before the day's 06:00,
-  // so the sparkline is covered too, to a day later. The bounds move once a day, so the window is
-  // read once and again on `pump.*`. Never for a viewer or a simpleMode session (the route
-  // refuses both anyway).
+  // so the sparkline is covered too, to the longest local day later (25 hours, the night the
+  // clocks go back). The bounds move once a day, so the window is read once and again on
+  // `pump.*`. Never for a viewer or a simpleMode session (the route refuses both anyway).
   const pumpDay = dayStart(now, zone, DAY_START_HOUR).getTime();
   const pumpHistory = usePumpHistory(
     spaceId,
     new Date(pumpDay - SPARKLINE_HOURS * 60 * 60 * 1000).toISOString(),
-    new Date(pumpDay + WINDOW_HOURS * 60 * 60 * 1000).toISOString(),
+    new Date(pumpDay + LONGEST_DAY_HOURS * 60 * 60 * 1000).toISOString(),
     { subscribe: feed.subscribe, role, simpleMode, enabled: feed.loaded },
   );
   const pump =
