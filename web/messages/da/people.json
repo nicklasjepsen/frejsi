@@ -3,7 +3,7 @@
   "titleIn": "Personer i {space}",
   "back": "Tilbage til Mere",
   "peopleCount": "{count, plural, one {# person} other {# personer}}",
-  "deviceCount": "{count, plural, one {# enhed} other {# enheder}}",
+  "deviceCount": "{count, plural, one {# apparat} other {# apparater}}",
   "pendingCount": "{count, plural, one {# invitation venter} other {# invitationer venter}}",
   "you": "(dig)",
   "noGlucose": "ingen glukose",
