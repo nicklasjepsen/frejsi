@@ -192,7 +192,7 @@ function toBolus(entry: TreatmentEntry): PumpBolus | undefined {
   // Carbs outside the contract (a fraction that rounds to 0, more than 1000 g) are left out; the
   // bolus itself is still a fact the pump recorded and is kept.
   const rounded =
-    entry.carbs !== undefined && Number.isFinite(entry.carbs) ? Math.round(entry.carbs) : undefined;
+    entry.carbs != null && Number.isFinite(entry.carbs) ? Math.round(entry.carbs) : undefined;
   const carbs = PumpBolus.shape.carbs.safeParse(rounded).success ? rounded : undefined;
   const parsed = PumpBolus.safeParse({
     sourceId: String(entry.pump_event_id),

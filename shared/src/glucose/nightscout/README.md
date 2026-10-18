@@ -91,13 +91,13 @@ hours behind the newest stored bolus catches late records without a cursor that 
 
 **The mapping.** Each record keeps five fields and nothing else:
 
-| Record field    | `PumpBolus`                                                              |
-| --------------- | ------------------------------------------------------------------------ |
-| `pump_event_id` | `sourceId` (the idempotency key; a duplicate in one answer is one bolus) |
-| `created_at`    | `ts` (UTC; `utcOffset` is ignored)                                       |
-| `insulin`       | `units`, as recorded, at two decimals like the column                    |
-| `notes`         | `kind`, below                                                            |
-| `carbs`         | `carbs`, rounded; left out when absent or outside 1–1000 g (bolus kept)  |
+| Record field    | `PumpBolus`                                                                   |
+| --------------- | ----------------------------------------------------------------------------- |
+| `pump_event_id` | `sourceId` (the idempotency key; a duplicate in one answer is one bolus)      |
+| `created_at`    | `ts` (UTC; `utcOffset` is ignored)                                            |
+| `insulin`       | `units`, as recorded, at two decimals like the column                         |
+| `notes`         | `kind`, below                                                                 |
+| `carbs`         | `carbs`, rounded; left out when absent, null or outside 1–1000 g (bolus kept) |
 
 | `notes`                                | `kind`      |
 | -------------------------------------- | ----------- |

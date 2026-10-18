@@ -111,11 +111,12 @@ export function toKind(notes: unknown): PumpBolusKind {
  * name for the delivered units. `created_at` is UTC.
  */
 export const TreatmentEntry = z.object({
-  eventType: z.string().optional(),
+  eventType: z.string().nullish(),
   pump_event_id: z.union([z.string().min(1).max(100), z.number().int().nonnegative()]),
   created_at: z.string().refine((value) => !Number.isNaN(Date.parse(value))),
   insulin: z.number().min(0).max(50),
-  carbs: z.number().optional(),
+  // tconnectsync writes null, not a missing key, when the pump has no calculator carbs.
+  carbs: z.number().nullish(),
   notes: z.unknown().optional(),
 });
 export type TreatmentEntry = z.infer<typeof TreatmentEntry>;

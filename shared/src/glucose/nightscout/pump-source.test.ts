@@ -206,6 +206,36 @@ describe("NightscoutPumpSource.fetchBolusesSince", () => {
     expect(h.lines.join("\n")).not.toContain("pump.dropped");
   });
 
+  it("keeps a bolus whose carbs are null, as tconnectsync writes for automatic boluses", async () => {
+    // tconnectsync sends "carbs": null (not a missing key) when the pump has no calculator carbs.
+    const h = pump({
+      body: JSON.stringify([
+        {
+          eventType: "Combo Bolus",
+          created_at: "2026-10-15T12:00:00.000Z",
+          insulin: 0.5,
+          carbs: null,
+          notes: "Automatic Bolus",
+          pump_event_id: "101,98,99,100",
+        },
+        {
+          eventType: "Combo Bolus",
+          created_at: "2026-10-15T13:00:00.000Z",
+          insulin: 0.1,
+          carbs: null,
+          notes: "BLE Standard Bolus",
+          pump_event_id: "105,102,103,104",
+        },
+      ]),
+    });
+    const boluses = await h.source.fetchBolusesSince(new Date("2026-10-15T00:00:00.000Z"));
+    expect(boluses).toEqual([
+      { sourceId: "101,98,99,100", ts: "2026-10-15T12:00:00.000Z", units: 0.5, kind: "automatic" },
+      { sourceId: "105,102,103,104", ts: "2026-10-15T13:00:00.000Z", units: 0.1, kind: "standard" },
+    ]);
+    expect(h.lines.join("\n")).not.toContain("pump.dropped");
+  });
+
   it("returns no key besides sourceId, ts, units, kind and carbs, and every bolus is a PumpBolus", async () => {
     const h = pump({ body: fixture("treatments-combo-bolus.json") });
     const boluses = await h.source.fetchBolusesSince(new Date("2026-10-15T00:00:00.000Z"));
