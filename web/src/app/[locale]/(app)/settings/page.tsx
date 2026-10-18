@@ -26,7 +26,7 @@ export default async function SettingsPage({ params }: { params: Promise<{ local
   const usage = data.role === "viewer" ? null : await loadAiUsage(data.spaceId);
   return (
     <>
-      {data.role !== "viewer" && <SettingsLiveRefresh spaceId={data.spaceId} />}
+      {data.role !== "viewer" && <SettingsLiveRefresh spaceId={data.spaceId} pump={data.pump != null} />}
       <SettingsScreen locale={locale} data={data} usage={usage} now={new Date().toISOString()} />
     </>
   );

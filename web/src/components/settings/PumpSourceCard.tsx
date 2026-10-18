@@ -5,9 +5,9 @@ import type { ApiErrorCode } from "@frejsi/shared";
 import type { PumpSettingsView } from "@frejsi/shared/schemas/pump";
 import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
-import { ageOf } from "@/components/glucose/format";
+import { AGE_TICK_MS, ageOf } from "@/components/glucose/format";
 import { Button } from "@/components/ui/Button";
 import { Notice } from "@/components/ui/Notice";
 import { formatClock } from "@/lib/i18n/time";
@@ -26,16 +26,35 @@ import { failureCode } from "./settings-client";
 import styles from "./settings.module.css";
 
 /**
+ * The clock the ages are read from: the server's for the first render (so the page hydrates as it
+ * was rendered), then the browser's every 30 s, so "for 1 t 10 min siden" keeps growing while
+ * Settings stays open. A new `serverNow` (after a refresh) starts over from it.
+ */
+function useTickingNow(serverNow: string): string {
+  const [ticked, setTicked] = useState<{ from: string; at: string } | null>(null);
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setTicked({ from: serverNow, at: new Date().toISOString() });
+    }, AGE_TICK_MS);
+    return () => {
+      clearInterval(timer);
+    };
+  }, [serverNow]);
+  return ticked !== null && ticked.from === serverNow ? ticked.at : serverNow;
+}
+
+/**
  * The lines Settings writes about the pump record: the card's status and newest-record lines and
  * the phone row. Every word is a `pumpSettings` message; the times are the space's clock.
  */
 export function usePumpText(
   pump: PumpSettingsView,
   timezone: string,
-  now: string,
+  serverNow: string,
   locale: AppLocale,
 ) {
   const t = useTranslations("pumpSettings");
+  const now = useTickingNow(serverNow);
   const timeOf = (iso: string) => formatClock(new Date(iso), timezone);
   const whenOf = (iso: string) => {
     const at = new Date(iso);

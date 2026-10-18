@@ -2,6 +2,7 @@ import "@testing-library/jest-dom/vitest";
 
 import type { PumpSettingsView } from "@frejsi/shared";
 import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { act } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { I18nProvider } from "@/lib/i18n/Provider";
@@ -218,5 +219,21 @@ describe("PumpSourceCard · Pumpehistorik (plan §9 item 5)", () => {
     cleanup();
     mount(disconnected, { locale: "en" });
     expect(screen.getByTestId("pump-status")).toHaveTextContent("Connection failing since 14:05");
+  });
+
+  it("keeps the age growing while Settings stays open", () => {
+    vi.useFakeTimers();
+    try {
+      vi.setSystemTime(new Date(NOW));
+      mount(connected);
+      expect(screen.getByTestId("pump-latest")).toHaveTextContent("for 1 t 10 min siden");
+      act(() => {
+        vi.setSystemTime(new Date("2026-10-15T11:20:00.000Z"));
+        vi.advanceTimersByTime(30_000);
+      });
+      expect(screen.getByTestId("pump-latest")).toHaveTextContent("for 1 t 22 min siden");
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });

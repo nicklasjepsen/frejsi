@@ -3,6 +3,7 @@
 import type { PumpSettingsView } from "@frejsi/shared/schemas/pump";
 import { useTranslations } from "next-intl";
 
+import { SettingsLiveRefresh } from "@/components/settings/SettingsLiveRefresh";
 import { PageHeader } from "@/components/settings/controls";
 import { PumpSourceCard } from "@/components/settings/PumpSourceCard";
 import styles from "@/components/settings/settings.module.css";
@@ -28,6 +29,7 @@ export function PumpScreen({ locale, spaceId, pump, timezone, now, owner }: Pump
         backLabel={settings("back")}
         title={t("title")}
       />
+      <SettingsLiveRefresh spaceId={spaceId} pump />
       <p className={styles.lead}>{t("lead")}</p>
       <PumpSourceCard
         layout="page"
