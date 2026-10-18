@@ -11,7 +11,7 @@ import { useTranslations } from "next-intl";
 import { useEffect, useId, useRef, useState, type FormEvent } from "react";
 
 import { FoodPhoto, PhotoPicker } from "@/components/food";
-import { Badge, Button, Checkbox, NumberInput, TextInput } from "@/components/ui";
+import { Badge, Button, Checkbox, TextInput } from "@/components/ui";
 
 import { libraryApi, OWN_ORIGINS } from "./api-client";
 import { CategoryChips } from "./CategoryChips";
@@ -34,6 +34,13 @@ export function parseDecimal(value: string): number | undefined {
   const parsed = parseNumber(value);
   return parsed === undefined ? undefined : Math.round(parsed * 10) / 10;
 }
+/**
+ * The contract stores carbs per 100 g in tenths (`multipleOf(0.1)`): "12,3" is fine, "12,34" is
+ * asked again rather than rounded behind the person's back.
+ */
+function atMostOneDecimal(value: string): boolean {
+  return /^\d+([.,]\d)?$/.test(value.trim());
+}
 /** Whole grams of carbohydrate, rounded once from what was typed (14,49 → 14). */
 function parseWhole(value: string): number | undefined {
   const parsed = parseNumber(value);
@@ -47,6 +54,13 @@ function portionCarbs(per100g: number | undefined, row: Row): number | undefined
     return carbsFor({ carbsPer100g: per100g }, grams);
   return parseWhole(row.carbs);
 }
+
+/** `Portion.carbs` holds at most 1000 g. */
+const MAX_PORTION_CARBS = 1000;
+
+type FieldProblem = "needsCarbs" | "invalidNumber" | "oneDecimal" | "portionTooBig";
+/** `saveFailed` is only ever a request that failed; everything else is said before sending. */
+type Problem = FieldProblem | "needsName" | "checkFields" | "saveFailed";
 
 let rowKeys = 0;
 const toRow = (portion?: Portion): Row => ({
@@ -94,9 +108,7 @@ export function FoodForm({ spaceId, food, titleId, onSaved }: FoodFormProps) {
   const [photo, setPhoto] = useState<Uint8Array | null>(null);
   const [preview, setPreview] = useState<string>();
   const [saving, setSaving] = useState(false);
-  const [problem, setProblem] = useState<
-    "needsName" | "needsCarbs" | "invalidNumber" | "saveFailed" | null
-  >(null);
+  const [problem, setProblem] = useState<Problem | null>(null);
   // After a create succeeded, a retry (say, the photo upload failed) updates that row instead of
   // creating a second one.
   const [saved, setSaved] = useState<FoodView | undefined>(food);
@@ -143,12 +155,12 @@ export function FoodForm({ spaceId, food, titleId, onSaved }: FoodFormProps) {
    * The typed values, or the reason they cannot be saved. A field that is filled in but cannot be
    * read (or is out of range) is reported, never sent as empty: that would delete a value.
    */
-  function fields():
-    { portions: Portion[]; carbsPer100g: number | undefined } | "needsCarbs" | "invalidNumber" {
+  function fields(): { portions: Portion[]; carbsPer100g: number | undefined } | FieldProblem {
     const filled = (value: string) => value.trim() !== "";
     const inRange = (value: number | undefined, min: number, max: number) =>
       value !== undefined && value >= min && value <= max;
     if (filled(per100g) && !inRange(per100, 0, 100)) return "invalidNumber";
+    if (filled(per100g) && !atMostOneDecimal(per100g)) return "oneDecimal";
     const portions: Portion[] = [];
     for (const row of rows) {
       const label = row.label.trim();
@@ -156,14 +168,48 @@ export function FoodForm({ spaceId, food, titleId, onSaved }: FoodFormProps) {
       const grams = parseDecimal(row.grams);
       if (filled(row.grams) && !inRange(grams, 1, 5000)) return "invalidNumber";
       const computed = per100 !== undefined && grams !== undefined;
-      if (!computed && filled(row.carbs) && !inRange(parseWhole(row.carbs), 0, 1000))
+      if (!computed && filled(row.carbs) && !inRange(parseWhole(row.carbs), 0, MAX_PORTION_CARBS))
         return "invalidNumber";
       const carbs = portionCarbs(per100, row);
       if (!label || carbs === undefined) return "needsCarbs";
+      if (carbs > MAX_PORTION_CARBS) return "portionTooBig";
       portions.push({ label, carbs, ...(grams === undefined ? {} : { grams }) });
     }
     if (per100 === undefined && portions.length === 0) return "needsCarbs";
     return { portions, carbsPer100g: per100 };
+  }
+
+  /**
+   * The request the routes take, checked against the contract before anything is sent: a body the
+   * route would refuse is the form's to explain, never "Kunne ikke gemme" for a request that never
+   * left (issue 219). Undefined when the contract refuses it.
+   */
+  function requestBody(values: {
+    portions: Portion[];
+    carbsPer100g: number | undefined;
+  }):
+    | { kind: "create"; data: CreateFoodRequest }
+    | { kind: "update"; id: string; data: UpdateFoodRequest }
+    | undefined {
+    if (!saved) {
+      const parsed = CreateFoodRequest.safeParse({
+        name,
+        portions: values.portions,
+        favourite,
+        ...(values.carbsPer100g === undefined ? {} : { carbsPer100g: values.carbsPer100g }),
+        ...(category ? { category } : {}),
+      });
+      return parsed.success ? { kind: "create", data: parsed.data } : undefined;
+    }
+    // The category goes only when it changed: omitted means unchanged, null clears it.
+    const parsed = UpdateFoodRequest.safeParse({
+      name,
+      carbsPer100g: values.carbsPer100g ?? null,
+      portions: values.portions,
+      favourite,
+      ...(category === (saved.category ?? "") ? {} : { category: category || null }),
+    });
+    return parsed.success ? { kind: "update", id: saved.id, data: parsed.data } : undefined;
   }
 
   async function submit(event: FormEvent) {
@@ -179,30 +225,22 @@ export function FoodForm({ spaceId, food, titleId, onSaved }: FoodFormProps) {
       setProblem(values);
       return;
     }
+    // Checked against the contract before anything is sent: a body the route would refuse is the
+    // form's to explain, never "Kunne ikke gemme" for a request that never left (issue 219).
+    const body = requestBody(values);
+    if (!body) {
+      setProblem("checkFields");
+      return;
+    }
     setSaving(true);
     setProblem(null);
     setSendOutcome(null);
     try {
       let result: FoodView;
-      if (!saved) {
-        const body = CreateFoodRequest.parse({
-          name,
-          portions: values.portions,
-          favourite,
-          ...(values.carbsPer100g === undefined ? {} : { carbsPer100g: values.carbsPer100g }),
-          ...(category ? { category } : {}),
-        });
-        result = await libraryApi.create(spaceId, body, { verify });
+      if (body.kind === "create") {
+        result = await libraryApi.create(spaceId, body.data, { verify });
       } else {
-        // The category goes only when it changed: omitted means unchanged, null clears it.
-        const body = UpdateFoodRequest.parse({
-          name,
-          carbsPer100g: values.carbsPer100g ?? null,
-          portions: values.portions,
-          favourite,
-          ...(category === (saved.category ?? "") ? {} : { category: category || null }),
-        });
-        result = await libraryApi.update(spaceId, saved.id, body);
+        result = await libraryApi.update(spaceId, body.id, body.data);
         if (verify && !result.verified) {
           await libraryApi.verify(spaceId, [result.id]);
           result = { ...result, verified: true };
@@ -315,12 +353,10 @@ export function FoodForm({ spaceId, food, titleId, onSaved }: FoodFormProps) {
                   update({ label: event.target.value });
                 }}
               />
-              <NumberInput
+              <TextInput
                 label={t("portionGrams")}
+                inputMode="decimal"
                 value={row.grams}
-                min={1}
-                max={5000}
-                step={1}
                 onChange={(event) => {
                   update({ grams: event.target.value });
                 }}
@@ -328,12 +364,10 @@ export function FoodForm({ spaceId, food, titleId, onSaved }: FoodFormProps) {
               {computed !== undefined ? (
                 <output className={styles.computed}>{t("computed", { amount: computed })}</output>
               ) : (
-                <NumberInput
+                <TextInput
                   label={t("portionCarbs")}
+                  inputMode="decimal"
                   value={row.carbs}
-                  min={0}
-                  max={1000}
-                  step={1}
                   onChange={(event) => {
                     update({ carbs: event.target.value });
                   }}
