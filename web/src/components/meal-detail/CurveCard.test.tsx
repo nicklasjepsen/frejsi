@@ -230,13 +230,21 @@ describe("CurveCard and the pump record (v0.7.0 plan §9)", () => {
     expect(handlers.has("pump.imported")).toBe(false);
   });
 
-  it("asks nothing for a meal the pump record has not reached, and draws its tapped time as before", async () => {
+  it("reads the window for a meal without a pump bolus too, so its automatic boluses show, and draws its tapped time as before", async () => {
     stub();
-    mount({ view: curveView({ meal: mealView({ bolusTs: BOLUS_TS }) }), spaceId: "s1", subscribe });
+    boluses = [{ id: "b-auto", ts: AUTO_TS, units: 0.6, kind: "automatic" }];
+    const view = curveView({ meal: mealView({ bolusTs: BOLUS_TS }) });
+    mount({ view, spaceId: "s1", subscribe });
     await waitFor(() => {
-      expect(calls.some((c) => c.includes("/symptoms"))).toBe(true);
+      expect(screen.getAllByTestId("pump-tap")).toHaveLength(1);
     });
-    expect(pumpCalls()).toEqual([]);
+    expect(pumpCalls()).toEqual([
+      `/api/spaces/s1/pump?${new URLSearchParams({ from: view.window.from, to: view.window.to }).toString()}`,
+    ]);
+    expect(screen.getByTestId("pump-tap")).toHaveAttribute(
+      "aria-label",
+      "Automatisk bolus 13:15 · 0,6 E",
+    );
     expect(screen.queryByTestId("pump-label")).toBeNull();
     expect(screen.getByRole("img", { name: /Bolus 11:48$/ })).toBeInTheDocument();
   });
