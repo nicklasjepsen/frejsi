@@ -96,7 +96,8 @@ export class NightscoutPumpSource implements PumpSource {
       }
       if (page.rows < count || page.oldest === undefined) break;
       if (index === MAX_PAGES - 1) {
-        // The next cycle reads the same window again; the count is all a log line says.
+        // A guard against a runaway answer, not a cursor: records older than the fifth page are
+        // not read, now or later. Five pages hold far more than a 14-day window of boluses.
         this.log?.warn("pump.page-cap", { count: MAX_PAGES * count, code: "page-cap" });
         break;
       }

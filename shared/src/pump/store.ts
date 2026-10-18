@@ -140,7 +140,7 @@ export interface PumpTx extends EmitTx {
 export interface StatusTx extends EmitTx {
   space: EmitTx["space"] & {
     updateMany(args: {
-      where: { id: string; pumpStatus: string };
+      where: { id: string; pumpStatus: string; pumpFailures?: number };
       data: { pumpStatus: string; pumpFailures?: number };
     }): Promise<{ count: number }>;
   };
@@ -613,7 +613,10 @@ export async function commitPumpDay(
   return { inserted: fresh.length, from, to, updated: updatedOnce, created, removed, announced };
 }
 
-/** The status change, its event and the column in one commit; nothing when the row moved meanwhile. */
+/**
+ * The status change, its event and the column in one commit; nothing when the row moved meanwhile
+ * (another cycle changed the status, or, with `failures`, a success reset the counter).
+ */
 export async function writePumpStatus(
   tx: StatusTx,
   emit: EmitFn,
@@ -622,11 +625,17 @@ export async function writePumpStatus(
     from: string;
     to: SourceStatus;
     resetFailures?: boolean;
+    /** The failure count the decision was taken on; the row must still hold it. */
+    failures?: number;
     since: Date;
   },
 ): Promise<boolean> {
   const { count } = await tx.space.updateMany({
-    where: { id: input.spaceId, pumpStatus: input.from },
+    where: {
+      id: input.spaceId,
+      pumpStatus: input.from,
+      ...(input.failures === undefined ? {} : { pumpFailures: input.failures }),
+    },
     data: { pumpStatus: input.to, ...(input.resetFailures ? { pumpFailures: 0 } : {}) },
   });
   if (count !== 1) return false;
