@@ -4,8 +4,23 @@ import { afterAll, beforeAll, expect, it } from "vitest";
 import { createEmptyDatabase, migrate, type ScratchDatabase } from "./database";
 import { PrismaHistoryRepository } from "../../../web/src/lib/history/prisma";
 import { previousOccurrences } from "../../../web/src/lib/history/previous-occurrences";
-import type { WeekHistoryView } from "../../src/schemas/history";
+import type { DayHistoryView, WeekHistoryView } from "../../src/schemas/history";
+import type { DayView } from "../../src/schemas/meal";
 const WEEK = "@/lib/history/week";
+const HISTORY_DAY = "@/lib/history/day";
+const DAY = "@/app/api/spaces/[spaceId]/day/load-day";
+/**
+ * Every pump field name of v0.7.0 and the column that marks a pump meal: none reaches a viewer.
+ * (`carbs` is every item line's own key; the pump meal's carbs show up in the day's total instead.)
+ */
+const PUMP_KEYS = [
+  "source",
+  "pumpBolusId",
+  "fromPump",
+  "bolusUnits",
+  "pumpCarbs",
+  "units",
+];
 
 let scratch: ScratchDatabase;
 let db: PrismaClient<{ log: [{ emit: "event"; level: "query" }] }>;
@@ -173,4 +188,96 @@ it("loads week statistics with exactly two SQL reading queries", async () => {
     { ts: at(16).toISOString(), symbol: "bread" },
   ]);
   expect(queries.filter((query) => /FROM\s+\[dbo\]\.\[Reading\]/i.test(query))).toHaveLength(2);
+});
+
+/** Every key of a JSON value, at any depth. */
+function keysOf(value: unknown): string[] {
+  if (Array.isArray(value)) return value.flatMap(keysOf);
+  if (value && typeof value === "object")
+    return Object.entries(value).flatMap(([key, child]) => [key, ...keysOf(child)]);
+  return [];
+}
+
+it("keeps untouched pump meals and every pump field out of the viewer's and the simpleMode day (v0.7.0)", async () => {
+  const day = "2026-10-20";
+  const bolus = await db.pumpBolus.create({
+    data: { spaceId, sourceId: "ns-it-1", ts: at(20, -5), units: 2.4, kind: "standard", carbs: 45 },
+  });
+  const pumpBolus = await db.pumpBolus.create({
+    data: {
+      spaceId,
+      sourceId: "ns-it-2",
+      ts: at(20, 240),
+      units: 1.5,
+      kind: "standard",
+      carbs: 30,
+    },
+  });
+  const linked = await db.meal.create({
+    data: {
+      spaceId,
+      byUserId: userId,
+      ts: at(20),
+      totalCarbs: 40,
+      pumpBolusId: bolus.id,
+      bolusTs: at(20, -5),
+      items: { create: { position: 0, name: "Fictional lunch", carbs: 40 } },
+    },
+  });
+  const pumpMeal = await db.meal.create({
+    data: {
+      spaceId,
+      byUserId: userId,
+      ts: at(20, 240),
+      totalCarbs: 30,
+      source: "pump",
+      pumpBolusId: pumpBolus.id,
+      bolusTs: at(20, 240),
+      items: { create: { position: 0, name: "Carbs from the pump", carbs: 30 } },
+    },
+  });
+  const { loadDay } = (await import(DAY)) as {
+    loadDay: (
+      spaceId: string,
+      date: string,
+      locale: "en",
+      deps: object,
+      options?: { pumpMeals: boolean },
+    ) => Promise<DayView>;
+  };
+  const deps = { db, photos: null, now: () => at(21) };
+  // The viewer's day and a simpleMode day are the same query: `pumpMeals: false`.
+  for (const restricted of [
+    await loadDay(spaceId, day, "en", deps),
+    await loadDay(spaceId, day, "en", deps, { pumpMeals: false }),
+  ]) {
+    expect(restricted.meals.map((meal) => meal.id)).toEqual([linked.id]);
+    expect(restricted.totalCarbs).toBe(40);
+    for (const key of keysOf(restricted)) expect(PUMP_KEYS, key).not.toContain(key);
+    expect(JSON.stringify(restricted)).not.toMatch(/bolus|pump/i);
+  }
+  const full = await loadDay(spaceId, day, "en", deps, { pumpMeals: true });
+  expect(full.meals.map((meal) => meal.id)).toEqual([pumpMeal.id, linked.id]);
+  for (const key of keysOf(full)) expect(PUMP_KEYS, key).not.toContain(key);
+
+  // An owner's history day carries the link and the pump-meal mark, read through Prisma.
+  const { loadHistoryDay } = (await import(HISTORY_DAY)) as {
+    loadHistoryDay: (
+      spaceId: string,
+      date: string,
+      readings: boolean,
+      locale: string,
+      deps: object,
+    ) => Promise<DayHistoryView>;
+  };
+  const history = await loadHistoryDay(spaceId, day, false, "en", {
+    repo: new PrismaHistoryRepository(db),
+    photos: null,
+    now: () => at(21),
+  });
+  const byId = new Map(history.meals.map((meal) => [meal.id, meal]));
+  expect(byId.get(linked.id)).toMatchObject({ pumpBolusId: bolus.id });
+  expect(byId.get(pumpMeal.id)).toMatchObject({ pumpBolusId: pumpBolus.id, fromPump: true });
+  const detail = await new PrismaHistoryRepository(db).mealById(spaceId, linked.id);
+  expect(detail?.pumpBolus).toEqual({ units: 2.4, carbs: 45 });
 });

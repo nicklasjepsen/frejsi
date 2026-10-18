@@ -23,6 +23,11 @@ export interface HistoryMeal {
   photoKey?: string | undefined;
   /** The stored symbol; absent (a row from before 0005) is shown as `unknown`. */
   symbol?: MealSymbol | undefined;
+  /** `"pump"` while the meal is one the pump record made and nobody has ticked (v0.7.0). */
+  source?: string | null | undefined;
+  /** The bolus the pump record gave this meal; its units and carbs are read through the link. */
+  pumpBolusId?: string | undefined;
+  pumpBolus?: { units: number; carbs?: number | undefined } | undefined;
 }
 export interface HistorySpace {
   timezone: string;

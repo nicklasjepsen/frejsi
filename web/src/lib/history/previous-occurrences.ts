@@ -15,5 +15,8 @@ export async function previousOccurrences(
     ...new Map([...indexed, ...recent].map((row) => [row.id, row])).values(),
   ].sort((a, b) => Date.parse(b.ts) - Date.parse(a.ts));
   const key = dishKey(meal.items);
-  return candidates.filter((candidate) => dishKey(candidate.items) === key).slice(0, 5);
+  // An untouched pump meal is not a dish anyone logged: never an earlier occurrence (v0.7.0).
+  return candidates
+    .filter((candidate) => candidate.source !== "pump" && dishKey(candidate.items) === key)
+    .slice(0, 5);
 }

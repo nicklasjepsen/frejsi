@@ -5,9 +5,15 @@ import { MINUTE_MS, milliseconds, statsWindow, type Timestamp } from "./window";
 export interface StatsMeal {
   ts: Timestamp;
   bolusTs?: Timestamp | null | undefined;
+  /** `"pump"` for an untouched meal the pump record made (v0.7.0 plan §6). */
+  source?: string | null | undefined;
 }
+/**
+ * Minutes from the bolus to the meal. Undefined without a bolus time, and for an untouched pump
+ * meal: its time is its bolus's time, so the lead would always read zero (plan §6).
+ */
 export function bolusLeadMinutes(meal: StatsMeal): number | undefined {
-  return meal.bolusTs == null
+  return meal.bolusTs == null || meal.source === "pump"
     ? undefined
     : Math.round((milliseconds(meal.ts) - milliseconds(meal.bolusTs)) / MINUTE_MS);
 }

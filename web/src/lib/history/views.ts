@@ -12,6 +12,29 @@ export async function requireSpace(id: string, deps: HistoryDeps) {
   if (!space) throw new HttpError(404, "not-found");
   return space;
 }
+/** The two pump fields the day's meals and the curve carry to owners and carers (plan §4). */
+export function pumpLink(row: HistoryMeal) {
+  return {
+    ...(row.pumpBolusId ? { pumpBolusId: row.pumpBolusId } : {}),
+    ...(row.source === "pump" ? { fromPump: true as const } : {}),
+  };
+}
+/** The meal detail's pump record: what the linked bolus delivered and its calculator carbs. */
+function pumpDetail(row: HistoryMeal) {
+  return {
+    ...pumpLink(row),
+    ...(row.pumpBolusId && row.pumpBolus
+      ? {
+          bolusUnits: row.pumpBolus.units,
+          ...(row.pumpBolus.carbs ? { pumpCarbs: row.pumpBolus.carbs } : {}),
+        }
+      : {}),
+  };
+}
+/**
+ * A meal as the history routes send it. Every caller is an owner or carer outside simpleMode
+ * (`authorizeHistory` refuses the rest), so `detail` carries the pump record too.
+ */
 export async function mealView(
   row: HistoryMeal,
   timezone: string,
@@ -44,7 +67,13 @@ export async function mealView(
     symbol: row.symbol ?? "unknown",
     title: mealTitle(items, detail ? row.note : undefined, locale),
     slot: mealSlot(row.ts, timezone),
-    ...(detail ? { note: row.note, bolusTs: row.bolusTs } : {}),
+    ...(detail
+      ? {
+          ...(row.note !== undefined ? { note: row.note } : {}),
+          ...(row.bolusTs ? { bolusTs: row.bolusTs } : {}),
+          ...pumpDetail(row),
+        }
+      : {}),
   });
 }
 export const dateAfter = (date: string, days: number) =>

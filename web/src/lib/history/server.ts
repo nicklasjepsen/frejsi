@@ -9,7 +9,12 @@ let overrides: Partial<HistoryDeps & { sessionDb: SessionDb }> = {};
 export function configureHistory(deps: typeof overrides): void {
   overrides = deps;
 }
-/** Authorization runs before constructing the repository or accessing space data. */
+/**
+ * Authorization runs before constructing the repository or accessing space data. Owners and
+ * carers only, and never a simpleMode session: no simple screen reads history, a meal curve or an
+ * observation, and these views carry the pump record (v0.7.0 plan §4), so simpleMode shows nothing
+ * new by being refused here, in the API.
+ */
 export async function authorizeHistory(request: Request, spaceId: string) {
   const now = overrides.now ?? (() => new Date());
   const { session } = await requireSpaceRole(
@@ -19,6 +24,7 @@ export async function authorizeHistory(request: Request, spaceId: string) {
     overrides.sessionDb,
     now,
   );
+  if (session.simpleMode) throw new HttpError(403, "forbidden");
   const deps: HistoryDeps = {
     repo: overrides.repo ?? new PrismaHistoryRepository(),
     photos: overrides.photos !== undefined ? overrides.photos : createPhotoStoreFromEnv(),
