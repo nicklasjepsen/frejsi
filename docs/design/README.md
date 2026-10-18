@@ -100,6 +100,13 @@ Names are the ones the implementation should use. "Variants" are what the artboa
 | `TextInput` / `NumberInput`    | Personer-Desktop, Indstillinger-Desktop, Bibliotek-Desktop                                                                    | 42 px r10 on `#FFFFFF` with a 13 px muted label above; small 36 px × 56 px for the target range                                                                                                                                                                                                                                                                                                      |
 | `QrCode`                       | Personer-Desktop invite panel                                                                                                 | 96 px square r10 on surface with a hairline                                                                                                                                                                                                                                                                                                                                                          |
 
+**The curve's tooltip** (issue 243, added after the hand-in): on the day and meal `GlucoseChart`, a
+1 px guide in `text-muted`, a 10 px dot in `text` ringed in `surface`, and a card in `surface` with a
+`hairline` border and `card-shadow`, 13 px tabular, kept inside the chart. A reading reads "6,2
+mmol/L · stabil · kl. 14:05 · for 3 min. siden", never the number alone; on a marker it names the
+meal, symptom or bolus with its time, and on an earlier meal curve its date. Hover, touch-and-hold
+and the arrow keys; the sparkline has none, and a week tile shows it on hover with its day.
+
 ## Per-person accent colour
 
 `Farve-Indstilling.dc.html` adds a setting the brief did not ask for: each person picks their own accent from five named colours — **Oliven** (default, `#5A6A3B`), **Blomme** (`#5B3F73`), **Hav** (`#3B5F7E`), **Skov** (`#2F6B5E`), **Granat** (`#7A3A4B`). It is a per-user presentation setting like `simpleMode`, settable by an owner for anyone and by the person themselves under Mere. The copy fixes the rules: "Den ændrer kun udseendet – aldrig hvad et tal betyder" and "Måltider er altid teglrøde, og tallet er altid sort – uanset farve". The accent moves with the person across devices, so it belongs on `users`, not on the device. The five `Farve-Nu-*` artboards show the Nu screen in each colour. Code identifiers are the English names (`olive`, `plum`, `sea`, `forest`, `garnet`); the Danish names are UI strings.
