@@ -108,11 +108,13 @@ export function CurveTooltip({ model, children }: { model: TooltipModel; childre
       const m = modelRef.current;
       const rect = node.getBoundingClientRect();
       if (rect.width <= 0 || rect.height <= 0) return null;
+      // The week tile reads the whole tile, its heading and footer too: only the time axis counts.
       if (
-        clientX < rect.left ||
-        clientX > rect.left + rect.width ||
-        clientY < rect.top ||
-        clientY > rect.top + rect.height
+        m.mode === "full" &&
+        (clientX < rect.left ||
+          clientX > rect.left + rect.width ||
+          clientY < rect.top ||
+          clientY > rect.top + rect.height)
       )
         return null;
       const sx = m.width / rect.width;
