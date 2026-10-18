@@ -1,4 +1,3 @@
-import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import path from "node:path";
 
@@ -18,6 +17,8 @@ const fixture = (name: string): string => readFileSync(path.join(fixturesDir, na
 const BASE = "https://example-ns.example.invalid";
 const SECRET_TOKEN = "fixture-token-xyz";
 const API_SECRET = "fixture-api-secret";
+/** Nightscout's API_SECRET convention: the SHA-1 hex of the secret, worked out once for the fixture. */
+const API_SECRET_SHA1 = "af81e13f7ffb8e0e875502e0ec7b9de82d0f88be";
 const now = new Date("2026-10-15T18:00:00.000Z");
 const HOUR = 3_600_000;
 const DAY = 24 * HOUR;
@@ -141,7 +142,7 @@ describe("NightscoutPumpSource.fetchBolusesSince", () => {
   it("sends the SHA-1 hex of an API secret, never the secret", async () => {
     const h = pump({ body: "[]" }, { token: undefined, apiSecret: API_SECRET });
     await h.source.fetchBolusesSince(new Date(now.getTime() - DAY));
-    const hash = createHash("sha1").update(API_SECRET).digest("hex");
+    const hash = API_SECRET_SHA1;
     expect(h.calls[0]?.headers["api-secret"]).toBe(hash);
     expect(h.calls[0]?.url.href).not.toContain(API_SECRET);
     expect(h.calls[0]?.url.href).not.toContain(hash);
