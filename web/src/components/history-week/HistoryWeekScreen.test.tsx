@@ -169,6 +169,41 @@ it("refreshes the current week on each meal event but leaves historical weeks al
   });
   expect(request).toHaveBeenCalledTimes(1);
 });
+it("reads the week again on pump.meals, an old week too, and never asks for the pump record (v0.7.0 plan §6)", async () => {
+  const global: string[] = [];
+  vi.stubGlobal("fetch", (input: RequestInfo | URL) => {
+    global.push(typeof input === "string" ? input : input instanceof URL ? input.href : input.url);
+    return Promise.resolve(Response.json({ symptoms: [], kinds: [] }));
+  });
+  try {
+    for (const now of ["2025-10-08T12:00:00Z", initial.now]) {
+      cleanup();
+      request.mockClear();
+      data.now = now;
+      mount();
+      await screen.findByText(`${String(data.numbers.inRangePercent)} %`);
+      data.numbers.inRangePercent = (data.numbers.inRangePercent ?? 0) - 1;
+      act(() => {
+        mocks.handlers.get("pump.meals")?.();
+      });
+      await screen.findByText(`${String(data.numbers.inRangePercent)} %`);
+      expect(request).toHaveBeenCalledTimes(2);
+    }
+    // The week's mini curves draw no pump markers, so nothing reads the pump record.
+    expect(mocks.handlers.has("pump.imported")).toBe(false);
+    expect(
+      [
+        ...global,
+        ...request.mock.calls.map(([url]) =>
+          typeof url === "string" ? url : url instanceof URL ? url.href : url.url,
+        ),
+      ].some((url) => url.includes("/pump")),
+    ).toBe(false);
+    expect(document.querySelector("[data-testid^=pump]")).toBeNull();
+  } finally {
+    vi.unstubAllGlobals();
+  }
+});
 it("does not refetch when switching view for the same week", async () => {
   const tree = mount();
   await screen.findByText("81 %");

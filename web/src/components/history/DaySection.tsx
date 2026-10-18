@@ -13,6 +13,7 @@ import { formatBound } from "@/components/glucose/format";
 import { readingsAround } from "@/components/glucose/symptom-readings";
 import { useAgeText } from "@/components/glucose/useAgeText";
 import { useNow } from "@/components/glucose/useNow";
+import { usePumpHistory } from "@/components/pump/usePumpHistory";
 import { PeakValue } from "@/components/stats/PeakValue";
 import { formatDuration } from "@/components/stats/format";
 import { useKindLabel } from "@/components/symptoms/kinds";
@@ -37,6 +38,7 @@ export function DaySection({
   liveReadings,
   onNavigate,
   role = "owner",
+  simpleMode = false,
   subscribe,
   symptomsOnly = false,
   headerExtra,
@@ -54,6 +56,11 @@ export function DaySection({
    * (a viewer gets `ViewerDays`), so the default names the role the screen is for.
    */
   role?: Role;
+  /**
+   * The history page sends a simpleMode session to Nu; with it set the pump record is not read
+   * (v0.7.0: simpleMode shows nothing new), as for a viewer.
+   */
+  simpleMode?: boolean;
   /** The screen's feed: the day's symptoms are read again on every `symptom.*` event. */
   subscribe?: Subscribe | undefined;
   /** The "Symptomer" filter (plan §5): the list shows the symptom rows only. */
@@ -72,6 +79,13 @@ export function DaySection({
   const now = useNow();
   const symptomRange = useSymptomRange(spaceId, day.from, beforeInstant(day.to), subscribe);
   const symptoms = symptomRange.status === "ready" ? symptomRange.symptoms : [];
+  // The day's pump record (v0.7.0 plan §9), read again on `pump.*`; never for a viewer or in
+  // simpleMode, and the route refuses both anyway.
+  const pumpHistory = usePumpHistory(spaceId, day.from, day.to, { subscribe, role, simpleMode });
+  const pump =
+    pumpHistory.status === "ready"
+      ? { boluses: pumpHistory.boluses, reach: pumpHistory.reach }
+      : undefined;
   const labelOf = useKindLabel(locale, symptomRange.kinds);
   const [activeSymptomId, setActiveSymptomId] = useState<string | null>(null);
   const activeSymptom = symptoms.find((symptom) => symptom.id === activeSymptomId) ?? null;
@@ -142,7 +156,9 @@ export function DaySection({
               ts: meal.ts,
               ...(meal.bolusTs ? { bolusTs: meal.bolusTs } : {}),
               ...(meal.symbol !== undefined ? { symbol: meal.symbol } : {}),
+              ...(meal.pumpBolusId !== undefined ? { pumpBolusId: meal.pumpBolusId } : {}),
             }))}
+            {...(pump ? { pump } : {})}
             onMealTap={(id) => {
               router.push(mealHref(id));
             }}

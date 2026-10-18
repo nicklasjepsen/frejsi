@@ -318,12 +318,14 @@ describe("Nu · phone (Main)", () => {
     );
   });
 
-  it("writes nothing: Nu only reads day, history and foods", async () => {
+  it("writes nothing: Nu only reads day, history, foods and the pump record", async () => {
     api.meals = [lunch];
     mount();
     await within(screen.getByTestId("last-meal")).findByTestId("meal-card");
     expect(api.calls.every((c) => c.method === "GET")).toBe(true);
-    expect(new Set(api.calls.map((c) => c.path))).toEqual(new Set(["day", "foods", "history/day"]));
+    expect(new Set(api.calls.map((c) => c.path))).toEqual(
+      new Set(["day", "foods", "history/day", "pump"]),
+    );
   });
 
   it("draws nothing of glucose before the window has loaded, and the error by code when refused", () => {
