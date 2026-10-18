@@ -278,6 +278,16 @@ describe("the pump record in the history views (v0.7.0 plan §4)", () => {
     expect(pump.meal).toMatchObject({ fromPump: true, pumpBolusId: "b-snack", bolusUnits: 1.5 });
     expect(pump.stats).not.toHaveProperty("bolusLeadMinutes");
   });
+  it("names the pump as the logger of an untouched pump meal on the day and the curve (#244)", async () => {
+    const { deps, meal, pumpMeal } = pumpSetup();
+    const day = await loadHistoryDay("s1", "2026-10-18", false, "da", deps);
+    const byId = new Map(day.meals.map((m) => [m.id, m]));
+    expect(byId.get(pumpMeal.id)?.byUser).toEqual({ id: "pump", name: "Pumpen" });
+    expect(byId.get(meal.id)?.byUser).toEqual(meal.byUser);
+    const curve = await loadMealCurve("s1", pumpMeal.id, "en", deps);
+    expect(curve.meal.byUser).toEqual({ id: "pump", name: "the pump" });
+    expect(JSON.stringify([byId.get(pumpMeal.id), curve.meal])).not.toContain("Fictional member");
+  });
   it("never offers an untouched pump meal as an earlier occurrence of the same dish", async () => {
     const { repo, deps, pumpMeal } = pumpSetup();
     repo.meals.push(

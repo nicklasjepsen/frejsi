@@ -264,3 +264,41 @@ describe("the pump fields on MealView (plan §4)", () => {
       expect(plain).not.toHaveProperty(key);
   });
 });
+
+describe("who logged a pump meal (#244)", () => {
+  /** The pump meal is stored under the owner who connected the pump, never shown as theirs. */
+  function withOwnersPumpMeal(h: ReturnType<typeof setup>) {
+    withPumpMeal(h);
+    const row = h.rows.get("pm1");
+    if (row) h.rows.set("pm1", { ...row, byUserId: "owner1" });
+  }
+  it("names the pump, not the connecting owner, while nobody has ticked or edited the meal", async () => {
+    const h = setup();
+    withOwnersPumpMeal(h);
+    const view = await getMeal("s1", "pm1", session, h.deps);
+    expect(view.byUser).toEqual({ id: "pump", name: "the pump" });
+    const da = await getMeal("s1", "pm1", { ...session, locale: "da" }, h.deps);
+    expect(da.byUser.name).toBe("Pumpen");
+  });
+  it("makes the person who ticks 'Det passer' the meal's logger", async () => {
+    const h = setup();
+    withOwnersPumpMeal(h);
+    const view = await updateMeal("s1", "pm1", session, { adopt: true }, h.deps);
+    expect(view.byUser).toEqual({ id: "u1", name: "Fictional carer" });
+    expect(view).not.toHaveProperty("fromPump");
+    expect(h.rows.get("pm1")?.byUserId).toBe("u1");
+  });
+  it("makes the person who edits a pump meal its logger", async () => {
+    const h = setup();
+    withOwnersPumpMeal(h);
+    const view = await updateMeal("s1", "pm1", session, { note: "Fictional note" }, h.deps);
+    expect(view.byUser).toEqual({ id: "u1", name: "Fictional carer" });
+    expect(h.rows.get("pm1")?.byUserId).toBe("u1");
+  });
+  it("leaves the logger of a person's own meal alone when someone else edits it", async () => {
+    const h = setup();
+    h.rows.set("own", mealRow({ id: "own", ts: t("08:00"), byUserId: "owner1" }));
+    await updateMeal("s1", "own", session, { note: "Fictional note" }, h.deps);
+    expect(h.rows.get("own")?.byUserId).toBe("owner1");
+  });
+});

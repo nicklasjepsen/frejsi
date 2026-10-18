@@ -282,6 +282,26 @@ describe("GET /api/spaces/:id/day?date= (plan §7)", () => {
     }
   });
 
+  it("names the pump, never the connecting owner, as the logger of an untouched pump meal (#244)", async () => {
+    addMeal({
+      id: "pump-meal",
+      ts: "2026-10-15T09:00:00.000Z",
+      byUserId: "owner-1",
+      source: "pump",
+      items: [
+        { name: "Kulhydrater fra pumpen", portionLabel: null, grams: null, carbs: 45, position: 0 },
+      ],
+    });
+    addMeal({ id: "adopted", ts: "2026-10-15T08:00:00.000Z", byUserId: "carer-1", source: null });
+    for (const session of ["sess-owner-1", "sess-carer-1"]) {
+      const { body } = await day(session);
+      const byId = new Map(body.meals.map((meal) => [meal.id, meal]));
+      expect(byId.get("pump-meal")?.byUser).toEqual({ id: "pump", name: "Pumpen" });
+      expect(byId.get("adopted")?.byUser).toEqual({ id: "carer-1", name: "Testhjælper" });
+      for (const key of keysOf(body)) expect(key).not.toBe("source");
+    }
+  });
+
   it("lets a carer read it too", async () => {
     expect((await day("sess-carer-1")).res.status).toBe(200);
   });

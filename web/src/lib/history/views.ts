@@ -6,6 +6,8 @@ import {
   mealTitle,
   type Locale,
 } from "@frejsi/shared";
+import { mealLogger } from "@/lib/meals/logger";
+
 import type { HistoryDeps, HistoryMeal } from "./types";
 export async function requireSpace(id: string, deps: HistoryDeps) {
   const space = await deps.repo.space(id);
@@ -61,7 +63,7 @@ export async function mealView(
     id: row.id,
     ts: row.ts,
     totalCarbs: row.totalCarbs,
-    byUser: row.byUser,
+    byUser: mealLogger(row, locale),
     items,
     photo,
     symbol: row.symbol ?? "unknown",

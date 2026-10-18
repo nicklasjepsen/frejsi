@@ -96,7 +96,10 @@ export function database() {
       pumpBolus: bolus
         ? { units: { toNumber: () => bolus.units }, carbs: bolus.carbs, ts: bolus.ts }
         : null,
-      byUser: { id: row.byUserId, name: "Fictional carer" },
+      byUser: {
+        id: row.byUserId,
+        name: row.byUserId === "u1" ? "Fictional carer" : `Fictional ${row.byUserId}`,
+      },
       space: { timezone: "Europe/Copenhagen" },
       items: [...row.items]
         .sort((a, b) => direction * (a.position - b.position))

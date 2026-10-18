@@ -5,6 +5,8 @@
   "summary": "{carbs} g carbs · {count, plural, one {# item} other {# items}}",
   "metaPhone": "{day} {time} · {name}",
   "metaDesktop": "{date} · {time} · logged by {name}",
+  "metaPhonePump": "{day} {time} · from the pump",
+  "metaDesktopPump": "{date} · {time} · from the pump",
   "afterwards": "What happened afterwards",
   "previousBehind": "{count, plural, one {Last time behind} other {Last # times behind}}",
   "compare": {

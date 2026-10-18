@@ -50,6 +50,8 @@ export interface MealChanges {
   photoKey?: string | undefined;
   /** Null when a person adopts or edits a pump meal: from then on it is an ordinary meal. */
   source?: null | undefined;
+  /** The person who adopts or edits a pump meal: from then on the meal is theirs (#244). */
+  byUserId?: string;
 }
 export interface MealRepository {
   food(spaceId: string, id: string): Promise<Food | null>;
@@ -176,6 +178,7 @@ export class PrismaMealRepository implements MealRepository {
             ...(fields.note !== undefined ? { note: fields.note } : {}),
             ...("photoKey" in fields ? { photoKey: fields.photoKey ?? null } : {}),
             ...(fields.source === null ? { source: null } : {}),
+            ...(fields.byUserId !== undefined ? { byUserId: fields.byUserId } : {}),
             ...(ts ? { ts: new Date(ts) } : {}),
             ...(bolusTs !== undefined
               ? { bolusTs: bolusTs === null ? null : new Date(bolusTs) }

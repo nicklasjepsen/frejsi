@@ -49,6 +49,10 @@ const viewFields = {
   title: z.string().min(1),
   slot: MealSlot,
   totalCarbs: z.number().int().min(0).max(30000),
+  /**
+   * Who logged the meal. For an untouched pump meal, which nobody logged, it is the pump: `id` is
+   * `"pump"` and `name` the localized "Pumpen", never the owner the row is stored under (#244).
+   */
   byUser: z.strictObject({ id: z.string().min(1), name: z.string().min(1) }),
   items: z.array(MealItemView).min(1).max(30),
   photo: FoodPhoto.optional(),
