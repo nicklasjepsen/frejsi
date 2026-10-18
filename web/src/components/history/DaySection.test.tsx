@@ -1,7 +1,7 @@
 import "@testing-library/jest-dom/vitest";
 
 import type { DayHistoryView } from "@frejsi/shared/schemas/history";
-import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -183,6 +183,38 @@ describe("symptoms on the day (v0.6.0 plan §5)", () => {
     expect(
       screen.getByRole("button", { name: "Ondt i maven kl. 13:00 · Jonas" }),
     ).toBeInTheDocument();
+  });
+
+  it("deletes from the card for an owner or carer, and the marker and row leave on symptom.deleted (issue 220)", async () => {
+    const handlers = new Map<string, () => void>();
+    const subscribe = (type: string, handler: () => void) => {
+      handlers.set(type, handler);
+      return () => handlers.delete(type);
+    };
+    mount({ role: "carer", subscribe });
+    fireEvent.click(await screen.findByRole("button", { name: "Ondt i maven kl. 13:00" }));
+    const dialog = screen.getByRole("dialog", { name: "Ondt i maven kl. 13:00" });
+    fireEvent.click(within(dialog).getByRole("button", { name: "Slet" }));
+    fireEvent.click(within(dialog).getByRole("button", { name: "Slet" }));
+    await waitFor(() => {
+      expect(screen.queryByRole("dialog")).toBeNull();
+    });
+    expect(fetchCalls).toContain("/api/spaces/s1/symptoms/s1");
+    symptoms = [];
+    act(() => {
+      handlers.get("symptom.deleted")?.();
+    });
+    await waitFor(() => {
+      expect(document.querySelectorAll("svg [data-testid=symptom-marker]")).toHaveLength(0);
+    });
+    expect(screen.queryByTestId("symptom-row")).toBeNull();
+  });
+
+  it("offers no 'Slet' in simpleMode", async () => {
+    mount({ simpleMode: true });
+    fireEvent.click(await screen.findByRole("button", { name: "Ondt i maven kl. 13:00" }));
+    const dialog = screen.getByRole("dialog", { name: "Ondt i maven kl. 13:00" });
+    expect(within(dialog).queryByRole("button", { name: "Slet" })).toBeNull();
   });
 
   it("opens the detail on tap with the readings from −30 to +30 min and their times, and closes it", async () => {

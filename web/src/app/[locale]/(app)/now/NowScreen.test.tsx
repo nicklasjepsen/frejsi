@@ -875,6 +875,15 @@ describe("Nu · symptoms and 'Jeg har det…' (v0.6.0 plan §5)", () => {
     });
   });
 
+  it("offers 'Slet' in the symptom detail for an owner (issue 220)", async () => {
+    symptoms = [dizzy];
+    mount();
+    const desktop = within(screen.getByTestId("now-desktop"));
+    fireEvent.click(await desktop.findByRole("button", { name: "Svimmel kl. 14:00" }));
+    const dialog = desktop.getByRole("dialog", { name: "Svimmel kl. 14:00" });
+    expect(within(dialog).getByRole("button", { name: "Slet" })).toBeInTheDocument();
+  });
+
   it("mounts 'Jeg har det…' under 'Log et måltid' on the phone for an owner and a carer, not a viewer", () => {
     mount();
     const feel = screen.getByRole("link", { name: "Jeg har det…" });
