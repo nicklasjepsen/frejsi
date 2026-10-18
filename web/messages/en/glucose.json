@@ -35,5 +35,9 @@
     "lastReading": "{source} · last reading {time}",
     "noReading": "{source} · no reading yet",
     "none": "No glucose source chosen yet"
+  },
+  "tooltip": {
+    "reading": "{value} {unit} · {trend} · {time} · {age}",
+    "readingNoTrend": "{value} {unit} · {time} · {age}"
   }
 }
