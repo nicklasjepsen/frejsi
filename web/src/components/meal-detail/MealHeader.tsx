@@ -96,7 +96,7 @@ export function PhoneMealHeader({
       <div className={styles.metaHeader}>
         <PageHeader
           variant="meta"
-          meta={phoneMeta(t, stats, meal, now, timeZone, locale)}
+          meta={phoneMeta(t, pump, stats, meal, now, timeZone, locale)}
           backHref={backHref}
         />
       </div>
@@ -140,6 +140,7 @@ export function DesktopMealHeader({
   adopt,
 }: HeaderProps) {
   const t = useTranslations("mealDetail");
+  const pump = useTranslations("pumpMeal");
   const locale = resolveLocale(useLocale());
   return (
     <div className={styles.banner}>
@@ -150,7 +151,7 @@ export function DesktopMealHeader({
         <h1 className={styles.title} data-size="desktop">
           {meal.title}
         </h1>
-        <p className={styles.meta}>{desktopMeta(t, meal, timeZone, locale)}</p>
+        <p className={styles.meta}>{desktopMeta(t, pump, meal, timeZone, locale)}</p>
         <PumpBolusLine meal={meal} timeZone={timeZone} className={styles.meta} />
         <PumpBadge meal={meal} />
         <div className={styles.actions} data-testid="meal-actions">

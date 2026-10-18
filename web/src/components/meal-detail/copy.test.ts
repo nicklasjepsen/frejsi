@@ -28,6 +28,8 @@ describe("copy test (plan §9): mealDetail.*", () => {
     expect(all.length).toBeGreaterThan(15);
     expect(all.filter(([, text]) => advice(text).length > 0)).toEqual([]);
     expect(all.filter(([, text]) => /bolus|insulin/i.test(text))).toEqual([]);
+    // The pump meal's header lines ("fra pumpen", #244) live in `pumpMeal.*` with the pump's copy.
+    expect(all.filter(([, text]) => /pump/i.test(text))).toEqual([]);
   });
 });
 

@@ -4,7 +4,8 @@
 // own meal goes out in `pump.meals` on the glucose group, never as `meal.updated`.
 import { describe, expect, it } from "vitest";
 import { SessionContext } from "@frejsi/shared";
-import { createMeal, deleteMeal, getMeal, updateMeal } from "./service";
+import { MemoryPhotoStore } from "@frejsi/shared/photos/memory";
+import { createMeal, deleteMeal, getMeal, setMealPhoto, updateMeal } from "./service";
 import { bolus, mealRow, writerHarness } from "./test-support";
 
 const session = SessionContext.parse({
@@ -292,6 +293,16 @@ describe("who logged a pump meal (#244)", () => {
     const h = setup();
     withOwnersPumpMeal(h);
     const view = await updateMeal("s1", "pm1", session, { note: "Fictional note" }, h.deps);
+    expect(view.byUser).toEqual({ id: "u1", name: "Fictional carer" });
+    expect(h.rows.get("pm1")?.byUserId).toBe("u1");
+  });
+  it("makes the person who adds a photo to a pump meal its logger", async () => {
+    const h = setup();
+    withOwnersPumpMeal(h);
+    const png =
+      "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR4nGP4z8DwHwAFAAH/iZk9HQAAAABJRU5ErkJggg==";
+    const deps = { ...h.deps, photos: new MemoryPhotoStore() };
+    const view = await setMealPhoto("s1", "pm1", session, png, deps);
     expect(view.byUser).toEqual({ id: "u1", name: "Fictional carer" });
     expect(h.rows.get("pm1")?.byUserId).toBe("u1");
   });

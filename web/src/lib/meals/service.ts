@@ -125,6 +125,13 @@ function pumpFields(row: MealRecord, reader: MealReader) {
     ...(row.source === "pump" ? { fromPump: true as const } : {}),
   };
 }
+/**
+ * A person's write to an untouched pump meal makes it an ordinary meal, and that person its logger
+ * (#244): until then it is stored under the owner who connected the pump and shown as the pump's.
+ */
+function adopted(previous: MealRecord, session: SessionContext): MealChanges {
+  return previous.source === "pump" ? { source: null, byUserId: session.userId } : {};
+}
 async function view(row: MealRecord, who: Locale | MealReader, deps: MealDeps): Promise<MealView> {
   const reader = asReader(who);
   const locale = reader.locale;
@@ -328,7 +335,7 @@ export async function updateMeal(
       const saved = await repo.update(spaceId, id, {
         ...rest,
         ...(bolusTs !== undefined && !pumpTime ? { bolusTs } : {}),
-        ...(previous.source === "pump" ? { source: null, byUserId: session.userId } : {}),
+        ...adopted(previous, session),
       });
       await emit(spaceId, "meal.updated", { mealId: id });
       if (Date.parse(saved.ts) === Date.parse(previous.ts)) return saved;
@@ -402,7 +409,7 @@ export async function setMealPhoto(
       displacedKey = previous.photoKey;
       const saved = await repo.update(spaceId, id, {
         photoKey: key,
-        ...(previous.source === "pump" ? { source: null } : {}),
+        ...adopted(previous, session),
       });
       await emit(spaceId, "meal.updated", { mealId: id });
       return saved;
