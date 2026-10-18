@@ -271,7 +271,12 @@ readings from the last day, written through `addManualReading`), and prints one 
 per person. Since v0.6.0 the space also holds a category on every food, four symptoms over the two
 days before the seed clock (Alma's through her simpleMode picker, one of Jonas's resolved later;
 none on the clock's own day, so the e2e logs today's first), and "Lasagne", a dish of six portions
-saved through `saveRecipe` with its lines resolved to the family's own ingredient foods. Today stops
+saved through `saveRecipe` with its lines resolved to the family's own ingredient foods. Since
+v0.7.0 Almas rum also has a pump record: a connection whose reference names a `pump-<spaceId>`
+secret that does not exist, and one pump cycle over a fixed fictional source with seven boluses
+from yesterday noon to 13:45 today: three standard ones on seeded meals (yesterday's lunch, Mette's
+breakfast, Alma's apple), one extended with carbs that nobody logged, which becomes the one
+untouched pump meal, and three automatic ones. Today's lunch keeps its tapped 11:58. Today stops
 at the seed clock. The fake returns at most 24 hours per daily cycle, so a
 25-hour autumn date can have an uncovered hour. It refuses to run with `NODE_ENV=production` and on a database that already has a space.
 
@@ -409,6 +414,95 @@ food deletion and the week's two reading queries. At 360/1280 px, Playwright che
 previous curves/table, portion editing with `meal.updated`, deletion, simpleMode detail, day/week
 history and the viewer's meal-only responses and 403s. Edits and deletion are restored through the
 API so the earlier release assertions retain their original data.
+
+## Pump record from Nightscout (v0.7.0)
+
+What the pump delivered, imported read-only and shown as pump history: the time and delivered units
+of each bolus the pump recorded, shown to owners and carers outside simpleMode, never to a viewer,
+never to an AI model. Frejsi never computes, suggests or lets anyone enter insulin; the pump record
+changes none of that. Migration `0006_pump` adds the `PumpBolus` table, the four pump columns on
+`Space` (`pumpSource`, `pumpStatus`, `pumpFailures`, `lastPumpAt`) and `Meal.pumpBolusId` and
+`Meal.source`.
+
+**Connecting.** Frejsi reads the pump from a Nightscout site that something else fills; for a
+Tandem pump that is tconnectsync, which copies the t:connect upload to Nightscout as `Combo Bolus`
+treatments. An owner opens Indstillinger → Pumpehistorik (desktop: the card under the glucose
+source; phone: the row that opens `settings/pump`), enters the site's address and a read-only token
+or the API secret, and presses Forbind. The pump record is its own connection: it may be the same
+site as the glucose source or another, and it has its own status and failure count. The web app
+forwards the credential to the poller's `source-connect` with `purpose: "pump"`, which checks
+`verifyauth`, reads the last day of boluses and writes the credential as a new version of the Key
+Vault secret `pump-<spaceId>`; the database keeps `{ type, secretRef, connectedBy }` and nothing
+else. "Adgangen virker, men pumpen har ikke sendt noget det sidste døgn" means the token works and
+the site has no bolus from the last day: tconnectsync is not running, or it writes to another site.
+Carers see the status and the newest record's time; only an owner connects and disconnects.
+
+**The timer, the lag and the window.** `pump-poll` runs at second 0 of every fifteenth minute
+(`0 */15 * * * *`) with a 0–20 s random wait, in the same Function App as the glucose poll and
+apart from it, so a slow site never delays a reading. Tandem uploads the pump's history about
+hourly and not in real time, so a bolus can reach Frejsi up to an hour after it was given; the
+curve says how far the record reaches ("Pumpe til 11:58") so the gap is never read as "no bolus".
+Each run reads `since = max(now − 14 d, min(now − 24 h, lastPumpAt − 3 h))`: a full day every time,
+three hours behind the newest stored bolus, and two weeks on the first run after connecting. A
+record is stored once on `(spaceId, sourceId)` (Nightscout's `pump_event_id`), so reading the same
+day again adds nothing.
+
+**What happens to a bolus.** A standard or extended bolus from 45 minutes before to 30 minutes
+after a meal becomes that meal's bolus time (`Meal.pumpBolusId` and `bolusTs`), the nearest first,
+one bolus per meal. A standard or extended bolus with carbs and no meal gets a pump meal once it is
+two hours old: one manual line, "Kulhydrater fra pumpen", unverified ("Fra pumpen · ikke tjekket")
+until an owner or carer ticks "Det passer" or edits it; when someone logs the meal later, the
+logged meal takes the bolus and the untouched pump meal goes; a pump meal deleted by hand is never
+made again. Automatic boluses (Control-IQ's own) are drawn on the curve and never attached to a
+meal. Every change goes out as `pump.imported`, `pump.meals` or `pump.status`, all three in the
+glucose group, so a viewer's socket and event page never carry them.
+
+A multi-day first run commits one day at a time, and only the last commit carries the cycle's
+`pump.imported` (with the whole run's count and range), as the glucose import does; each commit
+emits its own `pump.meals`. An open screen that missed the earlier days' rows reads them on that
+last event. This is known and accepted.
+
+**What is never stored.** Temp Basal, basal rates, Sleep, IOB and every other treatment type are
+filtered out in the query and never reach Frejsi. Of a bolus record only five fields are read
+(`pump_event_id`, `created_at`, `insulin` as `units`, `notes` as the kind, `carbs`); `glucose`,
+`enteredBy`, `utcOffset`, `_id` and the rest are dropped at the parse. The site's address and the
+token live in Key Vault only, never in the database, a log line or an error. Frejsi never writes to
+the pump, to t:connect or to the Nightscout site: the adapter's allow-list holds `GET
+treatments.json` and nothing else for the pump.
+
+**Troubleshooting.** Each run writes one `pump.cycle` line (`count` new boluses, `code` `ok` or
+`<n>-failed`), one `pump.space` line per space that worked, and `pump.space-failed` with
+`code: <step>:<cause>` for one that did not. The lines carry space ids, counts and codes only,
+never an address, a token, units or carbs.
+
+| What you see                                     | What it means                                                                                                                                  | What to do                                                                                                                   |
+| ------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| `pump.space-failed` with `fetch-failed:401`      | The site refused the token (a new `API_SECRET`, a deleted subject). Three failed runs in a row set the card to "Forbindelsen svigter siden …". | An owner opens Pumpehistorik → "Skift adgang" and enters the current token. The next good run sets it back to "Forbundet".   |
+| `fetch-failed:Timeout` or `fetch-failed:Network` | The site did not answer in time (a sleeping free host, DNS, a lapsed certificate).                                                             | Open the site in a browser; the pump record reconnects by itself when the site answers.                                      |
+| `source-unavailable:…`                           | The poller could not read `pump-<spaceId>` from Key Vault (the version named by the reference is gone, or the identity lost its role).         | Check the secret's versions and the poller's role on the vault (`infra/README.md`), or connect again from Pumpehistorik.     |
+| `pump.cycle` `ok` with `count` 0 for hours       | The site holds no new bolus: tconnectsync has stopped, or the phone has not uploaded to t:connect.                                             | Check tconnectsync's log and the t:connect app. Nothing in Frejsi needs changing; the next run reads the day again.          |
+| `pump.dropped` with a `count`                    | That many `Combo Bolus` records could not be read (no `pump_event_id`, an unparseable time, units outside 0–50) and were skipped.              | Look at the newest treatments on the site; a change in tconnectsync's output is the usual cause. The other records are kept. |
+| `pump.page-cap`                                  | Five full pages came back (1000 records on a normal run, 5000 on a first run): far more than one pump's boluses. Older records were not read.  | Check that the site holds one pump's record and that the token belongs to the right subject.                                 |
+| `pump.meals-skipped` with `owner-missing`        | The owner who connected the pump record is no longer a user, so no pump meal can be made in their name. Links still change.                    | An owner connects the pump record again ("Skift adgang"), which records them as `connectedBy`.                               |
+
+**Disconnecting** ("Afbryd", owner only) clears `Space.pumpSource`, sets `not-configured` and stops
+the reading; the stored boluses, their meal links and `lastPumpAt` stay. The secret `pump-<spaceId>`
+stays in Key Vault, because the web app has no access to the vault; a later connect writes a new
+version of it. To remove it after a disconnect:
+
+```sh
+az keyvault secret delete --vault-name $VAULT -n pump-<space id>
+```
+
+**The release e2e.** `pump-settings.spec.ts` and `pump.spec.ts` run at both widths. The global
+setup starts a loopback stand-in for `source-connect` on `E2E_PORT + 2` (`web/e2e/global-setup.ts`;
+`GET /calls` lists the shape of each call, never the address or the token), and `web/e2e/env.ts`
+points `SOURCE_CONNECT_URL` and `SOURCE_CONNECT_KEY` at it for the run, so no function and no
+Nightscout site is contacted. The seed connects Almas rum's pump record with a reference to a
+secret that does not exist and runs one pump cycle over a fixed fictional source (below);
+`pump-settings.spec.ts` disconnects and connects it again, and `pump.spec.ts` checks the boluses
+on Now and in the history day, a meal's bolus with its minutes and units, ticking a pump meal, and
+that a viewer and a simpleMode member get nothing from the pump and a 403 from `/pump`.
 
 ## Symptoms, food categories and the meal symbol (v0.6.0)
 
