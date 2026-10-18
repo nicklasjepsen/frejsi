@@ -314,6 +314,9 @@ export function HistoryWeekScreen({
           {activeSymptom && (
             <SymptomDetailCard
               locale={locale}
+              // The week page sends a viewer and a simpleMode session elsewhere.
+              spaceId={spaceId}
+              mayDelete
               timeZone={week.timezone}
               symptom={activeSymptom}
               spaceKinds={symptomRange.kinds}

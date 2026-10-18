@@ -193,6 +193,8 @@ export function DaySection({
           {activeSymptom && (
             <SymptomDetailCard
               locale={locale}
+              spaceId={spaceId}
+              mayDelete={role !== "viewer" && !simpleMode}
               timeZone={day.timezone}
               symptom={activeSymptom}
               spaceKinds={symptomRange.kinds}

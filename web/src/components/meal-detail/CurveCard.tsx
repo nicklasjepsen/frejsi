@@ -178,6 +178,8 @@ export function CurveCard({
       {activeSymptom && (
         <SymptomDetailCard
           locale={locale}
+          {...(spaceId ? { spaceId } : {})}
+          mayDelete={role !== "viewer" && !simpleMode}
           timeZone={timeZone}
           symptom={activeSymptom}
           spaceKinds={symptomRange.kinds}

@@ -397,6 +397,8 @@ export function NowScreen({
               {activeSymptom && (
                 <SymptomDetailCard
                   locale={locale}
+                  spaceId={spaceId}
+                  mayDelete={role !== "viewer" && !simpleMode}
                   timeZone={zone}
                   symptom={activeSymptom}
                   spaceKinds={symptomRange.kinds}
