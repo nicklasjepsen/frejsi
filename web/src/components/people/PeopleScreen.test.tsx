@@ -163,7 +163,7 @@ describe("PeopleScreen · the list (Personer-Telefon, Personer-Desktop)", () => 
     mount();
     expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("Personer i Almas rum");
     expect(screen.getByTestId("people-summary")).toHaveTextContent(
-      "5 personer · 5 enheder · 1 invitation venter",
+      "5 personer · 5 apparater · 1 invitation venter",
     );
   });
 
@@ -220,7 +220,7 @@ describe("PeopleScreen · the list (Personer-Telefon, Personer-Desktop)", () => 
     expect(cells(rowOf("Farmor Birthe")).slice(1)).toEqual([
       "role=Hjælper",
       "view=Normal",
-      "devices=1 enhed",
+      "devices=1 apparat",
       "lastSeen=Søndag",
     ]);
     expect(within(rowOf("Mette")).queryByText("(dig)")).toBeNull();
@@ -229,10 +229,10 @@ describe("PeopleScreen · the list (Personer-Telefon, Personer-Desktop)", () => 
   it("writes the phone summary line role · devices, with simpel visning when it is on", () => {
     mount();
     expect(within(rowOf("Jonas")).getByTestId("member-summary")).toHaveTextContent(
-      "Ejer · 2 enheder",
+      "Ejer · 2 apparater",
     );
     expect(within(rowOf("Alma")).getByTestId("member-summary")).toHaveTextContent(
-      "Hjælper · simpel visning · 1 enhed",
+      "Hjælper · simpel visning · 1 apparat",
     );
   });
 
@@ -244,7 +244,7 @@ describe("PeopleScreen · the list (Personer-Telefon, Personer-Desktop)", () => 
       "role",
     );
     expect(within(laerke).getByTestId("member-summary")).toHaveTextContent(
-      "Ser med · ingen glukose · 0 enheder",
+      "Ser med · ingen glukose · 0 apparater",
     );
     expect(within(laerke).getByText("Aldrig")).toBeInTheDocument();
   });

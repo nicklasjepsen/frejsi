@@ -1,9 +1,15 @@
 import { z } from "zod";
 
 /**
- * The hard rule in test form (plan §8): these words and phrases must not appear in UI strings,
+ * The hard rule in test form (plan §8, restated in v0.7.0 plan §7): Frejsi never computes,
+ * suggests or lets anyone enter insulin. These words and phrases must not appear in UI strings,
  * in the keys of any exported Zod schema, or (from v0.4.0) in generated insight text. The bare
  * words `enhed`/`units` are not listed because here they mean devices and the glucose unit.
+ *
+ * The one exception is pump history (v0.7.0): the time and delivered units of a bolus the pump
+ * recorded, shown in the pump-history files only (`PUMP_HISTORY_FILES` and `shared/src/pump/
+ * messages/`). There the word `bolus` and a unit amount pass, every other dosing word still fails,
+ * and the suggestion vocabulary fails too. AI output never gets the exception.
  */
 export const DOSING_WORDS = [
   "insulin",
@@ -60,7 +66,58 @@ export const MEAL_CURVE_ALLOW_LIST = [
 ] as const;
 
 /** `Bolus HH:MM`, rendered or as its message template `Bolus {time}` (the `log.bolus.at` key). */
-const BOLUS_TIME = /^Bolus (?:\d{2}:\d{2}|\{time\})$/;
+export const BOLUS_TIME = /^Bolus (?:\d{2}:\d{2}|\{time\})$/;
+
+/**
+ * The message files that show pump history (v0.7.0 plan §7), in either locale; `shared/src/pump/
+ * messages/` is scanned with the same scope. Only there may a unit amount and the word `bolus`
+ * appear; every other dosing word and every suggestion word still fails in them.
+ */
+export const PUMP_HISTORY_FILES = ["pump.json", "pumpMeal.json", "pumpSettings.json"] as const;
+
+/** True for `da/pump.json`, `web/messages/en/pumpMeal.json`, `pump/messages/da.json` and the like. */
+export function isPumpHistoryFile(where: string): boolean {
+  const file = where.split(":")[0] ?? where;
+  const name = file.split("/").pop() ?? file;
+  return (
+    (PUMP_HISTORY_FILES as readonly string[]).includes(name) ||
+    /(?:^|\/)pump\/messages\/[a-z]{2}\.json$/.test(file)
+  );
+}
+
+/**
+ * Words that turn a number into advice (v0.7.0 plan §7). They fail in the pump-history files and in
+ * every schema key and enum value. A trailing `*` matches the stem by prefix (`anbefal*` matches
+ * "anbefalet"); everything else is a whole word or phrase.
+ */
+export const SUGGESTION_WORDS = [
+  "bør",
+  "burde",
+  "skal tage",
+  "anbefal*",
+  "foreslå*",
+  "beregn*",
+  "udregn*",
+  "giv",
+  "tag",
+  "næste gang",
+  "should",
+  "recommend*",
+  "suggest*",
+  "calculat*",
+  "compute*",
+  "give",
+  "take",
+  "next time",
+] as const;
+
+/**
+ * A number, an ICU `#` or a `{…}` placeholder followed by a unit word: "2 E", "{count} enheder",
+ * "# units". Fails in every message file outside the pump-history files and in the push copy, so
+ * an amount of insulin cannot appear anywhere but pump history. Device copy says "apparater".
+ */
+export const UNIT_AMOUNT =
+  /(?<![\p{L}\p{N}_])(?:\p{N}+(?:[.,]\p{N}+)?|\{[^{}]*\}|#)\s*(?:E|U|IE|IU|[Ee]nhed(?:er)?|[Uu]nits?)(?![\p{L}\p{N}_])/u;
 
 export interface DosingFinding {
   where: string;
@@ -68,11 +125,35 @@ export interface DosingFinding {
   term: (typeof DOSING_WORDS)[number];
 }
 
+export interface SuggestionFinding {
+  where: string;
+  text: string;
+  term: (typeof SUGGESTION_WORDS)[number];
+}
+
+export interface UnitAmountFinding {
+  where: string;
+  text: string;
+  /** The amount and unit as written, "2 E". */
+  amount: string;
+}
+
+/** What a pump-history file may not say: a finding of either kind. */
+export type PumpCopyFinding = DosingFinding | SuggestionFinding;
+
 const escape = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 // Unicode-aware word boundaries so "insulinpumpe" and "rationel" do not match but "Insulin" does.
-const patterns = DOSING_WORDS.map((term) => ({
+const wordBounded = (term: string, stem = false) =>
+  new RegExp(
+    `(?<![\\p{L}\\p{N}_])${escape(term)}${stem ? "\\p{L}*" : ""}(?![\\p{L}\\p{N}_])`,
+    "iu",
+  );
+const patterns = DOSING_WORDS.map((term) => ({ term, re: wordBounded(term) }));
+/** In pump history the word `bolus` is lifted; nothing else is. */
+const pumpPatterns = patterns.filter(({ term }) => term !== "bolus");
+const suggestionPatterns = SUGGESTION_WORDS.map((term) => ({
   term,
-  re: new RegExp(`(?<![\\p{L}\\p{N}_])${escape(term)}(?![\\p{L}\\p{N}_])`, "iu"),
+  re: term.endsWith("*") ? wordBounded(term.slice(0, -1), true) : wordBounded(term),
 }));
 
 function isAllowed(text: string): boolean {
@@ -95,6 +176,63 @@ export function findDosingVocabulary(
     }
   }
   return findings;
+}
+
+/** Every suggestion word found in each `[where, text]` pair; no allow-list applies. */
+export function findSuggestionVocabulary(
+  strings: Iterable<readonly [string, string]>,
+): SuggestionFinding[] {
+  const findings: SuggestionFinding[] = [];
+  for (const [where, text] of strings) {
+    for (const { term, re } of suggestionPatterns) {
+      if (re.test(text)) findings.push({ where, text, term });
+    }
+  }
+  return findings;
+}
+
+/** Every unit amount ("2 E", "{count} enheder", "# units") in each `[where, text]` pair. */
+export function findUnitAmounts(strings: Iterable<readonly [string, string]>): UnitAmountFinding[] {
+  const findings: UnitAmountFinding[] = [];
+  for (const [where, text] of strings) {
+    const match = UNIT_AMOUNT.exec(text);
+    if (match) findings.push({ where, text, amount: match[0] });
+  }
+  return findings;
+}
+
+/**
+ * The pump-history scope (v0.7.0 plan §7): every dosing word but `bolus`, and every suggestion
+ * word, with no allow-list. A unit amount passes here and nowhere else.
+ */
+export function findPumpCopyVocabulary(
+  strings: Iterable<readonly [string, string]>,
+): PumpCopyFinding[] {
+  const findings: PumpCopyFinding[] = [];
+  const list = [...strings];
+  for (const [where, text] of list) {
+    for (const { term, re } of pumpPatterns) {
+      if (re.test(text)) findings.push({ where, text, term });
+    }
+  }
+  return [...findings, ...findSuggestionVocabulary(list)];
+}
+
+/**
+ * The keys an AI input may never carry (v0.7.0 plan §7): the pump record stays out of every model
+ * input. `units`, `bolusUnits`, `pumpCarbs`, anything starting with `pump`, and `carbs` under a
+ * pump field. Walk `InsightInput` and `WeekInsightInput` with `schemaVocabulary` first.
+ */
+export function findPumpFieldsInAiInput(
+  vocabulary: Iterable<readonly [string, string]>,
+): [string, string][] {
+  const out: [string, string][] = [];
+  for (const [where, key] of vocabulary) {
+    if (key === "units" || key === "bolusUnits" || key === "pumpCarbs" || /^pump/i.test(key))
+      out.push([where, key]);
+    else if (key === "carbs" && /\.pump/i.test(where)) out.push([where, key]);
+  }
+  return out;
 }
 
 /** Flattens `{ "da.json": { nested } }` into `[ "da.json:path.to.key", string ]` pairs. */
