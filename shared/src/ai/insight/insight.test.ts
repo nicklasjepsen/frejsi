@@ -347,3 +347,55 @@ describe("symptoms next to the meal, never explained (v0.6.0 plan §5)", () => {
     });
   });
 });
+
+describe("no pump data reaches a model (v0.7.0 plan §7)", () => {
+  const mealTs = "2026-10-12T10:00:00Z";
+  const target = { low: 4, high: 10 };
+  const after = new Date("2026-10-12T14:00:00Z");
+  it("narrates a pump meal with no lead, and a linked ordinary meal's lead as before", () => {
+    const pumpStats = mealStats([], { ts: mealTs, bolusTs: mealTs, source: "pump" }, target, after);
+    const pump = buildMealInput({ ...input, stats: pumpStats, previous: [] });
+    expect(pump.leadLabel).toBe("none");
+    expect(pump.stats).not.toHaveProperty("leadMinutes");
+    const linked = mealStats(
+      [],
+      { ts: mealTs, bolusTs: "2026-10-12T09:48:00Z", source: null },
+      target,
+      after,
+    );
+    const ordinary = buildMealInput({ ...input, stats: linked, previous: [] });
+    expect(ordinary.leadLabel).toBe("before");
+    expect(ordinary.stats.leadMinutes).toBe(12);
+  });
+  it("leaves a pump meal out of the week's meals and carries no pump key", () => {
+    const row = (mealId: string, source: string | null) => ({
+      mealId,
+      ts: mealTs,
+      title: "Pasta",
+      totalCarbs: 42,
+      stats,
+      source,
+    });
+    const week = buildWeekInput({
+      locale: "en",
+      glucoseUnit: "mmol",
+      isoWeek: 42,
+      weekStart: "2026-10-12",
+      timezone: "UTC",
+      numbers: {
+        lowEpisodes: { count: 0, atNight: 0 },
+        carbsPerDay: 6,
+        mealCount: 1,
+        bolusLead: { registered: 0, of: 1 },
+      },
+      days: Array.from({ length: 7 }, (_, i) => ({
+        localDate: `2026-10-${12 + i}`,
+        mealCount: 0,
+        totalCarbs: 0,
+      })),
+      meals: [row("person", null), row("pump", "pump")],
+    });
+    expect(week.meals).toHaveLength(1);
+    expect(JSON.stringify(week)).not.toMatch(/pump|units|source/i);
+  });
+});

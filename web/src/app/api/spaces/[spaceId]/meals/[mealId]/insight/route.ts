@@ -1,4 +1,4 @@
-import { prisma } from "@frejsi/shared";
+import { HttpError, prisma } from "@frejsi/shared";
 import { GlucoseUnit } from "@frejsi/shared/schemas/glucose";
 import { buildMealInput, localParts } from "@frejsi/shared/ai/insight/input";
 import { route, json } from "@/app/api/auth/http";
@@ -13,6 +13,8 @@ export function GET(
     const { spaceId, mealId } = await context.params;
     const { session, deps } = await authorizeHistory(req, spaceId);
     const view = await loadMealCurve(spaceId, mealId, session.locale, deps);
+    // An untouched pump meal is pump data: no model ever narrates it (v0.7.0 plan §5).
+    if (view.meal.fromPump) throw new HttpError(409, "pump-meal");
     const space = await prisma.space.findUniqueOrThrow({
       where: { id: spaceId },
       select: { timezone: true, glucoseUnit: true, aiProvider: true },

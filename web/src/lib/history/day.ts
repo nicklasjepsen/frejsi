@@ -8,7 +8,7 @@ import {
   type Locale,
 } from "@frejsi/shared";
 import { localDate } from "@/app/api/spaces/[spaceId]/day/load-day";
-import { mealView, requireSpace, untilNow } from "./views";
+import { mealView, pumpLink, requireSpace, untilNow } from "./views";
 import type { HistoryDeps } from "./types";
 export async function loadHistoryDay(
   spaceId: string,
@@ -37,7 +37,8 @@ export async function loadHistoryDay(
       if (!row) throw new Error("History meal missing");
       return {
         ...(await mealView(row, space.timezone, locale, deps)),
-        bolusTs: row.bolusTs,
+        ...(row.bolusTs ? { bolusTs: row.bolusTs } : {}),
+        ...pumpLink(row),
         stats,
       };
     }),
