@@ -3,8 +3,10 @@
 // use: the space and its first owner through the bootstrap, the others' memberships through
 // `addMember`, the source through the Settings route's `saveConnectedSource`, fourteen days of
 // readings through `runPollCycle` with `FakeGlucoseSource`, the symptoms through the symptoms
-// service and the recipe dish through `saveRecipe` (v0.6.0). So every write has its event, and
-// the `events` table is exactly what a real space with that history would hold.
+// service, the recipe dish through `saveRecipe` (v0.6.0), and the pump record (v0.7.0) through the
+// pump-source route's `savePumpSource` and one `runPumpCycle` over a fixed fictional source. So
+// every write has its event, and the `events` table is exactly what a real space with that history
+// would hold.
 //
 // The people are the design's fixtures (docs/design/README.md: fictional, reusable in seed data).
 // Refuses to run when NODE_ENV=production, and on a database that already has a space, so a
@@ -24,10 +26,15 @@ import {
   glucoseSecretName,
   HttpError,
   prisma,
+  pumpMealItemName,
+  pumpSecretName,
   runPollCycle,
+  runPumpCycle,
   type PrismaClient,
+  type PumpSource,
   type Role,
 } from "@frejsi/shared";
+import type { PumpBolus, PumpBolusKind } from "@frejsi/shared/schemas/pump";
 import { FakeFoodSource } from "@frejsi/shared/food/fake";
 import { createFood, addCandidate } from "../src/lib/foods";
 import { createMeal } from "../src/lib/meals/service";
@@ -46,6 +53,7 @@ import {
   saveConnectedSource,
   updateSpaceSettings,
 } from "../src/app/api/spaces/[spaceId]/settings/space-settings";
+import { savePumpSource } from "../src/app/api/spaces/[spaceId]/pump-source/pump-settings";
 import { bootstrapSpace } from "../src/lib/auth/bootstrap";
 import { transact, type AuthDeps } from "../src/lib/auth/core";
 import { createInvite, type CreatedInvite } from "../src/lib/auth/invites";
@@ -266,6 +274,32 @@ export const SEED_SYMPTOMS = [
   resolvedAt?: { hour: number; minute: number };
 }[];
 
+/**
+ * The pump record (v0.7.0 plan task 6): a day of fictional boluses as tconnectsync would leave them
+ * on a Nightscout site, read by the pump cycle like any other source. Three standard boluses
+ * belong to seeded meals (yesterday's lunch, Mette's breakfast, Alma's apple), one extended bolus
+ * with carbs has no logged meal and becomes the one untouched pump meal, and three are Control-IQ's
+ * own (automatic, never a meal's). Today's lunch keeps the time tapped before v0.7.0, so the meal
+ * flows that change it keep working. Round, made-up numbers; units are what the pump delivered.
+ */
+export const SEED_PUMP_BOLUSES = [
+  { id: "seed-1", daysAgo: 1, hour: 12, minute: 0, units: 2.2, kind: "standard", carbs: 43 },
+  { id: "seed-2", daysAgo: 1, hour: 18, minute: 30, units: 3, kind: "extended", carbs: 45 },
+  { id: "seed-3", daysAgo: 0, hour: 3, minute: 10, units: 0.6, kind: "automatic" },
+  { id: "seed-4", daysAgo: 0, hour: 5, minute: 40, units: 0.3, kind: "automatic" },
+  { id: "seed-5", daysAgo: 0, hour: 7, minute: 5, units: 1.8, kind: "standard", carbs: 38 },
+  { id: "seed-6", daysAgo: 0, hour: 9, minute: 45, units: 0.7, kind: "standard", carbs: 14 },
+  { id: "seed-7", daysAgo: 0, hour: 13, minute: 45, units: 0.4, kind: "automatic" },
+] as const satisfies readonly {
+  id: string;
+  daysAgo: number;
+  hour: number;
+  minute: number;
+  units: number;
+  kind: PumpBolusKind;
+  carbs?: number;
+}[];
+
 /** A wall-clock time on the seed's local day, including days when the UTC offset changes. */
 export function seedTime(at: Date, hour: number, minute: number): string {
   const zone = SEED_SPACE.timezone;
@@ -299,6 +333,7 @@ export const SEED_NAMES: readonly string[] = [
   ...SEED_INGREDIENTS.map((food) => food.name),
   SEED_RECIPE_DISH,
   ...SEED_SYMPTOMS.flatMap((symptom) => ("note" in symptom ? [symptom.note] : [])),
+  pumpMealItemName("da"),
   "et æble",
   SEED_DISH,
   SEED_BARCODE,
@@ -567,6 +602,8 @@ export async function seed(options: SeedOptions = {}): Promise<SeededSpace> {
     mealDeps,
   );
 
+  await seedPumpRecord({ db, sink, now, spaceId, daysBefore }, people.jonas.userId);
+
   const view = await loadMealCurve(spaceId, lunch.id, "da", {
     repo: new PrismaHistoryRepository(db),
     photos: null,
@@ -681,6 +718,47 @@ async function seedSymptoms(deps: {
 }
 
 /**
+ * The pump record as the poller makes it: the connection through the pump-source route's writer
+ * (a reference to a `pump-<spaceId>` secret that does not exist; nothing reads it), then one pump
+ * cycle over a fixed fictional source. The cycle stores the boluses, links the standard ones to
+ * the seeded meals, makes the pump meal from the extended bolus nobody logged (more than two hours
+ * old at any seed clock), and emits `pump.imported` and `pump.meals` with every write.
+ */
+async function seedPumpRecord(
+  deps: {
+    db: PrismaClient;
+    sink: MemoryEventSink;
+    now: () => Date;
+    spaceId: string;
+    daysBefore: (daysAgo: number) => Date;
+  },
+  jonasId: string,
+): Promise<void> {
+  const { db, sink, now, spaceId, daysBefore } = deps;
+  await savePumpSource(
+    spaceId,
+    { type: "nightscout", secretRef: pumpSecretName(spaceId), connectedBy: jonasId },
+    { db, sink, now },
+  );
+  const boluses: PumpBolus[] = SEED_PUMP_BOLUSES.map((bolus) => ({
+    sourceId: bolus.id,
+    ts: seedTime(daysBefore(bolus.daysAgo), bolus.hour, bolus.minute),
+    units: bolus.units,
+    kind: bolus.kind,
+    ...("carbs" in bolus ? { carbs: bolus.carbs } : {}),
+  }));
+  const source: PumpSource = {
+    fetchBolusesSince: (since) =>
+      Promise.resolve(boluses.filter((bolus) => Date.parse(bolus.ts) >= since.getTime())),
+    probe: () => Promise.resolve("ok"),
+  };
+  const [outcome] = await runPumpCycle({ db, sources: () => source, sink, now }, { spaceId });
+  if (outcome?.outcome !== "ok" || outcome.stored !== boluses.length) {
+    throw new Error(`the pump cycle failed: ${outcome?.code ?? "no outcome"}`);
+  }
+}
+
+/**
  * "Arnes rum": the space, Arne as owner and Mette (already a person in Almas rum) as carer in one
  * transaction like the bootstrap; the manual source through the Settings route's writer; and the
  * three finger-pricks through `addManualReading`, the only writer of manual readings. Every row
@@ -768,7 +846,7 @@ async function main(): Promise<void> {
   process.env.APP_ORIGIN ??= "http://localhost:3000";
   const space = await seed();
   const lines = [
-    `Seeded "${SEED_SPACE.name}" (${space.spaceId}) with ${String(space.readings)} readings, ${String(SEED_SYMPTOMS.length)} symptoms and the recipe dish "${SEED_RECIPE_DISH}".`,
+    `Seeded "${SEED_SPACE.name}" (${space.spaceId}) with ${String(space.readings)} readings, ${String(SEED_SYMPTOMS.length)} symptoms, the recipe dish "${SEED_RECIPE_DISH}" and a day of ${String(SEED_PUMP_BOLUSES.length)} pump boluses.`,
     `Seeded "${SEED_ARNES_ROOM.name}" (${space.arnesRoom.spaceId}) with ${String(space.arnesRoom.readings)} finger-prick readings; Mette is a carer there.`,
     "Add-a-device links, one per person, each good once for seven days:",
   ];

@@ -161,10 +161,133 @@ it("seeds seventeen foods, fourteen reading days and seven meals through the emi
   ).toEqual(new Set(readings.map((reading) => reading.ts.toISOString())));
   const mealEvents = await db.event.findMany({ where: { spaceId, type: "meal.created" } });
   expect(mealEvents).toHaveLength(7);
+  // The pump meal is the cycle's, announced in pump.meals and never as meal.created (plan §4).
   expect(
     new Set(mealEvents.map((event) => (JSON.parse(event.payload) as { mealId: string }).mealId)),
-  ).toEqual(new Set(meals.map((meal) => meal.id)));
+  ).toEqual(new Set(meals.filter((meal) => meal.source === null).map((meal) => meal.id)));
 }, 300_000);
+
+/** The people of the artboards (docs/design/README.md): fictional, reusable in seed data. */
+const DESIGN_FIXTURE_NAMES = ["Alma", "Jonas", "Mette", "Birthe", "Søren", "Lærke"];
+const local = (at: Date) =>
+  new Intl.DateTimeFormat("sv-SE", {
+    timeZone: "Europe/Copenhagen",
+    dateStyle: "short",
+    timeStyle: "short",
+  }).format(at);
+
+it("connects the pump record and stores a day of boluses through the pump cycle, each write with its event", async () => {
+  const { spaceId } = seeded;
+  const jonas = await db.user.findFirstOrThrow({ where: { name: "Jonas" } });
+  const space = await db.space.findUniqueOrThrow({ where: { id: spaceId } });
+  // A fake reference: the secret it names does not exist, and nothing reads it.
+  expect(JSON.parse(space.pumpSource ?? "null")).toEqual({
+    type: "nightscout",
+    secretRef: `pump-${spaceId}`,
+    connectedBy: jonas.id,
+  });
+  expect(space.pumpStatus).toBe("connected");
+  expect(space.pumpFailures).toBe(0);
+  // Arnes rum has no pump.
+  const arne = await db.space.findUniqueOrThrow({ where: { id: seeded.arnesRoom.spaceId } });
+  expect(arne.pumpSource).toBeNull();
+
+  const boluses = await db.pumpBolus.findMany({ where: { spaceId }, orderBy: { ts: "asc" } });
+  expect(
+    boluses.map((b) => [local(b.ts), b.kind, b.units.toNumber(), b.carbs, b.mealDismissed]),
+  ).toEqual([
+    ["2026-10-14 12:00", "standard", 2.2, 43, false],
+    ["2026-10-14 18:30", "extended", 3, 45, false],
+    ["2026-10-15 03:10", "automatic", 0.6, null, false],
+    ["2026-10-15 05:40", "automatic", 0.3, null, false],
+    ["2026-10-15 07:05", "standard", 1.8, 38, false],
+    ["2026-10-15 09:45", "standard", 0.7, 14, false],
+    ["2026-10-15 13:45", "automatic", 0.4, null, false],
+  ]);
+  expect(new Set(boluses.map((b) => b.sourceId)).size).toBe(7);
+  expect(space.lastPumpAt?.toISOString()).toBe(boluses.at(-1)?.ts.toISOString());
+
+  // The three standard boluses belong to seeded meals; the automatic ones never to a meal.
+  const meals = await db.meal.findMany({
+    where: { spaceId },
+    orderBy: { ts: "asc" },
+    include: { byUser: true, items: true },
+  });
+  const linked = meals.filter((meal) => meal.pumpBolusId !== null && meal.source === null);
+  const byId = new Map(boluses.map((b) => [b.id, b]));
+  expect(
+    linked.map((meal) => [
+      local(meal.ts),
+      meal.byUser.name,
+      byId.get(meal.pumpBolusId ?? "")?.kind,
+      meal.bolusTs?.toISOString(),
+    ]),
+  ).toEqual([
+    ["2026-10-14 12:10", "Jonas", "standard", boluses[0]?.ts.toISOString()],
+    ["2026-10-15 07:15", "Mette", "standard", boluses[4]?.ts.toISOString()],
+    ["2026-10-15 09:50", "Alma", "standard", boluses[5]?.ts.toISOString()],
+  ]);
+  // Today's lunch keeps the time tapped before v0.7.0 and no pump link.
+  const lunch = meals.at(-1);
+  expect(lunch?.pumpBolusId).toBeNull();
+  expect(lunch?.bolusTs?.toISOString()).toBe("2026-10-15T09:58:00.000Z");
+
+  // One untouched pump meal from the extended bolus nobody logged: unverified, no food, Jonas's.
+  const pumpMeals = meals.filter((meal) => meal.source !== null);
+  expect(pumpMeals).toHaveLength(1);
+  const pumpMeal = pumpMeals[0];
+  if (!pumpMeal) throw new Error("no pump meal");
+  expect(pumpMeal).toMatchObject({
+    source: "pump",
+    pumpBolusId: boluses[1]?.id,
+    totalCarbs: 45,
+    note: null,
+  });
+  expect(pumpMeal.ts.toISOString()).toBe(boluses[1]?.ts.toISOString());
+  expect(pumpMeal.bolusTs?.toISOString()).toBe(boluses[1]?.ts.toISOString());
+  expect(pumpMeal.items).toHaveLength(1);
+  expect(pumpMeal.items[0]).toMatchObject({
+    name: "Kulhydrater fra pumpen",
+    foodId: null,
+    carbs: 45,
+  });
+  // Only the artboards' fictional people own anything the pump record made.
+  for (const meal of [...linked, pumpMeal]) {
+    expect(DESIGN_FIXTURE_NAMES).toContain(meal.byUser.name);
+  }
+  expect(pumpMeal.byUser.name).toBe("Jonas");
+
+  // Every pump write has its event: the connection's pump.status, one pump.imported for the
+  // cycle (on its last daily commit), and pump.meals for every link and the pump meal.
+  const events = await db.event.findMany({
+    where: { spaceId, type: { in: ["pump.status", "pump.imported", "pump.meals"] } },
+    orderBy: { seq: "asc" },
+  });
+  const payloads = (type: string) =>
+    events
+      .filter((event) => event.type === type)
+      .map((event) => JSON.parse(event.payload) as Record<string, unknown>);
+  expect(payloads("pump.status")).toEqual([{ status: "connected", since: NOW.toISOString() }]);
+  expect(payloads("pump.imported")).toEqual([
+    {
+      count: 7,
+      from: boluses[0]?.ts.toISOString(),
+      to: boluses.at(-1)?.ts.toISOString(),
+    },
+  ]);
+  const changes = payloads("pump.meals") as {
+    updated: string[];
+    created: string[];
+    removed: string[];
+  }[];
+  expect(new Set(changes.flatMap((change) => change.updated))).toEqual(
+    new Set(linked.map((meal) => meal.id)),
+  );
+  expect(changes.flatMap((change) => change.created)).toEqual([pumpMeal.id]);
+  expect(changes.flatMap((change) => change.removed)).toEqual([]);
+  // The pump's events carry no units and no carbs.
+  expect(events.map((event) => event.payload).join("\n")).not.toMatch(/units|carbs/);
+});
 
 it("seeds Arnes rum: a manual source, Mette as carer, three finger-pricks each with its event", async () => {
   const now = NOW;
@@ -365,6 +488,7 @@ it("is idempotent: a second run refuses the filled database and adds nothing", a
     foods: await db.food.count(),
     meals: await db.meal.count(),
     symptoms: await db.symptom.count(),
+    boluses: await db.pumpBolus.count(),
     events: await db.event.count(),
   };
   await expect(seed({ db, now: () => NOW })).rejects.toThrow(/already has a space/);
@@ -373,6 +497,8 @@ it("is idempotent: a second run refuses the filled database and adds nothing", a
     foods: await db.food.count(),
     meals: await db.meal.count(),
     symptoms: await db.symptom.count(),
+    boluses: await db.pumpBolus.count(),
     events: await db.event.count(),
   }).toEqual(before);
+  expect(before.boluses).toBe(7);
 });
