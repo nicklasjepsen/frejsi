@@ -16,7 +16,7 @@
     "person": "Person",
     "role": "Rolle",
     "view": "Visning",
-    "devices": "Enheder",
+    "devices": "Apparater",
     "lastSeen": "Sidst set"
   },
   "lastSeen": {
@@ -32,24 +32,24 @@
     "yesterday": "sidst set i går {time}",
     "other": "sidst set {when}"
   },
-  "devices": "Enheder",
-  "noDevices": "Ingen enheder endnu",
-  "unnamedDevice": "Enhed",
-  "addDevice": "+ Tilføj en enhed",
+  "devices": "Apparater",
+  "noDevices": "Ingen apparater endnu",
+  "unnamedDevice": "Apparat",
+  "addDevice": "+ Tilføj et apparat",
   "remove": "Fjern",
   "removeMember": "Fjern {name} fra rummet",
   "confirmRemoveMember": "Fjern {name} fra rummet? {name} mister adgangen til rummet og kan kun komme ind igen med en ny invitation.",
   "confirmRemoveDevice": "Fjern {device}? Den logges ud med det samme.",
   "confirm": "Ja, fjern",
   "cancel": "Fortryd",
-  "deviceNotice": "Nyt telefonnummer eller ny telefon? Tilføj en enhed til personen her – det er den eneste vej ind. Ingen adgangskoder.",
-  "deviceNoticeDesktop": "Enheder: ny telefon = ny enhed, tilføjet via et »Tilføj en enhed«-link til den samme person. Det er den eneste vej ind og den eneste vej tilbage.",
-  "ownerOnly": "Kun ejere kan invitere, skifte roller og fjerne personer og enheder.",
+  "deviceNotice": "Nyt telefonnummer eller ny telefon? Tilføj et apparat til personen her – det er den eneste vej ind. Ingen adgangskoder.",
+  "deviceNoticeDesktop": "Apparater: ny telefon = nyt apparat, tilføjet via et »Tilføj et apparat«-link til den samme person. Det er den eneste vej ind og den eneste vej tilbage.",
+  "ownerOnly": "Kun ejere kan invitere, skifte roller og fjerne personer og apparater.",
   "role": "Rolle",
   "roleCards": {
     "carer": "Logger måltider, godkender mad, ser kurven",
     "viewer": "Ser dagens måltider og kulhydrater. Aldrig glukose.",
-    "owner": "Alt, inkl. personer, enheder og indstillinger"
+    "owner": "Alt, inkl. personer, apparater og indstillinger"
   },
   "detail": "Vis detaljer for {name}",
   "close": "Luk",
@@ -60,7 +60,7 @@
     "create": "Opret invitation",
     "qr": "QR-kode til invitationen",
     "scanOrSend": "Lad {name} scanne koden, eller send linket.",
-    "deviceScanOrSend": "Lad {name} scanne koden med den nye enhed, eller send linket til den.",
+    "deviceScanOrSend": "Lad {name} scanne koden med det nye apparat, eller send linket til det.",
     "validity": "Gælder i {days} dage · kan bruges én gang",
     "link": "Invitationslink",
     "copyLink": "Kopiér link",
@@ -71,8 +71,8 @@
     "resend": "Send igen",
     "revoke": "Træk tilbage",
     "pendingRow": "Invitation til {name}",
-    "newDevice": "Ny enhed til {name}"
+    "newDevice": "Nyt apparat til {name}"
   },
   "notYet": "ikke endnu",
-  "lastOwnerDevice": "Det er den sidste enhed, en ejer kan logge ind med. Tilføj først en ny enhed til en ejer, så rummet aldrig står uden en vej ind."
+  "lastOwnerDevice": "Det er det sidste apparat, en ejer kan logge ind med. Tilføj først et nyt apparat til en ejer, så rummet aldrig står uden en vej ind."
 }

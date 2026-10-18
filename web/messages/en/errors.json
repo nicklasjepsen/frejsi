@@ -47,6 +47,6 @@
     "recipe-unreadable": "We couldn't find a recipe on that page. Try pasting the ingredients as text.",
     "share-expired": "The shared content has expired. Share it again from the app you came from.",
     "pump-not-configured": "Pump history is not set up for this space yet. An owner can connect it in Settings.",
-    "pump-meal": "That meal comes from the pump and has not been checked yet. Tap “That's right”, or edit it, and it becomes an ordinary meal."
+    "pump-meal": "That meal comes from the pump and has not been checked yet. Confirm it or edit it, and it becomes an ordinary meal."
   }
 }
