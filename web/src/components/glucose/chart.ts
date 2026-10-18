@@ -10,6 +10,7 @@ import type { AppLocale } from "@/lib/i18n/routing";
 import { formatClock } from "@/lib/i18n/time";
 
 import { formatBound, GAP_MINUTES } from "./format";
+import type { TipPoint } from "./tooltip";
 
 export type ChartVariant = "sparkline" | "day";
 
@@ -251,6 +252,8 @@ export interface ChartGeometry {
   band: { top: number; bottom: number; highLabel: string; lowLabel: string; labelX: number };
   /** One `points` string per unbroken run of readings. */
   segments: string[];
+  /** The readings drawn, in time order, where they sit: what the tooltip snaps to (issue 243). */
+  points: TipPoint[];
   end: { x: number; y: number } | null;
   ticks: { x: number; label: string; strong: boolean; anchor: "start" | "middle" | "end" }[];
   axisY: number;
@@ -356,6 +359,9 @@ export function chartGeometry(input: ChartInput): ChartGeometry {
       labelX: size.plotWidth + 8,
     },
     segments,
+    points: inWindow
+      .toSorted((a, b) => a.ts.localeCompare(b.ts))
+      .map((r) => ({ ts: r.ts, mmol: r.mmol, trend: r.trend, x: x(r.ts), y: y(r.mmol) })),
     end,
     ticks: ticksFor(input, size.plotWidth),
     axisY: size.plotHeight + size.axisHeight - 4,
@@ -486,9 +492,13 @@ export interface MealChartGeometry {
   plotWidth: number;
   band: ChartGeometry["band"];
   segments: string[];
+  /** The readings drawn, for the tooltip (issue 243). */
+  points: TipPoint[];
   end: { x: number; y: number } | null;
   /** One list of segments per previous occurrence, each positioned relative to its own meal. */
   previous: string[][];
+  /** The previous occurrences' points, in the same order, each with its meal time. */
+  previousPoints: { mealTs: string; points: { x: number; y: number }[] }[];
   previousOpacity: number;
   meal: { x: number; top: number; bottom: number };
   /** The symbol's box, its bottom at `plotTop` (clamped to the top edge on the phone). */
@@ -577,10 +587,24 @@ export function mealChartGeometry(input: MealChartInput): MealChartGeometry {
       labelX: size.labelX,
     },
     segments: segmentsOf(readings, x, y),
+    points: readings.map((r) => ({
+      ts: r.ts,
+      mmol: r.mmol,
+      trend: r.trend,
+      x: x(r.ts),
+      y: y(r.mmol),
+    })),
     end: last ? { x: x(last.ts), y: y(last.mmol) } : null,
     previous: input.previous.map((p) =>
       segmentsOf(inMealWindow(p.mealTs, p.readings), mealX(p.mealTs, size.plotWidth), y),
     ),
+    previousPoints: input.previous.map((p) => {
+      const px = mealX(p.mealTs, size.plotWidth);
+      return {
+        mealTs: p.mealTs,
+        points: inMealWindow(p.mealTs, p.readings).map((r) => ({ x: px(r.ts), y: y(r.mmol) })),
+      };
+    }),
     previousOpacity: size.previousOpacity,
     meal: { x: x(input.mealTs), top: size.plotTop, bottom: size.baseline },
     symbol:
@@ -690,6 +714,8 @@ export interface WeekTileGeometry {
   height: number;
   band: { top: number; bottom: number };
   segments: string[];
+  /** The buckets drawn, for the tooltip (issue 243); they carry no trend. */
+  points: TipPoint[];
   /** The meal dots: empty when `meals` was given. */
   mealDots: { x: number; y: number }[];
   /** The symbols' boxes (top-left corner), `symbolSize` wide, centred on `dotY`. */
@@ -725,6 +751,7 @@ export function weekTileGeometry(input: WeekTileInput): WeekTileGeometry {
     height: WEEK_TILE.height,
     band: { top: y(input.target.high), bottom: y(input.target.low) },
     segments: segmentsOf(points, x, y, gapMinutes * Math.max(1, step)),
+    points: points.map((p) => ({ ts: p.ts, mmol: p.mmol, trend: null, x: x(p.ts), y: y(p.mmol) })),
     mealDots: input.meals
       ? []
       : input.mealTimes.filter(inDayAt).map((ts) => ({ x: x(ts), y: WEEK_TILE.dotY })),
