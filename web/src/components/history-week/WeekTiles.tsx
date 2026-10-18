@@ -1,4 +1,5 @@
 "use client";
+import type { GlucoseUnit } from "@frejsi/shared/schemas/index";
 import type { WeekHistoryView } from "@frejsi/shared/schemas/history";
 import type { SymptomView } from "@frejsi/shared/schemas/symptom";
 import { dayRange } from "@frejsi/shared/meals/day-range";
@@ -39,6 +40,7 @@ export function WeekTiles({
   onlyWithSymptoms = false,
   onSymptomTap,
   symptomLabel = (kind) => kind,
+  unit,
 }: {
   week: WeekHistoryView;
   locale: AppLocale;
@@ -50,6 +52,8 @@ export function WeekTiles({
   onlyWithSymptoms?: boolean;
   onSymptomTap?: (id: string) => void;
   symptomLabel?: (kind: string) => string;
+  /** The space's unit: with it, each tile's tooltip reads the day's curve under the pointer. */
+  unit?: GlucoseUnit;
 }) {
   const t = useTranslations("historyWeek");
   const history = useTranslations("history");
@@ -70,9 +74,10 @@ export function WeekTiles({
         const date = formatter.format(from);
         const heading = date.charAt(0).toLocaleUpperCase(dateLocale(locale)) + date.slice(1);
         // The heading's link is stretched over the tile; the symptom tap targets sit above it,
-        // so no button is nested in the link.
+        // so no button is nested in the link. The chart reads the pointer over the whole tile
+        // (`data-chart-hover`) for its tooltip, and a click still goes to the link.
         return (
-          <div className={styles.dayTile} key={day.date} data-date={day.date}>
+          <div className={styles.dayTile} key={day.date} data-date={day.date} data-chart-hover="">
             <Link
               className={styles.tileLink}
               href={localeHref(locale, `/history?date=${day.date}`)}
@@ -100,6 +105,7 @@ export function WeekTiles({
                 to={to}
                 target={week.target}
                 timeZone={week.timezone}
+                {...(unit ? { tooltip: { unit } } : {})}
               />
             </div>
             <div className={styles.tileLine}>
