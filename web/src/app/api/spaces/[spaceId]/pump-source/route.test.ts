@@ -1,5 +1,5 @@
 // @vitest-environment node
-import type { EventSink } from "@frejsi/shared";
+import { isGlucoseEvent, type EventSink, type EventType } from "@frejsi/shared";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
@@ -41,6 +41,8 @@ const BODY = { type: "nightscout", url: NS_URL, token: NS_TOKEN };
 
 let fake: FakeAuthDb;
 let events: RecordedEvent[];
+/** Every envelope the route published, with the Web PubSub group it went to. */
+let published: { group: string; envelope: { type: string } }[];
 let logLines: string[];
 /** Every call the route made to the stored boluses: there must be none. */
 let bolusCalls: string[];
@@ -61,6 +63,7 @@ beforeEach(() => {
   }
   const recorder = recordingSink();
   events = recorder.events;
+  published = recorder.published;
   bolusCalls = [];
   const pumpBolus = new Proxy(
     {},
@@ -247,7 +250,6 @@ describe("POST /api/spaces/:id/pump-source (connect the pump record)", () => {
         type: "pump.status",
         payload: { status: "connected", since: T0.toISOString() },
       },
-      { spaceId: "s1", type: "space.updated", payload: { fields: ["pumpSource"] } },
     ]);
   });
 
@@ -371,7 +373,6 @@ describe("DELETE /api/spaces/:id/pump-source (disconnect, keep the history)", ()
         type: "pump.status",
         payload: { status: "not-configured", since: T0.toISOString() },
       },
-      { spaceId: "s1", type: "space.updated", payload: { fields: ["pumpSource"] } },
     ]);
   });
 
@@ -392,6 +393,20 @@ describe("DELETE /api/spaces/:id/pump-source (disconnect, keep the history)", ()
     expect((await del("owner")).status).toBe(403);
     expect(events).toEqual([]);
     expect(JSON.parse(String(space().pumpSource))).toEqual(connectedConfig);
+  });
+});
+
+describe("a viewer learns nothing from a connect or a disconnect (owner rule, plan §4)", () => {
+  it("emits only pump.status, in the glucose group, so a viewer's socket and event page carry nothing", async () => {
+    const before = fake.rows("event").length;
+    expect((await post("owner")).status).toBe(200);
+    expect((await del("owner")).status).toBe(200);
+    expect(events.map((event) => event.type)).toEqual(["pump.status", "pump.status"]);
+    expect(published.map((entry) => entry.group)).toEqual(["space-s1-glucose", "space-s1-glucose"]);
+    // The stored rows are what a viewer's event page reads, minus every glucose-group type.
+    const written = fake.rows("event").slice(before);
+    expect(written.map((row) => row.type)).toEqual(["pump.status", "pump.status"]);
+    expect(written.filter((row) => !isGlucoseEvent(row.type as EventType))).toEqual([]);
   });
 });
 
