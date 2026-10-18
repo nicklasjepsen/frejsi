@@ -4,5 +4,6 @@
   "besideTotal": "{total} · Pumpen: {grams} g",
   "badge": "Fra pumpen · ikke tjekket",
   "adopt": "Det passer",
-  "adoptFailed": "Det blev ikke gemt. Prøv igen om lidt."
+  "adoptFailed": "Det blev ikke gemt. Prøv igen om lidt.",
+  "by": "Pumpen"
 }

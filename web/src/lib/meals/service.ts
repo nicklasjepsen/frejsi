@@ -28,7 +28,7 @@ import {
   type MealRepository,
   type MealSnapshot,
 } from "./repository";
-
+import { mealLogger } from "./logger";
 import { rematch, type PumpLinks } from "./pump";
 import { createMealWriter, type MealWriter } from "./transaction";
 
@@ -147,7 +147,7 @@ async function view(row: MealRecord, who: Locale | MealReader, deps: MealDeps): 
     totalCarbs: row.totalCarbs,
     symbol: row.symbol ?? "unknown",
     note: row.note,
-    byUser: row.byUser,
+    byUser: mealLogger(row, locale),
     items,
     title: mealTitle(items, row.note, locale),
     slot: mealSlot(row.ts, row.timezone),
@@ -323,11 +323,12 @@ export async function updateMeal(
         (bolusTs === null || Date.parse(bolusTs) !== Date.parse(previous.bolusTs ?? ""))
       )
         throw new HttpError(400, "validation");
-      // Adopting, or any edit by an owner or carer, makes a pump meal an ordinary meal.
+      // Adopting, or any edit by an owner or carer, makes a pump meal an ordinary meal, and the
+      // person who did it its logger (#244).
       const saved = await repo.update(spaceId, id, {
         ...rest,
         ...(bolusTs !== undefined && !pumpTime ? { bolusTs } : {}),
-        ...(previous.source === "pump" ? { source: null } : {}),
+        ...(previous.source === "pump" ? { source: null, byUserId: session.userId } : {}),
       });
       await emit(spaceId, "meal.updated", { mealId: id });
       if (Date.parse(saved.ts) === Date.parse(previous.ts)) return saved;

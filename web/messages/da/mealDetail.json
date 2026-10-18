@@ -5,6 +5,8 @@
   "summary": "{carbs} g kulhydrat · {count} ting",
   "metaPhone": "{day} {time} · {name}",
   "metaDesktop": "{date} · {time} · logget af {name}",
+  "metaPhonePump": "{day} {time} · fra pumpen",
+  "metaDesktopPump": "{date} · {time} · fra pumpen",
   "afterwards": "Hvad skete der bagefter",
   "previousBehind": "{count, plural, one {Sidste gang bagved} other {Sidste # gange bagved}}",
   "compare": {

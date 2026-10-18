@@ -218,7 +218,34 @@ test("the owner ticks a pump meal, and it becomes an ordinary meal", async ({ pa
   });
   await registerFromInvite(page, await inviteLink("jonas"));
   await page.waitForURL(/\/da\/now$/);
+  const desktop = isDesktop(page);
+
+  // Nobody logged it: the day and the history row name the pump, never Jonas who connected it.
+  const yesterday = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Copenhagen" }).format(
+    new Date(clock().getTime() - DAY),
+  );
+  const dayMeals = async () =>
+    (
+      (await (await page.request.get(`/api/spaces/${spaceId}/day?date=${yesterday}`)).json()) as {
+        meals: { id: string; byUser: { name: string } }[];
+      }
+    ).meals;
+  expect((await dayMeals()).find((meal) => meal.id === pumpMeal.id)?.byUser.name).toBe("Pumpen");
+  await page.goto("/da/history");
+  await expect(page.getByTestId("history-day").first()).toBeVisible();
+  // Yesterday loads as "Tidligere dage" comes into view.
+  await page.getByRole("button", { name: "Tidligere dage" }).scrollIntoViewIfNeeded();
+  const historyRow = page
+    .getByTestId("history-day")
+    .locator(`a[href$="/meal/${pumpMeal.id}"]`)
+    .filter({ visible: true });
+  await expect(historyRow).toContainText("Kulhydrater fra pumpen");
+  await expect(historyRow).toContainText("· Pumpen");
+  await expect(historyRow).not.toContainText("Jonas");
+
   await page.goto(`/da/meal/${pumpMeal.id}`);
+  const metaLine = page.getByText(/· \d{2}:\d{2} · fra pumpen$/).filter({ visible: true });
+  await expect(metaLine).toBeVisible();
   const badge = page.getByText("Fra pumpen · ikke tjekket", { exact: true }).filter({
     visible: true,
   });
@@ -232,10 +259,20 @@ test("the owner ticks a pump meal, and it becomes an ordinary meal", async ({ pa
     .click();
   await expect(badge).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Det passer", exact: true })).toHaveCount(0);
+  // Ticked, the meal is Jonas's: the detail line and the day name him.
+  await expect(metaLine).toHaveCount(0);
+  await expect(
+    page
+      .getByText(desktop ? /· \d{2}:\d{2} · logget af Jonas$/ : /\d{2}:\d{2} · Jonas$/)
+      .filter({ visible: true }),
+  ).toBeVisible();
+  expect((await dayMeals()).find((meal) => meal.id === pumpMeal.id)?.byUser.name).toBe("Jonas");
 
   const row = await prisma.meal.findUniqueOrThrow({ where: { id: pumpMeal.id } });
   expect(row.source).toBeNull();
   expect(row.pumpBolusId).not.toBeNull();
+  const jonas = await prisma.user.findUniqueOrThrow({ where: { id: row.byUserId } });
+  expect(jonas.name).toBe("Jonas");
   // The tick is a person's write: one meal.updated for this meal, through emit.
   const events = await prisma.event.findMany({
     where: { spaceId, type: "meal.updated", seq: { gt: before } },

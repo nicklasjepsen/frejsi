@@ -17,33 +17,44 @@ export function tileDuration(t: StatsT, minutes: number, style: DurationStyle): 
   return formatDuration(t, whole, style);
 }
 
-/** Maaltid-Telefon: "I dag 12:10 · Jonas" ("I går", else the short weekday and date). */
+/** The header lines' meal: `fromPump` while the pump record made it and nobody has ticked it. */
+interface MetaMeal {
+  ts: string;
+  byUser: { name: string };
+  fromPump?: true | undefined;
+}
+
+/**
+ * Maaltid-Telefon: "I dag 12:10 · Jonas" ("I går", else the short weekday and date); "I dag 11:50 ·
+ * fra pumpen" for an untouched pump meal, which nobody logged (#244).
+ */
 export function phoneMeta(
   t: DetailT,
   stats: StatsT,
-  meal: { ts: string; byUser: { name: string } },
+  meal: MetaMeal,
   now: Date,
   timeZone: string,
   locale: AppLocale,
 ): string {
-  return t("metaPhone", {
-    day: relativeDay(stats, meal.ts, now, timeZone, locale),
-    time: formatClock(new Date(meal.ts), timeZone),
-    name: meal.byUser.name,
-  });
+  const day = relativeDay(stats, meal.ts, now, timeZone, locale);
+  const time = formatClock(new Date(meal.ts), timeZone);
+  if (meal.fromPump) return t("metaPhonePump", { day, time });
+  return t("metaPhone", { day, time, name: meal.byUser.name });
 }
 
-/** Maaltid-Desktop: "Onsdag 14. oktober · 12:10 · logget af Jonas". */
+/**
+ * Maaltid-Desktop: "Onsdag 14. oktober · 12:10 · logget af Jonas"; "… · fra pumpen" for an
+ * untouched pump meal (#244).
+ */
 export function desktopMeta(
   t: DetailT,
-  meal: { ts: string; byUser: { name: string } },
+  meal: MetaMeal,
   timeZone: string,
   locale: AppLocale,
 ): string {
   const at = new Date(meal.ts);
-  return t("metaDesktop", {
-    date: formatDayTitle(at, timeZone, locale),
-    time: formatClock(at, timeZone),
-    name: meal.byUser.name,
-  });
+  const date = formatDayTitle(at, timeZone, locale);
+  const time = formatClock(at, timeZone);
+  if (meal.fromPump) return t("metaDesktopPump", { date, time });
+  return t("metaDesktop", { date, time, name: meal.byUser.name });
 }

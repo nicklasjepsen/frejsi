@@ -3,6 +3,8 @@ import { afterAll, beforeAll, expect, it, vi } from "vitest";
 
 import { createEmptyDatabase, migrate, type ScratchDatabase } from "./database";
 
+/** The web app's day read, resolved through the `@` alias (a string, so tsc leaves it alone). */
+const DAY = "@/app/api/spaces/[spaceId]/day/load-day";
 const SEED = new URL("../../../web/scripts/seed.ts", import.meta.url).pathname;
 let scratch: ScratchDatabase;
 let db: PrismaClient;
@@ -255,7 +257,32 @@ it("connects the pump record and stores a day of boluses through the pump cycle,
   for (const meal of [...linked, pumpMeal]) {
     expect(DESIGN_FIXTURE_NAMES).toContain(meal.byUser.name);
   }
+  // Stored under Jonas, who connected the pump, but nobody logged it: the day names the pump (#244).
   expect(pumpMeal.byUser.name).toBe("Jonas");
+  const { loadDay } = (await import(DAY)) as {
+    loadDay: (
+      spaceId: string,
+      date: string,
+      locale: "da" | "en",
+      deps: object,
+      options?: { pumpMeals: boolean },
+    ) => Promise<{ meals: { id: string; byUser: { id: string; name: string } }[] }>;
+  };
+  const pumpDay = await loadDay(
+    spaceId,
+    local(pumpMeal.ts).slice(0, 10),
+    "da",
+    {
+      db,
+      photos: null,
+      now: () => NOW,
+    },
+    { pumpMeals: true },
+  );
+  const shown = new Map(pumpDay.meals.map((meal) => [meal.id, meal.byUser]));
+  expect(shown.get(pumpMeal.id)).toEqual({ id: "pump", name: "Pumpen" });
+  for (const meal of linked.filter((m) => shown.has(m.id)))
+    expect(shown.get(meal.id)?.name).toBe(meal.byUser.name);
 
   // Every pump write has its event: the connection's pump.status, one pump.imported for the
   // cycle (on its last daily commit), and pump.meals for every link and the pump meal.

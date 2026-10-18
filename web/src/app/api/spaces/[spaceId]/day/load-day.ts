@@ -16,6 +16,7 @@ import { createPhotoStoreFromEnv, type PhotoStore } from "@frejsi/shared/photos"
 import { z } from "zod";
 
 import type { SessionDb } from "@/lib/auth/session";
+import { mealLogger } from "@/lib/meals/logger";
 
 /** The Prisma delegates the day reads; tests pass a fake. The route writes nothing. */
 export type DayDb = Pick<PrismaClient, "space" | "meal"> & SessionDb;
@@ -117,6 +118,8 @@ export async function loadDay(
       photoKey: true,
       symbol: true,
       byUser: { select: { id: true, name: true } },
+      // Only a reader who may see pump meals reads `source`, to name the pump as their logger.
+      ...(options.pumpMeals ? { source: true } : {}),
       items: {
         orderBy: { position: "asc" },
         select: { name: true, portionLabel: true, grams: true, carbs: true },
@@ -146,7 +149,10 @@ export async function loadDay(
         slot: mealSlot(row.ts, timezone),
         totalCarbs: row.totalCarbs,
         symbol: storedSymbol(row.symbol),
-        byUser: { id: row.byUser.id, name: row.byUser.name },
+        byUser: mealLogger(
+          { source: "source" in row ? row.source : null, byUser: row.byUser },
+          locale,
+        ),
         items,
         ...(photo ? { photo } : {}),
       };

@@ -731,6 +731,51 @@ describe("Måltid · the pump record (v0.7.0 plan §9)", () => {
   );
 });
 
+describe("Måltid · who logged a pump meal (#244)", () => {
+  const PUMP = { id: "pump", name: "Pumpen" };
+  const pumpMeal = (fields: Parameters<typeof mealView>[0] = {}) =>
+    mealView({
+      bolusTs: MEAL_TS,
+      fromPump: true,
+      pumpBolusId: "b1",
+      title: "Kulhydrater fra pumpen",
+      byUser: PUMP,
+      ...fields,
+    });
+  it("says 'fra pumpen' in the phone meta and the desktop line, never 'logget af'", async () => {
+    api.curve = curveView({ meal: pumpMeal() });
+    const { unmount } = mount({ layout: "phone" });
+    await ready();
+    expect(screen.getByText("I dag 12:00 · fra pumpen")).toBeInTheDocument();
+    unmount();
+    mount({ layout: "desktop" });
+    await ready();
+    expect(screen.getByText("Onsdag 14. oktober · 12:00 · fra pumpen")).toBeInTheDocument();
+    expect(screen.queryByText(/logget af/)).toBeNull();
+  });
+  it("says 'from the pump' in English", async () => {
+    api.curve = curveView({ meal: pumpMeal({ byUser: { id: "pump", name: "the pump" } }) });
+    mount({ layout: "desktop" }, "en");
+    await ready();
+    expect(screen.getByText(/· 12:00 · from the pump$/)).toBeInTheDocument();
+    expect(screen.queryByText(/logged by/)).toBeNull();
+  });
+  it.each(["phone", "desktop"] as const)(
+    "%s: names the person who ticks 'Det passer' once the meal is theirs",
+    async (layout) => {
+      api.curve = curveView({ meal: pumpMeal() });
+      mount({ layout });
+      await ready();
+      api.curve = curveView({ meal: mealView({ bolusTs: MEAL_TS, pumpBolusId: "b1" }) });
+      fireEvent.click(screen.getByRole("button", { name: "Det passer" }));
+      const line =
+        layout === "phone" ? "I dag 12:00 · Jonas" : "Onsdag 14. oktober · 12:00 · logget af Jonas";
+      expect(await screen.findByText(line)).toBeInTheDocument();
+      expect(screen.queryByText(/fra pumpen$/)).toBeNull();
+    },
+  );
+});
+
 it("uses the typical fixture's 12-minute lead (sanity)", () => {
   expect(TYPICAL.bolusTs).toBe(shift(MEAL_TS, -12).replace(".000Z", "Z"));
 });
