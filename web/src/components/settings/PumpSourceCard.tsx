@@ -174,7 +174,13 @@ export function PumpSourceCard({
     <div className={styles.sourceCards} data-testid="pump-card" data-layout={layout}>
       <div className={styles.sourceCard} data-layout={layout === "page" ? "radio" : "cards"}>
         <div className={styles.cardText}>
-          <h3 className={styles.cardTitle}>{t("title")}</h3>
+          {/* The phone page carries the title in its header; the desktop card names itself, in the
+          card face of the glucose cards beside it. */}
+          {layout === "card" && (
+            <span className={styles.cardTitle} role="heading" aria-level={3}>
+              {t("title")}
+            </span>
+          )}
           <span className={styles.cardSub} data-testid="pump-status">
             {text.status()}
           </span>

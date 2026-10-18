@@ -125,6 +125,8 @@ describe("settings/pump, the phone page behind the Pumpehistorik row (plan task 
     expect(mocks.loadCalls).toEqual([[mocks.session, mocks.shell.space]]);
     const page = screen.getByTestId("pump-page");
     expect(within(page).getByRole("heading", { level: 1 })).toHaveTextContent("Pumpehistorik");
+    // The title is said once, in the page header, not again on the card.
+    expect(within(page).getAllByRole("heading", { name: "Pumpehistorik" })).toHaveLength(1);
     expect(within(page).getByRole("link", { name: /Tilbage|Indstillinger/ })).toHaveAttribute(
       "href",
       "/da/settings",
