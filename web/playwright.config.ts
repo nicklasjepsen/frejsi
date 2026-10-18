@@ -47,8 +47,10 @@ const appProjects = [
   "symbols.spec.ts",
   // v0.6.2: the gap under the phone header (issue 214); on desktop it checks the column's padding.
   "phone-header-gap.spec.ts",
-  // v0.7.0: Settings, Pumpehistorik (issue 226). pump.spec.ts is registered by the pump-meal lane.
+  // v0.7.0: Settings, Pumpehistorik (issue 226), then the pump record on the curves, the meal and
+  // the pump meal, and nothing of it for a viewer or simpleMode (issue 233).
   "pump-settings.spec.ts",
+  "pump.spec.ts",
 ];
 
 export default defineConfig({

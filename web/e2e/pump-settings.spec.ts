@@ -1,7 +1,9 @@
-// Settings → Pumpehistorik (v0.7.0 plan task 3): the owner connects the pump record and sees the
-// status change, then disconnects it, at both widths. `source-connect` is the local stub the
-// global setup starts (`SOURCE_CONNECT_URL` points at it), so nothing here talks to a real
-// function or a real Nightscout; the address below is fictional and is never fetched.
+// Settings → Pumpehistorik (v0.7.0 plan task 3): the owner disconnects the pump record the seed
+// connected (issue 233), sees "Ikke forbundet", connects it again and sees the status change, at
+// both widths; it ends connected, as the seed left it, for pump.spec.ts and the other width.
+// `source-connect` is the local stub the global setup starts (`SOURCE_CONNECT_URL` points at it),
+// so nothing here talks to a real function or a real Nightscout; the address below is fictional
+// and is never fetched.
 import { prisma } from "@frejsi/shared";
 
 import { SOURCE_CONNECT_STUB } from "./env";
@@ -19,7 +21,7 @@ interface StubCall {
 const stubCalls = async (): Promise<StubCall[]> =>
   (await (await fetch(`${SOURCE_CONNECT_STUB}/calls`)).json()) as StubCall[];
 
-test("Jonas connects the pump history, sees it connected, and disconnects it again", async ({
+test("Jonas disconnects the pump history, connects it again and sees it connected", async ({
   page,
 }) => {
   const desktop = (page.viewportSize()?.width ?? 0) >= 1280;
@@ -37,13 +39,24 @@ test("Jonas connects the pump history, sees it connected, and disconnects it aga
     // On the phone the card is a row in Settings, and the row opens its own page.
     const row = page.getByTestId("pump-row").filter({ visible: true });
     await expect(row).toContainText("Pumpehistorik");
-    await expect(row).toContainText("Ikke forbundet");
+    await expect(row).toContainText("Forbundet · senest fra pumpen 13:45");
     await row.click();
     await page.waitForURL(/\/da\/settings\/pump$/);
     await expect(page.getByRole("heading", { level: 1 })).toHaveText("Pumpehistorik");
     card = page.getByTestId("pump-page").getByTestId("pump-card");
   }
+  // The seed connected the pump record and read a day of boluses (the newest at 13:45).
+  await expect(card.getByTestId("pump-status")).toHaveText("Forbundet");
+  await expect(card.getByTestId("pump-latest")).toContainText("Senest fra pumpen: 13:45");
+
+  // Disconnecting stops the reading and keeps what was read.
+  await card.getByRole("button", { name: "Afbryd" }).click();
+  await page.getByRole("alertdialog").getByRole("button", { name: "Ja, afbryd" }).click();
   await expect(card.getByTestId("pump-status")).toHaveText("Ikke forbundet");
+  const disconnected = await prisma.space.findUniqueOrThrow({ where: { id: spaceId } });
+  expect(disconnected.pumpSource).toBeNull();
+  expect(disconnected.pumpStatus).toBe("not-configured");
+  expect(await prisma.pumpBolus.count({ where: { spaceId } })).toBeGreaterThan(0);
 
   await card.getByRole("button", { name: "Forbind" }).click();
   const form = card.getByTestId("pump-form");
@@ -52,7 +65,8 @@ test("Jonas connects the pump history, sees it connected, and disconnects it aga
   await form.getByRole("button", { name: "Forbind" }).click();
 
   await expect(card.getByTestId("pump-status")).toHaveText("Forbundet");
-  await expect(card.getByTestId("pump-latest")).toHaveText("Intet fra pumpen endnu");
+  // The history read before the disconnect is still there.
+  await expect(card.getByTestId("pump-latest")).toContainText("Senest fra pumpen: 13:45");
   // The stub answers no boluses for the last day: the card says what to check.
   await expect(card.getByTestId("pump-no-recent")).toContainText("Adgangen virker");
   await expect(form).toHaveCount(0);
@@ -76,12 +90,5 @@ test("Jonas connects the pump history, sees it connected, and disconnects it aga
     ? page.getByTestId("source-section").getByTestId("pump-card")
     : page.getByTestId("pump-page").getByTestId("pump-card");
   await expect(again.getByTestId("pump-status")).toHaveText("Forbundet");
-
-  // Disconnecting leaves the space as the seed made it, for the other width's run.
-  await again.getByRole("button", { name: "Afbryd" }).click();
-  await page.getByRole("alertdialog").getByRole("button", { name: "Ja, afbryd" }).click();
-  await expect(again.getByTestId("pump-status")).toHaveText("Ikke forbundet");
-  const after = await prisma.space.findUniqueOrThrow({ where: { id: spaceId } });
-  expect(after.pumpSource).toBeNull();
-  expect(after.pumpStatus).toBe("not-configured");
+  // Connected, as the seed made it, for pump.spec.ts and the other width's run.
 });
