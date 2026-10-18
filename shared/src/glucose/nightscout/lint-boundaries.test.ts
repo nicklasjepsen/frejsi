@@ -33,12 +33,15 @@ async function messages(filePath: string, code: string): Promise<string[]> {
 // Assembled from pieces so this file does not trip the rules it tests.
 const entriesPath = ["/api", "v1", "entries", "sgv.json"].join("/");
 const verifyPath = ["/api/v1/", "verify", "auth"].join("");
+const treatmentsPath = ["/api", "v1", "treatments.json"].join("/");
 const header = ["api", "secret"].join("-");
 
 describe("the Nightscout boundaries", () => {
-  it("keep the entries path, verifyauth and the auth header inside shared/src/glucose/nightscout", async () => {
+  it("keep the entries and treatments paths, verifyauth and the auth header inside shared/src/glucose/nightscout", async () => {
     const probes = [
       `export const p = "${entriesPath}";\n`,
+      `export const p = "${treatmentsPath}";\n`,
+      `export const p = \`\${base}${treatmentsPath}?count=200\`;\n`,
       `export const p = \`\${base}${verifyPath}\`;\n`,
       `export const h = { "${header}": "x" };\n`,
       `export const h = "API-SECRET";\n`,
@@ -47,6 +50,10 @@ describe("the Nightscout boundaries", () => {
       for (const file of [
         "shared/src/glucose/poll-cycle.ts",
         "shared/src/glucose/dexcom-share/client.ts",
+        "shared/src/pump/poll-cycle.ts",
+        "shared/src/pump/store.ts",
+        "poller/src/pump-handler.ts",
+        "poller/src/functions/pump-poll.ts",
         "shared/src/events/emit.ts",
         "poller/src/sources.ts",
         "poller/src/functions/poll.ts",
@@ -61,6 +68,7 @@ describe("the Nightscout boundaries", () => {
         ]);
       }
       expect(await messages("shared/src/glucose/nightscout/protocol.ts", code)).toEqual([]);
+      expect(await messages("shared/src/glucose/nightscout/pump-source.ts", code)).toEqual([]);
       expect(await messages("shared/src/glucose/nightscout/source.test.ts", code)).toEqual([]);
     }
   });
@@ -91,5 +99,40 @@ describe("the Nightscout boundaries", () => {
     expect(await messages("poller/src/sources.ts", code)).toEqual([]);
     expect(await messages("poller/src/source-connect-handler.ts", code)).toEqual([]);
     expect(await messages("poller/src/sources.test.ts", code)).toEqual([]);
+  });
+
+  it("keep Nightscout out of shared/src/pump/: the cycle knows PumpSource, not the adapter", async () => {
+    const imports = [
+      'import { NightscoutPumpSource } from "../glucose/nightscout/pump-source";\n',
+      'import { NightscoutPumpSource } from "../glucose/nightscout";\n',
+      'export { NightscoutPumpSource } from "../glucose/nightscout/index";\n',
+      'import type { TreatmentEntry } from "../glucose/nightscout/protocol";\n',
+      'export const load = () => import("../glucose/nightscout/pump-source");\n',
+    ];
+    for (const code of imports) {
+      for (const file of [
+        "shared/src/pump/poll-cycle.ts",
+        "shared/src/pump/store.ts",
+        "shared/src/pump/match.ts",
+      ]) {
+        const found = await messages(file, code);
+        expect(found, `${file}: ${code}`).toEqual([
+          expect.stringContaining("shared/src/pump/ knows PumpSource, not Nightscout"),
+        ]);
+      }
+    }
+    // The pump folder's own imports, and the adapter importing the pump contract, are fine.
+    expect(
+      await messages(
+        "shared/src/pump/poll-cycle.ts",
+        'import type { PumpSource } from "./types";\n',
+      ),
+    ).toEqual([]);
+    expect(
+      await messages(
+        "shared/src/glucose/nightscout/pump-source.ts",
+        'import type { PumpSource } from "../../pump/types";\n',
+      ),
+    ).toEqual([]);
   });
 });
