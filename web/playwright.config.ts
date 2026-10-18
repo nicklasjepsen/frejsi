@@ -51,6 +51,8 @@ const appProjects = [
   // the pump meal, and nothing of it for a viewer or simpleMode (issue 233).
   "pump-settings.spec.ts",
   "pump.spec.ts",
+  // v0.7.2: a new food on the phone saves and is back in the list (issue 219); phone only.
+  "food-phone.spec.ts",
 ];
 
 export default defineConfig({
