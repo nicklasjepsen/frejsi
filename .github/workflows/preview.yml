@@ -84,7 +84,7 @@ jobs:
       # The checkout is data for the upload (staticwebapp.config.json, public/, package.json); no
       # install and no build run here.
       - uses: actions/checkout@v7
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           name: preview-${{ env.ENVIRONMENT_NAME }}-${{ github.event.pull_request.head.sha }}
           path: web/.next
