@@ -249,7 +249,7 @@ migration, `0001_foundation`.
 flows. Both need a SQL Server; the e2e also needs a production build and Chromium.
 
 ```sh
-docker run -d --name frejsi-sql --restart unless-stopped -e ACCEPT_EULA=Y \
+docker run -d --name frejsi-sql -e ACCEPT_EULA=Y \
   -e MSSQL_SA_PASSWORD='<a strong password>' -p 14330:1433 mcr.microsoft.com/mssql/server:2025-latest
 export DATABASE_URL="sqlserver://localhost:14330;database=frejsi_test;user=sa;password=<the same password>;encrypt=true;trustServerCertificate=true"
 
@@ -262,6 +262,13 @@ Neither suite writes to the database `DATABASE_URL` names: the integration tests
 `frejsi_it_<random>`, and the e2e recreates `<database>_e2e` on every run. The e2e installs Chromium
 when it is missing and writes the server's log to `web/e2e/.output/server.log`, which its last test
 checks for the seeded names.
+
+Stop the container when the run is done: `docker stop frejsi-sql`. An idle SQL Server holds about
+a gigabyte of RAM on the claude-agents VM, which shares its memory with every other session there,
+and left running it ends up in swap. `docker start frejsi-sql` brings it back, with the databases it
+had, for the next run. Do not give it `--restart unless-stopped`: it must not come back on its own
+after a reboot. Any extra container you create for a one-off (another SQL Server version, a second
+instance for a parallel lane) is removed when the run ends: `docker rm -f <name>`.
 
 For development, `pnpm --filter ./web seed` fills an empty database with the fictional space of the
 artboards ("Almas rum": Jonas and Mette as owners, Birthe as a carer, Alma as a carer in simpleMode,

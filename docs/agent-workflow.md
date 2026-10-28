@@ -345,6 +345,9 @@ to ask; questions go in its PR body.
   brief and starts Codex in the background; briefs, logs, pids (`running`) and final reports go to
   `~/.cache/frejsi-codex-lanes/`. Release-suite lanes use the local SQL Server container `frejsi-sql`
   (localhost:14330); its sa password is in `~/.config/frejsi/local-sql-sa` on the claude-agents VM.
+  Start it before the run (`docker start frejsi-sql`) and stop it when the lane is done
+  (`docker stop frejsi-sql`); remove any extra container the lane created (`docs/operations.md`,
+  "Run the release suites locally"). The VM's memory is shared with every other session on it.
 
 ## 13. Docs stay current
 
