@@ -18,7 +18,8 @@ export async function narrateMeal(provider: AiProvider, raw: InsightInput) {
         use: "insight-meal",
         system: `${mealPrompt}${input.locale === "da" ? " Danish lead label: forspringet før måltidet." : ""}${attempt ? " Only literal observations and input numbers. No advice." : ""}`,
         outputSchema: MealInsight,
-        maxTokens: 400,
+        // Thinking counts against this cap, and a cut-off answer is unusable (#250).
+        maxTokens: 1500,
         messages: [{ role: "user", content: [{ type: "text", text: JSON.stringify(projected) }] }],
       });
       if (result.kind !== "json") throw new HttpError(502, "ai-rejected");
