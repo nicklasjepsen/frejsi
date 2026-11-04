@@ -1,6 +1,7 @@
 import { existsSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
+import type { z } from "zod";
 import {
   aiProviders,
   CappedAiProvider,
@@ -27,6 +28,7 @@ import { photoPath, recipePhotoPath } from "./photo";
 import {
   checkStrings,
   checkInsight,
+  describeTrips,
   scoreParse,
   scoreRecipe,
   enforceThresholds,
@@ -66,23 +68,46 @@ function lookup(query: string) {
     }),
   );
 }
-function audited(inner: AiProvider, c: EvalCase, violations: string[]): AiProvider {
-  const audit = (answer: CompleteResult) => {
+/** A failed case's reason: an error's code or class; `describeTrips` covers the safety audit. */
+function reason(error: unknown): string {
+  if (error instanceof Error) return "code" in error ? String(error.code) : error.name;
+  return typeof error;
+}
+function audited(
+  inner: AiProvider,
+  c: EvalCase,
+  violations: string[],
+  notes: string[],
+): AiProvider {
+  const audit = (answer: CompleteResult, schema?: z.ZodType) => {
+    const narration = c.kind === "meal" || c.kind === "week";
     try {
       checkStrings(answer);
-      if ((c.kind === "meal" || c.kind === "week") && answer.kind === "json")
-        checkInsight(answer.json, narrationInput(c.input));
+      if (narration && answer.kind === "json") checkInsight(answer.json, narrationInput(c.input));
     } catch {
       violations.push(c.id);
+      const input = narration && answer.kind === "json" ? narrationInput(c.input) : undefined;
+      const output = answer.kind === "json" ? answer.json : answer;
+      notes.push(`${c.id}: ${describeTrips(output, input).join(", ") || "unsafe"}`);
       throw new Error("unsafe eval output");
+    }
+    // A contract rejection looks the same as a safety hit from outside the case, so name it.
+    if (answer.kind === "json" && schema) {
+      const parsed = schema.safeParse(answer.json);
+      if (!parsed.success)
+        notes.push(
+          `${c.id}: contract ${parsed.error.issues
+            .map((issue) => `${issue.path.join(".")} ${issue.code}`)
+            .join(", ")}`,
+        );
     }
     return answer;
   };
   return {
     id: inner.id,
     capabilities: () => inner.capabilities(),
-    complete: async (req) => audit(await inner.complete(req)),
-    vision: async (req) => audit(await inner.vision(req)),
+    complete: async (req) => audit(await inner.complete(req), req.outputSchema),
+    vision: async (req) => audit(await inner.vision(req), req.outputSchema),
     embed: (req) => inner.embed(req),
   };
 }
@@ -96,6 +121,7 @@ export async function runSet(
   const calls = new MemoryAiCallRepository();
   const violations: string[] = [];
   const failures: string[] = [];
+  const notes: string[] = [];
   let expected = 0,
     found = 0,
     portions = 0,
@@ -144,17 +170,22 @@ export async function runSet(
           if (await recipeScore(c, parsed.parse)) recipeCorrect++;
           budget.check();
           completed++;
-        } catch {
+        } catch (error) {
           failures.push(c.id);
+          notes.push(`${c.id}: ${reason(error)}`);
         }
         continue;
       }
       try {
-        const provider = new CappedAiProvider(audited(await factory(c), c, violations), calls, {
-          spaceId: "fictional-eval",
-          timezone: "UTC",
-          dailyCap: budget.maxCalls,
-        });
+        const provider = new CappedAiProvider(
+          audited(await factory(c), c, violations, notes),
+          calls,
+          {
+            spaceId: "fictional-eval",
+            timezone: "UTC",
+            dailyCap: budget.maxCalls,
+          },
+        );
         if (c.kind === "parse") {
           const { meal } = await parseMeal(provider, c.text, c.locale, lookup);
           const score = scoreParse(c.expected, c.unmatched, meal);
@@ -207,8 +238,9 @@ export async function runSet(
         }
         budget.check();
         completed++;
-      } catch {
+      } catch (error) {
         failures.push(c.id);
+        notes.push(`${c.id}: ${reason(error)}`);
       }
     }
   };
@@ -218,7 +250,7 @@ export async function runSet(
     if (calls.rows.length > budget.maxCalls) throw new Error("eval call cap exceeded");
     if (violations.length || failures.length)
       throw new Error(
-        `eval cases failed: ${[...new Set([...violations, ...failures])].join(", ")}`,
+        `eval cases failed: ${[...new Set([...violations, ...failures])].join(", ")}\n${notes.join("\n")}`,
       );
     const scores = {
       parseRecall: ratio(found, expected),

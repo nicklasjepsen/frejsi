@@ -11,17 +11,28 @@ const numericUnit = new RegExp(
   "iu",
 );
 
-/** The prefix prevents the UI-only whole-string allow-list from applying to generated text. */
-export function assertNoDosing(text: string, where: string): void {
+export interface DosingTrip {
+  rule: "vocabulary" | "directive" | "numeric-unit";
+  /** The word or expression that matched; never the sentence around it. */
+  match: string;
+}
+
+/** What `assertNoDosing` refuses, and why. The prefix keeps the UI-only allow-list off generated text. */
+export function findDosingTrip(text: string, where = "output"): DosingTrip | null {
   const normalized = text.normalize("NFKC");
-  if (
-    findDosingVocabulary([[where, `Generated text: ${text}`]]).length > 0 ||
-    findDosingVocabulary([[where, `Generated text: ${normalized}`]]).length > 0 ||
-    directive.test(normalized) ||
-    numericUnit.test(normalized)
-  ) {
-    throw new HttpError(502, "ai-rejected");
-  }
+  const vocabulary =
+    findDosingVocabulary([[where, `Generated text: ${text}`]])[0] ??
+    findDosingVocabulary([[where, `Generated text: ${normalized}`]])[0];
+  if (vocabulary) return { rule: "vocabulary", match: vocabulary.term };
+  const word = directive.exec(normalized);
+  if (word) return { rule: "directive", match: word[0] };
+  const unit = numericUnit.exec(normalized);
+  if (unit) return { rule: "numeric-unit", match: unit[0] };
+  return null;
+}
+
+export function assertNoDosing(text: string, where: string): void {
+  if (findDosingTrip(text, where)) throw new HttpError(502, "ai-rejected");
 }
 
 export function guardOutput(value: unknown): void {
