@@ -223,6 +223,28 @@ it("rejects a model answer that writes a food instead of naming a lookup row", a
   ).rejects.toMatchObject({ code: "ai-rejected" });
 });
 
+it("accepts a row found under different words than the item's query", async () => {
+  const fake = new FakeAiProvider([
+    tools,
+    {
+      ...answer,
+      json: {
+        items: [
+          { query: "a red apple", match: { source: "cache", foodRef: "off:apple", grams: 100 } },
+        ],
+        unmatched: [],
+      },
+    },
+  ]);
+  const { meal } = await parseMeal(fake, "a red apple", "en", () =>
+    Promise.resolve({ results: [result], sources: {}, manual: {} }),
+  );
+  expect(meal.items[0]).toEqual({
+    query: "a red apple",
+    match: { source: "cache", food: candidate, grams: 100 },
+  });
+});
+
 it("rejects a reference to a row lookup did not return, or from another source", async () => {
   for (const match of [
     { source: "cache", foodRef: "off:banana", grams: 100 },

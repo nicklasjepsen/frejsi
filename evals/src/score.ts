@@ -48,6 +48,14 @@ function carbs(item: ParsedItem): number | undefined {
 }
 export const within = (actual: number | undefined, expected: number, tolerance: number) =>
   actual !== undefined && Math.abs(actual - expected) <= expected * tolerance + 1e-9;
+/**
+ * A cleaned name scores when it holds the food and the maker, each part of `expected` split at its
+ * comma. Spelling a variety out ("Havregryn finvalsede", "Langkornet ris") is a good name, not a miss.
+ */
+export function scoreNormalise(expected: string, actual: string): boolean {
+  const name = foldForSearch(actual);
+  return expected.split(",").every((part) => name.includes(foldForSearch(part.trim())));
+}
 export function scoreParse(
   expected: { name: string; carbs: number }[],
   unmatched: string[],

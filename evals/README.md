@@ -47,7 +47,7 @@ secret to `ANTHROPIC_API_KEY`. Release wiring is owned by the release lane.
 | Parse item recall  | 0.80    | Expected folded name is a substring of a returned item's food/estimate name; each returned item matches once |
 | Parse quantities   | 0.60    | Carbs within ±25% of expected, among matched items                                                           |
 | Photo accuracy     | 0.50    | Total carbs within ±30% of the sum of weighed item carbs                                                     |
-| Normalised names   | 0.80    | Folded expected name occurs in the generated name                                                            |
+| Normalised names   | 0.80    | Each comma-separated part of the expected name (food, maker) occurs, folded, in the generated name           |
 | Unmatched messages | 1.00    | Expected unmatched text occurs in the returned unmatched list                                                |
 | Recipe accuracy    | 0.80    | Every ingredient line read (count equal) and carbs per portion within ±30% (`recipeTolerance`)               |
 
