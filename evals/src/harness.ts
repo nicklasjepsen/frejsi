@@ -189,6 +189,7 @@ export async function runSet(
         if (c.kind === "parse") {
           const { meal } = await parseMeal(provider, c.text, c.locale, lookup);
           const score = scoreParse(c.expected, c.unmatched, meal);
+          if (c.unmatched.length) console.log(`DIAG ${c.id} ${JSON.stringify(meal)}`);
           expected += score.expected;
           found += score.found;
           portions += score.portions;
@@ -197,6 +198,7 @@ export async function runSet(
         } else if (c.kind === "normalise") {
           const result = await normaliseFoodName(provider, c.name, c.locale);
           normalise++;
+          console.log(`DIAG ${c.id} ${c.expected} <- ${result?.name ?? "null"}`);
           if (!result) throw new Error("normalisation failed");
           checkStrings(result);
           if (foldForSearch(result.name).includes(foldForSearch(c.expected))) normalised++;
