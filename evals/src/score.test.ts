@@ -116,3 +116,20 @@ it("scores a recipe on its line count and carbs per portion within the tolerance
     scoreRecipe({ ingredients: 2, carbsPerPortion: 0 }, { ingredients: 2, carbsPerPortion: 1 }),
   ).toBe(false);
 });
+it("reports every missed threshold and its score in one failure", () => {
+  const scores = {
+    parseRecall: 0.5,
+    parsePortions: 1,
+    photoAccuracy: 1,
+    photoCount: 0,
+    normaliseAccuracy: 0.3,
+    unmatchedAccuracy: 1,
+    recipeAccuracy: 1,
+    recipeCount: 1,
+  };
+  expect(() => {
+    enforceThresholds(scores);
+  }).toThrow(
+    "threshold missed: parseRecall 0.50 < 0.8; threshold missed: normaliseAccuracy 0.30 < 0.8",
+  );
+});
