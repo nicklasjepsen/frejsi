@@ -4,5 +4,5 @@
   "kind": "parse",
   "text": "en sky af stjernestøv",
   "expected": [],
-  "unmatched": ["en sky af stjernestøv"]
+  "unmatched": ["stjernestøv"]
 }

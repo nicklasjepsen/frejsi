@@ -1,5 +1,12 @@
 import { expect, it } from "vitest";
-import { scoreParse, scoreRecipe, checkStrings, checkInsight, enforceThresholds } from "./score";
+import {
+  scoreNormalise,
+  scoreParse,
+  scoreRecipe,
+  checkStrings,
+  checkInsight,
+  enforceThresholds,
+} from "./score";
 import { ParsedMeal } from "@frejsi/shared/schemas/ai";
 
 const meal = ParsedMeal.parse({
@@ -132,4 +139,11 @@ it("reports every missed threshold and its score in one failure", () => {
   }).toThrow(
     "threshold missed: parseRecall 0.50 < 0.8; threshold missed: normaliseAccuracy 0.30 < 0.8",
   );
+});
+it("scores a cleaned name on its food and its maker, not one spelling", () => {
+  expect(scoreNormalise("Havregryn, Enghavre", "Havregryn finvalsede, Enghavre")).toBe(true);
+  expect(scoreNormalise("Ris, Bakkemark", "Langkornet ris, Bakkemark")).toBe(true);
+  expect(scoreNormalise("Rugbrød, Skovkorn", "Groft rugbrod, Skovkorn")).toBe(true);
+  expect(scoreNormalise("Havregryn, Enghavre", "Havregryn")).toBe(false);
+  expect(scoreNormalise("Havregryn, Enghavre", "Müsli, Enghavre")).toBe(false);
 });

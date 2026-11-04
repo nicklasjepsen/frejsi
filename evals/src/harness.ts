@@ -29,6 +29,7 @@ import {
   checkStrings,
   checkInsight,
   describeTrips,
+  scoreNormalise,
   scoreParse,
   scoreRecipe,
   enforceThresholds,
@@ -199,7 +200,7 @@ export async function runSet(
           normalise++;
           if (!result) throw new Error("normalisation failed");
           checkStrings(result);
-          if (foldForSearch(result.name).includes(foldForSearch(c.expected))) normalised++;
+          if (scoreNormalise(c.expected, result.name)) normalised++;
         } else if (c.kind === "meal") {
           const { text } = await narrateMeal(provider, c.input);
           checkInsight({ text }, narrationInput(c.input));

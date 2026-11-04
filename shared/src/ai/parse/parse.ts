@@ -47,16 +47,19 @@ export async function parseMeal(
   const parsed = ParsedMealDraft.safeParse(result.json);
   if (!parsed.success) throw new HttpError(502, "ai-rejected");
   // The model selects quantities; identities and nutrition come from the actual lookup.
+  const rows = [...searched.values()].flat();
   const items = parsed.data.items.map((item) => {
-    const found = searched.get(key(item.query));
-    if (!found) throw new HttpError(502, "ai-rejected");
     if (item.estimate) {
-      if (found.length > 0) throw new HttpError(502, "ai-rejected");
+      // An estimate is only for a food that this very lookup did not find.
+      const found = searched.get(key(item.query));
+      if (!found || found.length > 0) throw new HttpError(502, "ai-rejected");
       return { query: item.query, estimate: item.estimate };
     }
     if (!item.match) throw new HttpError(502, "ai-rejected");
     const { foodRef: ref, ...match } = item.match;
-    const original = found.find((row) => row.source === match.source && foodRef(row.food) === ref);
+    // Any row lookup returned will do: "rugbrød" and "ost" can both find "rugbrød med ost", and
+    // the nutrition is the row's whatever words the model searched with.
+    const original = rows.find((row) => row.source === match.source && foodRef(row.food) === ref);
     if (!original) throw new HttpError(502, "ai-rejected");
     return { query: item.query, match: { ...match, food: original.food } };
   });
