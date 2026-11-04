@@ -1,6 +1,6 @@
-import { assertNoDosing } from "@frejsi/shared/ai";
+import { assertNoDosing, findDosingTrip } from "@frejsi/shared/ai";
 import { foldForSearch } from "@frejsi/shared/food/search";
-import { assertKnownNumbers, numerals } from "@frejsi/shared/ai/insight/numbers";
+import { assertKnownNumbers, numerals, unknownNumbers } from "@frejsi/shared/ai/insight/numbers";
 import type { ParsedItem, ParsedMeal } from "@frejsi/shared/schemas/ai";
 import thresholds from "../thresholds.json";
 
@@ -20,6 +20,24 @@ export function checkInsight(output: unknown, input: unknown): void {
     if (/trykket|registreringen/iu.test(text)) throw new Error("ambiguous lead label");
     assertKnownNumbers(text, allowed);
   }
+}
+/**
+ * Why `checkStrings` / `checkInsight` refused an output: the rule and the word or number that
+ * tripped it, never the sentence, so a report can name it without printing a model response.
+ */
+export function describeTrips(output: unknown, input?: unknown): string[] {
+  const allowed = input === undefined ? undefined : new Set(numerals(input));
+  return strings(output).flatMap((text) => {
+    const trips: string[] = [];
+    const dosing = findDosingTrip(text, "eval output");
+    if (dosing) trips.push(`${dosing.rule} "${dosing.match}"`);
+    if (allowed) {
+      const label = /trykket|registreringen/iu.exec(text);
+      if (label) trips.push(`lead-label "${label[0]}"`);
+      for (const n of unknownNumbers(text, allowed)) trips.push(`unknown-number ${String(n)}`);
+    }
+    return trips;
+  });
 }
 function carbs(item: ParsedItem): number | undefined {
   if (item.estimate) return item.estimate.carbs;

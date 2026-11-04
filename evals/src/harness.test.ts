@@ -95,6 +95,39 @@ it("fails malformed output, missing items, a swallowed cap error, and rejected r
   if (!normalise) throw Error("missing normalise");
   await expect(runSet([normalise, normalise], fake, { maxCalls: 1 })).rejects.toThrow();
 });
+it("names the rule and the word that tripped, never the sentence around it", async () => {
+  const cases = await loadCases();
+  const meal = cases.find((c) => c.kind === "meal");
+  if (!meal) throw Error("missing meal");
+  const run = (text: string) =>
+    runSet([{ ...meal, recorded: [{ kind: "json", model: "fixture", json: { text } }] }], fake);
+  await expect(run("Toppen var 999 efter frokosten i dag.")).rejects.toThrow(
+    /meal-\d+: unknown-number 999/,
+  );
+  await expect(run("Her skal I se nærmere på kurven i dag.")).rejects.toThrow(
+    /meal-\d+: directive "skal"/,
+  );
+  await expect(run("Her skal I se nærmere på kurven i dag.")).rejects.not.toThrow(/kurven/);
+});
+it("tells a contract rejection from a safety hit", async () => {
+  const meal = (await loadCases()).find((c) => c.kind === "meal");
+  if (!meal) throw Error("missing meal");
+  const long = "Kurven var rolig efter måltidet. ".repeat(10);
+  await expect(
+    runSet(
+      [
+        {
+          ...meal,
+          recorded: [
+            { kind: "json", model: "fixture", json: { text: long } },
+            { kind: "json", model: "fixture", json: { text: long } },
+          ],
+        },
+      ],
+      fake,
+    ),
+  ).rejects.toThrow(/meal-\d+: contract text too_big/);
+});
 it("bounds case concurrency to four", async () => {
   const cases = (await loadCases()).filter((c) => c.kind === "normalise");
   let active = 0;

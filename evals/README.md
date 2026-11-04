@@ -24,7 +24,11 @@ Both HTTP work and retry waits abort at the three-minute live-run deadline. The 
 request timeout uses that budget so a long `retry-after` can complete; production keeps its
 normal per-role timeouts. Caps, budget
 exhaustion, schema errors, refusals and missed thresholds fail the command. No key or model
-response is printed; reports contain only counts, scores and fictional case ids.
+response is printed; reports contain only counts, scores and fictional case ids, plus, for a case
+that failed, why: the guard rule and the one word or number that tripped it
+(`week-01: directive "skal"`, `week-02: unknown-number 5`), a contract rejection
+(`meal-03: contract text too_big`) or an error code. A failed live request also logs the API's
+error message, status and request id, or the stop reason of a response that did not finish.
 A full live run costs approximately $2, as estimated in the approved plan; it has no measured
 baseline yet. Use a dedicated eval key with its own spend limit (#72).
 

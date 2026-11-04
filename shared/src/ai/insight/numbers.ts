@@ -10,8 +10,11 @@ export function numerals(value: unknown): number[] {
   if (value && typeof value === "object") return Object.values(value).flatMap(numerals);
   return [];
 }
+export function unknownNumbers(text: string, allowed: ReadonlySet<number>): number[] {
+  return numerals(text).filter((n) => !allowed.has(n));
+}
 export function assertKnownNumbers(text: string, allowed: ReadonlySet<number>): void {
-  if (numerals(text).some((n) => !allowed.has(n))) throw new HttpError(502, "ai-rejected");
+  if (unknownNumbers(text, allowed).length > 0) throw new HttpError(502, "ai-rejected");
 }
 export function narrationInput(input: InsightInput | WeekInsightInput) {
   if (input.glucoseUnit !== "mgdl") return input;
