@@ -92,6 +92,7 @@ function audited(
       notes.push(`${c.id}: ${describeTrips(output, input).join(", ") || "unsafe"}`);
       throw new Error("unsafe eval output");
     }
+    if (c.kind === "parse") console.log(`DIAG ${c.id} ${JSON.stringify(answer)}`);
     // A contract rejection looks the same as a safety hit from outside the case, so name it.
     if (answer.kind === "json" && schema) {
       const parsed = schema.safeParse(answer.json);
