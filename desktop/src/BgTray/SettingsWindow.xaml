@@ -1,0 +1,67 @@
+<Window x:Class="BgTray.SettingsWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Frejsi desktop settings"
+        Width="420" SizeToContent="Height" ResizeMode="NoResize"
+        WindowStartupLocation="CenterScreen" Topmost="True"
+        FontFamily="Segoe UI Variable Text, Segoe UI"
+        Background="{DynamicResource CardBackground}" Foreground="{DynamicResource TextPrimary}">
+    <StackPanel Margin="24,16,24,20">
+        <TextBlock Text="Nightscout" FontSize="18" FontWeight="SemiBold" />
+        <TextBlock Text="The app only reads readings from your site. Use a token with read access and nothing more."
+                   TextWrapping="Wrap" FontSize="12" Foreground="{DynamicResource TextSecondary}" Margin="0,4,0,0" />
+
+        <TextBlock Text="Site address" Style="{StaticResource FieldLabel}" />
+        <TextBox x:Name="SiteBox" Style="{StaticResource Field}" />
+
+        <TextBlock Text="Access token" Style="{StaticResource FieldLabel}" />
+        <PasswordBox x:Name="TokenBox" Style="{StaticResource Field}" />
+        <TextBlock Text="Stored encrypted for your Windows account. Made under Admin tools → Subjects on your site."
+                   TextWrapping="Wrap" FontSize="11" Foreground="{DynamicResource TextSecondary}" Margin="0,4,0,0" />
+
+        <Grid Margin="0,12,0,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <TextBlock x:Name="TestResult" Text="" TextWrapping="Wrap" FontSize="12" VerticalAlignment="Center"
+                       Foreground="{DynamicResource TextSecondary}" Margin="0,0,12,0" />
+            <Button x:Name="TestButton" Grid.Column="1" Content="Test connection" Style="{StaticResource SecondaryButton}" Click="Test_Click" />
+        </Grid>
+
+        <TextBlock Text="Display" FontSize="18" FontWeight="SemiBold" Margin="0,24,0,0" />
+
+        <TextBlock Text="Unit" Style="{StaticResource FieldLabel}" />
+        <StackPanel Orientation="Horizontal">
+            <RadioButton x:Name="MmolRadio" Content="mmol/L" IsChecked="True" Margin="0,0,20,0" Foreground="{DynamicResource TextPrimary}" Checked="Unit_Changed" />
+            <RadioButton x:Name="MgdlRadio" Content="mg/dL" Foreground="{DynamicResource TextPrimary}" Checked="Unit_Changed" />
+        </StackPanel>
+
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="16" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <StackPanel Grid.Column="0">
+                <TextBlock x:Name="LowLabel" Text="Low below" Style="{StaticResource FieldLabel}" />
+                <TextBox x:Name="LowBox" Style="{StaticResource Field}" />
+            </StackPanel>
+            <StackPanel Grid.Column="2">
+                <TextBlock x:Name="HighLabel" Text="High above" Style="{StaticResource FieldLabel}" />
+                <TextBox x:Name="HighBox" Style="{StaticResource Field}" />
+            </StackPanel>
+        </Grid>
+        <TextBlock Text="Colours only: red for low, amber for high, green in between. The app has no alarms."
+                   TextWrapping="Wrap" FontSize="11" Foreground="{DynamicResource TextSecondary}" Margin="0,4,0,0" />
+
+        <CheckBox x:Name="StartupBox" Content="Start with Windows" Margin="0,16,0,0" Foreground="{DynamicResource TextPrimary}" />
+
+        <TextBlock x:Name="ErrorText" Text="" TextWrapping="Wrap" FontSize="12" Foreground="#E5484D" Margin="0,12,0,0" Visibility="Collapsed" />
+
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,20,0,0">
+            <Button Content="Cancel" Style="{StaticResource SecondaryButton}" IsCancel="True" Margin="0,0,8,0" />
+            <Button Content="Save" Style="{StaticResource PrimaryButton}" IsDefault="True" Click="Save_Click" />
+        </StackPanel>
+    </StackPanel>
+</Window>

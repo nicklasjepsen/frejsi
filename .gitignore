@@ -147,3 +147,8 @@ vite.config.ts.timestamp-*
 
 # Turbo Repo
 .turbo
+
+# .NET build output (desktop/)
+desktop/**/bin/
+desktop/**/obj/
+desktop/publish/

@@ -1,0 +1,32 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UseWPF>true</UseWPF>
+    <UseWindowsForms>true</UseWindowsForms>
+    <EnableWindowsTargeting>true</EnableWindowsTargeting>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <AssemblyName>FrejsiDesktop</AssemblyName>
+    <RootNamespace>BgTray</RootNamespace>
+    <ApplicationIcon>app.ico</ApplicationIcon>
+    <Version>0.1.0</Version>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
+    <!-- WPF takes its per-monitor DPI awareness from the manifest; the WinForms analyzer objects, but WinForms only draws the tray icon. -->
+    <NoWarn>$(NoWarn);WFO0003</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- WinForms is only here for NotifyIcon; its implicit usings would clash with WPF's types. -->
+    <Using Remove="System.Drawing" />
+    <Using Remove="System.Windows.Forms" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../BgTray.Core/BgTray.Core.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,9 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/BgTray/BgTray.csproj" />
+    <Project Path="src/BgTray.Core/BgTray.Core.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/BgTray.Core.Tests/BgTray.Core.Tests.csproj" />
+  </Folder>
+</Solution>
