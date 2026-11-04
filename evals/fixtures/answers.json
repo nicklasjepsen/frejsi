@@ -29,56 +29,16 @@
             "query": "Rugbrød med ost",
             "match": {
               "source": "library",
-              "food": {
-                "id": "fictional-food-5",
-                "name": "Rugbrød med ost",
-                "origin": "family",
-                "verified": false,
-                "favourite": false,
-                "createdAt": "2026-10-12T10:00:00.000Z",
-                "updatedAt": "2026-10-12T10:00:00.000Z",
-                "portions": [
-                  {
-                    "label": "1 skive",
-                    "carbs": 18
-                  },
-                  {
-                    "label": "2 skiver",
-                    "carbs": 36
-                  }
-                ]
-              },
-              "portionLabel": "2 skiver"
+              "portionLabel": "2 skiver",
+              "foodRef": "fictional-food-5"
             }
           },
           {
             "query": "Æble",
             "match": {
               "source": "library",
-              "food": {
-                "id": "fictional-food-6",
-                "name": "Æble",
-                "origin": "family",
-                "verified": false,
-                "favourite": false,
-                "createdAt": "2026-10-12T10:00:00.000Z",
-                "updatedAt": "2026-10-12T10:00:00.000Z",
-                "portions": [
-                  {
-                    "label": "1 stk",
-                    "carbs": 14
-                  },
-                  {
-                    "label": "1 mellem",
-                    "carbs": 14
-                  },
-                  {
-                    "label": "½ mellem",
-                    "carbs": 7
-                  }
-                ]
-              },
-              "portionLabel": "1 stk"
+              "portionLabel": "1 stk",
+              "foodRef": "fictional-food-6"
             }
           }
         ],
@@ -116,44 +76,16 @@
             "query": "Havregrød",
             "match": {
               "source": "library",
-              "food": {
-                "id": "fictional-food-4",
-                "name": "Havregrød",
-                "origin": "family",
-                "verified": false,
-                "favourite": false,
-                "createdAt": "2026-10-12T10:00:00.000Z",
-                "updatedAt": "2026-10-12T10:00:00.000Z",
-                "portions": [
-                  {
-                    "label": "1 skål",
-                    "carbs": 24
-                  }
-                ]
-              },
-              "portionLabel": "1 skål"
+              "portionLabel": "1 skål",
+              "foodRef": "fictional-food-4"
             }
           },
           {
             "query": "Mælk",
             "match": {
               "source": "library",
-              "food": {
-                "id": "fictional-food-8",
-                "name": "Mælk",
-                "origin": "family",
-                "verified": false,
-                "favourite": false,
-                "createdAt": "2026-10-12T10:00:00.000Z",
-                "updatedAt": "2026-10-12T10:00:00.000Z",
-                "portions": [
-                  {
-                    "label": "1 glas",
-                    "carbs": 10
-                  }
-                ]
-              },
-              "portionLabel": "1 glas"
+              "portionLabel": "1 glas",
+              "foodRef": "fictional-food-8"
             }
           }
         ],
@@ -184,22 +116,8 @@
             "query": "Pasta bolognese",
             "match": {
               "source": "library",
-              "food": {
-                "id": "fictional-food-2",
-                "name": "Pasta bolognese",
-                "origin": "family",
-                "verified": false,
-                "favourite": false,
-                "createdAt": "2026-10-12T10:00:00.000Z",
-                "updatedAt": "2026-10-12T10:00:00.000Z",
-                "portions": [
-                  {
-                    "label": "1 portion",
-                    "carbs": 55
-                  }
-                ]
-              },
-              "portionLabel": "1 portion"
+              "portionLabel": "1 portion",
+              "foodRef": "fictional-food-2"
             }
           }
         ],
@@ -230,29 +148,8 @@
             "query": "Rugbrød",
             "match": {
               "source": "library",
-              "food": {
-                "id": "fictional-food-0",
-                "name": "Rugbrød",
-                "origin": "family",
-                "verified": false,
-                "favourite": false,
-                "createdAt": "2026-10-12T10:00:00.000Z",
-                "updatedAt": "2026-10-12T10:00:00.000Z",
-                "portions": [
-                  {
-                    "label": "1 skive",
-                    "carbs": 18,
-                    "grams": 45
-                  },
-                  {
-                    "label": "2 skiver",
-                    "carbs": 36,
-                    "grams": 90
-                  }
-                ],
-                "carbsPer100g": 40
-              },
-              "grams": 90.0
+              "grams": 90.0,
+              "foodRef": "fictional-food-0"
             }
           }
         ],
@@ -306,30 +203,8 @@
             "query": "Æble",
             "match": {
               "source": "library",
-              "food": {
-                "id": "fictional-food-6",
-                "name": "Æble",
-                "origin": "family",
-                "verified": false,
-                "favourite": false,
-                "createdAt": "2026-10-12T10:00:00.000Z",
-                "updatedAt": "2026-10-12T10:00:00.000Z",
-                "portions": [
-                  {
-                    "label": "1 stk",
-                    "carbs": 14
-                  },
-                  {
-                    "label": "1 mellem",
-                    "carbs": 14
-                  },
-                  {
-                    "label": "½ mellem",
-                    "carbs": 7
-                  }
-                ]
-              },
-              "portionLabel": "1 stk"
+              "portionLabel": "1 stk",
+              "foodRef": "fictional-food-6"
             }
           }
         ],
@@ -360,22 +235,8 @@
             "query": "Banan",
             "match": {
               "source": "library",
-              "food": {
-                "id": "fictional-food-7",
-                "name": "Banan",
-                "origin": "family",
-                "verified": false,
-                "favourite": false,
-                "createdAt": "2026-10-12T10:00:00.000Z",
-                "updatedAt": "2026-10-12T10:00:00.000Z",
-                "portions": [
-                  {
-                    "label": "1 stk",
-                    "carbs": 23
-                  }
-                ]
-              },
-              "portionLabel": "1 stk"
+              "portionLabel": "1 stk",
+              "foodRef": "fictional-food-7"
             }
           }
         ],
@@ -406,22 +267,8 @@
             "query": "Min madpakke",
             "match": {
               "source": "library",
-              "food": {
-                "id": "fictional-food-3",
-                "name": "Min madpakke",
-                "origin": "family",
-                "verified": false,
-                "favourite": false,
-                "createdAt": "2026-10-12T10:00:00.000Z",
-                "updatedAt": "2026-10-12T10:00:00.000Z",
-                "portions": [
-                  {
-                    "label": "1 madpakke",
-                    "carbs": 42
-                  }
-                ]
-              },
-              "portionLabel": "1 madpakke"
+              "portionLabel": "1 madpakke",
+              "foodRef": "fictional-food-3"
             }
           }
         ],
@@ -452,24 +299,8 @@
             "query": "Kartoffel kogt",
             "match": {
               "source": "library",
-              "food": {
-                "id": "fictional-food-1",
-                "name": "Kartoffel kogt",
-                "origin": "family",
-                "verified": false,
-                "favourite": false,
-                "createdAt": "2026-10-12T10:00:00.000Z",
-                "updatedAt": "2026-10-12T10:00:00.000Z",
-                "portions": [
-                  {
-                    "label": "1 portion",
-                    "carbs": 17,
-                    "grams": 100
-                  }
-                ],
-                "carbsPer100g": 17
-              },
-              "portionLabel": "1 portion"
+              "portionLabel": "1 portion",
+              "foodRef": "fictional-food-1"
             }
           }
         ],
@@ -500,22 +331,8 @@
             "query": "Mælk",
             "match": {
               "source": "library",
-              "food": {
-                "id": "fictional-food-8",
-                "name": "Mælk",
-                "origin": "family",
-                "verified": false,
-                "favourite": false,
-                "createdAt": "2026-10-12T10:00:00.000Z",
-                "updatedAt": "2026-10-12T10:00:00.000Z",
-                "portions": [
-                  {
-                    "label": "1 glas",
-                    "carbs": 10
-                  }
-                ]
-              },
-              "portionLabel": "1 glas"
+              "portionLabel": "1 glas",
+              "foodRef": "fictional-food-8"
             }
           }
         ],
@@ -546,26 +363,8 @@
             "query": "Rugbrød med ost",
             "match": {
               "source": "library",
-              "food": {
-                "id": "fictional-food-5",
-                "name": "Rugbrød med ost",
-                "origin": "family",
-                "verified": false,
-                "favourite": false,
-                "createdAt": "2026-10-12T10:00:00.000Z",
-                "updatedAt": "2026-10-12T10:00:00.000Z",
-                "portions": [
-                  {
-                    "label": "1 skive",
-                    "carbs": 18
-                  },
-                  {
-                    "label": "2 skiver",
-                    "carbs": 36
-                  }
-                ]
-              },
-              "portionLabel": "1 skive"
+              "portionLabel": "1 skive",
+              "foodRef": "fictional-food-5"
             }
           }
         ],
@@ -596,22 +395,8 @@
             "query": "Havregrød",
             "match": {
               "source": "library",
-              "food": {
-                "id": "fictional-food-4",
-                "name": "Havregrød",
-                "origin": "family",
-                "verified": false,
-                "favourite": false,
-                "createdAt": "2026-10-12T10:00:00.000Z",
-                "updatedAt": "2026-10-12T10:00:00.000Z",
-                "portions": [
-                  {
-                    "label": "1 skål",
-                    "carbs": 24
-                  }
-                ]
-              },
-              "portionLabel": "1 skål"
+              "portionLabel": "1 skål",
+              "foodRef": "fictional-food-4"
             }
           }
         ],
@@ -642,22 +427,8 @@
             "query": "Pasta bolognese",
             "match": {
               "source": "library",
-              "food": {
-                "id": "fictional-food-2",
-                "name": "Pasta bolognese",
-                "origin": "family",
-                "verified": false,
-                "favourite": false,
-                "createdAt": "2026-10-12T10:00:00.000Z",
-                "updatedAt": "2026-10-12T10:00:00.000Z",
-                "portions": [
-                  {
-                    "label": "1 portion",
-                    "carbs": 55
-                  }
-                ]
-              },
-              "portionLabel": "1 portion"
+              "portionLabel": "1 portion",
+              "foodRef": "fictional-food-2"
             }
           }
         ],
@@ -688,30 +459,8 @@
             "query": "Æble",
             "match": {
               "source": "library",
-              "food": {
-                "id": "fictional-food-6",
-                "name": "Æble",
-                "origin": "family",
-                "verified": false,
-                "favourite": false,
-                "createdAt": "2026-10-12T10:00:00.000Z",
-                "updatedAt": "2026-10-12T10:00:00.000Z",
-                "portions": [
-                  {
-                    "label": "1 stk",
-                    "carbs": 14
-                  },
-                  {
-                    "label": "1 mellem",
-                    "carbs": 14
-                  },
-                  {
-                    "label": "½ mellem",
-                    "carbs": 7
-                  }
-                ]
-              },
-              "portionLabel": "½ mellem"
+              "portionLabel": "½ mellem",
+              "foodRef": "fictional-food-6"
             }
           }
         ],
@@ -742,29 +491,8 @@
             "query": "Rugbrød",
             "match": {
               "source": "library",
-              "food": {
-                "id": "fictional-food-0",
-                "name": "Rugbrød",
-                "origin": "family",
-                "verified": false,
-                "favourite": false,
-                "createdAt": "2026-10-12T10:00:00.000Z",
-                "updatedAt": "2026-10-12T10:00:00.000Z",
-                "portions": [
-                  {
-                    "label": "1 skive",
-                    "carbs": 18,
-                    "grams": 45
-                  },
-                  {
-                    "label": "2 skiver",
-                    "carbs": 36,
-                    "grams": 90
-                  }
-                ],
-                "carbsPer100g": 40
-              },
-              "grams": 45.0
+              "grams": 45.0,
+              "foodRef": "fictional-food-0"
             }
           }
         ],
@@ -795,24 +523,8 @@
             "query": "Kartoffel kogt",
             "match": {
               "source": "library",
-              "food": {
-                "id": "fictional-food-1",
-                "name": "Kartoffel kogt",
-                "origin": "family",
-                "verified": false,
-                "favourite": false,
-                "createdAt": "2026-10-12T10:00:00.000Z",
-                "updatedAt": "2026-10-12T10:00:00.000Z",
-                "portions": [
-                  {
-                    "label": "1 portion",
-                    "carbs": 17,
-                    "grams": 100
-                  }
-                ],
-                "carbsPer100g": 17
-              },
-              "grams": 150.0
+              "grams": 150.0,
+              "foodRef": "fictional-food-1"
             }
           }
         ],
@@ -850,44 +562,16 @@
             "query": "Banan",
             "match": {
               "source": "library",
-              "food": {
-                "id": "fictional-food-7",
-                "name": "Banan",
-                "origin": "family",
-                "verified": false,
-                "favourite": false,
-                "createdAt": "2026-10-12T10:00:00.000Z",
-                "updatedAt": "2026-10-12T10:00:00.000Z",
-                "portions": [
-                  {
-                    "label": "1 stk",
-                    "carbs": 23
-                  }
-                ]
-              },
-              "portionLabel": "1 stk"
+              "portionLabel": "1 stk",
+              "foodRef": "fictional-food-7"
             }
           },
           {
             "query": "Mælk",
             "match": {
               "source": "library",
-              "food": {
-                "id": "fictional-food-8",
-                "name": "Mælk",
-                "origin": "family",
-                "verified": false,
-                "favourite": false,
-                "createdAt": "2026-10-12T10:00:00.000Z",
-                "updatedAt": "2026-10-12T10:00:00.000Z",
-                "portions": [
-                  {
-                    "label": "1 glas",
-                    "carbs": 10
-                  }
-                ]
-              },
-              "portionLabel": "1 glas"
+              "portionLabel": "1 glas",
+              "foodRef": "fictional-food-8"
             }
           }
         ],
@@ -925,52 +609,16 @@
             "query": "Havregrød",
             "match": {
               "source": "library",
-              "food": {
-                "id": "fictional-food-4",
-                "name": "Havregrød",
-                "origin": "family",
-                "verified": false,
-                "favourite": false,
-                "createdAt": "2026-10-12T10:00:00.000Z",
-                "updatedAt": "2026-10-12T10:00:00.000Z",
-                "portions": [
-                  {
-                    "label": "1 skål",
-                    "carbs": 24
-                  }
-                ]
-              },
-              "portionLabel": "1 skål"
+              "portionLabel": "1 skål",
+              "foodRef": "fictional-food-4"
             }
           },
           {
             "query": "Æble",
             "match": {
               "source": "library",
-              "food": {
-                "id": "fictional-food-6",
-                "name": "Æble",
-                "origin": "family",
-                "verified": false,
-                "favourite": false,
-                "createdAt": "2026-10-12T10:00:00.000Z",
-                "updatedAt": "2026-10-12T10:00:00.000Z",
-                "portions": [
-                  {
-                    "label": "1 stk",
-                    "carbs": 14
-                  },
-                  {
-                    "label": "1 mellem",
-                    "carbs": 14
-                  },
-                  {
-                    "label": "½ mellem",
-                    "carbs": 7
-                  }
-                ]
-              },
-              "portionLabel": "1 stk"
+              "portionLabel": "1 stk",
+              "foodRef": "fictional-food-6"
             }
           }
         ],
@@ -1008,48 +656,16 @@
             "query": "Rugbrød med ost",
             "match": {
               "source": "library",
-              "food": {
-                "id": "fictional-food-5",
-                "name": "Rugbrød med ost",
-                "origin": "family",
-                "verified": false,
-                "favourite": false,
-                "createdAt": "2026-10-12T10:00:00.000Z",
-                "updatedAt": "2026-10-12T10:00:00.000Z",
-                "portions": [
-                  {
-                    "label": "1 skive",
-                    "carbs": 18
-                  },
-                  {
-                    "label": "2 skiver",
-                    "carbs": 36
-                  }
-                ]
-              },
-              "portionLabel": "1 skive"
+              "portionLabel": "1 skive",
+              "foodRef": "fictional-food-5"
             }
           },
           {
             "query": "Banan",
             "match": {
               "source": "library",
-              "food": {
-                "id": "fictional-food-7",
-                "name": "Banan",
-                "origin": "family",
-                "verified": false,
-                "favourite": false,
-                "createdAt": "2026-10-12T10:00:00.000Z",
-                "updatedAt": "2026-10-12T10:00:00.000Z",
-                "portions": [
-                  {
-                    "label": "1 stk",
-                    "carbs": 23
-                  }
-                ]
-              },
-              "portionLabel": "1 stk"
+              "portionLabel": "1 stk",
+              "foodRef": "fictional-food-7"
             }
           }
         ],
@@ -1087,44 +703,16 @@
             "query": "Min madpakke",
             "match": {
               "source": "library",
-              "food": {
-                "id": "fictional-food-3",
-                "name": "Min madpakke",
-                "origin": "family",
-                "verified": false,
-                "favourite": false,
-                "createdAt": "2026-10-12T10:00:00.000Z",
-                "updatedAt": "2026-10-12T10:00:00.000Z",
-                "portions": [
-                  {
-                    "label": "1 madpakke",
-                    "carbs": 42
-                  }
-                ]
-              },
-              "portionLabel": "1 madpakke"
+              "portionLabel": "1 madpakke",
+              "foodRef": "fictional-food-3"
             }
           },
           {
             "query": "Mælk",
             "match": {
               "source": "library",
-              "food": {
-                "id": "fictional-food-8",
-                "name": "Mælk",
-                "origin": "family",
-                "verified": false,
-                "favourite": false,
-                "createdAt": "2026-10-12T10:00:00.000Z",
-                "updatedAt": "2026-10-12T10:00:00.000Z",
-                "portions": [
-                  {
-                    "label": "1 glas",
-                    "carbs": 10
-                  }
-                ]
-              },
-              "portionLabel": "1 glas"
+              "portionLabel": "1 glas",
+              "foodRef": "fictional-food-8"
             }
           }
         ],
@@ -1162,52 +750,16 @@
             "query": "Æble",
             "match": {
               "source": "library",
-              "food": {
-                "id": "fictional-food-6",
-                "name": "Æble",
-                "origin": "family",
-                "verified": false,
-                "favourite": false,
-                "createdAt": "2026-10-12T10:00:00.000Z",
-                "updatedAt": "2026-10-12T10:00:00.000Z",
-                "portions": [
-                  {
-                    "label": "1 stk",
-                    "carbs": 14
-                  },
-                  {
-                    "label": "1 mellem",
-                    "carbs": 14
-                  },
-                  {
-                    "label": "½ mellem",
-                    "carbs": 7
-                  }
-                ]
-              },
-              "portionLabel": "1 stk"
+              "portionLabel": "1 stk",
+              "foodRef": "fictional-food-6"
             }
           },
           {
             "query": "Banan",
             "match": {
               "source": "library",
-              "food": {
-                "id": "fictional-food-7",
-                "name": "Banan",
-                "origin": "family",
-                "verified": false,
-                "favourite": false,
-                "createdAt": "2026-10-12T10:00:00.000Z",
-                "updatedAt": "2026-10-12T10:00:00.000Z",
-                "portions": [
-                  {
-                    "label": "1 stk",
-                    "carbs": 23
-                  }
-                ]
-              },
-              "portionLabel": "1 stk"
+              "portionLabel": "1 stk",
+              "foodRef": "fictional-food-7"
             }
           }
         ],
@@ -1238,29 +790,8 @@
             "query": "Rugbrød",
             "match": {
               "source": "library",
-              "food": {
-                "id": "fictional-food-0",
-                "name": "Rugbrød",
-                "origin": "family",
-                "verified": false,
-                "favourite": false,
-                "createdAt": "2026-10-12T10:00:00.000Z",
-                "updatedAt": "2026-10-12T10:00:00.000Z",
-                "portions": [
-                  {
-                    "label": "1 skive",
-                    "carbs": 18,
-                    "grams": 45
-                  },
-                  {
-                    "label": "2 skiver",
-                    "carbs": 36,
-                    "grams": 90
-                  }
-                ],
-                "carbsPer100g": 40
-              },
-              "portionLabel": "2 skiver"
+              "portionLabel": "2 skiver",
+              "foodRef": "fictional-food-0"
             }
           }
         ],
@@ -1291,24 +822,8 @@
             "query": "Kartoffel kogt",
             "match": {
               "source": "library",
-              "food": {
-                "id": "fictional-food-1",
-                "name": "Kartoffel kogt",
-                "origin": "family",
-                "verified": false,
-                "favourite": false,
-                "createdAt": "2026-10-12T10:00:00.000Z",
-                "updatedAt": "2026-10-12T10:00:00.000Z",
-                "portions": [
-                  {
-                    "label": "1 portion",
-                    "carbs": 17,
-                    "grams": 100
-                  }
-                ],
-                "carbsPer100g": 17
-              },
-              "grams": 100.0
+              "grams": 100.0,
+              "foodRef": "fictional-food-1"
             }
           }
         ],
@@ -1346,52 +861,16 @@
             "query": "Mælk",
             "match": {
               "source": "library",
-              "food": {
-                "id": "fictional-food-8",
-                "name": "Mælk",
-                "origin": "family",
-                "verified": false,
-                "favourite": false,
-                "createdAt": "2026-10-12T10:00:00.000Z",
-                "updatedAt": "2026-10-12T10:00:00.000Z",
-                "portions": [
-                  {
-                    "label": "1 glas",
-                    "carbs": 10
-                  }
-                ]
-              },
-              "portionLabel": "1 glas"
+              "portionLabel": "1 glas",
+              "foodRef": "fictional-food-8"
             }
           },
           {
             "query": "Æble",
             "match": {
               "source": "library",
-              "food": {
-                "id": "fictional-food-6",
-                "name": "Æble",
-                "origin": "family",
-                "verified": false,
-                "favourite": false,
-                "createdAt": "2026-10-12T10:00:00.000Z",
-                "updatedAt": "2026-10-12T10:00:00.000Z",
-                "portions": [
-                  {
-                    "label": "1 stk",
-                    "carbs": 14
-                  },
-                  {
-                    "label": "1 mellem",
-                    "carbs": 14
-                  },
-                  {
-                    "label": "½ mellem",
-                    "carbs": 7
-                  }
-                ]
-              },
-              "portionLabel": "1 stk"
+              "portionLabel": "1 stk",
+              "foodRef": "fictional-food-6"
             }
           }
         ],
@@ -1429,52 +908,16 @@
             "query": "Min madpakke",
             "match": {
               "source": "library",
-              "food": {
-                "id": "fictional-food-3",
-                "name": "Min madpakke",
-                "origin": "family",
-                "verified": false,
-                "favourite": false,
-                "createdAt": "2026-10-12T10:00:00.000Z",
-                "updatedAt": "2026-10-12T10:00:00.000Z",
-                "portions": [
-                  {
-                    "label": "1 madpakke",
-                    "carbs": 42
-                  }
-                ]
-              },
-              "portionLabel": "1 madpakke"
+              "portionLabel": "1 madpakke",
+              "foodRef": "fictional-food-3"
             }
           },
           {
             "query": "Æble",
             "match": {
               "source": "library",
-              "food": {
-                "id": "fictional-food-6",
-                "name": "Æble",
-                "origin": "family",
-                "verified": false,
-                "favourite": false,
-                "createdAt": "2026-10-12T10:00:00.000Z",
-                "updatedAt": "2026-10-12T10:00:00.000Z",
-                "portions": [
-                  {
-                    "label": "1 stk",
-                    "carbs": 14
-                  },
-                  {
-                    "label": "1 mellem",
-                    "carbs": 14
-                  },
-                  {
-                    "label": "½ mellem",
-                    "carbs": 7
-                  }
-                ]
-              },
-              "portionLabel": "1 stk"
+              "portionLabel": "1 stk",
+              "foodRef": "fictional-food-6"
             }
           }
         ],
@@ -1512,44 +955,16 @@
             "query": "Havregrød",
             "match": {
               "source": "library",
-              "food": {
-                "id": "fictional-food-4",
-                "name": "Havregrød",
-                "origin": "family",
-                "verified": false,
-                "favourite": false,
-                "createdAt": "2026-10-12T10:00:00.000Z",
-                "updatedAt": "2026-10-12T10:00:00.000Z",
-                "portions": [
-                  {
-                    "label": "1 skål",
-                    "carbs": 24
-                  }
-                ]
-              },
-              "portionLabel": "1 skål"
+              "portionLabel": "1 skål",
+              "foodRef": "fictional-food-4"
             }
           },
           {
             "query": "Banan",
             "match": {
               "source": "library",
-              "food": {
-                "id": "fictional-food-7",
-                "name": "Banan",
-                "origin": "family",
-                "verified": false,
-                "favourite": false,
-                "createdAt": "2026-10-12T10:00:00.000Z",
-                "updatedAt": "2026-10-12T10:00:00.000Z",
-                "portions": [
-                  {
-                    "label": "1 stk",
-                    "carbs": 23
-                  }
-                ]
-              },
-              "portionLabel": "1 stk"
+              "portionLabel": "1 stk",
+              "foodRef": "fictional-food-7"
             }
           }
         ],
@@ -1587,44 +1002,16 @@
             "query": "Pasta bolognese",
             "match": {
               "source": "library",
-              "food": {
-                "id": "fictional-food-2",
-                "name": "Pasta bolognese",
-                "origin": "family",
-                "verified": false,
-                "favourite": false,
-                "createdAt": "2026-10-12T10:00:00.000Z",
-                "updatedAt": "2026-10-12T10:00:00.000Z",
-                "portions": [
-                  {
-                    "label": "1 portion",
-                    "carbs": 55
-                  }
-                ]
-              },
-              "portionLabel": "1 portion"
+              "portionLabel": "1 portion",
+              "foodRef": "fictional-food-2"
             }
           },
           {
             "query": "Mælk",
             "match": {
               "source": "library",
-              "food": {
-                "id": "fictional-food-8",
-                "name": "Mælk",
-                "origin": "family",
-                "verified": false,
-                "favourite": false,
-                "createdAt": "2026-10-12T10:00:00.000Z",
-                "updatedAt": "2026-10-12T10:00:00.000Z",
-                "portions": [
-                  {
-                    "label": "1 glas",
-                    "carbs": 10
-                  }
-                ]
-              },
-              "portionLabel": "1 glas"
+              "portionLabel": "1 glas",
+              "foodRef": "fictional-food-8"
             }
           }
         ],
@@ -1655,26 +1042,8 @@
             "query": "Rugbrød med ost",
             "match": {
               "source": "library",
-              "food": {
-                "id": "fictional-food-5",
-                "name": "Rugbrød med ost",
-                "origin": "family",
-                "verified": false,
-                "favourite": false,
-                "createdAt": "2026-10-12T10:00:00.000Z",
-                "updatedAt": "2026-10-12T10:00:00.000Z",
-                "portions": [
-                  {
-                    "label": "1 skive",
-                    "carbs": 18
-                  },
-                  {
-                    "label": "2 skiver",
-                    "carbs": 36
-                  }
-                ]
-              },
-              "portionLabel": "1 skive"
+              "portionLabel": "1 skive",
+              "foodRef": "fictional-food-5"
             }
           }
         ],
@@ -1712,52 +1081,16 @@
             "query": "Pasta bolognese",
             "match": {
               "source": "library",
-              "food": {
-                "id": "fictional-food-2",
-                "name": "Pasta bolognese",
-                "origin": "family",
-                "verified": false,
-                "favourite": false,
-                "createdAt": "2026-10-12T10:00:00.000Z",
-                "updatedAt": "2026-10-12T10:00:00.000Z",
-                "portions": [
-                  {
-                    "label": "1 portion",
-                    "carbs": 55
-                  }
-                ]
-              },
-              "portionLabel": "1 portion"
+              "portionLabel": "1 portion",
+              "foodRef": "fictional-food-2"
             }
           },
           {
             "query": "Æble",
             "match": {
               "source": "library",
-              "food": {
-                "id": "fictional-food-6",
-                "name": "Æble",
-                "origin": "family",
-                "verified": false,
-                "favourite": false,
-                "createdAt": "2026-10-12T10:00:00.000Z",
-                "updatedAt": "2026-10-12T10:00:00.000Z",
-                "portions": [
-                  {
-                    "label": "1 stk",
-                    "carbs": 14
-                  },
-                  {
-                    "label": "1 mellem",
-                    "carbs": 14
-                  },
-                  {
-                    "label": "½ mellem",
-                    "carbs": 7
-                  }
-                ]
-              },
-              "portionLabel": "1 stk"
+              "portionLabel": "1 stk",
+              "foodRef": "fictional-food-6"
             }
           }
         ],
@@ -1795,44 +1128,16 @@
             "query": "Pasta bolognese",
             "match": {
               "source": "library",
-              "food": {
-                "id": "fictional-food-2",
-                "name": "Pasta bolognese",
-                "origin": "family",
-                "verified": false,
-                "favourite": false,
-                "createdAt": "2026-10-12T10:00:00.000Z",
-                "updatedAt": "2026-10-12T10:00:00.000Z",
-                "portions": [
-                  {
-                    "label": "1 portion",
-                    "carbs": 55
-                  }
-                ]
-              },
-              "portionLabel": "1 portion"
+              "portionLabel": "1 portion",
+              "foodRef": "fictional-food-2"
             }
           },
           {
             "query": "Banan",
             "match": {
               "source": "library",
-              "food": {
-                "id": "fictional-food-7",
-                "name": "Banan",
-                "origin": "family",
-                "verified": false,
-                "favourite": false,
-                "createdAt": "2026-10-12T10:00:00.000Z",
-                "updatedAt": "2026-10-12T10:00:00.000Z",
-                "portions": [
-                  {
-                    "label": "1 stk",
-                    "carbs": 23
-                  }
-                ]
-              },
-              "portionLabel": "1 stk"
+              "portionLabel": "1 stk",
+              "foodRef": "fictional-food-7"
             }
           }
         ],

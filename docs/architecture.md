@@ -128,6 +128,10 @@ calls only the endpoints on its own allow-list.
 - The interface: `shared/src/ai/types.ts`. A provider declares what it can do (`complete`, `vision`,
   `embed`); the use cases (`shared/src/ai/parse/`, `estimate/`, `insight/`, `recipe/`, `search/`)
   are written against it.
+- Say entry (`shared/src/ai/parse/`) has the model name a lookup row (`foodRef`), never copy its food:
+  the strict output schema stays within the API's limit of 24 optional parameters, and nutrition can
+  only come from the row `lookup()` returned. `ParsedMealDraft` is the model's answer, `ParsedMeal` the
+  API's.
 - The recipe reader (`shared/src/ai/recipe/`, v0.6.0) is a user of both interfaces: a
   `schema.org/Recipe` page is read from its JSON-LD with no provider at all, pasted text or a fetched
   page goes to `complete` and a photo to `vision`, and every ingredient line is then resolved through
@@ -223,7 +227,8 @@ These are checked in review and by tests; see [CLAUDE.md](../CLAUDE.md).
   user action; a per-space daily cap on AI calls.
 - **No secret outside its adapter and the `Secrets` interface.** Credentials never enter the
   database, a log line or an error message. No personal data in logs: the logger takes an allow-list
-  of keys.
+  of keys. A failed AI request logs the vendor's own error message with quoted text removed, its
+  status and request id, or the stop reason, never request content.
 - **Nothing Danish is hard-coded.** Locale, country and sources are settings.
 - **Sources are plugins.** A glucose or food source is added in its own folder, one registration line
   and a fixture set; the core never learns a vendor's name.

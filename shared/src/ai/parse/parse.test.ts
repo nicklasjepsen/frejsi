@@ -1,4 +1,4 @@
-import { ParsedMeal } from "../../schemas/ai";
+import { ParsedMeal, ParsedMealDraft } from "../../schemas/ai";
 import { Food } from "../../schemas/food";
 import { lookup } from "../../food/lookup";
 import { MemoryFoodRepository } from "../../food/memory";
@@ -20,7 +20,7 @@ const candidate = {
 };
 const result = { source: "cache", verified: false, food: candidate };
 const json = {
-  items: [{ query: "apple", match: { source: "cache", food: candidate, grams: 100 } }],
+  items: [{ query: "apple", match: { source: "cache", foodRef: "off:apple", grams: 100 } }],
   unmatched: [],
 };
 const tools = {
@@ -41,7 +41,13 @@ describe("parse meal", () => {
         queries.push(q);
         return Promise.resolve({ results: [result], sources: {}, manual: {} });
       }),
-    ).toEqual({ meal: json, count: 1 });
+    ).toEqual({
+      meal: {
+        items: [{ query: "apple", match: { source: "cache", food: candidate, grams: 100 } }],
+        unmatched: [],
+      },
+      count: 1,
+    });
     expect(queries).toEqual(["apple"]);
     expect(fake.calls).toHaveLength(2);
     expect(fake.calls[0]).toHaveProperty("request.use", "parse");
@@ -117,7 +123,16 @@ it("keeps three independently looked-up foods and their quantities", async () =>
         input: { query: item.query },
       })),
     },
-    { ...answer, json: { items: matches, unmatched: [] } },
+    {
+      ...answer,
+      json: {
+        items: matches.map(({ query, match: { food, ...match } }) => ({
+          query,
+          match: { ...match, foodRef: "id" in food ? food.id : food.sourceRef },
+        })),
+        unmatched: [],
+      },
+    },
   ]);
   const rows = matches.map((item) => ({
     source: item.match.source,
@@ -143,7 +158,7 @@ it("keeps three independently looked-up foods and their quantities", async () =>
   ]);
 });
 
-it("accepts a real lookup match after its optional fields cross the JSON tool boundary", async () => {
+it("returns the lookup row's own food for a reference, not anything the model wrote", async () => {
   const row = Food.parse({
     id: "bread",
     spaceId: "s1",
@@ -165,23 +180,27 @@ it("accepts a real lookup match after its optional fields cross the JSON tool bo
   });
   const food = response.results[0]?.food;
   if (!food) throw new Error("Expected a library result");
-  expect(Object.keys(food)).toContain("sourceName");
-  const wireMeal: unknown = JSON.parse(
-    JSON.stringify({
-      items: [{ query: "bread", match: { source: "library", food, portionLabel: "1 slice" } }],
-      unmatched: [],
-    }),
-  );
   const fake = new FakeAiProvider([
     { ...tools, calls: [{ id: "1", name: "lookup", input: { query: "bread" } }] },
-    { ...answer, json: wireMeal },
+    {
+      ...answer,
+      json: {
+        items: [
+          {
+            query: "bread",
+            match: { source: "library", foodRef: "bread", portionLabel: "1 slice" },
+          },
+        ],
+        unmatched: [],
+      },
+    },
   ]);
-  expect((await parseMeal(fake, "bread", "en", () => Promise.resolve(response))).meal).toEqual(
-    wireMeal,
-  );
+  const { meal } = await parseMeal(fake, "bread", "en", () => Promise.resolve(response));
+  expect(meal.items[0]?.match).toEqual({ source: "library", food, portionLabel: "1 slice" });
+  expect(ParsedMeal.safeParse(meal).success).toBe(true);
 });
 
-it("still rejects changed nutrition on a food the tool actually returned", async () => {
+it("rejects a model answer that writes a food instead of naming a lookup row", async () => {
   const fake = new FakeAiProvider([
     tools,
     {
@@ -202,6 +221,23 @@ it("still rejects changed nutrition on a food the tool actually returned", async
       Promise.resolve({ results: [result], sources: {}, manual: {} }),
     ),
   ).rejects.toMatchObject({ code: "ai-rejected" });
+});
+
+it("rejects a reference to a row lookup did not return, or from another source", async () => {
+  for (const match of [
+    { source: "cache", foodRef: "off:banana", grams: 100 },
+    { source: "library", foodRef: "off:apple", grams: 100 },
+  ]) {
+    const fake = new FakeAiProvider([
+      tools,
+      { ...answer, json: { items: [{ query: "apple", match }], unmatched: [] } },
+    ]);
+    await expect(
+      parseMeal(fake, "apple", "en", () =>
+        Promise.resolve({ results: [result], sources: {}, manual: {} }),
+      ),
+    ).rejects.toMatchObject({ code: "ai-rejected" });
+  }
 });
 
 it("rejects estimates without a lookup and when lookup found a food", async () => {
@@ -260,6 +296,17 @@ it("keeps the default fake usable through the same lookup gate", async () => {
   expect(fake.calls).toHaveLength(2);
 });
 
+it("lets the default fake name a found row, so local and e2e Say entry still match", async () => {
+  const { meal } = await parseMeal(new FakeAiProvider(defaultFakeAnswer), "pasta", "en", () =>
+    Promise.resolve({
+      results: [{ source: "off", verified: false, food: { ...candidate, sourceRef: "off:pasta" } }],
+      sources: {},
+      manual: {},
+    }),
+  );
+  expect(meal.items[0]?.match?.food).toMatchObject({ sourceRef: "off:pasta", carbsPer100g: 12 });
+});
+
 describe("a feeling said at the table (v0.6.0 plan §5)", () => {
   const banana = {
     name: "Example banana",
@@ -276,14 +323,18 @@ describe("a feeling said at the table (v0.6.0 plan §5)", () => {
       manual: {},
     });
   it("returns one banana item and one stomach-ache symptom for 'jeg har ondt i maven og spiste en banan'", async () => {
-    const meal = {
-      items: [{ query: "banana", match: { source: "cache", food: banana, grams: 120 } }],
+    const draft = {
+      items: [{ query: "banana", match: { source: "cache", foodRef: "off:banana", grams: 120 } }],
       unmatched: [],
       symptoms: [{ kind: "stomach-ache" }],
     };
+    const meal = {
+      ...draft,
+      items: [{ query: "banana", match: { source: "cache", food: banana, grams: 120 } }],
+    };
     const fake = new FakeAiProvider([
       { ...tools, calls: [{ id: "1", name: "lookup", input: { query: "banana" } }] },
-      { ...answer, json: meal },
+      { ...answer, json: draft },
     ]);
     const result = await parseMeal(
       fake,
@@ -348,6 +399,6 @@ describe("a feeling said at the table (v0.6.0 plan §5)", () => {
       },
     });
     expect(final).toMatchObject({ kind: "json" });
-    expect(ParsedMeal.safeParse((final as { json: unknown }).json).success).toBe(true);
+    expect(ParsedMealDraft.safeParse((final as { json: unknown }).json).success).toBe(true);
   });
 });

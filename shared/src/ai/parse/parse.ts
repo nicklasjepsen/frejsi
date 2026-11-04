@@ -1,12 +1,14 @@
-import { isDeepStrictEqual } from "node:util";
 import { HttpError } from "../../schemas/api";
-import { ParsedMeal } from "../../schemas/ai";
+import { ParsedMeal, ParsedMealDraft } from "../../schemas/ai";
 import type { LookupResponse, LookupResult } from "../../schemas/food";
 import type { Locale } from "../../schemas/settings";
 import { runToolLoop } from "../tool-loop";
 import type { AiProvider } from "../types";
 import { parsePrompt } from "./prompt";
 import { LookupInput, lookupTool } from "./tool";
+
+/** How the prompt tells the model to name a lookup row's food. */
+const foodRef = (food: LookupResult["food"]) => ("id" in food ? food.id : food.sourceRef);
 
 export async function parseMeal(
   provider: AiProvider,
@@ -26,7 +28,7 @@ export async function parseMeal(
       system: parsePrompt(locale),
       messages: [{ role: "user", content: [{ type: "text", text }] }],
       tools: [lookupTool],
-      outputSchema: ParsedMeal,
+      outputSchema: ParsedMealDraft,
     },
     {
       lookup: async (input) => {
@@ -42,31 +44,26 @@ export async function parseMeal(
     },
     { maxCalls: 8 },
   );
-  const parsed = ParsedMeal.safeParse(result.json);
+  const parsed = ParsedMealDraft.safeParse(result.json);
   if (!parsed.success) throw new HttpError(502, "ai-rejected");
-  // The model selects quantities; identities and nutrition must come from the actual lookup.
-  for (const item of parsed.data.items) {
+  // The model selects quantities; identities and nutrition come from the actual lookup.
+  const items = parsed.data.items.map((item) => {
     const found = searched.get(key(item.query));
     if (!found) throw new HttpError(502, "ai-rejected");
     if (item.estimate) {
       if (found.length > 0) throw new HttpError(502, "ai-rejected");
-      continue;
+      return { query: item.query, estimate: item.estimate };
     }
     if (!item.match) throw new HttpError(502, "ai-rejected");
-    const match = item.match;
-    // Providers see JSON, which omits undefined optional properties from lookup rows.
-    const original = found.find(
-      (row) =>
-        row.source === match.source &&
-        isDeepStrictEqual(
-          JSON.parse(JSON.stringify(row.food)),
-          JSON.parse(JSON.stringify(match.food)),
-        ),
-    );
+    const { foodRef: ref, ...match } = item.match;
+    const original = found.find((row) => row.source === match.source && foodRef(row.food) === ref);
     if (!original) throw new HttpError(502, "ai-rejected");
-  }
+    return { query: item.query, match: { ...match, food: original.food } };
+  });
   for (const query of parsed.data.unmatched) {
     if (!searched.has(key(query))) throw new HttpError(502, "ai-rejected");
   }
-  return { meal: parsed.data, count };
+  const meal = ParsedMeal.safeParse({ ...parsed.data, items });
+  if (!meal.success) throw new HttpError(502, "ai-rejected");
+  return { meal: meal.data, count };
 }

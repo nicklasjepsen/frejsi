@@ -29,6 +29,27 @@ function outputFormat(schema: z.ZodType) {
     );
   }
 }
+/** The strict subset the API compiles: unsupported constraints move into the description. */
+function strictToolSchema(schema: z.ZodType): Anthropic.Tool.InputSchema {
+  const { $schema: _dialect, ...json } = z.toJSONSchema(schema, { io: "input" });
+  return jsonSchemaOutputFormat(json as Parameters<typeof jsonSchemaOutputFormat>[0])
+    .schema as Anthropic.Tool.InputSchema;
+}
+/**
+ * What failed, for a reader of the logs: the API's own message, never the SDK's, which holds the raw
+ * body. The API describes the request rather than quoting it, but quoted text is removed in case.
+ */
+function failure(error: unknown, stopReason: string | null | undefined) {
+  const fields: Record<string, string | number> = {};
+  if (stopReason) fields.stopReason = stopReason;
+  if (!(error instanceof Anthropic.APIError)) return fields;
+  if (typeof error.status === "number") fields.code = error.status;
+  if (error.requestID) fields.requestId = error.requestID;
+  const message = (error.error as { error?: { message?: unknown } } | undefined)?.error?.message;
+  if (typeof message === "string")
+    fields.apiMessage = message.replace(/"[^"]*"|'[^']*'|`[^`]*`/g, "[quoted]").slice(0, 300);
+  return fields;
+}
 interface Options {
   apiKey?: string | undefined;
   client?: Anthropic;
@@ -100,6 +121,7 @@ export class AnthropicProvider implements AiProvider {
   ): Promise<CompleteResult> {
     if (req.role === "embed") throw notConfigured();
     const model = models[req.role];
+    let stopReason: string | null | undefined;
     try {
       const tools = "tools" in req ? req.tools : undefined;
       const response = await this.client.messages.create(
@@ -118,9 +140,7 @@ export class AnthropicProvider implements AiProvider {
                   name: tool.name,
                   description: tool.description,
                   strict: true,
-                  input_schema: z.toJSONSchema(tool.inputSchema, {
-                    io: "input",
-                  }) as Anthropic.Tool.InputSchema,
+                  input_schema: strictToolSchema(tool.inputSchema),
                 })),
                 tool_choice: { type: "auto" as const },
               }
@@ -128,6 +148,7 @@ export class AnthropicProvider implements AiProvider {
         },
         { timeout: this.options.timeout ?? deadlines[req.role], maxRetries: 0 },
       );
+      stopReason = response.stop_reason;
       if (response.stop_reason === "refusal") return { kind: "refusal", model };
       const calls = response.content.filter((part) => part.type === "tool_use");
       if (calls.length)
@@ -150,7 +171,11 @@ export class AnthropicProvider implements AiProvider {
     } catch (error) {
       const safe = new Error();
       safe.name = error instanceof Error ? error.constructor.name : "UnknownError";
-      (this.options.logger ?? log).error("AI request unavailable", undefined, safe);
+      (this.options.logger ?? log).error(
+        "AI request unavailable",
+        failure(error, stopReason),
+        safe,
+      );
       throw unavailable();
     }
   }

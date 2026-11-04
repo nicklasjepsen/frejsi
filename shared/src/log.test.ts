@@ -46,7 +46,17 @@ describe("log", () => {
   });
 
   it("has exactly the allow-list from the plan", () => {
-    expect([...LOG_KEYS]).toEqual(["spaceId", "userId", "count", "code", "ms", "route"]);
+    expect([...LOG_KEYS]).toEqual([
+      "spaceId",
+      "userId",
+      "count",
+      "code",
+      "ms",
+      "route",
+      "apiMessage",
+      "requestId",
+      "stopReason",
+    ]);
   });
 
   it("logs errors by code only, never by message", () => {

@@ -54,9 +54,45 @@ export const ParsedMeal = z.strictObject({
   items: z.array(ParsedItem).max(12),
   unmatched: z.array(text.max(500)).max(12),
   /** A feeling said at the table ("jeg har ondt i maven"); absent means none (v0.6.0 plan §5). */
-  symptoms: z.array(z.strictObject({ kind: SymptomKind, note: text.max(500).optional() })).max(6).optional(),
+  symptoms: z
+    .array(z.strictObject({ kind: SymptomKind, note: text.max(500).optional() }))
+    .max(6)
+    .optional(),
 });
 export type ParsedMeal = z.infer<typeof ParsedMeal>;
+/**
+ * What the model answers for Say entry: a reference to a lookup row, never a copy of its food. A
+ * copied food would put every optional food field in the strict output schema, and the API allows
+ * 24 optional parameters per request (#250). `parseMeal` turns the draft into a `ParsedMeal` from
+ * the rows lookup actually returned, so identities and nutrition never come from the model.
+ */
+export const ParsedMealDraft = z.strictObject({
+  items: z
+    .array(
+      z
+        .strictObject({
+          query: text.max(500),
+          match: z
+            .strictObject({
+              source: FoodOrigin,
+              /** The food's `id`, or its `sourceRef` when it has no `id`. */
+              foodRef: text.max(200),
+              portionLabel: text.max(40).optional(),
+              grams: z.number().min(1).max(5000).optional(),
+            })
+            .optional(),
+          estimate: EstimatedItem.optional(),
+        })
+        .refine(
+          (value) => (value.match !== undefined) !== (value.estimate !== undefined),
+          "Exactly one match or estimate is required",
+        ),
+    )
+    .max(12),
+  unmatched: ParsedMeal.shape.unmatched,
+  symptoms: ParsedMeal.shape.symptoms,
+});
+export type ParsedMealDraft = z.infer<typeof ParsedMealDraft>;
 export const PhotoEstimate = z.strictObject({
   items: z.array(EstimatedItem).min(1).max(10),
   totalCarbs: count.max(5000),
@@ -132,7 +168,10 @@ export const WeekInsightInput = z.strictObject({
     )
     .max(40),
   /** How often each kind was logged that week. Counts only. */
-  symptomCounts: z.array(z.strictObject({ kind: SymptomKind, count })).max(40).optional(),
+  symptomCounts: z
+    .array(z.strictObject({ kind: SymptomKind, count }))
+    .max(40)
+    .optional(),
 });
 export type WeekInsightInput = z.infer<typeof WeekInsightInput>;
 export const MealInsight = z.strictObject({ text: z.string().min(20).max(280) });
