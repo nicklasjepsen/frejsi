@@ -19,7 +19,9 @@ live evals skipped: no ANTHROPIC_API_KEY
 With `ANTHROPIC_API_KEY_EVALS` (preferred) or `ANTHROPIC_API_KEY`, the harness also runs live
 through the registry's Anthropic adapter and a shared `MemoryAiCallRepository` with a 200-call
 cap. Four workers run cases concurrently. An injected, provider-neutral transport honours
-429 `retry-after` seconds or HTTP dates, including retries in a separate 200-request cap.
+429 `retry-after` seconds or HTTP dates, including retries in a separate 200-request cap. A 503 or 529 is retried up to four times with a
+growing wait (1, 2, 4, 8 seconds), so a short API outage is not scored as a failed case; a longer
+one still fails the run.
 Both HTTP work and retry waits abort at the three-minute live-run deadline. The eval-only
 request timeout uses that budget so a long `retry-after` can complete; production keeps its
 normal per-role timeouts. Caps, budget

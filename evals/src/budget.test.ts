@@ -99,3 +99,39 @@ it("allows a retry-after longer than the production request timeout within the e
   expect(fetch).toHaveBeenCalledTimes(2);
   vi.useRealTimers();
 });
+
+it("waits out a short API outage, then gives up and returns the failure", async () => {
+  vi.useFakeTimers();
+  const down = () => Promise.resolve(new Response("", { status: 503 }));
+  const fetch = vi
+    .fn<typeof globalThis.fetch>()
+    .mockImplementationOnce(down)
+    .mockResolvedValueOnce(new Response("", { status: 529 }))
+    .mockResolvedValueOnce(new Response("ok"));
+  const budget = new RunBudget({ fetch });
+  const answer = budget.fetch("https://fictional.test");
+  await vi.advanceTimersByTimeAsync(1000);
+  expect(fetch).toHaveBeenCalledTimes(2);
+  await vi.advanceTimersByTimeAsync(2000);
+  await expect(answer).resolves.toMatchObject({ status: 200 });
+
+  const gaveUp = vi.fn<typeof globalThis.fetch>().mockImplementation(down);
+  const second = new RunBudget({ fetch: gaveUp });
+  const failed = second.fetch("https://fictional.test");
+  await vi.advanceTimersByTimeAsync(15_000);
+  await expect(failed).resolves.toMatchObject({ status: 503 });
+  expect(gaveUp).toHaveBeenCalledTimes(5);
+  budget.close();
+  second.close();
+  vi.useRealTimers();
+});
+
+it("does not retry other server errors", async () => {
+  const fetch = vi
+    .fn<typeof globalThis.fetch>()
+    .mockResolvedValue(new Response("", { status: 500 }));
+  const budget = new RunBudget({ fetch });
+  await expect(budget.fetch("https://fictional.test")).resolves.toMatchObject({ status: 500 });
+  expect(fetch).toHaveBeenCalledTimes(1);
+  budget.close();
+});

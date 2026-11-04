@@ -4,6 +4,9 @@ export interface BudgetOptions {
   maxCalls?: number;
   fetch?: typeof globalThis.fetch;
 }
+/** Statuses that mean the API is down for a moment, which says nothing about the prompts. */
+const OUTAGE = new Set([503, 529]);
+const OUTAGE_RETRIES = 4;
 export class RunBudget {
   readonly controller = new AbortController();
   readonly signal = this.controller.signal;
@@ -30,7 +33,7 @@ export class RunBudget {
     if (this.failure) throw this.failure;
   }
   readonly fetch: typeof globalThis.fetch = async (input, init) => {
-    for (;;) {
+    for (let outages = 0; ;) {
       this.check();
       if (this.calls >= this.maxCalls) throw this.fail("eval transport call cap exceeded");
       this.calls++;
@@ -38,12 +41,14 @@ export class RunBudget {
       const signal = requestSignal ? AbortSignal.any([this.signal, requestSignal]) : this.signal;
       const response = await this.transport(input, { ...init, signal });
       this.check();
-      if (response.status !== 429) return response;
+      const outage = OUTAGE.has(response.status) && outages < OUTAGE_RETRIES;
+      if (response.status !== 429 && !outage) return response;
       const header = response.headers.get("retry-after");
       const seconds = header === null ? NaN : Number(header);
+      const fallback = outage ? 1000 * 2 ** outages++ : 1000;
       const delay = Number.isFinite(seconds)
         ? Math.max(0, seconds * 1000)
-        : Math.max(0, header ? Date.parse(header) - Date.now() : 1000);
+        : Math.max(0, header ? Date.parse(header) - Date.now() : fallback);
       await response.body?.cancel();
       await new Promise<void>((resolve, reject) => {
         const abort = () => {
