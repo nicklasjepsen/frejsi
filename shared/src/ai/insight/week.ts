@@ -39,7 +39,8 @@ export async function narrateWeek(provider: AiProvider, raw: WeekInsightInput) {
         use: "insight-week",
         system: `${weekPrompt}${input.locale === "da" ? " Danish lead label: forspringet før måltidet." : ""}${attempt ? " Only literal observations and input numbers. No advice." : ""}`,
         outputSchema: output,
-        maxTokens: 1400,
+        // Thinking counts against this cap, and a cut-off answer is unusable (#250).
+        maxTokens: 4096,
         messages: [{ role: "user", content: [{ type: "text", text: JSON.stringify(projected) }] }],
       });
       if (result.kind !== "json") throw new HttpError(502, "ai-rejected");

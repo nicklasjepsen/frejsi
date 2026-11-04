@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { mealStats } from "../../stats/meal";
-import { FakeAiProvider } from "../fake";
+import { FakeAiProvider, defaultFakeAnswer } from "../fake";
 import { CappedAiProvider } from "../capped";
 import { MemoryAiCallRepository } from "../calls";
 import { buildMealInput, buildWeekInput } from "./input";
@@ -234,6 +234,17 @@ describe("symptoms next to the meal, never explained (v0.6.0 plan §5)", () => {
       { kind: "dizzy", count: 1 },
     ]);
     expect(JSON.stringify(week.symptomCounts)).not.toMatch(/mmol|readings|glucose/);
+  });
+  it("leaves room for thinking on top of the answer, so narration is not cut off", async () => {
+    const seen: number[] = [];
+    const provider = new FakeAiProvider((call) => {
+      if (call.kind === "complete") seen.push(call.request.maxTokens ?? 0);
+      return defaultFakeAnswer(call);
+    });
+    await narrateMeal(provider, buildMealInput({ ...input, stats, previous: [], mealTs })).catch(
+      () => undefined,
+    );
+    expect(seen[0]).toBeGreaterThanOrEqual(1500);
   });
   it("tells both prompts to mention a symptom as logged and never to explain it", async () => {
     const { mealPrompt } = await import("./prompt-meal");
