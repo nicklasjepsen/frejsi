@@ -100,15 +100,20 @@ export function scoreRecipe(
   );
 }
 export function enforceThresholds(scores: Scores, availablePhotos = scores.photoCount): void {
+  // Every miss at once: a live run costs money, so one run shows them all.
+  const missed: string[] = [];
+  const check = (key: keyof Scores & keyof typeof thresholds, minimum: number) => {
+    if (scores[key] < minimum)
+      missed.push(`threshold missed: ${key} ${scores[key].toFixed(2)} < ${String(minimum)}`);
+  };
   for (const key of [
     "parseRecall",
     "parsePortions",
     "normaliseAccuracy",
     "unmatchedAccuracy",
   ] as const)
-    if (scores[key] < thresholds[key]) throw new Error(`threshold missed: ${key}`);
-  if (availablePhotos >= thresholds.photoMinimum && scores.photoAccuracy < thresholds.photoAccuracy)
-    throw new Error("threshold missed: photoAccuracy");
-  if (scores.recipeCount > 0 && scores.recipeAccuracy < thresholds.recipeAccuracy)
-    throw new Error("threshold missed: recipeAccuracy");
+    check(key, thresholds[key]);
+  if (availablePhotos >= thresholds.photoMinimum) check("photoAccuracy", thresholds.photoAccuracy);
+  if (scores.recipeCount > 0) check("recipeAccuracy", thresholds.recipeAccuracy);
+  if (missed.length) throw new Error(missed.join("; "));
 }
