@@ -238,6 +238,13 @@ describe("symptoms next to the meal, never explained (v0.6.0 plan §5)", () => {
   it("tells both prompts to mention a symptom as logged and never to explain it", async () => {
     const { mealPrompt } = await import("./prompt-meal");
     const { weekPrompt } = await import("./prompt-week");
+    // Live runs tripped the guard on these three (#250); the guard stays, so the prompts say so.
+    for (const prompt of [mealPrompt, weekPrompt]) {
+      expect(prompt).toContain("no word of obligation");
+      expect(prompt).toContain("Never write registreringen or trykket");
+      expect(prompt).toContain("Do not state a count the input does not hold");
+    }
+    expect(weekPrompt).toContain("Hvad kan klinikken");
     for (const prompt of [mealPrompt, weekPrompt]) {
       expect(prompt).toMatch(/symptom/i);
       expect(prompt).toMatch(/as logged/i);
