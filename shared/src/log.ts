@@ -2,7 +2,18 @@
  * The no-PII logger (plan §9): one JSON line per call, with an allow-list of keys. A name, a
  * token or a credential passed by mistake never reaches the output.
  */
-export const LOG_KEYS = ["spaceId", "userId", "count", "code", "ms", "route"] as const;
+export const LOG_KEYS = [
+  "spaceId",
+  "userId",
+  "count",
+  "code",
+  "ms",
+  "route",
+  /** An AI vendor's own error text with quoted content removed (`AnthropicProvider`). */
+  "apiMessage",
+  "requestId",
+  "stopReason",
+] as const;
 export type LogKey = (typeof LOG_KEYS)[number];
 
 export type LogFields = Partial<Record<LogKey, string | number>> & Record<string, unknown>;

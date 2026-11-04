@@ -57,7 +57,7 @@ export function defaultFakeAnswer(call: RecordedAiCall): Answer {
               ? {
                   match: {
                     source: found.source,
-                    food: found.food,
+                    foodRef: "id" in found.food ? found.food.id : found.food.sourceRef,
                     ...(portion ? { portionLabel: portion.label } : { grams: 100 }),
                   },
                 }

@@ -54,6 +54,18 @@ const cases: [keyof typeof ai, z.ZodType, unknown, unknown][] = [
     { items: [], unmatched: [] },
     { items: Array(13).fill({ query: "pasta", estimate: item }), unmatched: [] },
   ],
+  [
+    "ParsedMealDraft",
+    ai.ParsedMealDraft,
+    {
+      items: [{ query: "pasta", match: { source: "off", foodRef: "off:pasta", grams: 100 } }],
+      unmatched: [],
+    },
+    {
+      items: [{ query: "pasta", match: { source: "off", food: { name: "Pasta" }, grams: 100 } }],
+      unmatched: [],
+    },
+  ],
   ["PhotoEstimate", ai.PhotoEstimate, estimate, { ...estimate, approx: false }],
   [
     "NormalisedFood",
@@ -228,7 +240,9 @@ describe("recipes and symptoms in the AI contracts (v0.6.0 plan §4)", () => {
       url: "https://example.invalid/r",
     });
     expect(ai.RecipeParseRequest.parse({ photoDataUrl })).toEqual({ photoDataUrl });
-    expect(ai.RecipeParseRequest.safeParse({ url: "http://example.invalid/r" }).success).toBe(false);
+    expect(ai.RecipeParseRequest.safeParse({ url: "http://example.invalid/r" }).success).toBe(
+      false,
+    );
     expect(ai.RecipeParseRequest.safeParse({ text: "x", url: "https://e.invalid" }).success).toBe(
       false,
     );
@@ -242,9 +256,7 @@ describe("recipes and symptoms in the AI contracts (v0.6.0 plan §4)", () => {
     };
     expect(ai.RecipeParse.parse(parse)).toEqual(parse);
     expect(ai.RecipeParse.safeParse({ ...parse, title: "x".repeat(121) }).success).toBe(false);
-    expect(ai.RecipeParse.safeParse({ ...parse, ingredients: [{ carbs: 3 }] }).success).toBe(
-      false,
-    );
+    expect(ai.RecipeParse.safeParse({ ...parse, ingredients: [{ carbs: 3 }] }).success).toBe(false);
   });
   it("lets the parser return symptoms and the insight inputs carry kinds and counts only", () => {
     const meal = { items: [], unmatched: [] };
@@ -265,16 +277,20 @@ describe("recipes and symptoms in the AI contracts (v0.6.0 plan §4)", () => {
       }).success,
     ).toBe(false);
     expect(
-      ai.InsightInput.safeParse({ ...input, symptoms: [{ kind: "dizzy", minutesAfterMeal: 90, mmol: 6 }] })
-        .success,
+      ai.InsightInput.safeParse({
+        ...input,
+        symptoms: [{ kind: "dizzy", minutesAfterMeal: 90, mmol: 6 }],
+      }).success,
     ).toBe(false);
     expect(
       ai.WeekInsightInput.parse({ ...week, symptomCounts: [{ kind: "tired", count: 2 }] })
         .symptomCounts,
     ).toEqual([{ kind: "tired", count: 2 }]);
     expect(
-      ai.WeekInsightInput.safeParse({ ...week, symptomCounts: [{ kind: "tired", count: 2, note: "x" }] })
-        .success,
+      ai.WeekInsightInput.safeParse({
+        ...week,
+        symptomCounts: [{ kind: "tired", count: 2, note: "x" }],
+      }).success,
     ).toBe(false);
   });
 });
