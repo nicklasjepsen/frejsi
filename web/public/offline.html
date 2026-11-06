@@ -46,6 +46,10 @@
       // Served in place of any page the network didn't deliver (public/sw.js), so a reload asks
       // for that page again. Checked every few seconds while visible, and on coming back online.
       (function () {
+        // Say that a page had to give way to this one (components/shell/LoadTiming.tsx).
+        try {
+          fetch("/api/diag/load?type=offline&online=" + (navigator.onLine ? 1 : 0), { keepalive: true }).catch(function () {});
+        } catch (e) {}
         var checking = false;
         function retry() {
           if (checking || document.hidden) return;
