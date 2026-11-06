@@ -146,4 +146,6 @@ it("scores a cleaned name on its food and its maker, not one spelling", () => {
   expect(scoreNormalise("Rugbrød, Skovkorn", "Groft rugbrod, Skovkorn")).toBe(true);
   expect(scoreNormalise("Havregryn, Enghavre", "Havregryn")).toBe(false);
   expect(scoreNormalise("Havregryn, Enghavre", "Müsli, Enghavre")).toBe(false);
+  expect(scoreNormalise("Yoghurt naturel, Fjordglas", "Naturel yoghurt, Fjordglas")).toBe(true);
+  expect(scoreNormalise("Fuldkornsboller, Skovkorn", "Boller fuldkorn, Skovkorn")).toBe(false);
 });

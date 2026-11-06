@@ -60,15 +60,18 @@ const aliases: Record<string, string> = {
   ost: "rugbrod med ost",
   kartofler: "kartoffel kogt",
 };
+const startsAWord = (haystack: string, needle: string) =>
+  haystack.startsWith(needle) || haystack.includes(` ${needle}`);
 function lookup(query: string) {
   const folded = foldForSearch(query);
   const key = aliases[folded] ?? folded;
   return Promise.resolve(
     LookupResponse.parse({
-      results: library.filter(
-        (row) =>
-          foldForSearch(row.food.name).includes(key) || key.includes(foldForSearch(row.food.name)),
-      ),
+      // From the start of a word, as a search box would: "løg" is not inside "bolognese".
+      results: library.filter((row) => {
+        const name = foldForSearch(row.food.name);
+        return startsAWord(name, key) || startsAWord(key, name);
+      }),
       sources: {},
       manual: {},
     }),
