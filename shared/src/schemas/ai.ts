@@ -69,24 +69,21 @@ export type ParsedMeal = z.infer<typeof ParsedMeal>;
 export const ParsedMealDraft = z.strictObject({
   items: z
     .array(
-      z
-        .strictObject({
-          query: text.max(500),
-          match: z
-            .strictObject({
-              source: FoodOrigin,
-              /** The food's `id`, or its `sourceRef` when it has no `id`. */
-              foodRef: text.max(200),
-              portionLabel: text.max(40).optional(),
-              grams: z.number().min(1).max(5000).optional(),
-            })
-            .optional(),
-          estimate: EstimatedItem.optional(),
-        })
-        .refine(
-          (value) => (value.match !== undefined) !== (value.estimate !== undefined),
-          "Exactly one match or estimate is required",
-        ),
+      z.strictObject({
+        query: text.max(500),
+        match: z
+          .strictObject({
+            source: FoodOrigin,
+            /** The food's `id`, or its `sourceRef` when it has no `id`. */
+            foodRef: text.max(200),
+            portionLabel: text.max(40).optional(),
+            grams: z.number().min(1).max(5000).optional(),
+          })
+          .optional(),
+        // Both or neither can come back: a strict output schema cannot say "exactly one", so
+        // `parseMeal` settles it (the matched row wins) instead of refusing the whole meal.
+        estimate: EstimatedItem.optional(),
+      }),
     )
     .max(12),
   unmatched: ParsedMeal.shape.unmatched,

@@ -424,3 +424,42 @@ describe("a feeling said at the table (v0.6.0 plan §5)", () => {
     expect(ParsedMealDraft.safeParse((final as { json: unknown }).json).success).toBe(true);
   });
 });
+
+it("keeps the looked-up row when an item comes back with an estimate as well", async () => {
+  const both = {
+    ...answer,
+    json: {
+      items: [
+        {
+          query: "apple",
+          match: { source: "cache", foodRef: "off:apple", grams: 100 },
+          estimate: { name: "Apple", carbs: 12, confidence: "low", approx: true },
+        },
+      ],
+      unmatched: [],
+    },
+  };
+  const { meal } = await parseMeal(
+    new CappedAiProvider(new FakeAiProvider([tools, both]), new MemoryAiCallRepository(), {
+      spaceId: "s1",
+      timezone: "UTC",
+    }),
+    "apple",
+    "en",
+    () => Promise.resolve({ results: [result], sources: {}, manual: {} }),
+  );
+  expect(meal.items).toEqual([
+    { query: "apple", match: { source: "cache", food: candidate, grams: 100 } },
+  ]);
+});
+
+it("leaves an item with neither a match nor an estimate unmatched, if it was searched", async () => {
+  const neither = { ...answer, json: { items: [{ query: "apple" }], unmatched: [] } };
+  const empty = () => Promise.resolve({ results: [], sources: {}, manual: {} });
+  expect(
+    (await parseMeal(new FakeAiProvider([tools, neither]), "apple", "en", empty)).meal,
+  ).toEqual({ items: [], unmatched: ["apple"] });
+  await expect(
+    parseMeal(new FakeAiProvider([neither]), "apple", "en", empty),
+  ).rejects.toMatchObject({ code: "ai-rejected" });
+});

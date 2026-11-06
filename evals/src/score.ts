@@ -50,11 +50,16 @@ export const within = (actual: number | undefined, expected: number, tolerance: 
   actual !== undefined && Math.abs(actual - expected) <= expected * tolerance + 1e-9;
 /**
  * A cleaned name scores when it holds the food and the maker, each part of `expected` split at its
- * comma. Spelling a variety out ("Havregryn finvalsede", "Langkornet ris") is a good name, not a miss.
+ * comma, in any word order. Spelling a variety out ("Havregryn finvalsede", "Langkornet ris") is a good name, not a miss.
  */
 export function scoreNormalise(expected: string, actual: string): boolean {
   const name = foldForSearch(actual);
-  return expected.split(",").every((part) => name.includes(foldForSearch(part.trim())));
+  // Word order is the locale's choice ("Naturel yoghurt" for "Yoghurt naturel"); every word counts.
+  return expected.split(",").every((part) =>
+    foldForSearch(part.trim())
+      .split(/\s+/)
+      .every((word) => name.includes(word)),
+  );
 }
 export function scoreParse(
   expected: { name: string; carbs: number }[],
