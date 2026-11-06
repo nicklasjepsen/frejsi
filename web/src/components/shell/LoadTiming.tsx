@@ -51,8 +51,13 @@ export function LoadTiming() {
       // On a fresh load the page ran its scripts this long after the open began.
       send(loadTimingQuery(entry, { ...facts(), at: Math.round(performance.now()) }));
     };
+    // `loadEventEnd` is set only once the load handlers have run: report on the next task.
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const afterLoad = () => {
+      timer = setTimeout(report, 0);
+    };
     if (document.readyState === "complete") report();
-    else window.addEventListener("load", report, { once: true });
+    else window.addEventListener("load", afterLoad, { once: true });
 
     let hiddenAt: number | null = document.hidden ? performance.now() : null;
     const onVisibility = () => {
@@ -69,7 +74,8 @@ export function LoadTiming() {
     document.addEventListener("visibilitychange", onVisibility);
     window.addEventListener("pageshow", onPageShow);
     return () => {
-      window.removeEventListener("load", report);
+      window.removeEventListener("load", afterLoad);
+      clearTimeout(timer);
       document.removeEventListener("visibilitychange", onVisibility);
       window.removeEventListener("pageshow", onPageShow);
     };
