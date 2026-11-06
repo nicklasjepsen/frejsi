@@ -5,9 +5,12 @@ import { HttpError } from "../schemas/api";
 // Danish imperative, and numeric unit expressions that need no named substance to be unsafe.
 const directive =
   /(?<![\p{L}\p{N}_])(bør|skal|should|take|give|giv|tag|inject|injicer|administer|administrer|næste gang|next time)(?![\p{L}\p{N}_])/iu;
-const amount = String.raw`(?:\p{N}+(?:[.,]\p{N}+)?|zero|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty|thirty|forty|fifty|sixty|seventy|eighty|ninety|hundred|thousand|half|quarter|(?:nul|en|et|én|ét|to|tre|fire|fem|seks|syv|otte|ni|ti|elleve|tolv|tretten|fjorten|femten|seksten|sytten|atten|nitten|tyve|tredive|fyrre|halvtreds|tres|halvfjerds|firs|halvfems|hundrede|tusind|halv|kvart)(?:og(?:tyve|tredive|fyrre|halvtreds|tres|halvfjerds|firs|halvfems))?)`;
+const digits = String.raw`\p{N}+(?:[.,]\p{N}+)?`;
+// A spelled-out amount needs a space or a mark before the unit: "fem E", "twenty-five u". Without
+// one it is a word, not an amount: Danish "ene" (en + e), "halve", "tie" are ordinary narration.
+const spelled = String.raw`(?:zero|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty|thirty|forty|fifty|sixty|seventy|eighty|ninety|hundred|thousand|half|quarter|(?:nul|en|et|én|ét|to|tre|fire|fem|seks|syv|otte|ni|ti|elleve|tolv|tretten|fjorten|femten|seksten|sytten|atten|nitten|tyve|tredive|fyrre|halvtreds|tres|halvfjerds|firs|halvfems|hundrede|tusind|halv|kvart)(?:og(?:tyve|tredive|fyrre|halvtreds|tres|halvfjerds|firs|halvfems))?)`;
 const numericUnit = new RegExp(
-  String.raw`(?<![\p{L}\p{N}_])(?:units?|enhed(?:er)?|${amount}[\s\p{P}\p{S}]*[ue])(?![\p{L}\p{N}_])`,
+  String.raw`(?<![\p{L}\p{N}_])(?:units?|enhed(?:er)?|${digits}[\s\p{P}\p{S}]*[ue]|${spelled}[\s\p{P}\p{S}]+[ue])(?![\p{L}\p{N}_])`,
   "iu",
 );
 
