@@ -5,6 +5,7 @@ import type { ReactNode } from "react";
 
 import "@/styles/globals.css";
 
+import { LoadTiming } from "@/components/shell/LoadTiming";
 import { ServiceWorker } from "@/components/shell/ServiceWorker";
 import { LOCALE_HEADER, resolveLocale } from "@/lib/i18n/routing";
 import {
@@ -74,6 +75,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
       <body>
         {children}
         <ServiceWorker />
+        <LoadTiming />
       </body>
     </html>
   );
