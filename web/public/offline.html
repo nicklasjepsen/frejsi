@@ -48,7 +48,7 @@
       (function () {
         // Say that a page had to give way to this one (components/shell/LoadTiming.tsx).
         // Sent now, and again once the site answers: a phone that is truly offline drops the first.
-        var report = "/api/diag/load?type=offline&online=" + (navigator.onLine ? 1 : 0);
+        var report = "/api/diag/load/type:offline,online:" + (navigator.onLine ? 1 : 0);
         var reported = false;
         function sendReport() {
           try {

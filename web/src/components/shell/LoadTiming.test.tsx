@@ -81,8 +81,13 @@ describe("LoadTiming", () => {
     render(<LoadTiming />);
     expect(fetchMock).toHaveBeenCalledTimes(1);
     const [url] = fetchMock.mock.calls[0] as unknown as [string];
-    expect(url.startsWith(`${LOAD_TIMING_PATH}?`)).toBe(true);
-    const query = new URLSearchParams(url.slice(url.indexOf("?") + 1));
+    expect(url.startsWith(`${LOAD_TIMING_PATH}/`)).toBe(true);
+    const query = new URLSearchParams(
+      url
+        .slice(LOAD_TIMING_PATH.length + 1)
+        .replaceAll(",", "&")
+        .replaceAll(":", "="),
+    );
     expect(query.get("v")).toBe("v0.7.5");
     expect(query.get("firstByte")).toBe("61000");
     for (const value of query.values()) expect(value).toMatch(/^(\d+|[a-z_]+|v[\w.-]+)$/);

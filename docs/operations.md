@@ -292,11 +292,11 @@ at the seed clock. The fake returns at most 24 hours per daily cycle, so a
 The server answers in milliseconds once a phone asks, so a slow or blank open is usually time spent on the phone before the first request. Two things help:
 
 - **The offline page.** The service worker (`web/public/sw.js`) gives a page 10 seconds; after that the installed app shows the offline page, which checks `/api/health` every few seconds and reloads by itself once the site answers.
-- **The load report.** Every page load (and every restore from the back-forward cache) asks `GET /api/diag/load?…` with the browser's navigation timings in whole milliseconds since the open began, from `web/src/components/shell/LoadTiming.tsx`. The offline page asks it with `type=offline`. Nothing is stored: the request is the report, kept by App Insights with its query. It carries only numbers and fixed words (`v` version, `os` ios/android/other, `pwa`, `sw` controlled, `online`, `type`, then `worker`, `fetch`, `dns`, `connect`, `request`, `firstByte`, `response`, `interactive`, `loaded`, `redirects`, `at`; `slept` for a restore). Read them with (the timings are in the query, which shows in `Name` or `Url` depending on the request):
+- **The load report.** Every page load (and every restore from the back-forward cache) asks `GET /api/diag/load/<fields>` (fields as `key:value`, comma-separated, in the path, because App Insights drops the query of a static route) with the browser's navigation timings in whole milliseconds since the open began, from `web/src/components/shell/LoadTiming.tsx`. The offline page asks it with `type:offline`. Nothing is stored: the request is the report, kept by App Insights under its path. It carries only numbers and fixed words (`v` version, `os` ios/android/other, `pwa`, `sw` controlled, `online`, `type`, then `worker`, `fetch`, `dns`, `connect`, `request`, `firstByte`, `response`, `interactive`, `loaded`, `redirects`, `at`; `slept` for a restore). Read them with:
 
 ```
 az monitor log-analytics query --subscription <sub> -w <workspace customerId> --analytics-query \
-  "AppRequests | where Name startswith 'GET /api/diag/load' | project TimeGenerated, Name, Url | order by TimeGenerated desc | take 20" -o table
+  "AppRequests | where Name startswith 'GET /api/diag/load/' | project TimeGenerated, Name | order by TimeGenerated desc | take 20" -o table
 ```
 
 A large `fetch` or `worker` means the service worker or the app's own start was slow; a large `dns` or `connect` means the network; a large gap between `request` and `firstByte` means the server.

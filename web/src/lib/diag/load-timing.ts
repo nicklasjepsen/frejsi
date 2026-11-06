@@ -36,3 +36,15 @@ export function loadTimingQuery(
     Object.entries(fields).map(([key, value]) => [key, String(value)]),
   ).toString();
 }
+
+/**
+ * The report's URL. The fields go in the path, "type:navigate,os:ios,…": App Insights names a
+ * request on a dynamic route by its concrete path, while a static route's name and URL drop the
+ * query (v0.7.5 showed only "GET /api/diag/load/route").
+ */
+export function loadTimingUrl(query: string): string {
+  return `${LOAD_TIMING_PATH}/${query.replaceAll("&", ",").replaceAll("=", ":")}`;
+}
+
+/** What `/api/diag/load/:report` accepts: fixed words, versions and numbers only. */
+export const LOAD_REPORT = /^[A-Za-z0-9_.:,-]{1,400}$/;

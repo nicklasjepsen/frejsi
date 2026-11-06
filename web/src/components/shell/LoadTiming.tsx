@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 
-import { LOAD_TIMING_PATH, loadTimingQuery, ms, type Fields } from "@/lib/diag/load-timing";
+import { loadTimingQuery, loadTimingUrl, ms, type Fields } from "@/lib/diag/load-timing";
 
 /**
  * Where a slow open spends its time. Once per page load (and once per restore from the back-forward
@@ -28,9 +28,7 @@ function standalone(): number {
 
 function send(query: string): void {
   try {
-    void fetch(`${LOAD_TIMING_PATH}?${query}`, { keepalive: true, cache: "no-store" }).catch(
-      () => undefined,
-    );
+    void fetch(loadTimingUrl(query), { keepalive: true, cache: "no-store" }).catch(() => undefined);
   } catch {
     // A report is never worth an error.
   }
