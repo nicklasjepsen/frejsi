@@ -55,6 +55,8 @@ it("runs a JSON-LD recipe case through no provider at all, and a text case throu
     ],
   };
   await expect(runSet([wrong], fake)).rejects.toThrow("recipeAccuracy");
+  // A missed threshold names the case and what came back, so a paid live run can be acted on.
+  await expect(runSet([wrong], fake)).rejects.toThrow(/recipe-\S*: 0\/\d+ lines, 0 g per portion/);
 });
 it("uses the keyed factory only after fake success, respects scope and accepts the evals secret alias", async () => {
   const live = vi.fn((_key: string, _budget: RunBudget) => fake);
