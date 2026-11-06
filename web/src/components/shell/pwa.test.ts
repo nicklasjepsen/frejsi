@@ -236,6 +236,8 @@ describe("sw.js (the offline shell)", () => {
     const offlinePage = read("offline.html");
     expect(offlinePage).toContain("/api/health");
     expect(offlinePage).toContain("location.reload()");
+    // A hanging probe must not lock out later checks.
+    expect(offlinePage).toContain("AbortController");
   });
 
   it("still answers with a page when the cached offline page has been evicted", async () => {
