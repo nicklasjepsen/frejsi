@@ -221,7 +221,7 @@ jobs:
           cache: pnpm
       # The workspace is needed for `prisma migrate deploy`; the builds come from the artifact.
       - run: pnpm install --frozen-lockfile
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           name: build-${{ env.TAG }}
           path: .
