@@ -47,9 +47,19 @@
       // for that page again. Checked every few seconds while visible, and on coming back online.
       (function () {
         // Say that a page had to give way to this one (components/shell/LoadTiming.tsx).
-        try {
-          fetch("/api/diag/load?type=offline&online=" + (navigator.onLine ? 1 : 0), { keepalive: true }).catch(function () {});
-        } catch (e) {}
+        // Sent now, and again once the site answers: a phone that is truly offline drops the first.
+        var report = "/api/diag/load?type=offline&online=" + (navigator.onLine ? 1 : 0);
+        var reported = false;
+        function sendReport() {
+          try {
+            return fetch(report, { keepalive: true }).then(function (response) {
+              reported = reported || response.ok;
+            });
+          } catch (e) {
+            return Promise.resolve();
+          }
+        }
+        sendReport().catch(function () {});
         var checking = false;
         function retry() {
           if (checking || document.hidden) return;
@@ -62,7 +72,12 @@
           }, 8000);
           fetch("/api/health", { cache: "no-store", signal: controller ? controller.signal : undefined })
             .then(function (response) {
-              if (response.ok) location.reload();
+              if (!response.ok) return;
+              var reload = function () {
+                location.reload();
+              };
+              if (reported) reload();
+              else sendReport().then(reload, reload);
             })
             .catch(function () {})
             .then(function () {
