@@ -399,19 +399,27 @@ it.each([
   "De ene dage lå kurven lavere.",
   "To halve dage uden målinger.",
   "Kurven var rolig, de ene morgener stille.",
-  "fiveu",
+  "Hun ville tie stille.",
 ])("leaves ordinary words that start with a number word alone: %s", async (text) => {
   const { provider } = setup([{ kind: "json", json: { text }, model: "fixture" }]);
   await expect(provider.complete(req)).resolves.toMatchObject({ json: { text } });
 });
 
-it.each(["2E", "2 E", "0,6 e", "12u", "to E", "en E", "halv e"])(
-  "still rejects an amount with a unit letter: %s",
-  async (text) => {
-    const { provider } = setup([{ kind: "json", json: { text }, model: "fixture" }]);
-    await expect(provider.complete(req)).rejects.toEqual(code("ai-rejected"));
-  },
-);
+it.each([
+  "2E",
+  "2 E",
+  "0,6 e",
+  "12u",
+  "to E",
+  "en E",
+  "halv e",
+  "fiveu",
+  "femE",
+  "De ene dage, 2E",
+])("still rejects an amount with a unit letter: %s", async (text) => {
+  const { provider } = setup([{ kind: "json", json: { text }, model: "fixture" }]);
+  await expect(provider.complete(req)).rejects.toEqual(code("ai-rejected"));
+});
 
 it.each([
   "Inject five-U before eating",
