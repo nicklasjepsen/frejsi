@@ -256,10 +256,6 @@ export async function runSet(
     await Promise.all(Array.from({ length: 4 }, work));
     budget.check();
     if (calls.rows.length > budget.maxCalls) throw new Error("eval call cap exceeded");
-    if (violations.length || failures.length)
-      throw new Error(
-        `eval cases failed: ${[...new Set([...violations, ...failures])].join(", ")}\n${notes.join("\n")}`,
-      );
     const scores = {
       parseRecall: ratio(found, expected),
       parsePortions: ratio(portions, found),
@@ -270,6 +266,15 @@ export async function runSet(
       recipeAccuracy: ratio(recipeCorrect, recipes),
       recipeCount: recipes,
     };
+    if (violations.length || failures.length)
+      throw new Error(
+        `eval cases failed: ${[...new Set([...violations, ...failures])].join(", ")}\n${[
+          ...notes,
+          // The scored cases still ran: name their misses too, so one paid run shows everything.
+          `scores so far: ${JSON.stringify(scores)}`,
+          ...misses,
+        ].join("\n")}`,
+      );
     try {
       enforceThresholds(scores, options.availablePhotos);
     } catch (error) {
