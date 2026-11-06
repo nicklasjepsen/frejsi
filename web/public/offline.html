@@ -50,12 +50,19 @@
         function retry() {
           if (checking || document.hidden) return;
           checking = true;
-          fetch("/api/health", { cache: "no-store" })
+          // A probe can hang just like the page did; abort it so the next check still runs.
+          var controller = typeof AbortController === "function" ? new AbortController() : null;
+          var timer = setTimeout(function () {
+            if (controller) controller.abort();
+            checking = false;
+          }, 8000);
+          fetch("/api/health", { cache: "no-store", signal: controller ? controller.signal : undefined })
             .then(function (response) {
               if (response.ok) location.reload();
             })
             .catch(function () {})
             .then(function () {
+              clearTimeout(timer);
               checking = false;
             });
         }
