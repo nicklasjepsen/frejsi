@@ -46,6 +46,11 @@ export interface Report {
   pendingRecipes: number;
   calls: number;
   scores: Scores;
+  /**
+   * Scored misses: the case, what it expected and what came back (a food name, a recipe's lines
+   * and carbs). Never narration text. A live run costs money, so a missed threshold names them.
+   */
+  misses: string[];
 }
 const ratio = (n: number, d: number) => (d ? n / d : 1);
 const aliases: Record<string, string> = {
@@ -123,6 +128,7 @@ export async function runSet(
   const violations: string[] = [];
   const failures: string[] = [];
   const notes: string[] = [];
+  const misses: string[] = [];
   let expected = 0,
     found = 0,
     portions = 0,
@@ -168,7 +174,7 @@ export async function runSet(
           const html = await readFile(path.join(recipeFixtures, c.html), "utf8");
           const parsed = await parseRecipe(null, { kind: "html", html }, c.locale);
           recipes++;
-          if (await recipeScore(c, parsed.parse)) recipeCorrect++;
+          if (await recipeScore(c, parsed.parse, misses)) recipeCorrect++;
           budget.check();
           completed++;
         } catch (error) {
@@ -201,6 +207,7 @@ export async function runSet(
           if (!result) throw new Error("normalisation failed");
           checkStrings(result);
           if (scoreNormalise(c.expected, result.name)) normalised++;
+          else misses.push(`${c.id}: "${c.name}" -> "${result.name}" (want "${c.expected}")`);
         } else if (c.kind === "meal") {
           const { text } = await narrateMeal(provider, c.input);
           checkInsight({ text }, narrationInput(c.input));
@@ -215,7 +222,7 @@ export async function runSet(
           const parsed = await parseRecipe(provider, input, c.locale);
           checkStrings(parsed.parse);
           recipes++;
-          if (await recipeScore(c, parsed.parse)) recipeCorrect++;
+          if (await recipeScore(c, parsed.parse, misses)) recipeCorrect++;
         } else if (c.kind === "week") {
           const { summary, questions, rejectedCount } = await narrateWeek(provider, c.input);
           checkInsight({ summary, questions }, narrationInput(c.input));
@@ -263,21 +270,44 @@ export async function runSet(
       recipeAccuracy: ratio(recipeCorrect, recipes),
       recipeCount: recipes,
     };
-    enforceThresholds(scores, options.availablePhotos);
-    return { completed, pending, pendingRecipes, calls: calls.rows.length, scores };
+    try {
+      enforceThresholds(scores, options.availablePhotos);
+    } catch (error) {
+      if (!misses.length || !(error instanceof Error)) throw error;
+      throw new Error(`${error.message}\n${misses.join("\n")}`);
+    }
+    return { completed, pending, pendingRecipes, calls: calls.rows.length, scores, misses };
   });
 }
 /** The production resolution and arithmetic against library.json, then the case's two numbers. */
 async function recipeScore(
   c: Extract<EvalCase, { kind: "recipe" }>,
   parsed: RecipeParse,
+  misses: string[],
 ): Promise<boolean> {
   const lines = await resolveIngredients(parsed.ingredients, lookup);
   const totals = computeRecipe(lines, parsed, { one: "1 portion", half: "\u00bd portion" });
-  return scoreRecipe(
+  const perPortion = totals.portions[0]?.carbs;
+  const ok = scoreRecipe(
     { ingredients: c.expectedIngredients, carbsPerPortion: c.expectedCarbsPerPortion },
-    { ingredients: lines.length, carbsPerPortion: totals.portions[0]?.carbs },
+    { ingredients: lines.length, carbsPerPortion: perPortion },
   );
+  if (!ok) {
+    const detail = lines
+      .map((line, i) => {
+        const raw = parsed.ingredients[i];
+        const amount = raw ? `${String(raw.amount ?? "?")} ${raw.unit ?? ""}`.trim() : "?";
+        const food = line.noCarb ? "no-carb" : (line.match?.name ?? "no match");
+        return `"${line.name}" ${amount} = ${String(line.grams ?? "?")} g -> ${food}, ${String(line.carbs)} g carbs`;
+      })
+      .join("; ");
+    misses.push(
+      `${c.id}: ${String(lines.length)}/${String(c.expectedIngredients)} lines, ` +
+        `${perPortion === undefined ? "no portion" : `${String(Math.round(perPortion))} g`} per portion ` +
+        `(want ${String(c.expectedCarbsPerPortion)}), yield ${String(parsed.yieldPortions ?? "?")} portions: ${detail}`,
+    );
+  }
+  return ok;
 }
 const recorded: Factory = (c) => {
   const provider = aiProviders({ FAKE_AI_PROVIDER: "1" }, { fakeScript: c.recorded }).anthropic;
