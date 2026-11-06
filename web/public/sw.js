@@ -23,6 +23,20 @@ const PRECACHE = [
 ];
 const NEVER_CACHE = ["/api/"];
 const OFFLINE_PAGE = "/offline.html";
+// An installed app has no browser spinner: a navigation that hangs (a phone whose network is
+// still waking) is a blank screen until the person gives up. After this long the offline page
+// shows instead, and it reloads by itself as soon as the site answers (public/offline.html).
+const NAVIGATION_TIMEOUT_MS = 10000;
+// When the cached offline page is gone too (a browser that evicted the cache), this stands in for
+// it, so a navigation never ends without a page.
+const OFFLINE_FALLBACK =
+  '<!doctype html><html lang="da"><head><meta charset="utf-8">' +
+  '<meta name="viewport" content="width=device-width, initial-scale=1">' +
+  '<title>Frejsi</title></head><body style="font-family:system-ui,sans-serif;padding:48px 24px;text-align:center">' +
+  "<h1>Ingen forbindelse lige nu</h1><p>Frejsi prøver igen af sig selv.</p>" +
+  '<p lang="en">No connection right now. Frejsi tries again by itself.</p>' +
+  "<script>setInterval(function(){fetch('/api/health',{cache:'no-store'}).then(function(r){if(r.ok)location.reload()}).catch(function(){})},5000)</script>" +
+  "</body></html>";
 
 self.addEventListener("install", (event) => {
   event.waitUntil(caches.open(CACHE).then((cache) => cache.addAll(PRECACHE)));
@@ -44,6 +58,23 @@ function isStaticAsset(pathname) {
   return pathname.startsWith("/_next/static/") || PRECACHE.includes(pathname);
 }
 
+function offlinePage() {
+  const fallback = () =>
+    new Response(OFFLINE_FALLBACK, { headers: { "Content-Type": "text/html; charset=utf-8" } });
+  return caches.match(OFFLINE_PAGE).then((cached) => cached || fallback(), fallback);
+}
+
+function navigate(event) {
+  const network = fetch(event.request);
+  let timer;
+  const timeout = new Promise((_, reject) => {
+    timer = setTimeout(() => reject(new Error("navigation timed out")), NAVIGATION_TIMEOUT_MS);
+  });
+  return Promise.race([network, timeout])
+    .catch(() => offlinePage())
+    .finally(() => clearTimeout(timer));
+}
+
 self.addEventListener("fetch", (event) => {
   const request = event.request;
   if (request.method !== "GET") return;
@@ -52,8 +83,8 @@ self.addEventListener("fetch", (event) => {
   if (NEVER_CACHE.some((prefix) => url.pathname.startsWith(prefix))) return;
 
   if (request.mode === "navigate") {
-    // Network only; nothing personal is stored. Offline, the calm offline page.
-    event.respondWith(fetch(request).catch(() => caches.match(OFFLINE_PAGE)));
+    // Network only; nothing personal is stored. Offline, slow or hanging: the calm offline page.
+    event.respondWith(navigate(event));
     return;
   }
 
