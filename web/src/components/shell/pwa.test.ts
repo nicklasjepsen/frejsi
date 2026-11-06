@@ -2,7 +2,7 @@ import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 import vm from "node:vm";
 
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 const publicDir = path.resolve(import.meta.dirname, "../../../public");
 const read = (file: string) => readFileSync(path.join(publicDir, file), "utf8");
@@ -134,6 +134,10 @@ function loadWorker(
       },
     },
     fetch: fetchImpl,
+    setTimeout: (fn: () => void, ms: number) => setTimeout(fn, ms),
+    clearTimeout: (id: ReturnType<typeof setTimeout>) => {
+      clearTimeout(id);
+    },
     URL,
     URLSearchParams,
     Response,
@@ -159,7 +163,17 @@ function loadWorker(
     url: `https://frejsi.example${url}`,
     mode,
   });
-  return { dispatch, get, store, puts, opened, deleted };
+  return {
+    dispatch,
+    get,
+    store,
+    puts,
+    opened,
+    deleted,
+    evict: () => {
+      store.clear();
+    },
+  };
 }
 
 const online = (request: FakeRequest) => Promise.resolve(new Response(`live ${request.url}`));
@@ -206,6 +220,33 @@ describe("sw.js (the offline shell)", () => {
       const response = await worker.dispatch("fetch", worker.get(url, "navigate"));
       expect(await response?.text(), url).toBe("cached /offline.html");
     }
+  });
+
+  it("shows the offline page instead of a blank screen when the network hangs, and the page retries by itself", async () => {
+    vi.useFakeTimers();
+    try {
+      const worker = loadWorker(() => new Promise<Response>(() => undefined));
+      await worker.dispatch("install");
+      const pending = worker.dispatch("fetch", worker.get("/", "navigate"));
+      await vi.advanceTimersByTimeAsync(10_000);
+      expect(await (await pending)?.text()).toBe("cached /offline.html");
+    } finally {
+      vi.useRealTimers();
+    }
+    const offlinePage = read("offline.html");
+    expect(offlinePage).toContain("/api/health");
+    expect(offlinePage).toContain("location.reload()");
+  });
+
+  it("still answers with a page when the cached offline page has been evicted", async () => {
+    const worker = loadWorker(offline);
+    await worker.dispatch("install");
+    worker.evict();
+    const response = await worker.dispatch("fetch", worker.get("/da/now", "navigate"));
+    expect(response?.headers.get("Content-Type")).toContain("text/html");
+    const body = (await response?.text()) ?? "";
+    expect(body).toContain("Ingen forbindelse");
+    expect(body).toContain("/api/health");
   });
 
   it("caches Next's hashed static assets on first use and serves them from the cache after", async () => {
