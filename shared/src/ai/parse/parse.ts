@@ -48,25 +48,33 @@ export async function parseMeal(
   if (!parsed.success) throw new HttpError(502, "ai-rejected");
   // The model selects quantities; identities and nutrition come from the actual lookup.
   const rows = [...searched.values()].flat();
-  const items = parsed.data.items.map((item) => {
-    if (item.estimate) {
+  const unmatched = [...parsed.data.unmatched];
+  const items = parsed.data.items.flatMap((item): ParsedMeal["items"] => {
+    if (!item.match && !item.estimate) {
+      // Neither: a food the model searched and then gave up on is simply not found.
+      if (!searched.has(key(item.query))) throw new HttpError(502, "ai-rejected");
+      unmatched.push(item.query);
+      return [];
+    }
+    if (item.estimate && !item.match) {
       // An estimate is only for a food that this very lookup did not find.
       const found = searched.get(key(item.query));
       if (!found || found.length > 0) throw new HttpError(502, "ai-rejected");
-      return { query: item.query, estimate: item.estimate };
+      return [{ query: item.query, estimate: item.estimate }];
     }
     if (!item.match) throw new HttpError(502, "ai-rejected");
+    // Both: the row lookup returned is grounded; the model's own estimate is dropped.
     const { foodRef: ref, ...match } = item.match;
     // Any row lookup returned will do: "rugbrød" and "ost" can both find "rugbrød med ost", and
     // the nutrition is the row's whatever words the model searched with.
     const original = rows.find((row) => row.source === match.source && foodRef(row.food) === ref);
     if (!original) throw new HttpError(502, "ai-rejected");
-    return { query: item.query, match: { ...match, food: original.food } };
+    return [{ query: item.query, match: { ...match, food: original.food } }];
   });
-  for (const query of parsed.data.unmatched) {
+  for (const query of unmatched) {
     if (!searched.has(key(query))) throw new HttpError(502, "ai-rejected");
   }
-  const meal = ParsedMeal.safeParse({ ...parsed.data, items });
+  const meal = ParsedMeal.safeParse({ ...parsed.data, items, unmatched });
   if (!meal.success) throw new HttpError(502, "ai-rejected");
   return { meal: meal.data, count };
 }
