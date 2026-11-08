@@ -4,7 +4,7 @@
 
 Nænsom is a web app — on your phone for the moment you're eating, on your desktop for the evening you want to understand the week — that answers two questions fast: _how many carbs is this?_ and _what did that meal do to my glucose?_ A space brings one person's food library, meals and glucose together, with access for the people they invite.
 
-> **Status: v0.7.6 is live at [frejsi.jepsen.ninja](https://frejsi.jepsen.ninja); v0.7.8, at [naensom.jepsen.ninja](https://naensom.jepsen.ninja), waits for its tag.**
+> **Status: v0.7.8 is live at [naensom.jepsen.ninja](https://naensom.jepsen.ninja) (and still at [frejsi.jepsen.ninja](https://frejsi.jepsen.ninja)).**
 
 > Nænsom was called Frejsi until November 2026. The repository moved to `nicklasjepsen/naensom` (old links redirect). From v0.7.8 the app answers at its new address and at the old one, with the same passkeys, so an app installed from the old address keeps working. A few internal names nobody sees (cookies, the database, Azure resources) keep `frejsi` on purpose.
 
