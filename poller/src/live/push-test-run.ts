@@ -67,6 +67,11 @@ export function initialState(activityStartedAt: number): PushTestState {
   };
 }
 
+/** Apple's 5xx and 429 answers are worth trying again later; a 4xx refusal is not. */
+export function isRetryable(result: ApnsResult): boolean {
+  return result.status >= 500 || result.status === 429;
+}
+
 type Event = "update" | "end" | "start" | "update-skipped";
 
 function csvRow(
@@ -147,8 +152,8 @@ export async function pushTestTick(
     priority: options.priority,
     payload: updatePayload(content, Math.floor(deps.now() / 1000)),
   });
-  // A failed connection throws and leaves lastSentReadingAt, so the next tick tries again.
-  if (result !== undefined) state.lastSentReadingAt = newest.date;
+  // A failed connection, or Apple's 5xx or 429, leaves lastSentReadingAt, so the next tick tries again.
+  if (result !== undefined && !isRetryable(result)) state.lastSentReadingAt = newest.date;
 }
 
 async function restart(
@@ -177,7 +182,7 @@ async function restart(
   });
   // A send that threw (no connection) is tried again next tick; Apple's refusal is recorded and the
   // test goes on, so a refused token does not mean a push every 30 seconds.
-  if (started === undefined) return;
+  if (started === undefined || isRetryable(started)) return;
   state.activityStartedAt = deps.now();
   state.restarts += 1;
   deps.log.info("push-test.restarted", { count: state.restarts });

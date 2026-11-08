@@ -48,7 +48,7 @@ final class LiveActivityController: ObservableObject {
     /// Starts an activity with the newest reading, ready to receive pushes.
     func start(current: Reading, previous: Reading?) {
         guard ActivityAuthorizationInfo().areActivitiesEnabled else {
-            error = "Live Activities are turned off for Nænsom in Settings"
+            error = AppLanguage.say("Live Activities are turned off for Nænsom in Settings", "Live Activities er slået fra for Nænsom i Indstillinger")
             return
         }
         let state = LiveGlucoseState(current: current, previous: previous)
@@ -61,7 +61,7 @@ final class LiveActivityController: ObservableObject {
             error = nil
             watch(activity)
         } catch {
-            self.error = "Couldn't start the Live Activity"
+            self.error = AppLanguage.say("Couldn't start the Live Activity", "Live Activity kunne ikke starte")
             logger.error("start failed: \(error.localizedDescription, privacy: .public)")
         }
     }
@@ -106,13 +106,20 @@ final class LiveActivityController: ObservableObject {
         }
     }
 
-    /// Push tokens are only useful with our APNs key, but they are still identifiers: shown in full
-    /// in debug builds (the Simulator test reads them from the log), redacted in release builds.
+    /// Push tokens identify the device, so they never go to the unified log: the log says only that
+    /// one arrived. Debug builds also write them to `push-tokens.json` in the app group container,
+    /// a local file the push test reads on the Mac (`xcrun simctl get_app_container booted
+    /// ninja.jepsen.naensom group.ninja.jepsen.naensom`); the screen shows them with Copy.
     private func logToken(_ kind: String, _ token: String) {
+        logger.notice("\(kind, privacy: .public) push token received")
         #if DEBUG
-        logger.notice("\(kind, privacy: .public) push token: \(token, privacy: .public)")
-        #else
-        logger.notice("\(kind, privacy: .public) push token: \(token, privacy: .private)")
+        guard let folder = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: ThresholdStore.appGroup) else { return }
+        let file = folder.appendingPathComponent("push-tokens.json")
+        var tokens = (try? JSONDecoder().decode([String: String].self, from: Data(contentsOf: file))) ?? [:]
+        tokens[kind] = token
+        if let data = try? JSONEncoder().encode(tokens) {
+            try? data.write(to: file, options: [.atomic, .completeFileProtectionUntilFirstUserAuthentication])
+        }
         #endif
     }
 }

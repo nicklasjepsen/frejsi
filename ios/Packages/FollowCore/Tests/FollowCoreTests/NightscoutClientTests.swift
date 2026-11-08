@@ -165,6 +165,9 @@ final class NightscoutClientTests: XCTestCase {
         for error in all {
             XCTAssertFalse(error.message.contains("example"))
             XCTAssertFalse(error.message.contains("tok-"))
+            XCTAssertFalse(error.message(in: .da).isEmpty)
+            XCTAssertNotEqual(error.message(in: .da), error.message(in: .en))
         }
+        XCTAssertEqual(NightscoutError.status(502).message(in: .da), "Siden svarede 502")
     }
 }

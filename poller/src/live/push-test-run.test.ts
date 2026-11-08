@@ -107,6 +107,28 @@ describe("pushTestTick", () => {
     expect(h.csv).toHaveLength(1);
   });
 
+  it("tries a reading again after Apple's 5xx or 429, not after a 4xx refusal", async () => {
+    const h = harness();
+    h.reading(START, 100);
+    h.reply(
+      { status: 503, reason: "ServiceUnavailable" },
+      { status: 429, reason: "TooManyRequests" },
+    );
+    await h.tick();
+    await h.tick();
+    await h.tick();
+    expect(h.sent).toHaveLength(3);
+    await h.tick();
+    expect(h.sent).toHaveLength(3);
+
+    const g = harness();
+    g.reading(START, 100);
+    g.reply({ status: 410, reason: "Unregistered" });
+    await g.tick();
+    await g.tick();
+    expect(g.sent).toHaveLength(1);
+  });
+
   it("at 7 h 45 min ends the activity, starts a new one by push-to-start, then waits for its token", async () => {
     const h = harness();
     h.reading(START, 100);
@@ -145,6 +167,18 @@ describe("pushTestTick", () => {
     h.reading(START + 2 * DEFAULT_RESTART_AFTER_MS - 2 * MIN, 130);
     await h.tick();
     expect(events(h.sent).at(-1)).toBe("update");
+  });
+
+  it("tries push-to-start again after Apple's 5xx", async () => {
+    const h = harness();
+    h.reading(START, 100);
+    h.at(START + DEFAULT_RESTART_AFTER_MS);
+    h.reply({ status: 200 }, { status: 500, reason: "InternalServerError" });
+    await h.tick();
+    expect(h.state.restarts).toBe(0);
+    await h.tick();
+    expect(events(h.sent)).toEqual(["end", "start", "start"]);
+    expect(h.state.restarts).toBe(1);
   });
 
   it("tries push-to-start again when it could not connect", async () => {

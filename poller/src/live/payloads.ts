@@ -94,6 +94,9 @@ export function startPayload(
       "stale-date": state.readingAt + STALE_AFTER_SECONDS,
       "attributes-type": ACTIVITY_ATTRIBUTES_TYPE,
       attributes,
+      // iOS 18+: the started activity gets its own update token (through the app's
+      // pushTokenUpdates), so the next readings can reach it.
+      "input-push-token": 1,
       alert: { title: "Live Activity", body: "Restarted" },
     },
   };

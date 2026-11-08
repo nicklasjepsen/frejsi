@@ -65,6 +65,7 @@ describe("payloads", () => {
     expect(payload.aps["attributes-type"]).toBe(ACTIVITY_ATTRIBUTES_TYPE);
     expect(payload.aps.attributes).toEqual({ unit: "mmolL" });
     expect(payload.aps.event).toBe("start");
+    expect(payload.aps["input-push-token"]).toBe(1);
     expect(JSON.stringify(payload.aps.alert)).not.toMatch(/\d/);
   });
 });

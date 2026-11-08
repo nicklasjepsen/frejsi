@@ -16,7 +16,7 @@ struct ContentView: View {
             Form {
                 if model.isConfigured {
                     Section { reading }
-                    Section("Live Activity") { liveActivity }
+                    Section(Self.say("Live Activity", "Live Activity")) { liveActivity }
                     Section {
                         thresholdSteppers
                     } header: {
@@ -27,11 +27,11 @@ struct ContentView: View {
                             "Grøn fra lav til høj, gul uden for, rød ved eller forbi de akutte værdier, grå når målingen er mere end 15 minutter gammel. Kun farver, ingen alarmer."
                         ))
                     }
-                    Section("Push tokens (for the push test)") { tokens }
+                    Section(Self.say("Push tokens (for the push test)", "Push-tokens (til pushtesten)")) { tokens }
                 }
                 Section("Nightscout") { connection }
                 Section {
-                    Text("Keep the CGM app and its alarms. This shows the glucose; it does not monitor it.")
+                    Text(Self.say("Keep the CGM app and its alarms. This shows the glucose; it does not monitor it.", "Behold CGM-appen og dens alarmer. Nænsom viser blodsukkeret; den overvåger det ikke."))
                         .font(.footnote)
                         .foregroundStyle(.secondary)
                 }
@@ -62,7 +62,7 @@ struct ContentView: View {
                         if let delta = Glucose.formatDelta(latest, previous: model.previous, unit: .mmolL, locale: AppLanguage.locale) {
                             Text("· \(delta)")
                         }
-                        if stale { Text("· no new readings").foregroundStyle(.orange) }
+                        if stale { Text(Self.say("· no new readings", "· ingen nye målinger")).foregroundStyle(.orange) }
                     }
                     .foregroundStyle(.secondary)
                 }
@@ -76,12 +76,12 @@ struct ContentView: View {
 
     @ViewBuilder private var liveActivity: some View {
         if activities.isRunning {
-            Label("Running", systemImage: "checkmark.circle")
-            Button("End Live Activity", role: .destructive) { activities.endAll() }
+            Label(Self.say("Running", "Kører"), systemImage: "checkmark.circle")
+            Button(Self.say("End Live Activity", "Stop Live Activity"), role: .destructive) { activities.endAll() }
         } else if let latest = model.latest {
-            Button("Start Live Activity") { activities.start(current: latest, previous: model.previous) }
+            Button(Self.say("Start Live Activity", "Start Live Activity")) { activities.start(current: latest, previous: model.previous) }
         } else {
-            Text("Waiting for a reading").foregroundStyle(.secondary)
+            Text(Self.say("Waiting for a reading", "Venter på en måling")).foregroundStyle(.secondary)
         }
         if let error = activities.error {
             Text(error).foregroundStyle(.orange)
@@ -121,25 +121,23 @@ struct ContentView: View {
         }
     }
 
-    /// English or Danish by the app's language. Stage 3 moves every string to a String Catalog;
-    /// the colour settings are bilingual already.
     private static func say(_ english: String, _ danish: String) -> String {
-        AppLanguage.current == .da ? danish : english
+        AppLanguage.say(english, danish)
     }
 
     @ViewBuilder private var tokens: some View {
-        TokenRow(title: "Activity", token: activities.activityToken)
+        TokenRow(title: Self.say("Activity", "Aktivitet"), token: activities.activityToken)
         TokenRow(title: "Push-to-start", token: activities.pushToStartToken)
     }
 
     @ViewBuilder private var connection: some View {
-        TextField("Site address", text: $siteField, prompt: Text("https://…"))
+        TextField(Self.say("Site address", "Sidens adresse"), text: $siteField, prompt: Text("https://…"))
             .textContentType(.URL)
             .keyboardType(.URL)
             .textInputAutocapitalization(.never)
             .autocorrectionDisabled()
-        SecureField("Read-only token", text: $tokenField)
-        Button("Save") { model.save(site: siteField, token: tokenField) }
+        SecureField(Self.say("Read-only token", "Token kun til læsning"), text: $tokenField)
+        Button(Self.say("Save", "Gem")) { model.save(site: siteField, token: tokenField) }
             .disabled(siteField.isEmpty || tokenField.isEmpty)
             .onAppear {
                 if siteField.isEmpty { siteField = model.site }
@@ -155,13 +153,13 @@ private struct TokenRow: View {
         HStack {
             VStack(alignment: .leading) {
                 Text(title)
-                Text(token.map { "\($0.prefix(8))…\($0.suffix(6))" } ?? "not yet")
+                Text(token.map { "\($0.prefix(8))…\($0.suffix(6))" } ?? AppLanguage.say("not yet", "endnu ikke"))
                     .font(.caption.monospaced())
                     .foregroundStyle(.secondary)
             }
             Spacer()
             if let token {
-                Button("Copy") { UIPasteboard.general.string = token }
+                Button(AppLanguage.say("Copy", "Kopiér")) { UIPasteboard.general.string = token }
             }
         }
     }
