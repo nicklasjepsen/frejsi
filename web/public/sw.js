@@ -1,45 +1,15 @@
-/* Frejsi service worker: the app is installable and opens offline after the first visit (plan §6).
+/* Frejsi service worker: push notifications only (photo questions, docs/operations.md).
  *
- * What is cached: the offline page, the manifest, the icons and Next's hashed static assets.
- * What is never cached: any page under a locale (they carry the signed-in person's name, space
- * names and roles, and a cache would outlive the session on a shared device) and anything under
- * /api/ (a glucose value is never served from a cache). Offline, every navigation gets the
- * offline page; online, pages come from the network as always.
+ * It has no fetch handler on purpose. With one, every page load waits for the worker to start
+ * before the request even leaves the phone: the load reports (/api/diag/load) showed 2.5-4 s on an
+ * iPhone, and much longer when iOS had put the worker fully to sleep, against 0.3 s without it
+ * (v0.7.7). Without a fetch handler the browser goes straight to the network, so nothing is
+ * cached and no page or glucose value can ever be served from a cache.
  *
- * The worker is registered as /sw.js?v=<build version> (ServiceWorker.tsx, NEXT_PUBLIC_APP_VERSION):
- * a new build is a new worker URL, so the browser installs it, and its cache is named after the
- * version, so activate drops the previous build's offline page and icons. Nothing is bumped by hand.
+ * Registered as /sw.js?v=<build version> (ServiceWorker.tsx): a new build is a new worker, and
+ * activate drops the caches earlier builds kept for their offline page and assets.
  */
-const VERSION = decodeURIComponent(
-  (/[?&]v=([^&]*)/.exec(self.location.search || "") || [])[1] || "dev",
-);
-const CACHE = "frejsi-shell-" + VERSION;
-const PRECACHE = [
-  "/offline.html",
-  "/manifest.webmanifest",
-  "/icons/icon-192.png",
-  "/icons/icon-512.png",
-  "/icons/icon-maskable-512.png",
-];
-const NEVER_CACHE = ["/api/"];
-const OFFLINE_PAGE = "/offline.html";
-// An installed app has no browser spinner: a navigation that hangs (a phone whose network is
-// still waking) is a blank screen until the person gives up. After this long the offline page
-// shows instead, and it reloads by itself as soon as the site answers (public/offline.html).
-const NAVIGATION_TIMEOUT_MS = 10000;
-// When the cached offline page is gone too (a browser that evicted the cache), this stands in for
-// it, so a navigation never ends without a page.
-const OFFLINE_FALLBACK =
-  '<!doctype html><html lang="da"><head><meta charset="utf-8">' +
-  '<meta name="viewport" content="width=device-width, initial-scale=1">' +
-  '<title>Frejsi</title></head><body style="font-family:system-ui,sans-serif;padding:48px 24px;text-align:center">' +
-  "<h1>Ingen forbindelse lige nu</h1><p>Frejsi prøver igen af sig selv.</p>" +
-  '<p lang="en">No connection right now. Frejsi tries again by itself.</p>' +
-  "<script>setInterval(function(){fetch('/api/health',{cache:'no-store'}).then(function(r){if(r.ok)location.reload()}).catch(function(){})},5000)</script>" +
-  "</body></html>";
-
-self.addEventListener("install", (event) => {
-  event.waitUntil(caches.open(CACHE).then((cache) => cache.addAll(PRECACHE)));
+self.addEventListener("install", () => {
   self.skipWaiting();
 });
 
@@ -48,62 +18,12 @@ self.addEventListener("activate", (event) => {
     caches
       .keys()
       .then((keys) =>
-        Promise.all(keys.filter((key) => key !== CACHE).map((key) => caches.delete(key))),
+        Promise.all(
+          keys.filter((key) => key.startsWith("frejsi-shell-")).map((key) => caches.delete(key)),
+        ),
       )
       .then(() => self.clients.claim()),
   );
-});
-
-function isStaticAsset(pathname) {
-  return pathname.startsWith("/_next/static/") || PRECACHE.includes(pathname);
-}
-
-function offlinePage() {
-  const fallback = () =>
-    new Response(OFFLINE_FALLBACK, { headers: { "Content-Type": "text/html; charset=utf-8" } });
-  return caches.match(OFFLINE_PAGE).then((cached) => cached || fallback(), fallback);
-}
-
-function navigate(event) {
-  const network = fetch(event.request);
-  let timer;
-  const timeout = new Promise((_, reject) => {
-    timer = setTimeout(() => reject(new Error("navigation timed out")), NAVIGATION_TIMEOUT_MS);
-  });
-  return Promise.race([network, timeout])
-    .catch(() => offlinePage())
-    .finally(() => clearTimeout(timer));
-}
-
-self.addEventListener("fetch", (event) => {
-  const request = event.request;
-  if (request.method !== "GET") return;
-  const url = new URL(request.url);
-  if (url.origin !== self.location.origin) return;
-  if (NEVER_CACHE.some((prefix) => url.pathname.startsWith(prefix))) return;
-
-  if (request.mode === "navigate") {
-    // Network only; nothing personal is stored. Offline, slow or hanging: the calm offline page.
-    event.respondWith(navigate(event));
-    return;
-  }
-
-  if (isStaticAsset(url.pathname)) {
-    // Hashed, immutable and impersonal: cache first.
-    event.respondWith(
-      caches.match(request).then(
-        (cached) =>
-          cached ||
-          fetch(request).then((response) => {
-            if (response.ok) {
-              const copy = response.clone();
-              caches.open(CACHE).then((cache) => cache.put(request, copy));
-            }
-            return response;
-          }),
-      ),
-    );
-  }
 });
 
 function notificationUrl(value) {

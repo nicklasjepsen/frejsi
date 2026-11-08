@@ -2,7 +2,7 @@ import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 import vm from "node:vm";
 
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 
 const publicDir = path.resolve(import.meta.dirname, "../../../public");
 const read = (file: string) => readFileSync(path.join(publicDir, file), "utf8");
@@ -177,130 +177,28 @@ function loadWorker(
 }
 
 const online = (request: FakeRequest) => Promise.resolve(new Response(`live ${request.url}`));
-const offline = () => Promise.reject(new TypeError("Failed to fetch"));
 
-describe("sw.js (the offline shell)", () => {
-  const sw = read("sw.js");
-  const match = /const PRECACHE = (\[[^\]]*\])/.exec(sw);
-  // The source is prettier-formatted: a trailing comma that JSON does not take.
-  const precache = JSON.parse((match?.[1] ?? "[]").replace(/,\s*\]$/, "]")) as string[];
-
-  it("precaches the offline page, the manifest and the icons, and no page that carries a person's data", () => {
-    expect(precache).toContain("/offline.html");
-    expect(precache).toContain("/manifest.webmanifest");
-    expect(precache).toContain("/icons/icon-192.png");
-    expect(precache).toContain("/icons/icon-512.png");
-    expect(existsSync(path.join(publicDir, "offline.html"))).toBe(true);
-    expect(precache.some((route) => /^\/(da|en)(\/|$)/.test(route))).toBe(false);
-    expect(precache.some((route) => route.startsWith("/api"))).toBe(false);
-  });
-
-  it("never touches the API, so a glucose value is never served from a cache", async () => {
+describe("sw.js (push only)", () => {
+  it("has no fetch handler: a page load never waits for the worker to start (v0.7.7)", async () => {
     const worker = loadWorker(online);
     await worker.dispatch("install");
-    const response = await worker.dispatch("fetch", worker.get("/api/health"));
-    expect(response).toBeNull();
-    expect(worker.puts).toEqual([]);
-    expect(worker.store.has("/api/health")).toBe(false);
-  });
-
-  it("serves pages from the network and stores none of them: a signed-in page never outlives its session", async () => {
-    const worker = loadWorker(online);
-    await worker.dispatch("install");
-    const response = await worker.dispatch("fetch", worker.get("/da/now", "navigate"));
-    expect(await response?.text()).toBe("live https://frejsi.example/da/now");
-    expect(worker.puts).toEqual([]);
-    expect(worker.store.has("/da/now")).toBe(false);
-  });
-
-  it("shows the offline page for any navigation while offline, the installed app's start URL included", async () => {
-    const worker = loadWorker(offline);
-    await worker.dispatch("install");
-    for (const url of ["/", "/da", "/da/now", "/en/soon/meals"]) {
-      const response = await worker.dispatch("fetch", worker.get(url, "navigate"));
-      expect(await response?.text(), url).toBe("cached /offline.html");
+    for (const url of ["/", "/da/now", "/api/health", "/_next/static/chunks/app.js"]) {
+      const mode = url.startsWith("/_next") || url.startsWith("/api") ? "no-cors" : "navigate";
+      expect(await worker.dispatch("fetch", worker.get(url, mode)), url).toBeNull();
     }
+    expect(read("sw.js")).not.toMatch(/addEventListener\(\s*["']fetch["']/);
+    expect(worker.opened).toEqual([]);
+    expect(worker.puts).toEqual([]);
   });
 
-  it("shows the offline page instead of a blank screen when the network hangs, and the page retries by itself", async () => {
-    vi.useFakeTimers();
-    try {
-      const worker = loadWorker(() => new Promise<Response>(() => undefined));
-      await worker.dispatch("install");
-      const pending = worker.dispatch("fetch", worker.get("/", "navigate"));
-      await vi.advanceTimersByTimeAsync(10_000);
-      expect(await (await pending)?.text()).toBe("cached /offline.html");
-    } finally {
-      vi.useRealTimers();
-    }
-    const offlinePage = read("offline.html");
-    expect(offlinePage).toContain("/api/health");
-    expect(offlinePage).toContain("location.reload()");
-    // A hanging probe must not lock out later checks.
-    expect(offlinePage).toContain("AbortController");
-  });
-
-  it("still answers with a page when the cached offline page has been evicted", async () => {
-    const worker = loadWorker(offline);
-    await worker.dispatch("install");
-    worker.evict();
-    const response = await worker.dispatch("fetch", worker.get("/da/now", "navigate"));
-    expect(response?.headers.get("Content-Type")).toContain("text/html");
-    const body = (await response?.text()) ?? "";
-    expect(body).toContain("Ingen forbindelse");
-    expect(body).toContain("/api/health");
-  });
-
-  it("caches Next's hashed static assets on first use and serves them from the cache after", async () => {
-    let calls = 0;
-    const worker = loadWorker((request) => {
-      calls += 1;
-      return online(request);
-    });
-    await worker.dispatch("install");
-    const asset = worker.get("/_next/static/chunks/app.js");
-    const first = await worker.dispatch("fetch", asset);
-    expect(await first?.text()).toContain("live");
-    await Promise.resolve();
-    expect(worker.puts).toEqual(["/_next/static/chunks/app.js"]);
-    const second = await worker.dispatch("fetch", asset);
-    expect(second).toBeDefined();
-    expect(calls).toBe(1);
-  });
-
-  it("names its cache after the build version in the registration URL, and drops the other builds' caches", async () => {
+  it("drops the caches earlier builds kept for the offline page, and nothing else", async () => {
     const worker = loadWorker(online, {
-      search: "?v=v0.5.1",
-      existing: ["frejsi-shell-v2", "frejsi-shell-v0.5.0", "frejsi-shell-v0.5.1"],
+      search: "?v=v0.7.7",
+      existing: ["frejsi-shell-v0.7.6", "frejsi-shell-dev", "someone-elses-cache"],
     });
     await worker.dispatch("install");
-    expect(worker.opened).toEqual(["frejsi-shell-v0.5.1"]);
     await worker.dispatch("activate");
-    expect(worker.deleted).toEqual(["frejsi-shell-v2", "frejsi-shell-v0.5.0"]);
-  });
-
-  it("falls back to a dev cache name without a version", async () => {
-    const worker = loadWorker(online);
-    await worker.dispatch("install");
-    expect(worker.opened).toEqual(["frejsi-shell-dev"]);
-  });
-
-  it("leaves other origins and non-GET requests to the browser", async () => {
-    const worker = loadWorker(online);
-    await worker.dispatch("install");
-    expect(
-      await worker.dispatch("fetch", {
-        method: "GET",
-        url: "https://fonts.example/x.woff2",
-        mode: "cors",
-      }),
-    ).toBeNull();
-    expect(
-      await worker.dispatch("fetch", {
-        method: "POST",
-        url: "https://frejsi.example/da/now",
-        mode: "navigate",
-      }),
-    ).toBeNull();
+    expect(worker.deleted).toEqual(["frejsi-shell-v0.7.6", "frejsi-shell-dev"]);
+    expect(existsSync(path.join(publicDir, "offline.html"))).toBe(false);
   });
 });
