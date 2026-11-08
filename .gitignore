@@ -152,3 +152,18 @@ vite.config.ts.timestamp-*
 desktop/**/bin/
 desktop/**/obj/
 desktop/publish/
+
+# iOS app (ios/README.md): XcodeGen generates the project, plists and entitlements from project.yml
+ios/*.xcodeproj/
+ios/*.xcworkspace/
+ios/App/Info.plist
+ios/App/*.entitlements
+ios/LiveActivity/Info.plist
+ios/LiveActivity/*.entitlements
+ios/**/.build/
+ios/**/.swiftpm/
+ios/DerivedData/
+xcuserdata/
+
+# The iPhone push test's local log (ios/README.md)
+push-test*.csv
