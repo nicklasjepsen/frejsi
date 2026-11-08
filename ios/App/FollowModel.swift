@@ -2,80 +2,119 @@ import Combine
 import FollowCore
 import Foundation
 
-/// Reads Nightscout while the app is on screen. Nothing here keeps the lock screen current: that is
-/// the relay's pushes (plan §0). This only shows the value and its age in the app.
+/// What the app follows and what it has read. In the foreground it reads Nightscout (or the demo
+/// curve) around the expected next reading; nothing here keeps the lock screen current with the
+/// app closed: that is the relay's pushes (plan §0).
 @MainActor
 final class FollowModel: ObservableObject {
-    @Published private(set) var site: String = KeychainStore.read("site") ?? ""
-    @Published private(set) var token: String = KeychainStore.read("token") ?? ""
+    @Published private(set) var source: FollowSource? = FollowSource.restore(
+        site: KeychainStore.read("site"), token: KeychainStore.read("token")
+    )
+    /// The last 12 hours, newest first.
     @Published private(set) var readings: [Reading] = []
-    @Published private(set) var error: String?
-    @Published private(set) var lastChecked: Date?
+    @Published private(set) var error: NightscoutError?
     /// The colour thresholds in force (ThresholdStore: the user's, the site's, or Nightscout's defaults).
     @Published private(set) var thresholds: GlucoseThresholds = ThresholdStore.current
+    @Published private(set) var settings: FollowSettings = SettingsStore.load()
+
+    /// Called with the newest reading whenever a fetch brings a newer one.
+    var onNewReading: ((Reading, Reading?) -> Void)?
+
+    let feed = ReadingFeed(client: NightscoutClient(transport: URLSessionTransport()))
+    /// Bumped whenever the source changes, so an answer for the previous one never lands.
+    private var generation = 0
     private var siteThresholdsRead = false
 
-    private let client = NightscoutClient(transport: URLSessionTransport())
-    /// Bumped on every save, so an answer for the previous site never lands under the new one.
-    private var generation = 0
-
-    var isConfigured: Bool { !site.isEmpty && !token.isEmpty }
     var latest: Reading? { readings.first }
     var previous: Reading? { readings.dropFirst().first }
 
-    func save(site: String, token: String) {
-        let trimmedSite = site.trimmingCharacters(in: .whitespacesAndNewlines)
-        let trimmedToken = token.trimmingCharacters(in: .whitespacesAndNewlines)
-        KeychainStore.write("site", trimmedSite)
-        KeychainStore.write("token", trimmedToken)
-        self.site = trimmedSite
-        self.token = trimmedToken
+    /// Changes whenever the source does, for `.task(id:)`.
+    var sourceKey: String { source.map { $0.stored.site } ?? "" }
+
+    func follow(_ source: FollowSource) {
+        let stored = source.stored
+        KeychainStore.write("site", stored.site)
+        KeychainStore.write("token", stored.token)
+        ThresholdStore.site = nil
         generation += 1
         siteThresholdsRead = false
         readings = []
         error = nil
-        Task { await refresh() }
+        thresholds = ThresholdStore.current
+        self.source = source
+    }
+
+    /// "Remove this phone": the address, token, thresholds and settings.
+    func forget() {
+        KeychainStore.delete("site")
+        KeychainStore.delete("token")
+        ThresholdStore.clear()
+        SettingsStore.clear()
+        generation += 1
+        source = nil
+        readings = []
+        error = nil
+        thresholds = ThresholdStore.current
+        settings = SettingsStore.load()
     }
 
     func refresh() async {
-        guard isConfigured else { return }
+        guard let source else { return }
         let asked = generation
-        let result: Result<[Reading], NightscoutError>
+        let now = Date()
+        let count = ReadingHistory.fetchCount(newest: latest, now: now)
         do {
-            result = .success(try await client.latest(site: site, token: token, count: 3))
-        } catch let failure as NightscoutError {
-            result = .failure(failure)
-        } catch {
-            result = .failure(.unreachable)
-        }
-        guard asked == generation else { return }
-        // The site's thresholds are optional: read them beside the value, never before it.
-        if !siteThresholdsRead, case .success = result {
-            siteThresholdsRead = true
-            Task { await readSiteThresholds(generation: asked) }
-        }
-        switch result {
-        case .success(let latest):
-            readings = latest
+            let fresh = try await feed.latest(source, count: count, now: now)
+            guard asked == generation else { return }
+            let before = latest
+            readings = ReadingHistory.merge(readings, fresh, now: Date())
             error = nil
-        case .failure(let failure):
-            error = failure.message(in: AppLanguage.current)
+            if let newest = latest, newest != before { onNewReading?(newest, previous) }
+            // The site's thresholds are optional: read them beside the value, never before it.
+            if !siteThresholdsRead, case .nightscout = source {
+                siteThresholdsRead = true
+                Task { await readSiteThresholds(generation: asked) }
+            }
+        } catch {
+            guard asked == generation else { return }
+            self.error = error as? NightscoutError ?? .unreachable
         }
-        lastChecked = Date()
     }
 
-    /// The site's own thresholds, once per saved site. A site that sends none, or an error, leaves
-    /// the defaults; this never blocks showing the value.
+    /// While the screen is visible: nothing until the next reading is due, then every 30 seconds
+    /// until it arrives (`RefreshSchedule`). SwiftUI cancels the task when the view goes away.
+    func refreshWhileVisible() async {
+        while !Task.isCancelled {
+            await refresh()
+            let delay = RefreshSchedule.delay(newest: latest, now: Date())
+            try? await Task.sleep(for: .seconds(delay))
+        }
+    }
+
+    /// The site's own thresholds, once per site. A site that sends none, or an error, leaves the
+    /// defaults; this never blocks showing the value.
     private func readSiteThresholds(generation asked: Int) async {
-        let found = try? await client.thresholds(site: site, token: token)
+        guard case .nightscout(let site, let token) = source else { return }
+        let client = NightscoutClient(transport: URLSessionTransport())
+        let found = try? await client.thresholds(site: site.absoluteString, token: token)
         guard asked == generation else { return }
         ThresholdStore.site = found
         thresholds = ThresholdStore.current
     }
 
+    // MARK: - Settings
+
+    func update(_ change: (inout FollowSettings) -> Void) {
+        var next = settings
+        change(&next)
+        guard next != settings else { return }
+        settings = next
+        SettingsStore.save(next)
+    }
+
     /// One stepper press in the shown unit; saved as the user's own values.
-    func step(_ kind: GlucoseThresholds.Kind, by steps: Int, unit: GlucoseUnit) {
-        let next = thresholds.stepped(kind, by: steps, unit: unit)
+    func step(_ kind: GlucoseThresholds.Kind, by steps: Int) {
+        let next = thresholds.stepped(kind, by: steps, unit: settings.unit)
         guard next != thresholds else { return }
         ThresholdStore.user = next
         thresholds = ThresholdStore.current
@@ -85,13 +124,5 @@ final class FollowModel: ObservableObject {
     func resetThresholds() {
         ThresholdStore.user = nil
         thresholds = ThresholdStore.current
-    }
-
-    /// Every 30 seconds while the screen is visible; SwiftUI cancels the task when it goes away.
-    func refreshWhileVisible() async {
-        while !Task.isCancelled {
-            await refresh()
-            try? await Task.sleep(for: .seconds(30))
-        }
     }
 }

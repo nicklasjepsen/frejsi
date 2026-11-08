@@ -9,7 +9,7 @@ enum ThresholdStore {
     private static let userKey = "thresholds.user"
     private static let siteKey = "thresholds.nightscout"
 
-    private static var defaults: UserDefaults { UserDefaults(suiteName: appGroup) ?? .standard }
+    static var defaults: UserDefaults { UserDefaults(suiteName: appGroup) ?? .standard }
 
     static var current: GlucoseThresholds { user ?? site ?? .nightscoutDefaults }
 
@@ -23,6 +23,12 @@ enum ThresholdStore {
     static var site: GlucoseThresholds? {
         get { read(siteKey) }
         set { write(newValue, siteKey) }
+    }
+
+    /// "Remove this phone": back to Nightscout's defaults.
+    static func clear() {
+        defaults.removeObject(forKey: userKey)
+        defaults.removeObject(forKey: siteKey)
     }
 
     private static func read(_ key: String) -> GlucoseThresholds? {
@@ -39,5 +45,22 @@ enum ThresholdStore {
             return
         }
         defaults.set(data, forKey: key)
+    }
+}
+
+/// The user's settings (`FollowSettings`), in the app group beside the thresholds.
+enum SettingsStore {
+    private static let key = "settings"
+
+    static func load() -> FollowSettings {
+        FollowSettings.load(ThresholdStore.defaults.data(forKey: key))
+    }
+
+    static func save(_ settings: FollowSettings) {
+        ThresholdStore.defaults.set(settings.encoded(), forKey: key)
+    }
+
+    static func clear() {
+        ThresholdStore.defaults.removeObject(forKey: key)
     }
 }

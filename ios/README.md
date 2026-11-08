@@ -1,6 +1,6 @@
 # Nænsom for iPhone
 
-A Nightscout follower for iPhone: the current glucose with its age, and a Live Activity on the lock screen, in the Dynamic Island and on CarPlay that stays current with the app closed, because our server updates it by Apple push. The plan is `docs/superpowers/plans/2026-11-08-ios-follower-app.md`; this folder is at **stage 2**: the skeleton and the push test (plan §7).
+A Nightscout follower for iPhone: the current glucose with its age, and a Live Activity on the lock screen, in the Dynamic Island and on CarPlay that stays current with the app closed, because our server updates it by Apple push. The plan is `docs/superpowers/plans/2026-11-08-ios-follower-app.md`; this folder is at **stage 3**: the app itself, on top of the stage-2 skeleton and push test (plan §7).
 
 Like the rest of Nænsom it only reads, shows every value with its age, and never says anything about insulin. Keep the CGM app and its alarms; this shows the glucose, it does not monitor it.
 
@@ -10,9 +10,12 @@ Like the rest of Nænsom it only reads, shows every value with its age, and neve
 project.yml              XcodeGen definition; the .xcodeproj, Info.plists and entitlements are generated
 Packages/FollowCore/     Swift package, no UIKit: Nightscout reader, units, arrows, ranges, ages,
                          staleness, the follow link, the Live Activity content state. Tests run on Linux.
-App/                     the bare SwiftUI app: value with age, start the Live Activity, show push tokens
+App/                     the SwiftUI app: onboarding, main screen with curve, settings, relay registration,
+                         reminders; da.lproj / en.lproj strings
 LiveActivity/            the widget extension: lock screen, Dynamic Island, small family (CarPlay, Watch)
-Shared/                  compiled into both: GlucoseActivityAttributes, range colours
+Shared/                  compiled into both: GlucoseActivityAttributes, range colours, thresholds and
+                         settings in the app group, the app's language
+scripts/check-strings.py every string key in both languages, none unused, nothing about insulin
 ```
 
 | What                     | Value                                                                         |
@@ -81,8 +84,8 @@ The version is `MARKETING_VERSION` in `project.yml` (0.1.0); the build number is
 
 The test that decides whether the app gets built: the Live Activity stays current with the app closed and the phone locked, across the 8-hour restart (plan §0, §7).
 
-1. Build and run `Naensom` in an iOS 17.2+ Simulator (Debug, so tokens come from the APNs sandbox). Type the Nightscout address and a read-only token, wait for the value, tap **Start Live Activity**.
-2. Copy the two tokens. They never go to the system log (it only says one arrived); they are on screen with **Copy**, and a debug build also writes them to `push-tokens.json` in the app group container:
+1. Build and run `Naensom` in an iOS 17.2+ Simulator (Debug, so tokens come from the APNs sandbox). Set it up with the address and a read-only token; the Live Activity starts by itself.
+2. Copy the two tokens. They never go to the system log (it only says one arrived); a debug build shows them under Settings → Push tokens with **Copy**, and writes them to `push-tokens.json` in the app group container:
    ```
    cat "$(xcrun simctl get_app_container booted ninja.jepsen.naensom group.ninja.jepsen.naensom)/push-tokens.json"
    ```
@@ -102,6 +105,18 @@ Pass: every reading reaches the lock screen within a minute of its push, across 
 
 The script logs outcome codes only; the address, the tokens and the values never reach the log. The CSV holds times and values and stays on the machine that ran it (`push-test*.csv` is ignored by git).
 
-## What the stage-2 app is not yet
+## The app (stage 3)
 
-No onboarding, curve, settings or da/en strings (stage 3), no registration with a server (stage 4: the relay in `poller/`), no widgets (stage 5). The follow link (`https://naensom.jepsen.ninja/follow#…`) is parsed by `FollowCore.FollowLink`, but the universal link needs the associated domain, which comes with stage 3.
+- **Onboarding** is one screen: "Tap the link you were sent". The follow link `https://naensom.jepsen.ninja/follow#<base64url {url, token}>` opens the app as a universal link (`applinks:naensom.jepsen.ninja` in `project.yml`; `onOpenURL` → `FollowLink.parse`). The other ways in: scan the link's QR code (AVFoundation, camera text in `App/*.lproj/InfoPlist.strings`), or type the address and a read-only token. **Test connection** reads one entry (`ReadingFeed.test`) and nothing is saved until it passes. The address and token go to the Keychain. A link for another site while the phone already follows one asks before replacing it.
+- **Try the demo** follows made-up readings: `DemoCurve` in FollowCore, a pure function of time with no network (one reading every five minutes, `140 + 55·sin(2πt/10800) + 18·sin(2πt/2700 + 1)` mg/dL, `t` in Unix seconds), and the relay is registered with the url `demo`, so its demo source drives the Live Activity. App Review uses it (plan §6).
+- **Main screen**: the value in its threshold colour with the arrow, the unit, the change since the previous reading and the age ("3 min siden"); grey with "Ingen nye målinger" / "No new readings" once the reading is more than 15 minutes old. Below it the 3/6/12-hour curve (Swift Charts): one dot per reading in its colour, the target range as a faint green band, the urgent values as faint dashed lines. In the foreground the app reads nothing until the next reading is due (newest + 5 min), then every 30 seconds until it arrives (`RefreshSchedule`); it fetches 12 hours once and then only the gap (`ReadingHistory`). When the Live Activity should run and does not (it ended after 8 hours, or was swiped away), the screen says **"Live Activity stopped, tap to restart"**.
+- **The app updates its own Live Activity** with every reading it fetches while it is open, so the app and the lock screen never disagree; only with a reading newer than the one the activity shows (`LiveActivitySync.shouldReplace`), so a late local fetch never overwrites a newer state the relay pushed.
+- **Settings**: unit (mmol/L default, mg/dL), the four colour thresholds in the shown unit, Live Activity on/off (on by default after onboarding; on starts an activity and registers its tokens, off ends it and tells the relay), low/high reminders on/off (asks for notification permission, then sends the APNs device token), about with the privacy and support pages (`https://naensom.jepsen.ninja/privacy`, `/support`, pages come later), the disclaimer, and **Remove this phone** (ends the activity, `DELETE`s the relay's copy, clears the Keychain and app-group settings, back to onboarding; when the relay cannot be reached it offers to remove it from the phone only, and the relay deletes its copy after 30 days). Debug builds also show the push tokens there, with Copy.
+- **Relay registration** (`RelayClient` in FollowCore, `RelaySync` in the app) follows the contract in `poller/src/live/`: `POST /api/live/register` at `RelayConfig.baseURL` creates the subscription (the device secret comes back once and goes to the Keychain with the subscription id) and updates it with `x-device-secret`; an update the relay no longer recognises becomes a new subscription. The app registers at launch, when it comes to the foreground (an unchanged registration at most every 15 minutes), and 1.5 s after any push token, unit, threshold or switch changes. Debug builds send `apnsEnvironment: "sandbox"`, Release builds `"production"`. With the Live Activity off the relay gets no activity tokens; with reminders off, no device token.
+- **Words**: every user-facing string is in `App/da.lproj/Localizable.strings` and `App/en.lproj/Localizable.strings`, looked up in the app's one language (`AppLanguage.text`), so a phone in neither Danish nor English gets English in the app and on the lock screen alike. `python3 scripts/check-strings.py` checks both files. The reminders are described as what they are: a reminder that follows silent mode and Focus, not a replacement for the CGM app's alarms.
+
+**Follow-ups outside `ios/`:** the web side must serve `https://naensom.jepsen.ninja/.well-known/apple-app-site-association` with `applinks` for `B32HGH682W.ninja.jepsen.naensom` and the path `/follow` before tapping a link opens the app (until then the link opens Safari; QR and typing work). The associated-domains and time-sensitive-notification entitlements must be enabled for the app ID (automatic signing does it when Xcode is signed in).
+
+## What the stage-3 app is not yet
+
+No widgets and no finished Live Activity design (stage 5), no privacy and support pages (stage 6). The relay's side of registration is stage 4.

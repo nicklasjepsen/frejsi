@@ -1,0 +1,2 @@
+/* Shown when Nænsom asks for the camera. */
+"NSCameraUsageDescription" = "Nænsom uses the camera to read the QR code with the link you were sent.";

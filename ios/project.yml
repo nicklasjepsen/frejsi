@@ -49,6 +49,8 @@ targets:
         UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait]
         # Portrait only: App Store validation then wants the app to opt out of iPad multitasking.
         UIRequiresFullScreen: true
+        # The QR code in onboarding. Translated in App/{da,en}.lproj/InfoPlist.strings.
+        NSCameraUsageDescription: Nænsom bruger kameraet til at læse QR-koden med linket, du har fået.
     entitlements:
       path: App/Naensom.entitlements
       properties:
@@ -56,6 +58,12 @@ targets:
         aps-environment: development
         com.apple.security.application-groups:
           - group.ninja.jepsen.naensom
+        # The follow link https://naensom.jepsen.ninja/follow#… opens the app. The site must serve
+        # /.well-known/apple-app-site-association listing B32HGH682W.ninja.jepsen.naensom for /follow.
+        com.apple.developer.associated-domains:
+          - applinks:naensom.jepsen.ninja
+        # The low/high reminders are time-sensitive (they still follow Focus settings the user chose).
+        com.apple.developer.usernotifications.time-sensitive: true
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: ninja.jepsen.naensom

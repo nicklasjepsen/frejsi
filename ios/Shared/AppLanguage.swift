@@ -8,8 +8,15 @@ enum AppLanguage {
     static var current: Language { Language.preferred(Locale.preferredLanguages) }
     static var locale: Locale { Locale(identifier: current.localeIdentifier) }
 
-    /// English or Danish by the app's language. Stage 3 moves the strings to a String Catalog.
-    static func say(_ english: String, _ danish: String) -> String {
-        current == .da ? danish : english
+    /// A string from `<language>.lproj/Localizable.strings` in `current`'s language. The lookup
+    /// names the language itself instead of leaving it to the bundle, whose fallback for a phone in
+    /// neither Danish nor English would be the development language (Danish) while `current` and
+    /// the lock screen say English.
+    static func text(_ key: String) -> String {
+        bundle.localizedString(forKey: key, value: nil, table: nil)
+    }
+
+    private static var bundle: Bundle {
+        Bundle.main.path(forResource: current.rawValue, ofType: "lproj").flatMap { Bundle(path: $0) } ?? .main
     }
 }

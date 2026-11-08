@@ -1,0 +1,83 @@
+/* Nænsom til iPhone, dansk. Hver nøgle skal også findes i en.lproj/Localizable.strings
+   (scripts/check-strings.py). Aldrig noget om insulin. */
+
+"common.cancel" = "Annullér";
+"common.copy" = "Kopiér";
+"common.done" = "Færdig";
+
+"disclaimer" = "Behold CGM-appen og dens alarmer. Nænsom viser blodsukkeret; den overvåger det ikke.";
+
+"onboarding.title" = "Tryk på linket, du har fået";
+"onboarding.body" = "Den, der passer Nightscout-siden, kan sende dig et link. Tryk på det på denne telefon, så sætter Nænsom sig selv op.";
+"onboarding.scan" = "Scan QR-koden";
+"onboarding.manual" = "Skriv adresse og token";
+"onboarding.manual.footer" = "Brug et token, der kun kan læse. Det bliver på denne telefon og hos Nænsoms server, som holder Live Activity opdateret.";
+"onboarding.site" = "Sidens adresse";
+"onboarding.token" = "Token kun til læsning";
+"onboarding.test" = "Test forbindelsen";
+"onboarding.connected" = "Forbundet. Nyeste måling: %@, %@.";
+"onboarding.connected.empty" = "Forbundet. Der er ingen målinger på siden endnu.";
+"onboarding.start" = "Begynd at følge";
+"onboarding.demo" = "Prøv demoen";
+"onboarding.demo.footer" = "Følger opdigtede målinger, så du kan se, hvordan Nænsom virker.";
+"onboarding.problem.missingAddress" = "Skriv sidens adresse.";
+"onboarding.problem.invalidAddress" = "Det ligner ikke en webadresse.";
+"onboarding.problem.notHTTPS" = "Sidens adresse skal begynde med https://";
+"onboarding.problem.missingToken" = "Skriv tokenet, der kun kan læse.";
+"onboarding.problem.notALink" = "Den QR-kode er ikke et Nænsom-link.";
+
+"scanner.hint" = "Hold kameraet over QR-koden";
+"scanner.denied" = "Nænsom må ikke bruge kameraet. Du kan give lov i Indstillinger eller skrive adresse og token i stedet.";
+
+"link.replace.title" = "Følg en anden side?";
+"link.replace.message" = "Linket er til %@. Nænsom holder op med at følge den nuværende side på denne telefon og sætter den nye op.";
+"link.replace.confirm" = "Følg den nye side";
+
+"main.loading" = "Henter…";
+"main.stale" = "Ingen nye målinger";
+"main.liveStopped" = "Live Activity er stoppet, tryk for at starte igen";
+"main.window" = "Viste timer";
+"main.window.hours" = "%ld t";
+"main.curve" = "Blodsukker de seneste %ld timer";
+"main.curve.empty" = "Ingen målinger i perioden";
+"main.demo" = "Det her er demoen. Målingerne er opdigtede.";
+
+"live.error.disabled" = "Live Activities er slået fra for Nænsom i iPhonens Indstillinger.";
+"live.error.start" = "Live Activity kunne ikke starte. Prøv igen om lidt.";
+
+"settings.title" = "Indstillinger";
+"settings.following" = "Følger";
+"settings.following.demo" = "Demoen (opdigtede målinger)";
+"settings.unit" = "Enhed";
+"settings.colours" = "Farver";
+"settings.colours.footer" = "Grøn fra lav til høj, gul uden for, rød ved eller forbi de akutte værdier, grå når målingen er mere end 15 minutter gammel. Kun farver: de slår ikke alarm.";
+"settings.colours.reset" = "Brug Nightscout-sidens værdier";
+"settings.colours.resetDefaults" = "Brug standardværdierne";
+"settings.live" = "Live Activity";
+"settings.live.footer" = "Viser blodsukkeret på låseskærmen og i Dynamic Island. Nænsoms server holder det opdateret, også når appen er lukket.";
+"settings.alerts" = "Påmindelser ved lav og høj";
+"settings.alerts.footer" = "En besked, når blodsukkeret går under lav eller over høj, og når der ikke er kommet nye målinger i 20 minutter. Det er en påmindelse: den følger lydløs og Fokus som alle andre beskeder og erstatter ikke CGM-appens alarmer.";
+"settings.alerts.denied" = "Beskeder er slået fra for Nænsom. Giv lov i Indstillinger.";
+"settings.about" = "Om";
+"settings.privacy" = "Privatliv";
+"settings.support" = "Hjælp";
+"settings.version" = "Version";
+"settings.debug.tokens" = "Push-tokens (debug-builds)";
+"settings.remove" = "Fjern denne telefon";
+"settings.remove.footer" = "Stopper Live Activity og påmindelser, sletter kopien på Nænsoms server og fjerner adresse og token fra denne telefon.";
+"settings.remove.confirm.title" = "Fjern denne telefon?";
+"settings.remove.confirm.message" = "Du kan altid sætte den op igen med linket.";
+"settings.remove.failed.title" = "Kunne ikke få fat i Nænsoms server";
+"settings.remove.failed.message" = "Du kan fjerne den fra denne telefon nu. Serveren sletter selv sin kopi efter 30 dage.";
+"settings.remove.localOnly" = "Fjern fra denne telefon";
+
+"threshold.urgentLow" = "Akut lav";
+"threshold.low" = "Lav";
+"threshold.high" = "Høj";
+"threshold.urgentHigh" = "Akut høj";
+
+"relay.error.unreachable" = "Kunne ikke få fat i Nænsoms server. Appen prøver igen.";
+"relay.error.rateLimited" = "Nænsoms server har travlt. Appen prøver igen om lidt.";
+"relay.error.nightscoutRefused" = "Nænsoms server kunne ikke læse siden med dette token.";
+"relay.error.nightscoutUnreachable" = "Nænsoms server kunne ikke få fat i siden.";
+"relay.error.refused" = "Nænsoms server tog ikke imod telefonens oplysninger.";
