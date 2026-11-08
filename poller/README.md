@@ -148,7 +148,12 @@ TestFlight and the App Store, as the app registered.
 
 **Cleanup.** `lastSeenAt` moves forward on every push Apple accepts and every registration. A token
 Apple answers 410, `BadDeviceToken` or `Unregistered` for is cleared; when no token is left the
-subscription is deleted with its Key Vault secret. "Remove this phone" deletes both at once, and
+subscription is deleted with its Key Vault secret (the secret first). So is one whose push-to-start
+token Apple rejects at the 8-hour restart while no activity token is left (the restart ends the old
+one), even if a device token for reminders remains: the app is gone from the phone (`live.removed`
+with `push-to-start-invalid`). An activity token the app registered meanwhile keeps it until that
+activity ends. "Remove this phone" deletes both at once (an app that could not reach the relay keeps
+trying the `DELETE` until it answers 204, 401 or 404), and
 each run deletes up to 100 subscriptions whose `lastSeenAt` is 30 days old (only if the app has not
 registered since the run selected them). A subscription with no push token at all reads no site, is
 looked at hourly, and goes after a day without one. A reading dated more than two minutes ahead is a
