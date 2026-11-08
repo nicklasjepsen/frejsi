@@ -1,0 +1,3 @@
+# The Nænsom iPhone app (ios/README.md, "TestFlight"). Nothing secret lives here.
+app_identifier("ninja.jepsen.naensom")
+team_id("B32HGH682W")
