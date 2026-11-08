@@ -12,7 +12,7 @@ settings:
   base:
     DEVELOPMENT_TEAM: B32HGH682W
     CODE_SIGN_STYLE: Automatic
-    SWIFT_VERSION: "5.10"
+    SWIFT_VERSION: "5.0" # the language mode (Swift 5), not the compiler release
     MARKETING_VERSION: "0.1.0"
     CURRENT_PROJECT_VERSION: "1"
     TARGETED_DEVICE_FAMILY: "1"

@@ -38,7 +38,7 @@ final class FollowModel: ObservableObject {
         let asked = generation
         let result: Result<[Reading], NightscoutError>
         do {
-            result = .success(try await client.latest(site: site, token: token, count: 2))
+            result = .success(try await client.latest(site: site, token: token, count: 3))
         } catch let failure as NightscoutError {
             result = .failure(failure)
         } catch {

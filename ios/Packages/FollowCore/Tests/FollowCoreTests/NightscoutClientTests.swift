@@ -55,6 +55,18 @@ final class NightscoutClientTests: XCTestCase {
         XCTAssertEqual(readings[0].direction, "")
     }
 
+    func testSkipsOutOfRangeValuesWithoutTrapping() throws {
+        let json = #"[{"sgv":1e100,"date":4},{"sgv":721,"date":3},{"sgv":100,"date":1e300},{"sgv":720,"date":2}]"#
+        let readings = try NightscoutClient.parseEntries(Data(json.utf8))
+        XCTAssertEqual(readings.map(\.mgdl), [720])
+    }
+
+    func testKeepsOneReadingPerTimestamp() throws {
+        let json = #"[{"sgv":151,"date":3000},{"sgv":151,"date":3000},{"sgv":145,"date":2000}]"#
+        let readings = try NightscoutClient.parseEntries(Data(json.utf8))
+        XCTAssertEqual(readings.map(\.mgdl), [151, 145])
+    }
+
     func testRefusesSomethingThatIsNotEntries() {
         for body in ["not json", #"{"status":"ok"}"#, "42"] {
             XCTAssertThrowsError(try NightscoutClient.parseEntries(Data(body.utf8))) { error in

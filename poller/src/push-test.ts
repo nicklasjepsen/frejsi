@@ -52,7 +52,7 @@ async function main(): Promise<void> {
   if (!existsSync(args.csvPath)) appendFileSync(args.csvPath, `${CSV_HEADER}\n`);
   const tokenFile = args.activityTokenFile;
   const deps = {
-    readLatest: () => nightscout.latestEntries(2),
+    readLatest: () => nightscout.latestEntries(3),
     send: (request: Parameters<ApnsSender["send"]>[0]) => apns.send(request),
     activityToken: () => {
       if (tokenFile === undefined) return Promise.resolve(args.activityToken);

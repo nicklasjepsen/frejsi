@@ -90,22 +90,27 @@ public struct NightscoutClient: Sendable {
         return try Self.parseEntries(body)
     }
 
-    /// Nightscout's entries array, newest first. Entries without a positive `sgv` or a numeric `date`
-    /// (meter readings, calibrations) are skipped; anything that is not an array is refused.
+    /// Nightscout's entries array, newest first, one per timestamp. Entries without an `sgv` of 1–720
+    /// or a numeric `date` (meter readings, calibrations, nonsense) are skipped; anything that is
+    /// not an array is refused.
     public static func parseEntries(_ data: Data) throws -> [Reading] {
         guard let root = try? JSONSerialization.jsonObject(with: data, options: [.fragmentsAllowed]),
               let array = root as? [Any]
         else { throw NightscoutError.notNightscout }
 
-        var readings: [Reading] = []
+        // One reading per timestamp (a site can send the same entry twice), so the newest is never
+        // compared with itself.
+        var byDate: [Double: Reading] = [:]
         for case let entry as [String: Any] in array {
             guard let sgv = number(entry["sgv"]), let date = number(entry["date"]) else { continue }
+            // The same bounds as the poller's parser; checked before the Int conversion, which
+            // would trap on a value like 1e100.
+            guard sgv >= 1, sgv <= 720, date > 0, date < 1e15, byDate[date] == nil else { continue }
             let mgdl = Int(sgv.rounded(.toNearestOrAwayFromZero))
-            guard mgdl > 0 else { continue }
             let direction = entry["direction"] as? String ?? ""
-            readings.append(Reading(at: Date(timeIntervalSince1970: date / 1000), mgdl: mgdl, direction: direction))
+            byDate[date] = Reading(at: Date(timeIntervalSince1970: date / 1000), mgdl: mgdl, direction: direction)
         }
-        return readings.sorted { $0.at > $1.at }
+        return byDate.values.sorted { $0.at > $1.at }
     }
 
     private static func number(_ value: Any?) -> Double? {
