@@ -1,0 +1,4 @@
+[
+  {"_id":"a","sgv":151,"date":1793016000000,"dateString":"2026-10-27T10:00:00.000Z","direction":"FortyFiveUp","type":"sgv","device":"share2"},
+  {"_id":"b","sgv":145,"date":1793015700000,"dateString":"2026-10-27T09:55:00.000Z","direction":"Flat","type":"sgv","device":"share2"}
+]
