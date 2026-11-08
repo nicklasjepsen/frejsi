@@ -55,14 +55,35 @@ final class LiveActivityController: ObservableObject {
         }
     }
 
+    /// The last start or end; each waits for the one before, so a restart and a switch turned off
+    /// at the same moment never leave an activity running that should not be.
+    private var lastOperation: Task<Void, Never>?
+
+    private func serially(_ work: @escaping () async -> Void) async {
+        let previous = lastOperation
+        let operation = Task {
+            await previous?.value
+            await work()
+        }
+        lastOperation = operation
+        await operation.value
+    }
+
     /// Starts an activity with the newest reading, ready to receive pushes. Ends any other first,
-    /// so there is only ever one.
-    func start(current: Reading, previous: Reading?, unit: GlucoseUnit) async {
+    /// so there is only ever one; `stillWanted` is asked again once they have ended.
+    func start(current: Reading, previous: Reading?, unit: GlucoseUnit, stillWanted: @escaping () -> Bool) async {
+        await serially { [self] in
+            await self.endNow()
+            guard stillWanted() else { return }
+            self.request(current: current, previous: previous, unit: unit)
+        }
+    }
+
+    private func request(current: Reading, previous: Reading?, unit: GlucoseUnit) {
         guard ActivityAuthorizationInfo().areActivitiesEnabled else {
             error = L("live.error.disabled")
             return
         }
-        await endAll()
         let state = LiveGlucoseState(current: current, previous: previous)
         do {
             let activity = try Activity.request(
@@ -107,6 +128,10 @@ final class LiveActivityController: ObservableObject {
     }
 
     func endAll() async {
+        await serially { [self] in await self.endNow() }
+    }
+
+    private func endNow() async {
         for activity in Activity<GlucoseActivityAttributes>.activities {
             await activity.end(nil, dismissalPolicy: .immediate)
         }

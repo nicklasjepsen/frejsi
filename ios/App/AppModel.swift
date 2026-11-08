@@ -87,7 +87,10 @@ final class AppModel: ObservableObject {
 
     func startActivity() async {
         guard let latest = follow.latest else { return }
-        await live.start(current: latest, previous: follow.previous, unit: follow.settings.unit)
+        await live.start(current: latest, previous: follow.previous, unit: follow.settings.unit) { [weak self] in
+            guard let self else { return false }
+            return self.follow.source != nil && self.follow.settings.liveActivityOn
+        }
     }
 
     func setLiveActivity(_ on: Bool) {

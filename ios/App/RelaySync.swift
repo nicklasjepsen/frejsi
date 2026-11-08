@@ -36,6 +36,7 @@ final class RelaySync: ObservableObject {
     private var lastSentAt: Date?
     private var retryDelay = RelaySync.firstRetry
     private var retryTask: Task<Void, Never>?
+    private var drainTask: Task<Void, Never>?
 
     func sync(_ registration: RelayRegistration, force: Bool) {
         guard !removing else { return }
@@ -47,7 +48,7 @@ final class RelaySync: ObservableObject {
         pending = registration
         guard !running else { return }
         running = true
-        Task { await drain() }
+        drainTask = Task { await drain() }
     }
 
     private func drain() async {
@@ -92,13 +93,9 @@ final class RelaySync: ObservableObject {
         pending = nil
         retryTask?.cancel()
         retryTask = nil
-        // Let a registration in flight finish first (its request times out after 20 s), so its
+        // Let a registration in flight finish first (each request times out after 20 s), so its
         // credentials are stored and what it created is deleted too.
-        var waited = 0
-        while running, waited < 250 {
-            try? await Task.sleep(for: .milliseconds(100))
-            waited += 1
-        }
+        await drainTask?.value
         if let credentials = RelayCredentialStore.read() {
             try await client.delete(credentials)
         }

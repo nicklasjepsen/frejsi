@@ -100,8 +100,8 @@ final class ReadingHistoryTests: XCTestCase {
         let t = GlucoseThresholds.nightscoutDefaults
         XCTAssertEqual(ReadingHistory.yDomainMgdl([], thresholds: t), 60...200)
         XCTAssertEqual(ReadingHistory.yDomainMgdl([reading(0, 45), reading(5, 251)], thresholds: t), 20...280)
-        let domain = ReadingHistory.yDomainMgdl([reading(0, 720)], thresholds: t)
-        XCTAssertLessThanOrEqual(domain.upperBound, 480)
+        // Every reading the parser accepts (up to 720 mg/dL) stays on the chart.
+        XCTAssertEqual(ReadingHistory.yDomainMgdl([reading(0, 720)], thresholds: t), 60...740)
     }
 
     func testRefreshesAroundTheExpectedNextReading() {
