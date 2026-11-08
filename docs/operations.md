@@ -525,6 +525,26 @@ secret that does not exist and runs one pump cycle over a fixed fictional source
 on Now and in the history day, a meal's bolus with its minutes and units, ticking a pump meal, and
 that a viewer and a simpleMode member get nothing from the pump and a 403 from `/pump`.
 
+## iPhone push relay
+
+The iPhone app's Live Activity is kept current by the poller's `live-poll`, `live-register` and
+`live-unregister` functions (`poller/README.md`, "iPhone push relay"). Migration `0007_live` adds
+the `LiveSubscription` table; it is not tied to a space and holds no readings, only the newest
+reading's time, the push tokens, the thresholds and the subscription's state.
+
+- **What it needs.** The APNs key in Key Vault as `apns-key-p8` (`ios/README.md`). The Function
+  App's identity already reads and writes the vault (Key Vault Secrets Officer), so `live-<id>`
+  secrets need no new right. No app setting is added.
+- **Is it running?** In App Insights, `live.poll` once a minute with `count` (subscriptions checked)
+  and `code` (`pushed:3,unchanged:5`). `live.check` lines carry each subscription's `code`
+  (`update:200`, `update:410:Unregistered`, `start:200`, `alert-low:200`). A run of
+  `update:send-failed` means the key `apns-key-p8` is missing or Apple is
+  unreachable; `update:403:InvalidProviderToken` means the key ID or team is wrong.
+- **Remove a phone by hand.** Delete the `LiveSubscription` row and the Key Vault secret
+  `live-<id>`. The app then gets `401 bad-device-secret` on its next registration.
+- **Cleanup.** A subscription goes when the app removes it, when Apple calls all its tokens
+  invalid, or after 30 days without a delivered push or a registration (with its secret).
+
 ## Symptoms, food categories and the meal symbol (v0.6.0)
 
 Migration `0005_feel` adds the `Symptom` table (kind, time, severity, note; indexed by space and

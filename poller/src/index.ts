@@ -10,6 +10,8 @@ import "./functions/pump-poll";
 import "./functions/source-connect";
 import "./functions/weekly-insight";
 import "./functions/enrich-foods";
+import "./functions/live-poll";
+import "./functions/live-register";
 
 app.setup({ enableHttpStream: false });
 
