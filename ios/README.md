@@ -94,7 +94,7 @@ The test that decides whether the app gets built: the Live Activity stays curren
      pnpm --filter ./poller push-test --activity-token-file /tmp/activity-token \
      --push-to-start-token <push-to-start token> --csv push-test.csv
    ```
-   Instead of `APNS_KEY_FILE`, `KEY_VAULT_URL` reads the key from Key Vault (`apns-key-p8`). `--help` lists every option.
+   Instead of `APNS_KEY_FILE`, `KEY_VAULT_URL` reads the key from Key Vault (`apns-key-p8`). With `KEY_VAULT_URL` set, `NS_CREDENTIAL_SECRET=<secret name>` (a stored Nightscout credential such as a space's `pump-<spaceId>`) replaces `NS_URL` and `NS_TOKEN`, so the token is read by the script and never typed or shown. A TestFlight or App Store build gets its tokens from the production APNs host: add `--env production`. `--help` lists every option.
 4. Swipe the app away and lock the Simulator. The script reads Nightscout every 30 seconds and sends one `update` push per new reading. At 7 h 45 min it sends `end` to the activity and `start` to the push-to-start token. On iOS 18 the start push asks for the new activity's own update token (`input-push-token`); it appears in `push-tokens.json` and on screen. Write it to the same file and the script picks it up on its next pass (until then it records `update-skipped`).
 5. Take a lock-screen screenshot every minute (`xcrun simctl io booted screenshot`) and compare it with the CSV: `sent_at`, `event`, `reading_at`, `reading_age_s`, the value, and Apple's status, reason and id.
 

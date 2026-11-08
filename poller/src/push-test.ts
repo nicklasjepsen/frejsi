@@ -1,6 +1,12 @@
 import { appendFileSync, existsSync, readFileSync } from "node:fs";
 
-import { createSecretsFromEnv, log, NightscoutSource } from "@naensom/shared";
+import {
+  createSecretsFromEnv,
+  log,
+  NightscoutSource,
+  parseNightscoutCredential,
+  type Secrets,
+} from "@naensom/shared";
 
 import {
   APNS_KEY_ID,
@@ -16,7 +22,9 @@ import { CSV_HEADER, initialState, pushTestTick } from "./live/push-test-run";
 /**
  * `pnpm --filter ./poller push-test`: the iPhone app's stage-2 push test (ios/README.md). Runs on an
  * operator's machine, not in the Function App. The Nightscout address and token come from the
- * environment and are never logged; the log carries outcome codes, the CSV (a local file the
+ * environment (`NS_URL`, `NS_TOKEN`), or from a Key Vault secret holding a stored Nightscout
+ * credential (`NS_CREDENTIAL_SECRET`, e.g. a space's `pump-<spaceId>`), read here so no person or
+ * shell ever sees it. Neither is ever logged; the log carries outcome codes, the CSV (a local file the
  * operator asked for) carries times and values.
  */
 async function main(): Promise<void> {
@@ -25,22 +33,19 @@ async function main(): Promise<void> {
     return;
   }
   const args = parsePushTestArgs(process.argv.slice(2), process.env, new Date());
-  const site = process.env.NS_URL;
-  const token = process.env.NS_TOKEN;
-  if (!site || !token) throw new Error("set NS_URL and NS_TOKEN (a read-only token)");
-  if (!site.startsWith("https://")) throw new Error("NS_URL must start with https://");
+  let secrets: Secrets | undefined;
+  const vault = (): Secrets => (secrets ??= createSecretsFromEnv());
+  const site = await nightscoutCredential(vault);
   if (args.activityToken === undefined && args.activityTokenFile === undefined) {
     throw new Error("give --activity-token, LIVE_ACTIVITY_TOKEN or --activity-token-file");
   }
 
   const keyFile = process.env.APNS_KEY_FILE;
-  const keyP8 = keyFile
-    ? readFileSync(keyFile, "utf8")
-    : await createSecretsFromEnv().get(APNS_KEY_SECRET);
+  const keyP8 = keyFile ? readFileSync(keyFile, "utf8") : await vault().get(APNS_KEY_SECRET);
   if (!keyP8)
     throw new Error(`no APNs key: set APNS_KEY_FILE or put ${APNS_KEY_SECRET} in Key Vault`);
 
-  const nightscout = new NightscoutSource({ url: site, token, log });
+  const nightscout = new NightscoutSource({ ...site, log });
   const apns = new ApnsSender({
     keyP8,
     keyId: APNS_KEY_ID,
@@ -91,6 +96,35 @@ async function main(): Promise<void> {
   } while (!control.stopping);
   apns.close();
   log.info("push-test.stopped", { count: state.restarts });
+}
+
+/** The site and its credential: `NS_URL` + `NS_TOKEN`, or the stored credential `NS_CREDENTIAL_SECRET` names. */
+async function nightscoutCredential(
+  vault: () => Secrets,
+): Promise<{ url: string; token?: string; apiSecret?: string }> {
+  const secretName = process.env.NS_CREDENTIAL_SECRET;
+  if (secretName) {
+    const stored = await vault().get(secretName);
+    if (!stored) throw new Error("the NS_CREDENTIAL_SECRET secret was not found");
+    let credential;
+    try {
+      credential = parseNightscoutCredential(stored);
+    } catch {
+      // The parse error could quote the value; say only that it is not a credential.
+      throw new Error("the NS_CREDENTIAL_SECRET secret is not a Nightscout credential");
+    }
+    log.info("push-test.credential", { code: credential.token ? "token" : "secret" });
+    return credential.token
+      ? { url: credential.url, token: credential.token }
+      : { url: credential.url, apiSecret: credential.apiSecret ?? "" };
+  }
+  const url = process.env.NS_URL;
+  const token = process.env.NS_TOKEN;
+  if (!url || !token) {
+    throw new Error("set NS_URL and NS_TOKEN (a read-only token), or NS_CREDENTIAL_SECRET");
+  }
+  if (!url.startsWith("https://")) throw new Error("NS_URL must start with https://");
+  return { url, token };
 }
 
 main().catch((error: unknown) => {
