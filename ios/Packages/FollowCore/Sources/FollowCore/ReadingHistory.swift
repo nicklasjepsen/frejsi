@@ -52,7 +52,7 @@ public enum ReadingHistory {
         let low = min(values.min() ?? thresholds.lowMgdl, thresholds.lowMgdl) - 10
         let high = max(values.max() ?? thresholds.highMgdl, thresholds.highMgdl) + 10
         let bottom = max(0, Int((Double(low) / 20).rounded(.down)) * 20)
-        let top = min(GlucoseThresholds.maxMgdl + 30, Int((Double(high) / 20).rounded(.up)) * 20)
+        let top = Int((Double(high) / 20).rounded(.up)) * 20
         return bottom...max(top, bottom + 40)
     }
 }
