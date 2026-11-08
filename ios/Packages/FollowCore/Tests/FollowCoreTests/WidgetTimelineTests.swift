@@ -139,6 +139,35 @@ final class WidgetFeedTests: XCTestCase {
         XCTAssertEqual(WidgetTimeline.usable(other, for: nil), other)
     }
 
+    func testAnAnswerForASiteNoLongerFollowedIsDropped() {
+        let fetched = [reading(1, 150)]
+        // "Remove this phone" while the widget waited: the Keychain and the snapshot are gone.
+        let removed = WidgetTimeline.afterFetch(asked: source, fetched: fetched, source: nil, stored: nil)
+        XCTAssertNil(removed.show)
+        XCTAssertFalse(removed.store)
+        // Switched to another site, whose reading the app already stored.
+        let other = FollowSource.nightscout(site: URL(string: "https://other.example.org")!, token: "fixture-token")
+        let otherSnapshot = snapshot(3, 120, site: "https://other.example.org")
+        let switched = WidgetTimeline.afterFetch(asked: source, fetched: fetched, source: other, stored: otherSnapshot)
+        XCTAssertEqual(switched.show, otherSnapshot)
+        XCTAssertFalse(switched.store)
+        // Switched to the demo.
+        XCTAssertFalse(WidgetTimeline.afterFetch(asked: source, fetched: fetched, source: .demo, stored: nil).store)
+    }
+
+    func testANewerReadingTheAppStoredMeanwhileWins() {
+        let newer = snapshot(0, 160)
+        let result = WidgetTimeline.afterFetch(asked: source, fetched: [reading(1, 150)], source: source, stored: newer)
+        XCTAssertEqual(result.show, newer)
+        XCTAssertFalse(result.store)
+        let fresh = WidgetTimeline.afterFetch(asked: source, fetched: [reading(1, 150)], source: source, stored: snapshot(6, 140))
+        XCTAssertEqual(fresh.show, snapshot(1, 150))
+        XCTAssertTrue(fresh.store)
+        let failed = WidgetTimeline.afterFetch(asked: source, fetched: [], source: source, stored: snapshot(6, 140))
+        XCTAssertEqual(failed.show, snapshot(6, 140))
+        XCTAssertFalse(failed.store)
+    }
+
     func testTheNewerOfStoredAndFetchedWins() {
         let stored = snapshot(6, 140)
         let fetched = [reading(1, 150), reading(6, 140)]

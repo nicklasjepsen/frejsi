@@ -65,14 +65,15 @@ enum GlucoseTimelineLoader {
         case .fetch(let followed):
             // The next reading is due and the phone may not have opened the app for hours: read the
             // site like the app does (GET, read-only token in the header, FollowCore's client).
-            var snapshot = WidgetTimeline.usable(stored, for: followed)
             let feed = ReadingFeed(client: NightscoutClient(transport: URLSessionTransport()))
-            if let fetched = try? await feed.latest(followed, count: 2, now: now) {
-                let merged = WidgetTimeline.merge(snapshot, fetched: fetched, site: followed.stored.site)
-                if let merged, merged != snapshot { GlucoseSnapshotStore.save(merged) }
-                snapshot = merged
-            }
-            return timeline(WidgetTimeline.make(snapshot, now: now), isDemo: false)
+            let fetched = (try? await feed.latest(followed, count: 2, now: now)) ?? []
+            // While the read was under way the phone may have been removed or moved to another
+            // site, or the app may have stored a newer reading: decide against what is true now.
+            let after = WidgetTimeline.afterFetch(
+                asked: followed, fetched: fetched, source: FollowSourceStore.load(), stored: GlucoseSnapshotStore.load()
+            )
+            if after.store, let snapshot = after.show { GlucoseSnapshotStore.save(snapshot) }
+            return timeline(WidgetTimeline.make(after.show, now: now), isDemo: after.show?.isDemo ?? false)
         case .stored:
             let snapshot = WidgetTimeline.usable(stored, for: source)
             return timeline(WidgetTimeline.make(snapshot, now: now), isDemo: snapshot?.isDemo ?? false)
