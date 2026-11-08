@@ -252,6 +252,8 @@ jobs:
           FOOD_SOURCES: ${{ vars.FOOD_SOURCES }}
           OFF_COUNTRY: ${{ vars.OFF_COUNTRY }}
           OFF_CONTRIBUTE_HOST: ${{ vars.OFF_CONTRIBUTE_HOST }}
+          # The data controller /privacy names (the iPhone app's privacy page); unset: none named.
+          PRIVACY_CONTROLLER: ${{ vars.PRIVACY_CONTROLLER }}
           APP_VERSION: ${{ env.TAG }}
           ALERT_EMAIL: ${{ secrets.ALERT_EMAIL }}
         run: bash infra/deploy.sh

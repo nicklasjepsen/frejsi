@@ -5,7 +5,7 @@
     "supportLink": "Support",
     "sourceLink": "Source code",
     "updated": "Last updated 9 November 2026.",
-    "controller": "Nicklas Møller Jepsen"
+    "controllerFallback": "whoever runs the server (write to the address below)"
   },
   "follow": {
     "pageTitle": "Open the link in Nænsom",
@@ -105,7 +105,7 @@
       {
         "heading": "Delete everything with one tap",
         "body": [
-          "Tap “Remove this phone” in the app's Settings. It stops the Live Activity and reminders, deletes the copy on Nænsom's server and removes the address and token from the phone. If the server cannot be reached just then, it deletes its copy by itself after 30 days. If you delete the app, the updates stop, and the record is deleted when Apple reports that the app is gone."
+          "Tap “Remove this phone” in the app's Settings. It stops the Live Activity and reminders, deletes the copy on Nænsom's server and removes the address and token from the phone. If the server cannot be reached just then, you can remove everything from the phone alone. The server's copy is then deleted once 30 days pass without an update reaching the phone, or when Apple reports that the app was deleted. To be sure it goes at once, tap “Remove this phone” while the phone is online. If you delete the app, the updates stop, and the record is deleted when Apple reports that the app is gone."
         ],
         "list": []
       },
@@ -126,7 +126,7 @@
       {
         "heading": "Who is behind it, and your rights",
         "body": [
-          "Nænsom is an open-source project run by {controller} in Denmark, who is the data controller.",
+          "Nænsom is an open-source project. The data controller for this server is {controller}.",
           "We handle the information because you ask us to when you set up the app (your explicit consent). You withdraw that consent with “Remove this phone”.",
           "You have the right to see and have deleted the information we hold about you, and to complain to the Danish Data Protection Agency (Datatilsynet, datatilsynet.dk). The server does not know who you are, so mention the Nightscout site's host name when you write, so we can find the record. Never send the token.",
           "Write to {email}."

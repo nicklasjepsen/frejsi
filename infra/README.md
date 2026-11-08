@@ -297,7 +297,7 @@ az keyvault secret set --vault-name <vault> -n off-contribute-user --value <acco
 az keyvault secret set --vault-name <vault> -n off-contribute-password --file <file with the password>
 ```
 
-Four repository variables are optional deployment settings. `release.yml` hands them to `deploy.sh`,
+Five repository variables are optional deployment settings. `release.yml` hands them to `deploy.sh`,
 which writes each to the web app's settings only when it is set (an unset or empty one is left out):
 
 | Repository variable   | App setting                               | Meaning                                                                                                                                                   |
@@ -306,6 +306,7 @@ which writes each to the web app's settings only when it is set (an unset or emp
 | `FOOD_SOURCES`        | `FOOD_SOURCES` (web app and Function App) | the food source plugins switched on, comma separated by id (`off`, `frida`)                                                                               |
 | `OFF_COUNTRY`         | `OFF_COUNTRY` (web app and Function App)  | the Open Food Facts country, a two-letter code such as `dk`; unset means `world`                                                                          |
 | `OFF_CONTRIBUTE_HOST` | `OFF_CONTRIBUTE_HOST`                     | optional: the Open Food Facts host contributions go to, for example `world.openfoodfacts.net` for a first try on staging; unset means the production host |
+| `PRIVACY_CONTROLLER`  | `PRIVACY_CONTROLLER`                      | the data controller the iPhone app's `/privacy` page names, a name and country; unset means the page names none and points to the contact address         |
 
 `AZURE_RESOURCE_GROUP` is a fourth optional repository variable: `release.yml` and `preview.yml`
 read it as `vars.AZURE_RESOURCE_GROUP || 'frejsi'`, so a fork can name its resource group. Create the
