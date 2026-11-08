@@ -182,6 +182,29 @@ describe("checkSubscription: the Live Activity update", () => {
     expect(h.get()?.lastReadingAt).toEqual(new Date(T0 - min));
   });
 
+  it("leaves a registration that came in during the push to give the new activity the reading", async () => {
+    const r = row({ deviceToken: null });
+    const h = harness([r], {
+      respond: () => {
+        const current = must(h.store.rows.get(r.id));
+        h.store.rows.set(r.id, {
+          ...current,
+          activityPushToken: "d4".repeat(32),
+          lastReadingAt: null,
+          nextCheckAt: new Date(T0),
+        });
+        return { status: 200 };
+      },
+    });
+    await checkSubscription(h.deps, r);
+    expect(h.get()).toMatchObject({
+      activityPushToken: "d4".repeat(32),
+      lastReadingAt: null,
+      nextCheckAt: new Date(T0),
+      lastSeenAt: new Date(T0),
+    });
+  });
+
   it("treats a send that threw like a 5xx", async () => {
     const r = row({ deviceToken: null });
     const h = harness([r], { respond: () => new Error("APNs connection failed") });

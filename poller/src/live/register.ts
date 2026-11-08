@@ -123,15 +123,18 @@ export function deviceSecretMatches(secret: string | null, storedHash: string): 
   return stored.length === given.length && timingSafeEqual(given, stored);
 }
 
-/** The first `x-forwarded-for` hop without its port (Azure puts `ip:port` there). */
+/**
+ * The connecting client as Azure's front end saw it: the last `x-forwarded-for` hop, without its
+ * port (Azure appends `ip:port`). Earlier hops are whatever the caller sent, so they are not used.
+ */
 export function clientIp(request: LiveHttpRequest): string {
-  const first = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "";
-  if (first === "") return "unknown";
-  const bracketed = /^\[([^\]]+)\](?::\d+)?$/.exec(first);
+  const last = request.headers.get("x-forwarded-for")?.split(",").at(-1)?.trim() ?? "";
+  if (last === "") return "unknown";
+  const bracketed = /^\[([^\]]+)\](?::\d+)?$/.exec(last);
   if (bracketed?.[1] !== undefined) return bracketed[1];
   // One colon is IPv4 with a port; more is a bare IPv6 address.
-  if (first.split(":").length === 2) return first.split(":")[0] ?? first;
-  return first;
+  if (last.split(":").length === 2) return last.split(":")[0] ?? last;
+  return last;
 }
 
 const error = (status: number, code: LiveRegisterErrorCode): HttpResponseInit => {
