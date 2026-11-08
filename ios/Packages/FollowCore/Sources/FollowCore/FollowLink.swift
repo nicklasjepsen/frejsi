@@ -1,11 +1,11 @@
 import Foundation
 
-/// The link that sets up a phone (plan §3): `https://frejsi.jepsen.ninja/follow#<base64url of
+/// The link that sets up a phone (plan §3): `https://naensom.jepsen.ninja/follow#<base64url of
 /// {"url":…,"token":…}>`. The site and token sit in the fragment, which a browser never sends to a
 /// web server, so they never reach a server log. The same link opens the app as a universal link.
 public struct FollowLink: Equatable, Sendable {
     /// The host that serves the universal link and the "get the app" page.
-    public static let host = "frejsi.jepsen.ninja"
+    public static let host = "naensom.jepsen.ninja"
     public static let path = "/follow"
 
     /// The Nightscout site, normalised (https, no trailing slash).

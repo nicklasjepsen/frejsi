@@ -7,7 +7,7 @@ final class FollowLinkTests: XCTestCase {
         let link = FollowLink(site: try NightscoutClient.normalizeBaseURL("ns.example.org"), token: "fixture-token")
         let url = link.url()
         XCTAssertEqual(url.scheme, "https")
-        XCTAssertEqual(url.host, "frejsi.jepsen.ninja")
+        XCTAssertEqual(url.host, "naensom.jepsen.ninja")
         XCTAssertEqual(url.path, "/follow")
         XCTAssertNil(url.query, "nothing in the query: a server would log it")
         XCTAssertEqual(FollowLink.parse(url), link)
@@ -27,7 +27,7 @@ final class FollowLinkTests: XCTestCase {
         // What the web page or a script makes: base64url without padding of {"url","token"}.
         let json = #"{"url":"ns.example.org/","token":"  abc  "}"#
         let fragment = FollowLink.base64url(Data(json.utf8))
-        let url = try XCTUnwrap(URL(string: "https://frejsi.jepsen.ninja/follow#\(fragment)"))
+        let url = try XCTUnwrap(URL(string: "https://naensom.jepsen.ninja/follow#\(fragment)"))
         let link = try XCTUnwrap(FollowLink.parse(url))
         XCTAssertEqual(link.site.absoluteString, "https://ns.example.org")
         XCTAssertEqual(link.token, "abc")
@@ -39,12 +39,12 @@ final class FollowLinkTests: XCTestCase {
         let plainHttp = FollowLink.base64url(Data(#"{"url":"http://ns.example.org","token":"abc"}"#.utf8))
         for text in [
             "https://evil.example.org/follow#\(good)",
-            "http://frejsi.jepsen.ninja/follow#\(good)",
-            "https://frejsi.jepsen.ninja/other#\(good)",
-            "https://frejsi.jepsen.ninja/follow",
-            "https://frejsi.jepsen.ninja/follow#not-base64-json",
-            "https://frejsi.jepsen.ninja/follow#\(empty)",
-            "https://frejsi.jepsen.ninja/follow#\(plainHttp)",
+            "http://naensom.jepsen.ninja/follow#\(good)",
+            "https://naensom.jepsen.ninja/other#\(good)",
+            "https://naensom.jepsen.ninja/follow",
+            "https://naensom.jepsen.ninja/follow#not-base64-json",
+            "https://naensom.jepsen.ninja/follow#\(empty)",
+            "https://naensom.jepsen.ninja/follow#\(plainHttp)",
         ] {
             XCTAssertNil(FollowLink.parse(try XCTUnwrap(URL(string: text))), text)
         }
