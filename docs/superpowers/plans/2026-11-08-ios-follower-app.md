@@ -1,6 +1,6 @@
 # Nænsom for iPhone (formerly Frejsi) — a Nightscout follower with Live Activity and CarPlay
 
-**Status:** Draft, 2026-11-08, from the owner's request in the project thread "Build own iOS glucose app with CarPlay". **Not approved yet.** The owner's decisions so far: build our own app instead of using Night Guard; other people (Freya's teachers, her mom, Susan, and later other families) install it from the App Store, not TestFlight; free at launch, a price may come later; the owner's Mac mini is the Mac for Xcode. §9 lists what is still open.
+**Status:** **Approved by the owner on 2026-11-08** ("let's go"). Drafted 2026-11-08, from the owner's request in the project thread "Build own iOS glucose app with CarPlay". The owner's decisions so far: build our own app instead of using Night Guard; other people (Freya's teachers, her mom, Susan, and later other families) install it from the App Store, not TestFlight; free at launch, a price may come later; the owner's Mac mini is the Mac for Xcode. §9 lists what is still open.
 
 **Tags:** `ios-vX.Y.Z` (like `desktop-vX.Y.Z`; `release.yml` and the `vX.Y.Z` tags never touch it) · **Builds on:** `desktop/` (the Nightscout reader, read-only token, ages, ranges, arrows), the poller (Azure Functions timers), Key Vault, Azure SQL via Prisma · **Spec:** `docs/superpowers/specs/2026-10-14-frejsi-design.md` hard rules (age with every value, read-only sources, no insulin, no PII in logs).
 
@@ -111,4 +111,4 @@ Decided by the owner on 2026-11-08:
 4. **Where the code lives.** `ios/` in this repo, like `desktop/`, with the contributor line from §8.
 5. **Who runs the code.** Claude, on the Mac mini through Remote Control, Simulator included. The owner signs in to Xcode once.
 
-Still open: the plan's approval as a whole.
+The plan as a whole: approved 2026-11-08.
