@@ -61,6 +61,20 @@ xcodebuild -scheme Naensom -destination 'platform=iOS Simulator,name=iPhone 17' 
 
 The app and the Live Activity use one language, the first of Danish or English in the phone's preferred languages (`Language.preferred` in FollowCore), so the lock screen's ticking age ("1 min, 25 sec ago" / "1 min. 25 sek. siden") and the app's "1 min ago" never disagree.
 
+## TestFlight
+
+`ios/fastlane/Fastfile` has one lane, `beta`: it generates the project, takes the next build number (newest TestFlight build + 1), archives a Release build with automatic signing for team `B32HGH682W` (`-allowProvisioningUpdates`), exports it for the App Store and uploads it to TestFlight.
+
+```
+brew install fastlane xcodegen
+cd ios
+fastlane beta
+```
+
+It signs in to App Store Connect as the Apple ID signed in to Xcode, or, when `ASC_KEY_ID`, `ASC_ISSUER_ID` and `ASC_KEY_P8` (the key's PEM text) are set, with an App Store Connect API key, for CI later. Nothing secret is in the repo. The app record `ninja.jepsen.naensom` must exist in App Store Connect first.
+
+The version is `MARKETING_VERSION` in `project.yml` (0.1.0); the build number is `CURRENT_PROJECT_VERSION`, which the lane sets. `ITSAppUsesNonExemptEncryption` is false (HTTPS only, through Apple's APIs), so uploads skip the export-compliance question. The icon is a placeholder, a white N on green, written by `scripts/make-placeholder-icon.py` with no external assets; replace `App/Assets.xcassets/AppIcon.appiconset/AppIcon-1024.png` with the real one.
+
 ## The push test (stage 2)
 
 The test that decides whether the app gets built: the Live Activity stays current with the app closed and the phone locked, across the 8-hour restart (plan §0, §7).

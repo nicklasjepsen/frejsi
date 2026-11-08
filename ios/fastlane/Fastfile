@@ -1,0 +1,66 @@
+# fastlane for the Nænsom iPhone app. Run from ios/:  fastlane beta
+#
+# Signing is automatic (team B32HGH682W, -allowProvisioningUpdates). App Store Connect access:
+#   - by default, the Apple ID signed in to Xcode on this Mac (fastlane asks for it once);
+#   - for CI, an App Store Connect API key from the environment:
+#       ASC_KEY_ID      the key's ID
+#       ASC_ISSUER_ID   the issuer ID
+#       ASC_KEY_P8      the .p8 file's contents (PEM text), never a file in the repo
+# Nothing secret is in this file or the repo.
+
+default_platform(:ios)
+
+TEAM_ID = "B32HGH682W"
+APP_ID = "ninja.jepsen.naensom"
+
+platform :ios do
+  # The App Store Connect API key when the environment has one; nil means the Xcode account.
+  def api_key
+    return nil unless ENV["ASC_KEY_ID"] && ENV["ASC_ISSUER_ID"] && ENV["ASC_KEY_P8"]
+
+    app_store_connect_api_key(
+      key_id: ENV["ASC_KEY_ID"],
+      issuer_id: ENV["ASC_ISSUER_ID"],
+      key_content: ENV["ASC_KEY_P8"],
+      in_house: false
+    )
+  end
+
+  desc "Build the app and upload it to TestFlight"
+  lane :beta do
+    key = api_key
+
+    # The project is generated, never committed.
+    sh("cd .. && xcodegen generate")
+
+    # The next build number: one past the newest build TestFlight has for this version (1 when none).
+    latest = latest_testflight_build_number(
+      api_key: key,
+      app_identifier: APP_ID,
+      initial_build_number: 0
+    )
+    build_number = latest + 1
+
+    build_app(
+      project: "Naensom.xcodeproj",
+      scheme: "Naensom",
+      configuration: "Release",
+      export_method: "app-store",
+      clean: true,
+      output_directory: "build",
+      xcargs: "-allowProvisioningUpdates CURRENT_PROJECT_VERSION=#{build_number} " \
+              "DEVELOPMENT_TEAM=#{TEAM_ID} CODE_SIGN_STYLE=Automatic",
+      export_xcargs: "-allowProvisioningUpdates",
+      export_options: {
+        teamID: TEAM_ID,
+        signingStyle: "automatic"
+      }
+    )
+
+    upload_to_testflight(
+      api_key: key,
+      app_identifier: APP_ID,
+      skip_waiting_for_build_processing: true
+    )
+  end
+end
