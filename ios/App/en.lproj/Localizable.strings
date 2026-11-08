@@ -64,6 +64,9 @@
 "settings.support" = "Support";
 "settings.version" = "Version";
 "settings.debug.tokens" = "Push tokens (debug builds)";
+"settings.debug.activity" = "Live Activity";
+"settings.debug.pushToStart" = "Push-to-start";
+"settings.debug.device" = "Reminders (device)";
 "settings.remove" = "Remove this phone";
 "settings.remove.footer" = "Stops the Live Activity and reminders, deletes the copy on Nænsom's server and clears the address and token from this phone.";
 "settings.remove.confirm.title" = "Remove this phone?";

@@ -87,8 +87,11 @@ struct OnboardingView: View {
 
                 if let tested {
                     Section {
-                        Label(testedText(tested), systemImage: "checkmark.circle")
-                            .foregroundStyle(.green)
+                        // Re-rendered so the reading's age stays true while the result is open.
+                        TimelineView(.periodic(from: .now, by: 15)) { context in
+                            Label(testedText(tested, now: context.date), systemImage: "checkmark.circle")
+                                .foregroundStyle(.green)
+                        }
                         Button(L("onboarding.start")) {
                             app.finishOnboarding(tested.source)
                         }
@@ -169,11 +172,11 @@ struct OnboardingView: View {
         self.tested = nil
     }
 
-    private func testedText(_ tested: Tested) -> String {
+    private func testedText(_ tested: Tested, now: Date) -> String {
         guard let newest = tested.newest else { return L("onboarding.connected.empty") }
         let unit = follow.settings.unit
         let value = "\(Glucose.format(newest.mgdl, unit: unit, locale: AppLanguage.locale)) \(unit.label)"
-        let age = Glucose.ageText(newest, now: Date(), language: AppLanguage.current)
+        let age = Glucose.ageText(newest, now: now, language: AppLanguage.current)
         return L("onboarding.connected", value, age)
     }
 

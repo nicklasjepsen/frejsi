@@ -88,9 +88,9 @@ struct SettingsView: View {
 
                 #if DEBUG
                 Section(L("settings.debug.tokens")) {
-                    TokenRow(title: "Activity", token: live.activityToken)
-                    TokenRow(title: "Push-to-start", token: live.pushToStartToken)
-                    TokenRow(title: "Device", token: notifications.deviceToken)
+                    TokenRow(title: L("settings.debug.activity"), token: live.activityToken)
+                    TokenRow(title: L("settings.debug.pushToStart"), token: live.pushToStartToken)
+                    TokenRow(title: L("settings.debug.device"), token: notifications.deviceToken)
                 }
                 #endif
 
