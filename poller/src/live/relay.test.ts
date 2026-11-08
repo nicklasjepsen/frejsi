@@ -110,7 +110,10 @@ function harness(
       return answer instanceof Error ? Promise.reject(answer) : Promise.resolve(answer);
     },
     now: () => now,
-    log: createLogger((line) => lines.push(line)),
+    log: createLogger(
+      (line) => lines.push(line),
+      () => new Date(T0),
+    ),
   };
   return {
     deps,
