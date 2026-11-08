@@ -192,12 +192,17 @@ describe("POST /api/live/register: create", () => {
       jsonBody: { error: "rate-limited" },
     });
     expect(h.validated).toHaveLength(CHECK_LIMIT.max);
+    // A first hop the caller made up does not make it another client.
+    expect(
+      (await h.register(request(body, { "x-forwarded-for": "192.0.2.1, 203.0.113.7:40000" })))
+        .status,
+    ).toBe(429);
     // Another address is not affected.
     expect((await h.register(request(body, { "x-forwarded-for": "198.51.100.2" }))).status).toBe(
       422,
     );
     // Requests that need no check are counted too.
-    for (let i = 0; i < REQUEST_LIMIT.max - CHECK_LIMIT.max - 1; i += 1) {
+    for (let i = 0; i < REQUEST_LIMIT.max - CHECK_LIMIT.max - 2; i += 1) {
       await h.register(request("{", from));
     }
     expect((await h.register(request("{", from))).status).toBe(429);
@@ -402,10 +407,10 @@ describe("the pieces", () => {
     expect(deviceSecretMatches(SECRET, "abc")).toBe(false);
   });
 
-  it("takes the first forwarded hop without its port", () => {
+  it("takes the hop Azure appended, not one the caller sent, without its port", () => {
     const ip = (value?: string) =>
       clientIp(request("", value === undefined ? {} : { "x-forwarded-for": value }));
-    expect(ip("203.0.113.7:51234, 10.0.0.1")).toBe("203.0.113.7");
+    expect(ip("10.9.9.9, 203.0.113.7:51234")).toBe("203.0.113.7");
     expect(ip("203.0.113.7")).toBe("203.0.113.7");
     expect(ip("[2001:db8::1]:443")).toBe("2001:db8::1");
     expect(ip("2001:db8::1")).toBe("2001:db8::1");

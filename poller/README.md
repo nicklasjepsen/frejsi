@@ -111,7 +111,7 @@ kept as a SHA-256 and compared in constant time. Update (on every launch and bac
 delete need it in `x-device-secret` (`401 bad-device-secret`, also for an unknown id). A token field
 left out keeps the stored one; `null` clears it. An activity older than the one the relay already
 knows is ignored, so the app reporting the activity the 8-hour restart ended cannot undo it. Rate
-limits per client IP (`x-forwarded-for`): 60 requests in 10 minutes, and 10 an hour that create or
+limits per client IP (the last `x-forwarded-for` hop, the one Azure appends): 60 requests in 10 minutes, and 10 an hour that create or
 check a site (`429 rate-limited`). They are in memory, per Function App instance: a scaled-out app
 allows that much per instance, enough to stop one phone or script from hammering the relay or a
 Nightscout site through it.

@@ -310,6 +310,29 @@ async function settleTokens(deps: RelayDeps, pass: Pass): Promise<boolean> {
   return false;
 }
 
+/**
+ * Writes the pass's state, unless the app registered meanwhile (a new activity, site or demo
+ * switch): then the reading, schedule and activity fields are left as the registration set them,
+ * so a new activity still gets the newest reading on the next run, and only the rest is written.
+ */
+async function savePass(deps: RelayDeps, pass: Pass): Promise<void> {
+  const { row, patch } = pass;
+  const guard: LivePatch = {
+    activityPushToken: pass.invalid.has("activityPushToken") ? null : row.activityPushToken,
+    tokenSecretRef: row.tokenSecretRef,
+    isDemo: row.isDemo,
+  };
+  if (await deps.store.update(row.id, patch, guard)) return;
+  const {
+    lastReadingAt: _reading,
+    nextCheckAt: _next,
+    activityStartedAt: _started,
+    activityPushToken: _token,
+    ...rest
+  } = patch;
+  await deps.store.update(row.id, rest);
+}
+
 /** One subscription's pass. Never throws for Nightscout or Apple; a database failure does. */
 export async function checkSubscription(deps: RelayDeps, row: LiveRow): Promise<CheckOutcome> {
   const now = deps.now();
@@ -325,16 +348,11 @@ export async function checkSubscription(deps: RelayDeps, row: LiveRow): Promise<
     await alert(deps, pass, undefined, known);
     const removed = await settleTokens(deps, pass);
     if (removed) return "removed";
-    await deps.store.update(row.id, {
-      ...pass.patch,
-      failures: row.failures + 1,
-      nextCheckAt: new Date(
-        nextCheckAt(now, {
-          newestReadingAt: known,
-          restartFrom: restartFromOf(row),
-        }),
-      ),
-    });
+    pass.patch.failures = row.failures + 1;
+    pass.patch.nextCheckAt = new Date(
+      nextCheckAt(now, { newestReadingAt: known, restartFrom: restartFromOf(row) }),
+    );
+    await savePass(deps, pass);
     return "read-failed";
   }
 
@@ -396,7 +414,7 @@ export async function checkSubscription(deps: RelayDeps, row: LiveRow): Promise<
     deps.log.info("live.removed", { subscriptionId: row.id, code: "tokens-invalid" });
     return "removed";
   }
-  await deps.store.update(row.id, pass.patch);
+  await savePass(deps, pass);
   const fields = {
     subscriptionId: row.id,
     code: pass.codes.length === 0 ? outcome : pass.codes.join(","),
