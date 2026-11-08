@@ -32,6 +32,10 @@ final class AppModel: ObservableObject {
         follow.onNewReading = { [weak self] current, previous in
             self?.newReading(current, previous)
         }
+        follow.onThresholdsChanged = { [weak self] in
+            self?.live.redraw()
+            self?.scheduleSync()
+        }
         live.observe()
         if follow.settings.alertsOn {
             Task { await notifications.registerIfAllowed() }

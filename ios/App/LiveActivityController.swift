@@ -83,7 +83,7 @@ final class LiveActivityController: ObservableObject {
     /// shows (`LiveActivitySync`), so a late local fetch never overwrites a newer pushed state.
     func show(current: Reading, previous: Reading?) {
         let fresh = LiveGlucoseState(current: current, previous: previous)
-        for activity in Activity<GlucoseActivityAttributes>.activities where activity.activityState == .active {
+        for activity in Activity<GlucoseActivityAttributes>.activities where Self.isLive(activity) {
             guard LiveActivitySync.shouldReplace(activity.content.state, with: fresh) else { continue }
             Task {
                 await activity.update(ActivityContent(state: fresh, staleDate: fresh.staleDate))
@@ -95,7 +95,7 @@ final class LiveActivityController: ObservableObject {
     /// once instead of at the next push.
     func redraw() {
         Task {
-            for activity in Activity<GlucoseActivityAttributes>.activities where activity.activityState == .active {
+            for activity in Activity<GlucoseActivityAttributes>.activities where Self.isLive(activity) {
                 await activity.update(activity.content)
             }
         }
@@ -103,7 +103,7 @@ final class LiveActivityController: ObservableObject {
 
     /// The unit an activity shows is fixed when it starts.
     var runningUnit: GlucoseUnit? {
-        Activity<GlucoseActivityAttributes>.activities.first { $0.activityState == .active }?.attributes.unit
+        Activity<GlucoseActivityAttributes>.activities.first(where: Self.isLive)?.attributes.unit
     }
 
     func endAll() async {
@@ -151,8 +151,13 @@ final class LiveActivityController: ObservableObject {
         }
     }
 
+    /// Still on the lock screen and accepting updates: active, or past its stale date.
+    nonisolated private static func isLive(_ activity: Activity<GlucoseActivityAttributes>) -> Bool {
+        activity.activityState == .active || activity.activityState == .stale
+    }
+
     private func updateRunning() {
-        isRunning = Activity<GlucoseActivityAttributes>.activities.contains { $0.activityState == .active }
+        isRunning = Activity<GlucoseActivityAttributes>.activities.contains(where: Self.isLive)
     }
 
     /// ActivityKit does not say when an activity began, so the app notes when it first saw each one.

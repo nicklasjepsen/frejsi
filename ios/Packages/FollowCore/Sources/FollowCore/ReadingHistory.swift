@@ -28,13 +28,15 @@ public enum ReadingHistory {
     }
 
     /// Old and new together, newest first, one per timestamp (the fresh copy wins), older than
-    /// twelve hours dropped.
+    /// twelve hours dropped, except the newest reading: a site that has sent nothing for longer
+    /// still shows its last value, grey and with its age.
     public static func merge(_ existing: [Reading], _ fresh: [Reading], now: Date) -> [Reading] {
         var byTime: [Date: Reading] = [:]
         for reading in existing { byTime[reading.at] = reading }
         for reading in fresh { byTime[reading.at] = reading }
+        let sorted = byTime.values.sorted { $0.at > $1.at }
         let oldest = now.addingTimeInterval(-keep)
-        return byTime.values.filter { $0.at >= oldest }.sorted { $0.at > $1.at }
+        return sorted.enumerated().filter { $0.offset == 0 || $0.element.at >= oldest }.map(\.element)
     }
 
     /// The readings a curve window shows, oldest first, as a chart draws them.

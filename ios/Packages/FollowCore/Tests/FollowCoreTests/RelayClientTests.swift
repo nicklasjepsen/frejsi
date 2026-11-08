@@ -163,6 +163,15 @@ final class RelayClientTests: XCTestCase {
         }
     }
 
+    func testOnlyPassingFailuresAreRetried() {
+        for transient in [RelayError.unreachable, .rateLimited, .nightscoutUnreachable, .status(503)] {
+            XCTAssertTrue(transient.isTransient, "\(transient)")
+        }
+        for lasting in [RelayError.validation, .notHTTPS, .badDeviceSecret, .nightscoutRefused, .badResponse, .status(404)] {
+            XCTAssertFalse(lasting.isTransient, "\(lasting)")
+        }
+    }
+
     func testNoConnectionIsUnreachable() async {
         let client = RelayClient(transport: ScriptedTransport([.fail]))
         do {
