@@ -185,11 +185,14 @@ final class FollowSettingsTests: XCTestCase {
         XCTAssertTrue(settings.liveActivityOn, "on by default after onboarding")
         XCTAssertFalse(settings.alertsOn, "off until the user allows notifications")
         XCTAssertEqual(settings.curveWindow, .sixHours)
+        XCTAssertTrue(settings.autoStartLiveActivity, "start automatically: on by default")
     }
 
     func testRoundTrips() {
-        let settings = FollowSettings(unit: .mgdL, liveActivityOn: false, alertsOn: true, curveWindow: .twelveHours)
+        let settings = FollowSettings(unit: .mgdL, liveActivityOn: false, alertsOn: true, curveWindow: .twelveHours, autoStartLiveActivity: false)
         XCTAssertEqual(FollowSettings.load(settings.encoded()), settings)
+        // A copy saved before the setting existed starts automatically.
+        XCTAssertTrue(FollowSettings.load(Data(#"{"liveActivityOn":true}"#.utf8)).autoStartLiveActivity)
     }
 
     func testAPartOrDamagedCopyFallsBackField() {
@@ -215,6 +218,49 @@ final class LiveActivitySyncTests: XCTestCase {
         XCTAssertFalse(LiveActivitySync.shouldReplace(state(0, 124), with: state(5, 130)))
         XCTAssertFalse(LiveActivitySync.shouldReplace(state(0, 124), with: state(0, 124)))
         XCTAssertFalse(LiveActivitySync.shouldReplace(state(0, 124), with: state(0, 130)))
+    }
+
+    typealias Running = LiveActivitySync.RunningActivity
+
+    func autoStart(
+        autoStartOn: Bool = true, liveActivityOn: Bool = true, systemAllows: Bool = true,
+        running: [Running] = [], haveReading: Bool = true
+    ) -> LiveActivitySync.AutoStart {
+        LiveActivitySync.autoStart(
+            autoStartOn: autoStartOn, liveActivityOn: liveActivityOn, systemAllows: systemAllows,
+            running: running, haveReading: haveReading
+        )
+    }
+
+    func testStartsWhenNothingRuns() {
+        XCTAssertEqual(autoStart(), .start)
+    }
+
+    func testStartsOnlyWhenEverythingAllowsIt() {
+        XCTAssertEqual(autoStart(autoStartOn: false), .nothing)
+        XCTAssertEqual(autoStart(liveActivityOn: false), .nothing)
+        XCTAssertEqual(autoStart(systemAllows: false), .nothing)
+        XCTAssertEqual(autoStart(haveReading: false), .nothing)
+    }
+
+    func testReusesARunningActivityInsteadOfADuplicate() {
+        let one = Running(id: "a", startedAt: noon)
+        XCTAssertEqual(autoStart(running: [one]), .reuse(keep: "a", end: []))
+        // Even with automatic start off, a running one is reused, never doubled.
+        XCTAssertEqual(autoStart(autoStartOn: false, running: [one]), .reuse(keep: "a", end: []))
+    }
+
+    func testKeepsTheNewestAndEndsTheRest() {
+        let running = [
+            Running(id: "old", startedAt: noon.addingTimeInterval(-8 * 3600)),
+            Running(id: "new", startedAt: noon),
+            Running(id: "mid", startedAt: noon.addingTimeInterval(-3600)),
+        ]
+        XCTAssertEqual(autoStart(running: running), .reuse(keep: "new", end: ["mid", "old"]))
+    }
+
+    func testLeavesActivitiesAloneWhenSwitchedOff() {
+        XCTAssertEqual(autoStart(liveActivityOn: false, running: [Running(id: "a", startedAt: noon)]), .nothing)
     }
 
     func testStatus() {

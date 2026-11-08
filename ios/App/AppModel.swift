@@ -41,13 +41,45 @@ final class AppModel: ObservableObject {
             Task { await notifications.registerIfAllowed() }
         }
         syncNow(force: true)
+        if follow.source != nil {
+            Task {
+                await follow.refresh()
+                await autoStartIfWanted()
+            }
+        }
     }
 
-    /// The app came to the foreground: read now, and tell the relay the phone is still here.
+    /// The app came to the foreground: read now, start or reuse the Live Activity, and tell the
+    /// relay the phone is still here.
     func becameActive() {
         guard follow.source != nil else { return }
-        Task { await follow.refresh() }
+        Task {
+            await follow.refresh()
+            await autoStartIfWanted()
+        }
         syncNow(force: false)
+    }
+
+    /// "Start Live Activity automatically" (on by default), at launch and on every return to the
+    /// foreground: reuse a running activity (the newest; others end) or start one. A new
+    /// activity's push token reaches the relay through `onTokensChanged`.
+    func autoStartIfWanted() async {
+        guard follow.source != nil else { return }
+        let decision = LiveActivitySync.autoStart(
+            autoStartOn: follow.settings.autoStartLiveActivity,
+            liveActivityOn: follow.settings.liveActivityOn,
+            systemAllows: live.systemAllows,
+            running: live.running(),
+            haveReading: follow.latest != nil
+        )
+        switch decision {
+        case .start:
+            await startActivity()
+        case .reuse(let keep, let others):
+            await live.keep(keep, ending: others)
+        case .nothing:
+            break
+        }
     }
 
     // MARK: - Onboarding and links
@@ -103,6 +135,11 @@ final class AppModel: ObservableObject {
             }
             scheduleSync()
         }
+    }
+
+    func setAutoStart(_ on: Bool) {
+        follow.update { $0.autoStartLiveActivity = on }
+        if on { Task { await autoStartIfWanted() } }
     }
 
     private func newReading(_ current: Reading, _ previous: Reading?) {

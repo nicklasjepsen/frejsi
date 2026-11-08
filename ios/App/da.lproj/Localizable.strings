@@ -54,7 +54,8 @@
 "settings.colours.reset" = "Brug Nightscout-sidens værdier";
 "settings.colours.resetDefaults" = "Brug standardværdierne";
 "settings.live" = "Live Activity";
-"settings.live.footer" = "Viser blodsukkeret på låseskærmen og i Dynamic Island. Nænsoms server holder det opdateret, også når appen er lukket.";
+"settings.live.autoStart" = "Start Live Activity automatisk";
+"settings.live.footer" = "Viser blodsukkeret på låseskærmen og i Dynamic Island. Nænsoms server holder det opdateret, også når appen er lukket. Startes den automatisk, begynder den, hver gang appen åbnes og ingen vises.";
 "settings.alerts" = "Påmindelser ved lav og høj";
 "settings.alerts.footer" = "En besked, når blodsukkeret går under lav eller over høj, og når der ikke er kommet nye målinger i 20 minutter. Det er en påmindelse: den følger lydløs og Fokus som alle andre beskeder og erstatter ikke CGM-appens alarmer.";
 "settings.alerts.denied" = "Beskeder er slået fra for Nænsom. Giv lov i Indstillinger.";

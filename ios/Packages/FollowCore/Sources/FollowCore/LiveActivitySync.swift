@@ -23,4 +23,40 @@ public enum LiveActivitySync {
         if !wanted { return .off }
         return running ? .running : .stopped
     }
+
+    /// A Live Activity on the phone that is still showing (active or stale).
+    public struct RunningActivity: Equatable, Sendable {
+        public var id: String
+        /// When the app started or first saw it.
+        public var startedAt: Date
+
+        public init(id: String, startedAt: Date) {
+            self.id = id
+            self.startedAt = startedAt
+        }
+    }
+
+    public enum AutoStart: Equatable, Sendable {
+        /// Start a new activity with the newest reading.
+        case start
+        /// One is already running: keep it (the newest) and end any others, never a duplicate.
+        case reuse(keep: String, end: [String])
+        case nothing
+    }
+
+    /// What to do when the app launches or comes back to the foreground. With the Live Activity
+    /// switched off nothing happens; a running one is reused (the newest kept, the rest ended);
+    /// otherwise a new one starts when "Start Live Activity automatically" is on, iOS allows Live
+    /// Activities and there is a reading to show.
+    public static func autoStart(
+        autoStartOn: Bool, liveActivityOn: Bool, systemAllows: Bool, running: [RunningActivity], haveReading: Bool
+    ) -> AutoStart {
+        guard liveActivityOn else { return .nothing }
+        if let newest = running.max(by: { ($0.startedAt, $0.id) < ($1.startedAt, $1.id) }) {
+            let others = running.filter { $0.id != newest.id }.map(\.id).sorted()
+            return .reuse(keep: newest.id, end: others)
+        }
+        guard autoStartOn, systemAllows, haveReading else { return .nothing }
+        return .start
+    }
 }
