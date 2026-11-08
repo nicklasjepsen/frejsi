@@ -118,6 +118,21 @@ own values. That file holds a connection string and is not in the repo's `.gitig
 it. `echo poller/local.settings.json >> .git/info/exclude` keeps it out of `git add -A` on your
 machine without a repo change.
 
+## iPhone push test
+
+`pnpm --filter ./poller push-test` is the iPhone app's stage-2 test (plan
+`docs/superpowers/plans/2026-11-08-ios-follower-app.md` §7; steps in
+[ios/README.md](../ios/README.md#the-push-test-stage-2)). It runs on an operator's machine, not in
+the Function App: it reads a Nightscout site (`NS_URL`, `NS_TOKEN`; `NightscoutSource.latestEntries`,
+the same allow-listed `GET entries/sgv.json`), sends one Live Activity `update` push per new reading
+through `src/live/apns.ts`, and at 7 h 45 min ends the activity and starts a new one by
+push-to-start. `src/live/apns.ts` is the APNs sender stage 4's relay will use: Node `http2`, an ES256
+provider token from the `.p8` key (Key Vault secret `apns-key-p8`, key ID `P9HBN8RRS3`, team
+`B32HGH682W`), renewed every 50 minutes, sandbox or production host. `src/live/payloads.ts` builds
+the `update`, `end` and push-to-start payloads; their content state is pinned by the fixture the
+Swift package tests against. The log carries outcome codes only (`update:200`,
+`update:400:BadDeviceToken`); times and values go only to the local CSV the operator names.
+
 ## Build
 
 ```
