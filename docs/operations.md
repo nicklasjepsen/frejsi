@@ -541,9 +541,13 @@ reading's time, the push tokens, the thresholds and the subscription's state.
   `update:send-failed` means the key `apns-key-p8` is missing or Apple is
   unreachable; `update:403:InvalidProviderToken` means the key ID or team is wrong.
 - **Remove a phone by hand.** Delete the `LiveSubscription` row and the Key Vault secret
-  `live-<id>`. The app then gets `401 bad-device-secret` on its next registration.
+  `live-<id>` (a secret left without its row is deleted by the hourly sweep anyway, once it is an
+  hour old). The app then gets `401 bad-device-secret` on its next registration.
 - **Cleanup.** A subscription goes when the app removes it, when Apple calls all its tokens
-  invalid, or after 30 days without a delivered push or a registration (with its secret).
+  invalid, or after 30 days without a delivered push or a registration (with its secret). A secret
+  delete that fails twice logs `live.secret-delete-failed`; the run in minute 0 of each hour then
+  deletes every `live-<id>` older than an hour without a row and logs `live.secret-orphan-removed`.
+  Repeated `live.secret-sweep-failed` lines mean the identity cannot list or delete secrets.
 
 ## Symptoms, food categories and the meal symbol (v0.6.0)
 

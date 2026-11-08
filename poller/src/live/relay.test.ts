@@ -17,6 +17,7 @@ import {
   createEntryReader,
   IDLE_AFTER_MS,
   mapLimit,
+  ORPHAN_GRACE_MS,
   runLivePoll,
   verdictOf,
   type RelayDeps,
@@ -85,6 +86,7 @@ function harness(
     respond?: (request: ApnsRequest) => ApnsResult | Error;
   } = {},
 ) {
+  let now = T0;
   const store = new MemoryLiveStore();
   for (const r of rows) store.rows.set(r.id, { ...r });
   const secrets = new MemorySecrets(
@@ -94,10 +96,10 @@ function harness(
         serializeNightscoutCredential({ url: SITE, token: "fixture-token" }),
       ]),
     ),
+    () => now,
   );
   const lines: string[] = [];
   const sent: Sent[] = [];
-  let now = T0;
   let entries = options.entries ?? [entry(1, 120), entry(6, 115)];
   const deps: RelayDeps = {
     store,
@@ -129,6 +131,21 @@ function harness(
     },
     get: (id = "sub-0001") => store.rows.get(id),
   };
+}
+
+const messages = (lines: string[]) =>
+  lines.map((line) => (JSON.parse(line) as { msg: string }).msg);
+
+/** Makes the next `count` secret deletes fail; answers how many deletes were asked for. */
+function failDeletes(h: ReturnType<typeof harness>, count: number) {
+  const remove = h.secrets.delete.bind(h.secrets);
+  const calls = { asked: 0 };
+  h.secrets.delete = (name) => {
+    calls.asked += 1;
+    if (calls.asked <= count) return Promise.reject(new Error("vault unavailable"));
+    return remove(name);
+  };
+  return calls;
 }
 
 const aps = (s: Sent) => (s.request.payload as { aps: Record<string, unknown> }).aps;
@@ -540,6 +557,106 @@ describe("runLivePoll", () => {
       expect(text).not.toContain(secret);
     }
     expect(text).toContain('"subscriptionId":"sub-logs-1"');
+  });
+});
+
+describe("Key Vault cleanup is eventually consistent", () => {
+  const idleRow = (id: string) =>
+    row({ id, lastSeenAt: new Date(T0 - IDLE_AFTER_MS - 1), nextCheckAt: new Date(T0 + min) });
+
+  it("tries a failed secret delete once more, and the idle row still goes", async () => {
+    const h = harness([idleRow("sub-retry-1")]);
+    const calls = failDeletes(h, 1);
+    await runLivePoll(h.deps);
+    expect(calls.asked).toBe(2);
+    expect(h.get("sub-retry-1")).toBeUndefined();
+    await expect(h.secrets.get(liveSecretName("sub-retry-1"))).resolves.toBeUndefined();
+    expect(messages(h.lines)).toContain("live.removed");
+  });
+
+  it("leaves a secret both tries failed for, and the hourly sweep removes it", async () => {
+    const h = harness([idleRow("sub-orphan-1")]);
+    const calls = failDeletes(h, 2);
+    h.setNow(T0 + ORPHAN_GRACE_MS - 30 * min);
+    await runLivePoll(h.deps);
+    expect(calls.asked).toBe(2);
+    expect(h.get("sub-orphan-1")).toBeUndefined();
+    await expect(h.secrets.get(liveSecretName("sub-orphan-1"))).resolves.toBeDefined();
+    expect(messages(h.lines)).toContain("live.secret-delete-failed");
+
+    h.setNow(T0 + ORPHAN_GRACE_MS);
+    await runLivePoll(h.deps);
+    await expect(h.secrets.get(liveSecretName("sub-orphan-1"))).resolves.toBeUndefined();
+    const removed = h.lines
+      .map((line) => JSON.parse(line) as Record<string, unknown>)
+      .find((line) => line.msg === "live.secret-orphan-removed");
+    expect(removed).toMatchObject({ subscriptionId: "sub-orphan-1", code: "no-row" });
+  });
+
+  it("does the same for a tokenless subscription removed after a day", async () => {
+    const r = row({
+      id: "sub-orphan-2",
+      pushToStartToken: null,
+      activityPushToken: null,
+      deviceToken: null,
+      lastSeenAt: new Date(T0 - 24 * 60 * min),
+    });
+    const h = harness([r]);
+    failDeletes(h, 2);
+    h.setNow(T0 + 30 * min);
+    await expect(checkSubscription(h.deps, r)).resolves.toBe("removed");
+    await expect(h.secrets.get(liveSecretName("sub-orphan-2"))).resolves.toBeDefined();
+    h.setNow(T0 + 2 * ORPHAN_GRACE_MS);
+    await runLivePoll(h.deps);
+    await expect(h.secrets.get(liveSecretName("sub-orphan-2"))).resolves.toBeUndefined();
+  });
+
+  it("keeps a secret whose subscription still has a row", async () => {
+    const h = harness([
+      row({ id: "sub-kept-1", nextCheckAt: new Date(T0 + 10 * ORPHAN_GRACE_MS) }),
+    ]);
+    h.setNow(T0 + 5 * ORPHAN_GRACE_MS);
+    await runLivePoll(h.deps);
+    await expect(h.secrets.get(liveSecretName("sub-kept-1"))).resolves.toBeDefined();
+    expect(messages(h.lines)).not.toContain("live.secret-orphan-removed");
+  });
+
+  it("keeps a fresh secret without a row: a registration may be writing its row", async () => {
+    const h = harness([]);
+    h.setNow(T0 + 30 * min);
+    await h.secrets.set(liveSecretName("sub-new-1"), "fixture-credential");
+    await h.secrets.set("glucose-s1", "not the relay's");
+    h.setNow(T0 + ORPHAN_GRACE_MS);
+    await runLivePoll(h.deps);
+    await expect(h.secrets.get(liveSecretName("sub-new-1"))).resolves.toBeDefined();
+    h.setNow(T0 + 2 * ORPHAN_GRACE_MS);
+    await runLivePoll(h.deps);
+    await expect(h.secrets.get(liveSecretName("sub-new-1"))).resolves.toBeUndefined();
+    await expect(h.secrets.get("glucose-s1")).resolves.toBeDefined();
+  });
+
+  it("sweeps at most once an hour, in the run that starts in minute 0", async () => {
+    const h = harness([]);
+    const list = h.secrets.list.bind(h.secrets);
+    let listed = 0;
+    h.secrets.list = (prefix) => {
+      listed += 1;
+      expect(prefix).toBe("live-");
+      return list(prefix);
+    };
+    for (let minute = 0; minute < 120; minute += 1) {
+      h.setNow(T0 + minute * min + 30_000);
+      await runLivePoll(h.deps);
+    }
+    expect(listed).toBe(2);
+  });
+
+  it("logs a failed listing and still checks the due subscriptions", async () => {
+    const h = harness([row({ deviceToken: null })]);
+    h.secrets.list = () => Promise.reject(new Error("vault unavailable"));
+    const summary = await runLivePoll(h.deps);
+    expect(summary.pushed).toBe(1);
+    expect(messages(h.lines)).toContain("live.secret-sweep-failed");
   });
 });
 

@@ -154,6 +154,15 @@ registered since the run selected them). A subscription with no push token at al
 looked at hourly, and goes after a day without one. A reading dated more than two minutes ahead is a
 clock error and is ignored.
 
+The idle and tokenless cleanups delete the row first, guarded by `lastSeenAt` so a registration
+that comes in meanwhile keeps its subscription and stored token, and then `live-<id>`, tried twice.
+A secret both tries failed for is not left for good: the run that starts in minute 0 of each hour
+lists the `live-` secrets (names and write times, never values, `Secrets.list`) and deletes every
+one older than an hour whose subscription has no row, up to 100 per sweep
+(`live.secret-orphan-removed`). The hour of grace covers a registration, which writes the secret
+before its row. A failed listing or delete is `live.secret-sweep-failed` and is tried again the
+next hour; a failed inline delete is `live.secret-delete-failed`.
+
 **Logs** carry the subscription id and outcome codes (`update:200`, `start:410:Unregistered`,
 `alert-low:200`, `Timeout`), never an address, a token, a secret, an IP or a value.
 

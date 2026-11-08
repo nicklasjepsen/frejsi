@@ -43,4 +43,19 @@ describe("MemorySecrets", () => {
     await expect(secrets.delete("live-a1")).resolves.toBeUndefined();
     await expect(secrets.delete("../x")).rejects.toThrow(/^secret name is invalid$/);
   });
+
+  it("lists the names under a prefix with the time of their latest write, never a value", async () => {
+    let now = Date.UTC(2026, 10, 9, 10, 0, 0);
+    const secrets = new MemorySecrets({ "glucose-s1": "seeded" }, () => now);
+    await secrets.set("live-a1", "first");
+    now += 60_000;
+    await secrets.set("live-a1", "second");
+    await secrets.set("live-a2", "other");
+    await secrets.delete("live-a2");
+    await expect(secrets.list("live-")).resolves.toEqual([
+      { name: "live-a1", updatedOn: new Date(now) },
+    ]);
+    await expect(secrets.list("pump-")).resolves.toEqual([]);
+    await expect(secrets.list("../")).rejects.toThrow(/^secret name is invalid$/);
+  });
 });

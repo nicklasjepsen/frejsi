@@ -62,13 +62,22 @@ export const FUTURE_TOLERANCE_MS = 2 * 60_000;
 /** A subscription with no push token at all is not polled; it goes after a day without one. */
 export const TOKENLESS_GRACE_MS = 24 * 60 * 60_000;
 export const TOKENLESS_RECHECK_MS = 60 * 60_000;
+/** The orphan sweep runs in the run that starts in this minute of each hour (the timer is a singleton). */
+export const SWEEP_MINUTE = 0;
+/**
+ * A `live-<id>` secret younger than this is kept even without a row: registration writes the
+ * secret first and the row right after.
+ */
+export const ORPHAN_GRACE_MS = 60 * 60_000;
+/** `live-`, the prefix every subscription's secret name starts with. */
+const LIVE_SECRET_PREFIX = liveSecretName("");
 
 export type ReadEntries = (row: LiveRow, now: number) => Promise<NightscoutEntry[]>;
 export type SendPush = (environment: ApnsEnvironment, request: ApnsRequest) => Promise<ApnsResult>;
 
 export interface RelayDeps {
   store: LiveStore;
-  secrets: Pick<Secrets, "delete">;
+  secrets: Pick<Secrets, "delete" | "list">;
   readEntries: ReadEntries;
   send: SendPush;
   /** Unix milliseconds. */
@@ -161,11 +170,65 @@ export function createApnsSenders(secrets: Pick<Secrets, "get">): SendPush {
 
 /** Deletes the row and its Key Vault secret: the secret first, so a failure leaves the row to retry. */
 export async function removeSubscription(
-  deps: Pick<RelayDeps, "store" | "secrets">,
+  deps: { store: LiveStore; secrets: Pick<Secrets, "delete"> },
   row: Pick<LiveRow, "id" | "tokenSecretRef">,
 ): Promise<void> {
   if (row.tokenSecretRef !== null) await deps.secrets.delete(liveSecretName(row.id));
   await deps.store.delete(row.id);
+}
+
+/**
+ * Deletes `live-<id>` after its row is already gone, trying once more on a failure. A secret that
+ * still will not go is logged and left to the hourly orphan sweep; it never fails the caller.
+ */
+async function deleteLiveSecret(deps: RelayDeps, id: string): Promise<void> {
+  const name = liveSecretName(id);
+  try {
+    await deps.secrets.delete(name);
+  } catch {
+    try {
+      await deps.secrets.delete(name);
+    } catch (error) {
+      deps.log.error(
+        "live.secret-delete-failed",
+        { subscriptionId: id, code: "left-to-sweep" },
+        error,
+      );
+    }
+  }
+}
+
+/**
+ * Deletes every `live-<id>` secret whose row is gone and which is older than the grace period:
+ * what a cleanup's failed secret delete, or a registration whose row write failed, left behind.
+ * Rows are deleted before their secret (a re-registration must win the race), so without this a
+ * failed delete would keep an address and a token in Key Vault for good. Answers the count.
+ */
+export async function sweepOrphanSecrets(deps: RelayDeps): Promise<number> {
+  let listed;
+  try {
+    listed = await deps.secrets.list(LIVE_SECRET_PREFIX);
+  } catch (error) {
+    deps.log.error("live.secret-sweep-failed", { code: "list" }, error);
+    return 0;
+  }
+  const cutoff = deps.now() - ORPHAN_GRACE_MS;
+  const old = listed.filter((secret) => secret.updatedOn.getTime() <= cutoff);
+  let removed = 0;
+  await mapLimit(old, CHECK_CONCURRENCY, async (secret) => {
+    const id = secret.name.slice(LIVE_SECRET_PREFIX.length);
+    try {
+      if ((await deps.store.get(id)) !== null) return;
+      // The rest go on the next hour's sweep.
+      if (removed >= MAX_CLEANUPS_PER_RUN) return;
+      removed += 1;
+      await deps.secrets.delete(secret.name);
+      deps.log.info("live.secret-orphan-removed", { subscriptionId: id, code: "no-row" });
+    } catch (error) {
+      deps.log.error("live.secret-sweep-failed", { subscriptionId: id, code: "delete" }, error);
+    }
+  });
+  return removed;
 }
 
 function environmentOf(row: LiveRow): ApnsEnvironment {
@@ -351,7 +414,7 @@ export async function checkSubscription(deps: RelayDeps, row: LiveRow): Promise<
   if (row.pushToStartToken === null && row.activityPushToken === null && row.deviceToken === null) {
     if (now - row.lastSeenAt.getTime() >= TOKENLESS_GRACE_MS) {
       if (await deps.store.deleteIfUnseen(row.id, row.lastSeenAt)) {
-        if (row.tokenSecretRef !== null) await deps.secrets.delete(liveSecretName(row.id));
+        if (row.tokenSecretRef !== null) await deleteLiveSecret(deps, row.id);
         deps.log.info("live.removed", { subscriptionId: row.id, code: "no-tokens" });
         return "removed";
       }
@@ -475,21 +538,25 @@ export async function mapLimit<T, R>(
   return results;
 }
 
-/** One `live-poll` run: idle cleanup, then every due subscription, a summary line at the end. */
+/**
+ * One `live-poll` run: idle cleanup, once an hour the orphan-secret sweep, then every due
+ * subscription, a summary line at the end.
+ */
 export async function runLivePoll(deps: RelayDeps): Promise<Record<CheckOutcome, number>> {
   const started = deps.now();
   const idle = await deps.store.idle(new Date(started - IDLE_AFTER_MS), MAX_CLEANUPS_PER_RUN);
   for (const row of idle) {
     try {
       // The row first, and only if the app has not registered since it was selected; then its
-      // secret. A secret left by a failed delete is logged and holds no row's data.
+      // secret, tried twice, and swept within the hour when both tries failed.
       if (!(await deps.store.deleteIfUnseen(row.id, row.lastSeenAt))) continue;
-      if (row.tokenSecretRef !== null) await deps.secrets.delete(liveSecretName(row.id));
+      if (row.tokenSecretRef !== null) await deleteLiveSecret(deps, row.id);
       deps.log.info("live.removed", { subscriptionId: row.id, code: "idle-30-days" });
     } catch (error) {
       deps.log.error("live.remove-failed", { subscriptionId: row.id, code: "idle" }, error);
     }
   }
+  if (new Date(started).getUTCMinutes() === SWEEP_MINUTE) await sweepOrphanSecrets(deps);
 
   const due = await deps.store.due(new Date(started + DUE_SLACK_MS), MAX_CHECKS_PER_RUN);
   const outcomes = await mapLimit(due, CHECK_CONCURRENCY, async (row) => {

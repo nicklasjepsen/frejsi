@@ -16,6 +16,18 @@ export interface Secrets {
    * deleted secret for its soft-delete retention, then purges it.
    */
   delete(name: string): Promise<void>;
+  /**
+   * The secrets whose name starts with `prefix`, names and last-write times only, never a value.
+   * A disabled or deleted secret is not listed. The relay's orphan sweep uses it (plan
+   * 2026-11-08-ios-follower-app §4): a `live-<id>` with no row is deleted.
+   */
+  list(prefix: string): Promise<SecretListing[]>;
+}
+
+/** One listed secret: its name and when its latest version was written. */
+export interface SecretListing {
+  name: string;
+  updatedOn: Date;
 }
 
 /** The Key Vault name for a space's glucose-source credential; versions sit under it. */
