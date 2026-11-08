@@ -37,7 +37,7 @@ It was started for a 9-year-old newly diagnosed with type 1 diabetes (Tandem pum
 
 ## 1. Architecture and Azure resources
 
-**Repository:** `github.com/nicklasjepsen/frejsi` — monorepo (`pnpm` workspaces):
+**Repository:** `github.com/nicklasjepsen/naensom` — monorepo (`pnpm` workspaces):
 
 ```
 web/      Next.js (App Router) — UI + API routes
