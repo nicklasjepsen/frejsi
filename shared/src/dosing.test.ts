@@ -28,6 +28,10 @@ const messagesDir = path.resolve(import.meta.dirname, "../../web/messages");
 const pushMessagesDir = path.resolve(import.meta.dirname, "push/messages");
 const pumpMessagesDir = path.resolve(import.meta.dirname, "pump/messages");
 const liveMessagesDir = path.resolve(import.meta.dirname, "live/messages");
+const iosPagesMessagesDir = path.resolve(
+  import.meta.dirname,
+  "../../web/src/lib/ios-pages/messages",
+);
 
 /** Every `web/messages/<locale>/<ns>.json`, keyed `<locale>/<ns>.json`. */
 function readUiMessages(): Record<string, unknown> {
@@ -221,6 +225,23 @@ describe("dosing vocabulary (the hard rule: Nænsom never computes or suggests i
     expect(Object.keys(files).sort()).toEqual(["live/messages/da.json", "live/messages/en.json"]);
     const strings = messageStrings(files);
     expect(strings.map(([where]) => where)).toContain("live/messages/da.json:alert.low");
+    expect(findDosingVocabulary(strings)).toEqual([]);
+    expect(findUnitAmounts(strings)).toEqual([]);
+  });
+
+  it("finds no dosing vocabulary or unit amount on the iPhone app's web pages", () => {
+    const files: Record<string, unknown> = {};
+    for (const file of readdirSync(iosPagesMessagesDir).filter((f) => f.endsWith(".json"))) {
+      files[`ios-pages/messages/${file}`] = JSON.parse(
+        readFileSync(path.join(iosPagesMessagesDir, file), "utf8"),
+      ) as unknown;
+    }
+    expect(Object.keys(files).sort()).toEqual([
+      "ios-pages/messages/da.json",
+      "ios-pages/messages/en.json",
+    ]);
+    const strings = messageStrings(files);
+    expect(strings.map(([where]) => where)).toContain("ios-pages/messages/da.json:follow.title");
     expect(findDosingVocabulary(strings)).toEqual([]);
     expect(findUnitAmounts(strings)).toEqual([]);
   });
