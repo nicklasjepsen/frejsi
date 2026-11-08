@@ -48,6 +48,17 @@ open Naensom.xcodeproj
 
 Sign in to the Apple ID of team `B32HGH682W` in Xcode (Settings → Accounts) once; signing is automatic. The app ID, the app group and the push capability must exist in the developer account (plan §7, stage 1).
 
+**Simulator builds from the command line need ad-hoc signing**, not none: `CODE_SIGNING_ALLOWED=NO` strips the entitlements, and without them `Activity.request` fails. Use
+
+```
+xcodebuild -scheme Naensom -destination 'platform=iOS Simulator,name=iPhone 17' \
+  CODE_SIGN_IDENTITY=- CODE_SIGN_STYLE=Manual build
+```
+
+**Known in the Simulator (first build, 2026-11-08):** the push-to-start token appeared, but the activity push token stayed "not yet" after starting an activity. Ad-hoc signing carries no `aps-environment` provisioning, so the Simulator may never get an activity token that way; the push test needs a build signed with the team's development profile (Xcode signed in), and a real iPhone if the Simulator still gives no activity token.
+
+The app and the Live Activity use one language, the first of Danish or English in the phone's preferred languages (`Language.preferred` in FollowCore), so the lock screen's ticking age ("1 min, 25 sec ago" / "1 min. 25 sek. siden") and the app's "1 min ago" never disagree.
+
 ## The push test (stage 2)
 
 The test that decides whether the app gets built: the Live Activity stays current with the app closed and the phone locked, across the 8-hour restart (plan §0, §7).
@@ -75,4 +86,4 @@ The script logs outcome codes only; the address, the tokens and the values never
 
 ## What the stage-2 app is not yet
 
-No onboarding, curve, settings or da/en strings (stage 3), no registration with a server (stage 4: the relay in `poller/`), no widgets (stage 5). The follow link (`https://frejsi.jepsen.ninja/follow#…`) is parsed by `FollowCore.FollowLink`, but the universal link needs the associated domain, which comes with stage 3.
+No onboarding, curve, settings or da/en strings (stage 3), no registration with a server (stage 4: the relay in `poller/`), no widgets (stage 5). The follow link (`https://naensom.jepsen.ninja/follow#…`) is parsed by `FollowCore.FollowLink`, but the universal link needs the associated domain, which comes with stage 3.

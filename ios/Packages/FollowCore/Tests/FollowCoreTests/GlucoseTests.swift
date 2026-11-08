@@ -92,4 +92,18 @@ final class GlucoseTests: XCTestCase {
         XCTAssertEqual(Language(localeIdentifier: "en_GB"), .en)
         XCTAssertEqual(Language(localeIdentifier: "de_DE"), .en)
     }
+
+    func testTheAppsLanguageIsTheFirstPreferredOneItSpeaks() {
+        XCTAssertEqual(Language.preferred(["da-DK", "en-GB"]), .da)
+        XCTAssertEqual(Language.preferred(["en-DK", "da-DK"]), .en)
+        XCTAssertEqual(Language.preferred(["de-DE", "da"]), .da)
+        XCTAssertEqual(Language.preferred(["de-DE", "fr-FR"]), .en)
+        XCTAssertEqual(Language.preferred([]), .en)
+        XCTAssertEqual(Language.da.localeIdentifier, "da_DK")
+        XCTAssertEqual(Language.en.agoSuffix, "ago")
+        XCTAssertEqual(Language.da.agoSuffix, "siden")
+        // Numbers follow the same language: the app and the lock screen show "8,4" or "8.4" alike.
+        XCTAssertEqual(Glucose.format(151, unit: .mmolL, locale: Locale(identifier: Language.da.localeIdentifier)), "8,4")
+        XCTAssertEqual(Glucose.format(151, unit: .mmolL, locale: Locale(identifier: Language.en.localeIdentifier)), "8.4")
+    }
 }

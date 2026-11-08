@@ -50,6 +50,7 @@ func glucoseActivityConfiguration() -> ActivityConfiguration<GlucoseActivityAttr
         } compactTrailing: {
             // The age as a ticking mm:ss, the only form short enough for the compact island.
             Text(timerInterval: state.readingAt...Date.distantFuture, countsDown: false)
+                .environment(\.locale, AppLanguage.locale)
                 .monospacedDigit()
                 .font(.caption2)
                 .foregroundStyle(context.isStale ? .gray : .secondary)
@@ -139,7 +140,7 @@ private struct ValueText: View {
     let size: CGFloat
 
     var body: some View {
-        Text("\(Glucose.format(state.mgdl, unit: unit)) \(Glucose.arrow(state.direction))")
+        Text("\(Glucose.format(state.mgdl, unit: unit, locale: AppLanguage.locale)) \(Glucose.arrow(state.direction))")
             .font(.system(size: size, weight: .semibold, design: .rounded))
             .monospacedDigit()
             .foregroundStyle(color)
@@ -154,7 +155,7 @@ private struct DeltaText: View {
 
     var body: some View {
         if let delta = state.delta {
-            let text = Glucose.formatDelta(mgdl: state.mgdl, deltaMgdl: delta, unit: unit)
+            let text = Glucose.formatDelta(mgdl: state.mgdl, deltaMgdl: delta, unit: unit, locale: AppLanguage.locale)
             Text(text).font(.callout).monospacedDigit()
         }
     }
@@ -170,9 +171,11 @@ private struct AgeText: View {
             if isStale {
                 Image(systemName: "clock.badge.exclamationmark")
             }
-            Text(readingAt, style: .relative)
-                .monospacedDigit()
+            // iOS ticks the relative time forward itself, in the environment's locale: the app's
+            // language, the same one the app uses for "3 min ago".
+            Text(readingAt, style: .relative).monospacedDigit() + Text(" \(AppLanguage.current.agoSuffix)")
         }
+        .environment(\.locale, AppLanguage.locale)
         .font(.caption)
         .foregroundStyle(isStale ? .gray : .secondary)
     }

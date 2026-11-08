@@ -37,10 +37,10 @@ struct ContentView: View {
             // TimelineView re-renders the age every 30 s; the value never appears without it.
             TimelineView(.periodic(from: .now, by: 30)) { context in
                 let stale = Glucose.isStale(latest, now: context.date)
-                let language = Language(localeIdentifier: Locale.current.identifier)
+                let language = AppLanguage.current
                 VStack(alignment: .leading, spacing: 6) {
                     HStack(alignment: .firstTextBaseline) {
-                        Text("\(Glucose.format(latest.mgdl, unit: .mmolL)) \(Glucose.arrow(latest.direction))")
+                        Text("\(Glucose.format(latest.mgdl, unit: .mmolL, locale: AppLanguage.locale)) \(Glucose.arrow(latest.direction))")
                             .font(.system(size: 56, weight: .semibold, design: .rounded))
                             .monospacedDigit()
                             .foregroundStyle(stale ? .gray : .primary)
@@ -48,7 +48,7 @@ struct ContentView: View {
                     }
                     HStack {
                         Text(Glucose.ageText(latest, now: context.date, language: language))
-                        if let delta = Glucose.formatDelta(latest, previous: model.previous, unit: .mmolL) {
+                        if let delta = Glucose.formatDelta(latest, previous: model.previous, unit: .mmolL, locale: AppLanguage.locale) {
                             Text("· \(delta)")
                         }
                         if stale { Text("· no new readings").foregroundStyle(.orange) }

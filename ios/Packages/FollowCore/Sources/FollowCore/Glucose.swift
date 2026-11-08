@@ -27,6 +27,34 @@ public enum Language: String, Sendable {
     public init(localeIdentifier: String) {
         self = localeIdentifier.lowercased().hasPrefix("da") ? .da : .en
     }
+
+    /// The app's language from the phone's preferred languages (`Locale.preferredLanguages`): the
+    /// first one the app speaks, English when it speaks none of them. The app and the Live Activity
+    /// extension both call this, so the lock screen and the app always agree.
+    public static func preferred(_ preferredLanguages: [String]) -> Language {
+        for identifier in preferredLanguages {
+            let code = identifier.lowercased()
+            if code.hasPrefix("da") { return .da }
+            if code.hasPrefix("en") { return .en }
+        }
+        return .en
+    }
+
+    /// The locale for everything the app formats or lets iOS format: numbers and ticking ages.
+    public var localeIdentifier: String {
+        switch self {
+        case .da: return "da_DK"
+        case .en: return "en_GB"
+        }
+    }
+
+    /// Follows iOS's ticking relative time ("1 min, 25 sec") on the lock screen.
+    public var agoSuffix: String {
+        switch self {
+        case .da: return "siden"
+        case .en: return "ago"
+        }
+    }
 }
 
 /// One sensor reading as Nightscout reports it: mg/dL, its time and the trend name.
