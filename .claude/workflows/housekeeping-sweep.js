@@ -42,7 +42,7 @@ const as = (role, opts) => {
 // args: { today: 'YYYY-MM-DD' (required; scripts cannot read the clock), models?: { triage: 'opus', ... } }
 if (!args || !args.today) throw new Error('args.today (YYYY-MM-DD) is required')
 const today = args.today
-const repo = 'nicklasjepsen/frejsi'
+const repo = 'nicklasjepsen/naensom'
 
 const LIST_SCHEMA = {
   type: 'object',

@@ -317,8 +317,8 @@ Facts an agent needs that the docs of the tools do not say:
   Previews are off: `PREVIEWS_ENABLED` is unset and there is no `preview` federated credential
   (owner, 2026-10-15), so the `preview` label does nothing yet.
 - **The repository uses GitHub's immutable OIDC subject**
-  (`repo:nicklasjepsen@2478876/frejsi@1419802630:environment:<name>`). A new environment that needs
-  Azure gets a federated credential with that form; the plain `repo:nicklasjepsen/frejsi:...` form
+  (`repo:nicklasjepsen@2478876/naensom@1419802630:environment:<name>`). A new environment that needs
+  Azure gets a federated credential with that form; the plain `repo:nicklasjepsen/naensom:...` form
   alone does not match.
 
 ## 12. Codex lanes

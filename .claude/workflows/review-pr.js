@@ -80,7 +80,7 @@ const GATES = [
 const confirmed = await pipeline(
   GATES,
   (g) => callAgent(
-    `Run your ${g.lens} review on PR #${pr} of nicklasjepsen/frejsi (gh pr diff ${pr}). Return verdict and findings in the schema. Hard-rule failures from spec-guardian are never downgraded.`,
+    `Run your ${g.lens} review on PR #${pr} of nicklasjepsen/naensom (gh pr diff ${pr}). Return verdict and findings in the schema. Hard-rule failures from spec-guardian are never downgraded.`,
     as(g.agentType, { label: `find:${g.key}`, phase: 'Find', agentType: g.agentType, schema: FINDINGS_SCHEMA }),
   ),
   async (found, g) => {
@@ -90,7 +90,7 @@ const confirmed = await pipeline(
     if (g.key === 'guardian') return findings.map((f) => ({ ...f, from: g.key, verified: 'hard-rule' }))
     const judged = await parallel(findings.map((f) => async () => {
       const votes = await parallel([0, 1].map((i) => () => callAgent(
-        `PR #${pr} of nicklasjepsen/frejsi. A ${g.lens} reviewer claims:\n${JSON.stringify(f, null, 1)}\n\n` +
+        `PR #${pr} of nicklasjepsen/naensom. A ${g.lens} reviewer claims:\n${JSON.stringify(f, null, 1)}\n\n` +
         `Read the diff (gh pr diff ${pr}) and the surrounding code and try to refute this claim${i === 0 ? ' by showing the scenario cannot occur' : ' by showing the code already handles it or a test covers it'}. ` +
         `Default to refuted=true if you are not sure it is real.`,
         as('refuter', { label: `refute${i + 1}:${g.key}`, phase: 'Verify', schema: VERDICT_SCHEMA }),

@@ -66,7 +66,7 @@ jobs:
           # the log shows only what the agent could already read on the public repo.
           show_full_output: true
           prompt: >-
-            Run the housekeeping skill (.claude/skills/housekeeping/SKILL.md) for nicklasjepsen/frejsi.
+            Run the housekeeping skill (.claude/skills/housekeeping/SKILL.md) for nicklasjepsen/naensom.
             Today is ${{ steps.today.outputs.date }}. This is an unattended run on GitHub Actions:
             nobody can answer questions, so never ask one; when unsure, label needs-owner and move on.
             Write the run summary to $GITHUB_STEP_SUMMARY at the end.

@@ -11,7 +11,7 @@ runs steps 1–6 with the sweeps in parallel; use it when the Workflow tool is a
 steps 7–8 below for docs drift and the report. Otherwise follow all steps below. Today's date comes
 from the prompt (unattended) or from `date -I`.
 
-Repo: `nicklasjepsen/frejsi`. Markers: a comment this procedure writes starts with an HTML comment
+Repo: `nicklasjepsen/naensom`. Markers: a comment this procedure writes starts with an HTML comment
 (`<!-- frejsi-triage -->`, `<!-- frejsi-stale -->`, `<!-- frejsi-milestone -->`) so a later run sees it
 and never comments twice.
 
@@ -57,7 +57,7 @@ ones.)
 
 ## 5. Milestones
 
-`gh api repos/nicklasjepsen/frejsi/milestones?state=all --paginate` and `git fetch -q --tags origin`.
+`gh api repos/nicklasjepsen/naensom/milestones?state=all --paginate` and `git fetch -q --tags origin`.
 
 - An open issue in a closed milestone: move it to the lowest open `vX.Y.Z` milestone and comment
   once (`<!-- frejsi-milestone -->`, moved from the old one because it was released without this);

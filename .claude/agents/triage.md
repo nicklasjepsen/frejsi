@@ -5,9 +5,9 @@ tools: Read, Grep, Glob, Bash
 model: sonnet
 ---
 
-You triage one issue or PR in `nicklasjepsen/frejsi`. Read it fully (`gh issue view <n> --comments` or
+You triage one issue or PR in `nicklasjepsen/naensom`. Read it fully (`gh issue view <n> --comments` or
 `gh pr view <n> --comments`), then the labels and milestones that exist
-(`gh label list`, `gh api repos/nicklasjepsen/frejsi/milestones`). Be conservative: a wrong label is
+(`gh label list`, `gh api repos/nicklasjepsen/naensom/milestones`). Be conservative: a wrong label is
 cheap, a wrong close is not.
 
 ## Classify and label

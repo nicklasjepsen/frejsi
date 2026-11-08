@@ -44,7 +44,7 @@ export class OffSource implements FoodSource {
     const response = await this.options.fetch(url, {
       signal,
       headers: {
-        "User-Agent": `Naensom/${this.options.version} (+https://github.com/nicklasjepsen/frejsi)`,
+        "User-Agent": `Naensom/${this.options.version} (+https://github.com/nicklasjepsen/naensom)`,
       },
     });
     signal.throwIfAborted();

@@ -64,7 +64,7 @@ if (unmerged.length) {
 
 phase('Release')
 const release = await callAgent(
-  `Release milestone ${args.milestone} of nicklasjepsen/frejsi by following the "release" skill in .claude/skills/release/SKILL.md exactly: ` +
+  `Release milestone ${args.milestone} of nicklasjepsen/naensom by following the "release" skill in .claude/skills/release/SKILL.md exactly: ` +
   `verify (milestone has zero open issues, no open PR carries it, main CI green, tag absent), tag origin/main, push the tag, watch release.yml to the end, and report. ` +
   `If the milestone still has open issues that no lane in this run owned, do not tag: set released=false and list them in summary. ` +
   `If the run is waiting on the production-infra environment, set waitingOnOwner=true and keep watching until it ends or 50 minutes pass. ` +

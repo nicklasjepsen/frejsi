@@ -18,7 +18,7 @@
       "Bash(gh run list*)",
       "Bash(gh run view*)",
       "Bash(gh label list*)",
-      "Bash(gh api repos/nicklasjepsen/frejsi/milestones*)",
+      "Bash(gh api repos/nicklasjepsen/naensom/milestones*)",
       "Bash(gh release view*)",
       "Bash(gh release list*)"
     ],

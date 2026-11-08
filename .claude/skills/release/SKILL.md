@@ -9,7 +9,7 @@ Production is reached only by `release.yml` on a `v*` tag. This skill pushes the
 
 1. **Verify.** From a clean checkout on `main`, `git fetch -q origin && git status`:
    - the milestone `<vX.Y.Z>` exists and has `open_issues == 0`
-     (`gh api repos/nicklasjepsen/frejsi/milestones --jq '.[] | select(.title=="<vX.Y.Z>")'`);
+     (`gh api repos/nicklasjepsen/naensom/milestones --jq '.[] | select(.title=="<vX.Y.Z>")'`);
      if issues are open, stop and list them: the milestone is not done, and a release never ships
      half a milestone.
    - no open PR carries the milestone (`gh pr list --state open --search "milestone:<vX.Y.Z>"`)

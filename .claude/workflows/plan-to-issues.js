@@ -39,11 +39,11 @@ const as = (role, opts) => {
   return { ...(model ? { model } : {}), ...(ROLE_EFFORT[role] ? { effort: ROLE_EFFORT[role] } : {}), ...opts }
 }
 
-// args: { plan: 'docs/superpowers/plans/<file>.md', milestone: 'v0.2.0', repo?: 'nicklasjepsen/frejsi', models?: { planner: 'fable', ... } }
+// args: { plan: 'docs/superpowers/plans/<file>.md', milestone: 'v0.2.0', repo?: 'nicklasjepsen/naensom', models?: { planner: 'fable', ... } }
 // Every issue carries the milestone: the milestone is the release, its title is the version.
 if (!args || !args.plan) throw new Error('args.plan (plan file path) is required')
 if (!args.milestone || !/^v\d+\.\d+\.\d+$/.test(args.milestone)) throw new Error('args.milestone must look like v0.2.0')
-const repo = (args && args.repo) || 'nicklasjepsen/frejsi'
+const repo = (args && args.repo) || 'nicklasjepsen/naensom'
 
 const TASKS_SCHEMA = {
   type: 'object',

@@ -15,7 +15,7 @@ available inside a subagent (`docs/agent-workflow.md` §11).
 
 ```
 git fetch -q origin
-gh api repos/nicklasjepsen/frejsi/milestones --jq '.[] | "\(.number) \(.title) open=\(.open_issues) closed=\(.closed_issues)"'
+gh api repos/nicklasjepsen/naensom/milestones --jq '.[] | "\(.number) \(.title) open=\(.open_issues) closed=\(.closed_issues)"'
 gh issue list --milestone "<vX.Y.Z>" --state open --json number,title,labels,body
 gh pr list --state open --json number,title,headRefName,isDraft,labels
 git branch -r | grep gh-

@@ -112,7 +112,7 @@ const briefFor = (lane) =>
   `(pr-body-${lane.branch.replace(/[^a-z0-9]+/gi, '-')}.md, never pr-body.md), and never git stash in the worktree (the stash list is shared).`
 
 const gatePrompt = (role, pr) =>
-  `Run your ${role} review on PR #${pr} of nicklasjepsen/frejsi (gh pr diff ${pr}). Return verdict and findings in the schema.`
+  `Run your ${role} review on PR #${pr} of nicklasjepsen/naensom (gh pr diff ${pr}). Return verdict and findings in the schema.`
 
 const results = await pipeline(
   args.lanes,
@@ -158,7 +158,7 @@ const results = await pipeline(
     const { lane, built, final } = state
     if (final !== 'green' && final !== 'green-after-fix') {
       if (final === 'red-needs-owner' && built) {
-        await callAgent(`Label PR #${built.pr} of nicklasjepsen/frejsi with needs-owner and post one comment summarising the unresolved findings: ${JSON.stringify(state.findings || [])}`, as('lookup', { label: `flag:${lane.name}`, phase: 'Merge' }))
+        await callAgent(`Label PR #${built.pr} of nicklasjepsen/naensom with needs-owner and post one comment summarising the unresolved findings: ${JSON.stringify(state.findings || [])}`, as('lookup', { label: `flag:${lane.name}`, phase: 'Merge' }))
       }
       return state
     }

@@ -53,7 +53,7 @@ describe("OFF fixture adapter", () => {
     });
     expect(f.calls[0]?.url.pathname).toBe("/api/v2/product/2000000000008.json");
     expect(new Headers(f.calls[0]?.init?.headers).get("User-Agent")).toBe(
-      "Naensom/test (+https://github.com/nicklasjepsen/frejsi)",
+      "Naensom/test (+https://github.com/nicklasjepsen/naensom)",
     );
     for (const candidate of result.candidates) {
       expect(FoodCandidate.parse(candidate)).toEqual(candidate);

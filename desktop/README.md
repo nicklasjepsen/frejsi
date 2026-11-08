@@ -8,7 +8,7 @@ Like the rest of Nænsom it only reads, has no alarms, and never says anything a
 
 ## Install
 
-1. Download `NaensomDesktop.exe` from the newest `desktop-v*` entry on the [releases page](https://github.com/nicklasjepsen/frejsi/releases) and put it somewhere that stays, like `C:\Users\<you>\Apps\`.
+1. Download `NaensomDesktop.exe` from the newest `desktop-v*` entry on the [releases page](https://github.com/nicklasjepsen/naensom/releases) and put it somewhere that stays, like `C:\Users\<you>\Apps\`.
 2. Run it. Windows SmartScreen warns about an unknown publisher the first time: "More info" → "Run anyway".
 3. The settings window opens. Type the site's address, paste an access token, press **Test connection**, then **Save**.
 

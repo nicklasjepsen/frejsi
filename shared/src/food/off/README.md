@@ -27,7 +27,7 @@ argument. Without a country the source queries the world host once.
   Missing/invalid carbohydrates stay null. A serving needs known carbohydrates
   and a mass in grams; volumes are never treated as grams. Portion carbs round
   half up to whole grams. Invalid products are omitted. Images are not requested.
-- Every request sends `User-Agent: Naensom/<version> (+https://github.com/nicklasjepsen/frejsi)`.
+- Every request sends `User-Agent: Naensom/<version> (+https://github.com/nicklasjepsen/naensom)`.
   Caller cancellation reaches fetch; 429/budget exhaustion returns `rate-limited`,
   cancellation `timeout`, and other request/response failures `error`.
 

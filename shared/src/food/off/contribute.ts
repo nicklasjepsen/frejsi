@@ -62,7 +62,7 @@ export class OffContributor implements FoodContributor {
 
     const headers: Record<string, string> = {
       "Content-Type": "application/x-www-form-urlencoded",
-      "User-Agent": `Naensom/${this.options.version} (+https://github.com/nicklasjepsen/frejsi)`,
+      "User-Agent": `Naensom/${this.options.version} (+https://github.com/nicklasjepsen/naensom)`,
     };
     // OFF's staging host sits behind HTTP basic authentication, publicly documented as off:off.
     if (this.host === STAGING_HOST)

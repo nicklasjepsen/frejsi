@@ -297,7 +297,7 @@ describe("CONTRIBUTING.md and README.md", () => {
 
   it("links the plans and the issues as the roadmap", () => {
     expect(readme).toContain("docs/superpowers/plans/");
-    expect(readme).toMatch(/github\.com\/[^/]+\/frejsi\/issues/);
+    expect(readme).toMatch(/github\.com\/[^/]+\/naensom\/issues/);
   });
 });
 
