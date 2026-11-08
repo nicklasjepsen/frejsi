@@ -1,0 +1,2 @@
+/* Vises, når Nænsom beder om kameraet. */
+"NSCameraUsageDescription" = "Nænsom bruger kameraet til at læse QR-koden med linket, du har fået.";
