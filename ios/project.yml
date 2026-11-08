@@ -70,11 +70,16 @@ targets:
         PRODUCT_NAME: Naensom
         # The placeholder icon (scripts/make-placeholder-icon.py) until the real one exists.
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+  # The widget extension: the Live Activity (LiveActivity/) and the home and lock screen widgets
+  # (Widgets/, plan §1) in one extension, one bundle (Widgets/NaensomWidgetBundle.swift). One
+  # extension may host both; it keeps one app ID, profile and upload step. Shared/ brings the
+  # widgets' strings (Shared/{da,en}.lproj/Widgets.strings); the app's own table stays in the app.
   NaensomLiveActivity:
     type: app-extension
     platform: iOS
     sources:
       - LiveActivity
+      - Widgets
       - Shared
     dependencies:
       - package: FollowCore
@@ -94,6 +99,8 @@ targets:
     entitlements:
       path: LiveActivity/NaensomLiveActivity.entitlements
       properties:
+        # The thresholds, settings and newest reading (UserDefaults), and the Nightscout address and
+        # token (the Keychain: an app group is also a Keychain access group), shared with the app.
         com.apple.security.application-groups:
           - group.ninja.jepsen.naensom
     settings:

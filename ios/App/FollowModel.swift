@@ -7,9 +7,7 @@ import Foundation
 /// app closed: that is the relay's pushes (plan §0).
 @MainActor
 final class FollowModel: ObservableObject {
-    @Published private(set) var source: FollowSource? = FollowSource.restore(
-        site: KeychainStore.read("site"), token: KeychainStore.read("token")
-    )
+    @Published private(set) var source: FollowSource? = FollowSourceStore.load()
     /// The last 12 hours, newest first.
     @Published private(set) var readings: [Reading] = []
     @Published private(set) var error: NightscoutError?
@@ -38,6 +36,8 @@ final class FollowModel: ObservableObject {
         KeychainStore.write("site", stored.site)
         KeychainStore.write("token", stored.token)
         ThresholdStore.site = nil
+        // The widgets show nothing of the previous site.
+        WidgetSync.clear()
         generation += 1
         siteThresholdsRead = false
         readings = []
@@ -52,6 +52,7 @@ final class FollowModel: ObservableObject {
         KeychainStore.delete("token")
         ThresholdStore.clear()
         SettingsStore.clear()
+        WidgetSync.clear()
         generation += 1
         source = nil
         readings = []
