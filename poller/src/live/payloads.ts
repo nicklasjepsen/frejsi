@@ -29,18 +29,15 @@ export interface ContentState {
   readingAt: number;
 }
 
-/** The activity's fixed attributes: unit and colour thresholds, as the app's struct encodes them. */
+/**
+ * The activity's fixed attributes, as the app's `GlucoseActivityAttributes` encodes them: the unit
+ * only. The colour thresholds live in the app's settings, which the Live Activity reads itself.
+ */
 export interface ActivityAttributes {
   unit: "mmolL" | "mgdL";
-  lowMmolL: number;
-  highMmolL: number;
 }
 
-export const DEFAULT_ATTRIBUTES: ActivityAttributes = {
-  unit: "mmolL",
-  lowMmolL: 3.9,
-  highMmolL: 10,
-};
+export const DEFAULT_ATTRIBUTES: ActivityAttributes = { unit: "mmolL" };
 
 export function contentState(current: Entry, previous: Entry | undefined): ContentState {
   const gap = previous === undefined ? -1 : current.date - previous.date;

@@ -25,7 +25,9 @@ Shared/                  compiled into both: GlucoseActivityAttributes, range co
 | APNs key                 | ID `P9HBN8RRS3`, Key Vault secret `apns-key-p8`                               |
 | Live Activity push topic | `ninja.jepsen.naensom.push-type.liveactivity`                                 |
 
-`FollowCore` is a port of the desktop tray app's reader (`desktop/src/BgTray.Core`) with the same test cases, so both show the same value, arrow, change and age. It reads only `GET /api/v1/entries/sgv.json`, the endpoint the desktop app and the poller read, with the token in the `api-secret` header, never in the URL, and refuses redirects and plain http.
+**Colours.** Four thresholds colour the value and its arrow everywhere it is shown (app, lock screen, Dynamic Island, CarPlay, Watch): green from low to high inclusive, yellow between an urgent value and its target edge, red at or beyond urgent low or urgent high, grey when the reading is more than 15 minutes old. Defaults are Nightscout's (55 / 80 / 180 / 260 mg/dL, 3.1 / 4.4 / 10.0 / 14.4 mmol/L), replaced by the site's `settings.thresholds` from `GET /api/v1/status.json` when present, and the user can step each one in the app (`GlucoseThresholds` in FollowCore, saved by `ThresholdStore` in the app group `group.ninja.jepsen.naensom` so the extension reads them). Colours only, no alarms; the value, arrow and age are always shown.
+
+`FollowCore` is a port of the desktop tray app's reader (`desktop/src/BgTray.Core`) with the same test cases, so both show the same value, arrow, change and age. It reads only `GET /api/v1/entries/sgv.json` (the endpoint the desktop app and the poller read) and `GET /api/v1/status.json` (the thresholds), with the token in the `api-secret` header, never in the URL, and refuses redirects and plain http.
 
 ## Test FollowCore (any machine)
 

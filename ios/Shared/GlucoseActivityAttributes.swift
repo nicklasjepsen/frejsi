@@ -3,30 +3,30 @@ import FollowCore
 import SwiftUI
 
 /// The Live Activity's type, compiled into the app and the extension. The relay names it in a
-/// push-to-start payload (`"attributes-type": "GlucoseActivityAttributes"`), so the name is part of
-/// the contract with `poller/src/live/` and must not change.
+/// push-to-start payload (`"attributes-type": "GlucoseActivityAttributes"`, `"attributes":
+/// {"unit": "mmolL"}`), so the name and shape are part of the contract with `poller/src/live/`.
 ///
-/// The attributes are fixed for an activity's life: the unit and the colour thresholds. Everything
-/// that changes with a reading is in `LiveGlucoseState` (FollowCore), which every push replaces.
+/// Only the unit is fixed for an activity's life. Everything that changes with a reading is in
+/// `LiveGlucoseState` (FollowCore), which every push replaces; the colour thresholds are read from
+/// the app group (`ThresholdStore`), so a change in the app shows on the next render.
 struct GlucoseActivityAttributes: ActivityAttributes {
     typealias ContentState = LiveGlucoseState
 
     var unit: GlucoseUnit
-    var lowMmolL: Double
-    var highMmolL: Double
 
-    static let `default` = GlucoseActivityAttributes(unit: .mmolL, lowMmolL: 3.9, highMmolL: 10.0)
+    static let `default` = GlucoseActivityAttributes(unit: .mmolL)
 }
 
-/// Range colours as on the desktop glance: green in range, amber high, red low; grey when stale.
-/// High is never red.
-enum RangeColor {
-    static func color(for state: LiveGlucoseState, attributes: GlucoseActivityAttributes, isStale: Bool) -> Color {
-        if isStale { return .gray }
-        switch Glucose.classify(state.mgdl, lowMmolL: attributes.lowMmolL, highMmolL: attributes.highMmolL) {
-        case .low: return .red
-        case .inRange: return .green
-        case .high: return .orange
+extension GlucoseColor {
+    /// Green in range, yellow between a target edge and its urgent value, red at or beyond an urgent
+    /// value, grey when stale. The value, arrow and age are always shown too: colour is never the
+    /// only signal.
+    var color: Color {
+        switch self {
+        case .green: return .green
+        case .yellow: return .yellow
+        case .red: return .red
+        case .stale: return .gray
         }
     }
 }
