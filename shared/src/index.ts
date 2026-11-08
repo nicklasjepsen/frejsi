@@ -129,7 +129,15 @@ export {
   parseSpaceKinds,
   symptomKindLabel,
 } from "./symptoms/index";
-export { pumpSecretName } from "./secrets/types";
+export { liveSecretName, pumpSecretName } from "./secrets/types";
+export {
+  formatLiveAge,
+  formatLiveValue,
+  liveAlertText,
+  liveRestartText,
+  type LiveAlertKind,
+  type LiveAlertText,
+} from "./live/messages/index";
 export {
   AFTER_MINUTES,
   BEFORE_MINUTES,

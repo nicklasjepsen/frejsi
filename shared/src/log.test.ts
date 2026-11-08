@@ -56,6 +56,7 @@ describe("log", () => {
       "apiMessage",
       "requestId",
       "stopReason",
+      "subscriptionId",
     ]);
   });
 

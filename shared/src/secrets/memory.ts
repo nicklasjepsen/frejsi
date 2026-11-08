@@ -1,4 +1,4 @@
-import { formatSecretRef, parseSecretRef, type Secrets } from "./types";
+import { assertSecretName, formatSecretRef, parseSecretRef, type Secrets } from "./types";
 
 interface Versions {
   latest: string;
@@ -29,6 +29,12 @@ export class MemorySecrets implements Secrets {
   // eslint-disable-next-line @typescript-eslint/require-await
   async set(name: string, value: string): Promise<string> {
     return this.write(name, value);
+  }
+
+  // eslint-disable-next-line @typescript-eslint/require-await
+  async delete(name: string): Promise<void> {
+    assertSecretName(name);
+    this.store.delete(name);
   }
 
   private write(name: string, value: string): string {

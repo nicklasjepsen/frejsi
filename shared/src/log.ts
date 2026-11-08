@@ -13,6 +13,8 @@ export const LOG_KEYS = [
   "apiMessage",
   "requestId",
   "stopReason",
+  /** A push-relay subscription's random id (plan 2026-11-08-ios-follower-app §4). */
+  "subscriptionId",
 ] as const;
 export type LogKey = (typeof LOG_KEYS)[number];
 

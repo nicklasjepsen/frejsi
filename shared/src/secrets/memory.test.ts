@@ -30,4 +30,17 @@ describe("MemorySecrets", () => {
     await expect(secrets.get("../x")).rejects.toThrow(/^secret name is invalid$/);
     await expect(secrets.set("a/b", "v")).rejects.toThrow(/^secret name is invalid$/);
   });
+
+  it("deletes a name with every version, and a missing name quietly", async () => {
+    const secrets = new MemorySecrets();
+    const ref = await secrets.set("live-a1", "first");
+    await secrets.set("live-a1", "second");
+    await secrets.set("live-a2", "other");
+    await secrets.delete("live-a1");
+    await expect(secrets.get(ref)).resolves.toBeUndefined();
+    await expect(secrets.get("live-a1")).resolves.toBeUndefined();
+    await expect(secrets.get("live-a2")).resolves.toBe("other");
+    await expect(secrets.delete("live-a1")).resolves.toBeUndefined();
+    await expect(secrets.delete("../x")).rejects.toThrow(/^secret name is invalid$/);
+  });
 });

@@ -11,6 +11,11 @@ export interface Secrets {
   get(ref: string): Promise<string | undefined>;
   /** Writes a new version under `name` and answers the reference to exactly that version. */
   set(name: string, value: string): Promise<string>;
+  /**
+   * Removes `name` with every version; a name that is not there is not an error. Key Vault keeps a
+   * deleted secret for its soft-delete retention, then purges it.
+   */
+  delete(name: string): Promise<void>;
 }
 
 /** The Key Vault name for a space's glucose-source credential; versions sit under it. */
@@ -24,6 +29,14 @@ export function glucoseSecretName(spaceId: string): string {
  */
 export function pumpSecretName(spaceId: string): string {
   return `pump-${spaceId}`;
+}
+
+/**
+ * The Key Vault name for one iPhone's push-relay subscription (plan 2026-11-08-ios-follower-app
+ * §4): the Nightscout address and token it follows. Deleted with the subscription.
+ */
+export function liveSecretName(subscriptionId: string): string {
+  return `live-${subscriptionId}`;
 }
 
 /** A parsed reference: the secret's name and, when it names a version, that version. */
