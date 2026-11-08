@@ -1,5 +1,5 @@
-import { HttpError } from "@frejsi/shared";
-import { createPhotoStoreFromEnv } from "@frejsi/shared/photos";
+import { HttpError } from "@naensom/shared";
+import { createPhotoStoreFromEnv } from "@naensom/shared/photos";
 import { z } from "zod";
 import type { SessionDb } from "@/lib/auth/session";
 import { json, log, requireSpaceRole } from "@/lib/live/server";

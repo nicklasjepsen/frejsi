@@ -1,4 +1,4 @@
-import { HttpError } from "@frejsi/shared";
+import { HttpError } from "@naensom/shared";
 import { describe, expect, it } from "vitest";
 
 import { parseArgs, requireOwner, type CliUser } from "./cli";

@@ -27,7 +27,7 @@
     "photo-unavailable": "Billeder er ikke tilgængelige lige nu. Prøv igen senere.",
     "barcode-invalid": "Tjek stregkoden og prøv igen.",
     "lookup-unavailable": "Madsøgning er ikke tilgængelig lige nu. Prøv igen eller skriv dine egne tal.",
-    "import-unrecognised": "Det ligner ikke en eksportfil, Frejsi kender. Vælg CSV-filen fra Clarity og prøv igen.",
+    "import-unrecognised": "Det ligner ikke en eksportfil, Nænsom kender. Vælg CSV-filen fra Clarity og prøv igen.",
     "import-empty": "Der var ingen målinger eller kulhydrater i filen.",
     "ai-disabled": "AI-hjælp er slået fra for dette rum.",
     "ai-not-configured": "Denne AI-udbyder er ikke sat op her.",

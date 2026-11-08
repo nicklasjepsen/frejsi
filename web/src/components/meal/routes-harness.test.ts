@@ -11,8 +11,8 @@ import {
   Food,
   PrismaFoodRepository,
   type EmitFn,
-} from "@frejsi/shared";
-import { MemoryPhotoStore } from "@frejsi/shared/photos/memory";
+} from "@naensom/shared";
+import { MemoryPhotoStore } from "@naensom/shared/photos/memory";
 import { expect, it, vi } from "vitest";
 
 import { GET as dayGet } from "@/app/api/spaces/[spaceId]/day/route";
@@ -47,7 +47,7 @@ import type { MealRecord, MealRepository } from "@/lib/meals/repository";
 import { configureMeals } from "@/lib/meals/server";
 
 export { T0 };
-export const ORIGIN = "https://frejsi.example";
+export const ORIGIN = "https://naensom.example";
 /** A 2×2 grey JPEG: the photo routes decode what they store. */
 export const JPEG = Uint8Array.from(
   Buffer.from(

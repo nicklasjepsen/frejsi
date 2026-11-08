@@ -2,7 +2,7 @@
 // guarded by the Key Vault-held BOOTSTRAP_TOKEN and dead once any space exists.
 import { createHash, timingSafeEqual } from "node:crypto";
 
-import { HttpError } from "@frejsi/shared";
+import { HttpError } from "@naensom/shared";
 import { z } from "zod";
 
 import { defaultLocale } from "@/lib/i18n/routing";

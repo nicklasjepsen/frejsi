@@ -1,9 +1,9 @@
 "use client";
 
-import type { GlucoseUnit, Reading } from "@frejsi/shared";
-import { formatUnits } from "@frejsi/shared/pump/units";
-import type { MealSymbol } from "@frejsi/shared/schemas/food";
-import type { PumpBolusKind } from "@frejsi/shared/schemas/pump";
+import type { GlucoseUnit, Reading } from "@naensom/shared";
+import { formatUnits } from "@naensom/shared/pump/units";
+import type { MealSymbol } from "@naensom/shared/schemas/food";
+import type { PumpBolusKind } from "@naensom/shared/schemas/pump";
 import { useLocale, useTranslations } from "next-intl";
 import { useEffect, useId, useState, type ReactNode } from "react";
 

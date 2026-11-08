@@ -1,6 +1,6 @@
 // @vitest-environment node
-import { HttpError } from "@frejsi/shared";
-import { FakeAiProvider } from "@frejsi/shared/ai/fake";
+import { HttpError } from "@naensom/shared";
+import { FakeAiProvider } from "@naensom/shared/ai/fake";
 import { expect, it } from "vitest";
 import { actor } from "@/lib/foods/test-fixture.test";
 import { estimateStatus } from "./status";

@@ -1,7 +1,7 @@
-import { HttpError, prisma, weekRange } from "@frejsi/shared";
-import { UpdateInsightRequest, type WeekInsightView } from "@frejsi/shared/schemas/ai";
-import { readyAt } from "@frejsi/shared/insights/week-input";
-import { updateInsightQuestions } from "@frejsi/shared/insights/store";
+import { HttpError, prisma, weekRange } from "@naensom/shared";
+import { UpdateInsightRequest, type WeekInsightView } from "@naensom/shared/schemas/ai";
+import { readyAt } from "@naensom/shared/insights/week-input";
+import { updateInsightQuestions } from "@naensom/shared/insights/store";
 import { insightDeps } from "@/ai/insight/service";
 import { route, json, parseBody } from "@/app/api/auth/http";
 import { authorizeHistory, historyDate } from "@/lib/history/server";

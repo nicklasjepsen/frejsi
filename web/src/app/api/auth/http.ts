@@ -1,6 +1,6 @@
 // Shared plumbing of the auth and bootstrap route handlers: body parsing, the session cookie,
 // and the one place a thrown error becomes an ApiError response and a no-PII log line.
-import { log, toApiError, HttpError } from "@frejsi/shared";
+import { log, toApiError, HttpError } from "@naensom/shared";
 import type { z } from "zod";
 
 import { SESSION_COOKIE, SESSION_MAX_AGE_SECONDS } from "@/lib/auth/session";

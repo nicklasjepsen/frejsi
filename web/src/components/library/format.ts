@@ -1,5 +1,5 @@
 "use client";
-import type { FoodView, Portion } from "@frejsi/shared/schemas/food";
+import type { FoodView, Portion } from "@naensom/shared/schemas/food";
 import { useLocale, useTranslations } from "next-intl";
 import { useMemo } from "react";
 

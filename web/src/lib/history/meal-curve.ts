@@ -6,7 +6,7 @@ import {
   mealTitle,
   mealWindow,
   type Locale,
-} from "@frejsi/shared";
+} from "@naensom/shared";
 import { previousOccurrences } from "./previous-occurrences";
 import { mealView, requireSpace } from "./views";
 import type { HistoryDeps } from "./types";

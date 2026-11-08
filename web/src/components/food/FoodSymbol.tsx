@@ -1,4 +1,4 @@
-import type { FoodCategory, MealSymbol } from "@frejsi/shared/schemas/food";
+import type { FoodCategory, MealSymbol } from "@naensom/shared/schemas/food";
 
 /**
  * The ten food symbols and the apple again for `unknown` (v0.6.0 plan §7, decision 4): drawn in

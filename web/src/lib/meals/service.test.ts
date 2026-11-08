@@ -7,8 +7,8 @@ import {
   SessionContext,
   type EmitFn,
   type EventType,
-} from "@frejsi/shared";
-import { MemoryPhotoStore } from "@frejsi/shared/photos/memory";
+} from "@naensom/shared";
+import { MemoryPhotoStore } from "@naensom/shared/photos/memory";
 import type { MealRecord, MealRepository } from "./repository";
 import {
   createMeal,

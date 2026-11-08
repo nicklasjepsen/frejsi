@@ -16,7 +16,7 @@ vi.mock("@/components/shell/shell-session", () => ({
       fake.space ? { space: { id: "s1", role: fake.role, timezone: "Europe/Copenhagen" } } : null,
     ),
 }));
-vi.mock("@frejsi/shared", () => ({ prisma: { space: { findUnique: fake.query } } }));
+vi.mock("@naensom/shared", () => ({ prisma: { space: { findUnique: fake.query } } }));
 vi.mock("next/navigation", () => ({
   redirect: (url: string) => {
     throw new Error(`redirect:${url}`);

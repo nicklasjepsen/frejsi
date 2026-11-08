@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { DayHistoryView, MealCurveView, WeekHistoryView } from "@frejsi/shared";
+import { DayHistoryView, MealCurveView, WeekHistoryView } from "@naensom/shared";
 import { FakeLiveDb, captureLog, liveRequest, spaceContext } from "@/lib/live/test-support";
 import { MemoryHistoryRepository } from "@/lib/history/memory";
 import { configureHistory } from "@/lib/history/server";

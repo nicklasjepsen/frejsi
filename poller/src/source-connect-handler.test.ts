@@ -15,9 +15,9 @@ import {
   type FetchLike,
   type GlucoseSourceConfig,
   type ProbeResult,
-} from "@frejsi/shared";
-import { fakeDexcom } from "@frejsi/shared/glucose/dexcom-share/test-server";
-import { MemorySecrets } from "@frejsi/shared/secrets/memory";
+} from "@naensom/shared";
+import { fakeDexcom } from "@naensom/shared/glucose/dexcom-share/test-server";
+import { MemorySecrets } from "@naensom/shared/secrets/memory";
 import { describe, expect, it } from "vitest";
 
 import {

@@ -2,7 +2,7 @@
 // Every call the screens make, made by their own clients against the real route handlers (issue
 // #40's reconciliation): the library lane's `libraryApi`, the log lane's `components/meal/api`,
 // and the day reads Nu and the picker make. Nothing here fakes a response.
-import { FoodView, LookupResponse } from "@frejsi/shared/schemas/food";
+import { FoodView, LookupResponse } from "@naensom/shared/schemas/food";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import { fetchDay } from "@/components/day/api";

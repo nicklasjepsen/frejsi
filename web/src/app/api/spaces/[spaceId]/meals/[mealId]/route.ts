@@ -1,4 +1,4 @@
-import { UpdateMealRequest } from "@frejsi/shared";
+import { UpdateMealRequest } from "@naensom/shared";
 import { noContent } from "@/app/api/auth/http";
 import { json, parseBody, settingsRoute } from "@/components/settings/api-route";
 import { authorizeMeal, mealOutcome } from "@/lib/meals/server";

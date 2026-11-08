@@ -1,7 +1,7 @@
 // @vitest-environment node
 import { describe, expect, it, vi } from "vitest";
-import { SessionContext, type EmitTx } from "@frejsi/shared";
-import { MemoryEventSink } from "@frejsi/shared/events/memory";
+import { SessionContext, type EmitTx } from "@naensom/shared";
+import { MemoryEventSink } from "@naensom/shared/events/memory";
 import { createSymptom, deleteSymptom, updateSymptom } from "./service";
 import { database } from "./test-support";
 import { createSymptomWriter, type SymptomWriteDb } from "./transaction";

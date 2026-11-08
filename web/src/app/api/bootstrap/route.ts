@@ -1,4 +1,4 @@
-import { log } from "@frejsi/shared";
+import { log } from "@naensom/shared";
 
 import { BOOTSTRAP_TOKEN_HEADER, bootstrapSpace } from "@/lib/auth/bootstrap";
 

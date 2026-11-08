@@ -53,7 +53,7 @@ describe("OFF fixture adapter", () => {
     });
     expect(f.calls[0]?.url.pathname).toBe("/api/v2/product/2000000000008.json");
     expect(new Headers(f.calls[0]?.init?.headers).get("User-Agent")).toBe(
-      "Frejsi/test (+https://github.com/nicklasjepsen/frejsi)",
+      "Naensom/test (+https://github.com/nicklasjepsen/frejsi)",
     );
     for (const candidate of result.candidates) {
       expect(FoodCandidate.parse(candidate)).toEqual(candidate);
@@ -128,7 +128,7 @@ describe("OFF fixture adapter", () => {
         action: "process",
       });
       expect(call.url.searchParams.get("fields")).toContain("product_name_en");
-      expect(new Headers(call.init?.headers).get("User-Agent")).toContain("Frejsi/test");
+      expect(new Headers(call.init?.headers).get("User-Agent")).toContain("Naensom/test");
     }
     for (const candidate of result.candidates)
       expect(FoodCandidate.parse(candidate)).not.toHaveProperty("verified");

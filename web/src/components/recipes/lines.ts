@@ -1,7 +1,7 @@
 // The review form's lines: what the route resolved, plus the match kept so an edited amount can be
 // recomputed in the browser exactly as the server computes it (the shared lineFor).
-import { gramsFor, lineFor, type RecipeMatch } from "@frejsi/shared/ai/recipe/ingredients";
-import type { LookupResult, RecipeIngredient, RecipeReview } from "@frejsi/shared/schemas/food";
+import { gramsFor, lineFor, type RecipeMatch } from "@naensom/shared/ai/recipe/ingredients";
+import type { LookupResult, RecipeIngredient, RecipeReview } from "@naensom/shared/schemas/food";
 
 export interface ReviewLine extends RecipeIngredient {
   key: number;

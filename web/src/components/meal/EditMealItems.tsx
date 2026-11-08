@@ -1,8 +1,8 @@
 "use client";
 
-import { carbsFor } from "@frejsi/shared/food/portions";
-import type { EditItem } from "@frejsi/shared/schemas/history";
-import type { MealItemInput } from "@frejsi/shared/schemas/meal";
+import { carbsFor } from "@naensom/shared/food/portions";
+import type { EditItem } from "@naensom/shared/schemas/history";
+import type { MealItemInput } from "@naensom/shared/schemas/meal";
 import { useTranslations } from "next-intl";
 import { useState } from "react";
 

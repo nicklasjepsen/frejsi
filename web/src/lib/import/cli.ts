@@ -1,6 +1,6 @@
 // The pure parts of `pnpm --filter ./web import` (scripts/import-glucose.ts, #156): the arguments
 // and the owner check. Nothing here reads the file, the environment or the database.
-import { HttpError, SessionContext } from "@frejsi/shared";
+import { HttpError, SessionContext } from "@naensom/shared";
 
 export interface ImportArgs {
   file: string;

@@ -1,4 +1,4 @@
-import type { SessionContext } from "@frejsi/shared";
+import type { SessionContext } from "@naensom/shared";
 import { describe, expect, it } from "vitest";
 
 import { loadShellData, pickSpace, type ShellDb, type ShellMembershipRow } from "./load-shell";

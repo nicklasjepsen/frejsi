@@ -1,4 +1,4 @@
-import { ContributionsView } from "@frejsi/shared/schemas/food";
+import { ContributionsView } from "@naensom/shared/schemas/food";
 import { json, parseBody } from "@/app/api/auth/http";
 import { availableContributions, contributeFood } from "@/lib/contributions";
 import { z } from "zod";

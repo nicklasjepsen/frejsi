@@ -1,5 +1,5 @@
 // @vitest-environment node
-import type { EventSink } from "@frejsi/shared";
+import type { EventSink } from "@naensom/shared";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
@@ -27,7 +27,7 @@ const shared = vi.hoisted(() => {
     sink,
   };
 });
-vi.mock("@frejsi/shared", async (importOriginal) => ({
+vi.mock("@naensom/shared", async (importOriginal) => ({
   ...(await importOriginal<Record<string, unknown>>()),
   prisma: shared.prisma,
   createEventSinkFromEnv: () => shared.sink,

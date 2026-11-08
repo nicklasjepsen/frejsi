@@ -20,7 +20,7 @@ function world() {
 }
 
 beforeEach(() => {
-  process.env.APP_ORIGIN = "https://frejsi.example";
+  process.env.APP_ORIGIN = "https://naensom.example";
 });
 afterEach(() => {
   delete process.env.APP_ORIGIN;
@@ -72,7 +72,7 @@ describe("bootstrapSpace", () => {
       createdBy: owner?.id,
       usedAt: null,
     });
-    expect(result.inviteUrl).toBe(`https://frejsi.example/invite/${invite?.token as string}`);
+    expect(result.inviteUrl).toBe(`https://naensom.example/invite/${invite?.token as string}`);
     expect(result.expiresAt).toEqual(new Date(T0.getTime() + 7 * 24 * 60 * 60 * 1000));
     expect(w.events).toEqual([
       {

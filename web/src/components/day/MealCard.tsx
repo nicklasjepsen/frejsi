@@ -1,7 +1,7 @@
 "use client";
 
-import type { Role } from "@frejsi/shared/schemas/index";
-import type { DayMealView } from "@frejsi/shared/schemas/meal";
+import type { Role } from "@naensom/shared/schemas/index";
+import type { DayMealView } from "@naensom/shared/schemas/meal";
 import type { ReactNode } from "react";
 import { useTranslations } from "next-intl";
 import Link from "next/link";

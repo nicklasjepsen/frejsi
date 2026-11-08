@@ -3,7 +3,7 @@ import "@testing-library/jest-dom/vitest";
 import { readFileSync } from "node:fs";
 import path from "node:path";
 
-import { HttpError, type InviteView } from "@frejsi/shared";
+import { HttpError, type InviteView } from "@naensom/shared";
 import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import type { ReactElement } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -105,7 +105,7 @@ describe("GET /[locale]/invite/[token] · the landing (Invitation-Telefon, Invit
     expect(
       screen.getAllByText("Linket gælder i 6 dage endnu og kan kun bruges én gang."),
     ).toHaveLength(2);
-    expect(screen.getByText("Frejsi", { selector: "[data-testid=wordmark]" })).toBeInTheDocument();
+    expect(screen.getByText("Nænsom", { selector: "[data-testid=wordmark]" })).toBeInTheDocument();
     // Kind reassurance, the inviter named as the one to ask again.
     expect(container.textContent).toContain(
       "Ny telefon senere? Så beder du Jonas eller en anden ejer om et nyt link.",
@@ -113,7 +113,7 @@ describe("GET /[locale]/invite/[token] · the landing (Invitation-Telefon, Invit
     expect(container.textContent).toContain("Ingen adgangskode.");
     // The design's one footer line (docs/design/README.md "footers"), the same as the shell's,
     // and nothing about the token in the DOM.
-    expect(container.textContent).toContain("Frejsi · åben kildekode · regner aldrig insulin");
+    expect(container.textContent).toContain("Nænsom · åben kildekode · regner aldrig insulin");
     expect(container.textContent).not.toContain("erstatter ikke");
     expect(container.innerHTML).not.toContain(TOKEN);
   });
@@ -339,7 +339,7 @@ describe("a dead link (expired, used, revoked) · design gap 23", () => {
       expect(container.textContent).not.toContain("Jonas");
       expect(container.textContent).not.toContain("Søren");
       expect(screen.queryByRole("button")).toBeNull();
-      expect(container.textContent).toContain("Frejsi · åben kildekode · regner aldrig insulin");
+      expect(container.textContent).toContain("Nænsom · åben kildekode · regner aldrig insulin");
     },
   );
 

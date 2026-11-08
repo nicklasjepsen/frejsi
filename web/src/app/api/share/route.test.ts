@@ -1,5 +1,5 @@
 // @vitest-environment node
-import type { EventSink } from "@frejsi/shared";
+import type { EventSink } from "@naensom/shared";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   cookieStoreFor,
@@ -24,7 +24,7 @@ const shared = vi.hoisted(() => {
   const sink: EventSink = { publish: () => Promise.resolve() };
   return { holder, prisma: new Proxy({}, { get: (_target, key: string) => holder.db[key] }), sink };
 });
-vi.mock("@frejsi/shared", async (importOriginal) => {
+vi.mock("@naensom/shared", async (importOriginal) => {
   const original = await importOriginal<Record<string, unknown>>();
   const log = {
     info: (msg: string, fields: unknown) =>
@@ -58,7 +58,7 @@ function post(fields: Record<string, string | Blob>, as: Who | null = "carer") {
     else form.append(key, value);
   const headers: Record<string, string> = {};
   if (as !== null) headers.cookie = `frejsi_session=${SESSIONS[as]}`;
-  const req = new Request("https://frejsi.example/api/share", {
+  const req = new Request("https://naensom.example/api/share", {
     method: "POST",
     headers,
     body: form,
@@ -69,12 +69,12 @@ function post(fields: Record<string, string | Blob>, as: Who | null = "carer") {
 function take(id: string, as: Who | null = "carer") {
   const headers: Record<string, string> = {};
   if (as !== null) headers.cookie = `frejsi_session=${SESSIONS[as]}`;
-  const req = new Request(`https://frejsi.example/api/share/${id}`, { headers });
+  const req = new Request(`https://naensom.example/api/share/${id}`, { headers });
   shared.holder.request = req;
   return GET(req, { params: Promise.resolve({ shareId: id }) });
 }
 const shareId = (response: Response) =>
-  new URL(response.headers.get("location") ?? "", "https://frejsi.example").searchParams.get(
+  new URL(response.headers.get("location") ?? "", "https://naensom.example").searchParams.get(
     "share",
   ) ?? "";
 const jpeg = () => {

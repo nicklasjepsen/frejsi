@@ -1,7 +1,7 @@
-// The browser side of `POST /api/spaces/:id/readings`. Schema modules, not the @frejsi/shared
+// The browser side of `POST /api/spaces/:id/readings`. Schema modules, not the @naensom/shared
 // barrel: this is bundled for the browser.
-import { ApiError, type ApiErrorCode } from "@frejsi/shared/schemas/api";
-import { Reading, type GlucoseUnit } from "@frejsi/shared/schemas/index";
+import { ApiError, type ApiErrorCode } from "@naensom/shared/schemas/api";
+import { Reading, type GlucoseUnit } from "@naensom/shared/schemas/index";
 
 export class ManualReadingError extends Error {
   constructor(

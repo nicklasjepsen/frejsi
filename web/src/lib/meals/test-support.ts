@@ -1,6 +1,6 @@
 // In-memory SQL delegates for meal adapter and transaction regression tests, with the pump bolus
 // table (v0.7.0) so the matcher runs over the same rows the Prisma repository reads.
-import type { EventEnvelope, EventSink, PrismaClient } from "@frejsi/shared";
+import type { EventEnvelope, EventSink, PrismaClient } from "@naensom/shared";
 import { PrismaMealRepository } from "./repository";
 import { createMealWriter, type MealWriteDb } from "./transaction";
 

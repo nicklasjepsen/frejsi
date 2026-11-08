@@ -3,7 +3,7 @@
 // that removing a device revokes it at once; the cookie carries only the session id.
 import { randomBytes, randomUUID } from "node:crypto";
 
-import { HttpError, Theme, themeOrDefault, type Role } from "@frejsi/shared";
+import { HttpError, Theme, themeOrDefault, type Role } from "@naensom/shared";
 import {
   generateAuthenticationOptions,
   generateRegistrationOptions,
@@ -30,9 +30,10 @@ import {
 import { loadInvite, markInviteUsed } from "./invites";
 import { addMember } from "./members";
 import { SESSION_MAX_AGE_SECONDS } from "./session";
+import { APP_NAME } from "../brand";
 
 /** The user-visible name of the relying party in the passkey prompt. */
-const RP_NAME = "Frejsi";
+const RP_NAME = APP_NAME;
 
 export interface CeremonyStart<Options> {
   challengeId: string;

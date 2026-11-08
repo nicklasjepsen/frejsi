@@ -59,7 +59,7 @@ describe("photo import boundaries", () => {
     expect(
       violations(
         "web/src/lib/other.ts",
-        'import x from "@azure/storage-blob"; import y from "sharp"; import {MemoryPhotoStore} from "@frejsi/shared/photos/memory";',
+        'import x from "@azure/storage-blob"; import y from "sharp"; import {MemoryPhotoStore} from "@naensom/shared/photos/memory";',
       ),
     ).toEqual(["blob-adapter-only", "processor-only", "test-fake-only"]);
     expect(violations("shared/src/index.ts", 'export * from "./photos/index";')).toEqual([
@@ -82,7 +82,7 @@ describe("photo import boundaries", () => {
       "web/src/lib/food.test.tsx",
     ]) {
       expect(
-        violations(file, 'import {MemoryPhotoStore} from "@frejsi/shared/photos/memory";'),
+        violations(file, 'import {MemoryPhotoStore} from "@naensom/shared/photos/memory";'),
       ).toEqual([]);
     }
   });

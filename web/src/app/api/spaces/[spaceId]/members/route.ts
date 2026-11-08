@@ -1,4 +1,4 @@
-import { log } from "@frejsi/shared";
+import { log } from "@naensom/shared";
 
 import { json } from "@/app/api/auth/http";
 import { loadPeople } from "@/components/people/load-people";

@@ -43,14 +43,14 @@ function violations(file: string, source: string): string[] {
 }
 it("blocks raw-reading and web imports including aliases, exports, dynamic and type imports", () => {
   for (const source of [
-    'import { Reading as R } from "@frejsi/shared/glucose/types";',
+    'import { Reading as R } from "@naensom/shared/glucose/types";',
     'export * from "../../shared/src/glucose/index";',
     'const x = import("../../web/src/lib/history/service");',
-    'type X = import("@frejsi/shared/insights/week-input").X;',
+    'type X = import("@naensom/shared/insights/week-input").X;',
   ])
     expect(violations("evals/src/example.ts", source)).toHaveLength(1);
   expect(
-    violations("evals/src/example.ts", 'import { InsightInput } from "@frejsi/shared/schemas/ai";'),
+    violations("evals/src/example.ts", 'import { InsightInput } from "@naensom/shared/schemas/ai";'),
   ).toEqual([]);
 });
 it("keeps all eval source files on aggregate-only shared interfaces", () => {

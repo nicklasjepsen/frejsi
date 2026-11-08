@@ -1,5 +1,5 @@
 // @vitest-environment node
-import type { SessionContext } from "@frejsi/shared";
+import type { SessionContext } from "@naensom/shared";
 import { describe, expect, it } from "vitest";
 
 import type { ShellSpace } from "@/components/shell/load-shell";

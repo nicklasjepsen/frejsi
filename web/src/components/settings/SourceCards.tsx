@@ -1,8 +1,8 @@
 "use client";
 
 // Values come from the pure modules by path, never from the shared index (see ConnectSourceForm).
-import type { ApiErrorCode, SpaceSettings } from "@frejsi/shared";
-import { GlucoseSourceType } from "@frejsi/shared/schemas/glucose";
+import type { ApiErrorCode, SpaceSettings } from "@naensom/shared";
+import { GlucoseSourceType } from "@naensom/shared/schemas/glucose";
 import { useTranslations } from "next-intl";
 import { useState } from "react";
 

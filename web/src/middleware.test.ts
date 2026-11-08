@@ -37,7 +37,7 @@ describe("middleware", () => {
     const res = middleware(request("/en/now", { cookie: "frejsi_session=abc" }));
     expect(res.status).toBe(200);
     expect(res.headers.get("location")).toBeNull();
-    expect(res.headers.get("x-middleware-request-x-frejsi-locale")).toBe("en");
+    expect(res.headers.get("x-middleware-request-x-naensom-locale")).toBe("en");
     expect(res.cookies.get("frejsi_locale")?.value).toBe("en");
   });
 

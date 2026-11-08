@@ -14,13 +14,13 @@ import {
   type Locale,
   type MealItemInput,
   type SessionContext,
-} from "@frejsi/shared";
+} from "@naensom/shared";
 import {
   createPhotoStoreFromEnv,
   photoKey,
   processPhoto,
   type PhotoStore,
-} from "@frejsi/shared/photos";
+} from "@naensom/shared/photos";
 import {
   PrismaMealRepository,
   type MealChanges,

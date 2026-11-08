@@ -1,4 +1,4 @@
-import { FoodOrigin } from "@frejsi/shared/schemas/food";
+import { FoodOrigin } from "@naensom/shared/schemas/food";
 
 import { LibraryScreen } from "@/components/library/LibraryScreen";
 

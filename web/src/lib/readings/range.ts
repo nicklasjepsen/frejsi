@@ -1,7 +1,7 @@
 // What a hand-typed glucose value may be, shared by the route and the entry sheet. Pure and
 // browser-safe: only the units module of `shared`, never its barrel.
-import { mgdlToMmol } from "@frejsi/shared/glucose/units";
-import type { GlucoseUnit } from "@frejsi/shared/schemas/index";
+import { mgdlToMmol } from "@naensom/shared/glucose/units";
+import type { GlucoseUnit } from "@naensom/shared/schemas/index";
 
 /** A finger-prick can be entered up to this long after the measurement. */
 export const MANUAL_WINDOW_MS = 24 * 60 * 60 * 1000;

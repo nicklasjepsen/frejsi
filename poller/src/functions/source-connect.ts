@@ -1,5 +1,5 @@
 import { app } from "@azure/functions";
-import { createSecretsFromEnv } from "@frejsi/shared";
+import { createSecretsFromEnv } from "@naensom/shared";
 
 import { createSourceConnectHandler } from "../source-connect-handler";
 

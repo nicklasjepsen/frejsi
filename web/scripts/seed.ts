@@ -33,20 +33,20 @@ import {
   type PrismaClient,
   type PumpSource,
   type Role,
-} from "@frejsi/shared";
-import type { PumpBolus, PumpBolusKind } from "@frejsi/shared/schemas/pump";
-import { FakeFoodSource } from "@frejsi/shared/food/fake";
+} from "@naensom/shared";
+import type { PumpBolus, PumpBolusKind } from "@naensom/shared/schemas/pump";
+import { FakeFoodSource } from "@naensom/shared/food/fake";
 import { createFood, addCandidate } from "../src/lib/foods";
 import { createMeal } from "../src/lib/meals/service";
 import { PrismaMealRepository } from "../src/lib/meals/repository";
 import { createMealWriter } from "../src/lib/meals/transaction";
 import { localDate } from "../src/app/api/spaces/[spaceId]/day/load-day";
 
-import { MemoryEventSink } from "@frejsi/shared/events/memory";
-import { FakeGlucoseSource } from "@frejsi/shared/glucose/fake";
+import { MemoryEventSink } from "@naensom/shared/events/memory";
+import { FakeGlucoseSource } from "@naensom/shared/glucose/fake";
 
-import { createInsight, PrismaInsightRepository } from "@frejsi/shared/insights/store";
-import { buildMealInput, localParts } from "@frejsi/shared/ai/insight/input";
+import { createInsight, PrismaInsightRepository } from "@naensom/shared/insights/store";
+import { buildMealInput, localParts } from "@naensom/shared/ai/insight/input";
 import { loadMealCurve } from "../src/lib/history/meal-curve";
 import { PrismaHistoryRepository } from "../src/lib/history/prisma";
 import {

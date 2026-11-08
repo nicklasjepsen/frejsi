@@ -1,12 +1,12 @@
-import { HttpError, prisma, type PrismaClient, type SessionContext } from "@frejsi/shared";
+import { HttpError, prisma, type PrismaClient, type SessionContext } from "@naensom/shared";
 import {
   aiProviders,
   CappedAiProvider,
   PrismaAiCallRepository,
   type AiCallDb,
   type AiProvider,
-} from "@frejsi/shared/ai";
-import { AiProviderId } from "@frejsi/shared/schemas/ai";
+} from "@naensom/shared/ai";
+import { AiProviderId } from "@naensom/shared/schemas/ai";
 import { assertRole } from "@/lib/auth/session";
 
 export interface AiProviderDeps {

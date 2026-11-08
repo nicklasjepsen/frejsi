@@ -5,7 +5,7 @@
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 
-import { emit, GlucoseImportRequest, HttpError, prisma } from "@frejsi/shared";
+import { emit, GlucoseImportRequest, HttpError, prisma } from "@naensom/shared";
 
 import { parseArgs, requireOwner } from "../src/lib/import/cli";
 import { importGlucose } from "../src/lib/import/service";

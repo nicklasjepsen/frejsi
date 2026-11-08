@@ -8,7 +8,7 @@ function worker(existing = true) {
     opened: unknown[] = [],
     focused: unknown[] = [];
   const client = {
-    url: "https://frejsi.example/da/now",
+    url: "https://naensom.example/da/now",
     navigate: (url: string) => {
       opened.push(url);
       return Promise.resolve(client);
@@ -19,7 +19,7 @@ function worker(existing = true) {
     },
   };
   const self = {
-    location: { origin: "https://frejsi.example" },
+    location: { origin: "https://naensom.example" },
     addEventListener: (type: string, fn: (event: unknown) => void) => handlers.set(type, fn),
     registration: {
       showNotification: (...args: unknown[]) => {
@@ -76,7 +76,7 @@ it.each([true, false])(
     await w.run("notificationclick", {
       notification: { data: { url: "/en/library/f1" }, close: () => undefined },
     });
-    expect(w.opened).toEqual(["https://frejsi.example/en/library/f1"]);
+    expect(w.opened).toEqual(["https://naensom.example/en/library/f1"]);
     expect(w.focused).toHaveLength(existing ? 1 : 0);
   },
 );

@@ -3,7 +3,7 @@
 // connection id under the hub's access key, and only for this app's own Web PubSub origin.
 import { createHmac, timingSafeEqual } from "node:crypto";
 
-import { DEFAULT_HUB } from "@frejsi/shared";
+import { DEFAULT_HUB } from "@naensom/shared";
 
 /** What the connect handler needs to trust a request; null when no Web PubSub is configured. */
 export interface UpstreamConfig {

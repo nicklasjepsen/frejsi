@@ -8,7 +8,7 @@ import {
   type EventType,
   type Reading,
   type SourceStatus,
-} from "@frejsi/shared/schemas/index";
+} from "@naensom/shared/schemas/index";
 
 import {
   CURSOR_ONLY_SINCE,

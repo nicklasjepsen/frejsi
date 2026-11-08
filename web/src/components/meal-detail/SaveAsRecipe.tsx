@@ -1,6 +1,6 @@
 "use client";
 
-import type { MealView } from "@frejsi/shared/schemas/meal";
+import type { MealView } from "@naensom/shared/schemas/meal";
 import { useTranslations } from "next-intl";
 
 import { Button } from "@/components/ui";

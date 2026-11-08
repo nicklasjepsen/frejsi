@@ -1,6 +1,6 @@
 "use client";
 
-import type { Role } from "@frejsi/shared";
+import type { Role } from "@naensom/shared";
 import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -9,6 +9,7 @@ import { useEffect } from "react";
 import { FeelIcon } from "@/components/symptoms/icons";
 import { Avatar } from "@/components/ui/Avatar";
 import { Kbd } from "@/components/ui/Kbd";
+import { APP_NAME } from "@/lib/brand";
 import { localeHref, type AppLocale } from "@/lib/i18n/routing";
 
 import { Icon } from "./icons";
@@ -79,7 +80,7 @@ export function Sidebar({ locale, variant, path, user, space, spaces }: SidebarP
         </div>
       ) : (
         <div className={styles.sidebarTop}>
-          <div className={styles.wordmark}>Frejsi</div>
+          <div className={styles.wordmark}>{APP_NAME}</div>
           <SpaceSwitcher locale={locale} current={space} spaces={spaces} />
         </div>
       )}

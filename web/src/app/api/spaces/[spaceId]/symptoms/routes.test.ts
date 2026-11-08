@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { EventEnvelope, EventPayloads, type EmitFn } from "@frejsi/shared";
+import { EventEnvelope, EventPayloads, type EmitFn } from "@naensom/shared";
 import { FakeLiveDb, captureLog } from "@/lib/live/test-support";
 import { configureSymptoms } from "@/lib/symptoms/server";
 import { NAMES, database } from "@/lib/symptoms/test-support";
@@ -24,7 +24,7 @@ const ctx = (symptomId = "missing", spaceId = "s1") => ({
   params: Promise.resolve({ spaceId, symptomId }),
 });
 const request = (method: string, user = "carer", body?: unknown, query = "") =>
-  new Request(`https://frejsi.example.invalid/api/spaces/s1/symptoms${query}`, {
+  new Request(`https://naensom.example.invalid/api/spaces/s1/symptoms${query}`, {
     method,
     headers: { cookie: `frejsi_session=sess-${user}`, "content-type": "application/json" },
     ...(body === undefined ? {} : { body: JSON.stringify(body) }),

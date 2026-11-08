@@ -7,7 +7,7 @@ let routes: ReturnType<typeof realRoutes>;
 let read: Mock<typeof fetch>;
 const request = (member = "carer", space = "s1", mealId = "m1") =>
   GET(
-    new Request(`https://frejsi.example/da/meal/${mealId}/photo?space=${space}`, {
+    new Request(`https://naensom.example/da/meal/${mealId}/photo?space=${space}`, {
       headers: { cookie: `frejsi_session=sess-${member}` },
     }),
     { params: Promise.resolve({ locale: "da", mealId }) },

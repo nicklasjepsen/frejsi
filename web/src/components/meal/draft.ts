@@ -2,9 +2,9 @@
 // desktop layouts share one model and the arithmetic is tested without a browser. Carbs are whole
 // grams through `carbsFor` (decision 25); the server recomputes them from the food and ignores the
 // client's number whenever it can (plan §4, `MealItemInput`).
-import { carbsFor } from "@frejsi/shared/food/portions";
-import type { FoodView } from "@frejsi/shared/schemas/food";
-import type { CreateMealRequest, MealItemInput, MealView } from "@frejsi/shared/schemas/meal";
+import { carbsFor } from "@naensom/shared/food/portions";
+import type { FoodView } from "@naensom/shared/schemas/food";
+import type { CreateMealRequest, MealItemInput, MealView } from "@naensom/shared/schemas/meal";
 
 export type Choice = { portion: number } | { grams: number };
 

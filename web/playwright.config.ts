@@ -21,7 +21,7 @@ if (!baseUrl) throw new Error("DATABASE_URL is required for the e2e run (plan §
 const databaseUrl = e2eDatabaseUrl(baseUrl);
 const version = expectedVersion();
 
-// The global setup, the workers and the seed's `@frejsi/shared` client all read these.
+// The global setup, the workers and the seed's `@naensom/shared` client all read these.
 process.env.DATABASE_URL = databaseUrl;
 process.env.APP_ORIGIN = ORIGIN;
 process.env.FAKE_AI_PROVIDER = "1";

@@ -1,4 +1,4 @@
-import { prisma } from "@frejsi/shared";
+import { prisma } from "@naensom/shared";
 import { NextResponse } from "next/server";
 
 import { computeHealth } from "./health";

@@ -7,7 +7,7 @@ import {
   checkInsight,
   enforceThresholds,
 } from "./score";
-import { ParsedMeal } from "@frejsi/shared/schemas/ai";
+import { ParsedMeal } from "@naensom/shared/schemas/ai";
 
 const meal = ParsedMeal.parse({
   items: [

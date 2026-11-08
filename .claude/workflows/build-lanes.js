@@ -1,6 +1,6 @@
 export const meta = {
   name: 'build-lanes',
-  description: 'Build several Frejsi lanes in parallel: one implementer per lane in its own worktree, the three gate agents, one fix round, then the lane merges itself when green and main CI is watched',
+  description: 'Build several Nænsom lanes in parallel: one implementer per lane in its own worktree, the three gate agents, one fix round, then the lane merges itself when green and main CI is watched',
   whenToUse: 'Called by ship-milestone, or on its own after a lane split has been OKed and the worktrees exist. Pass { lanes: [...], base, milestone? } as args.',
   phases: [
     { title: 'Build', detail: 'one implementer per lane, TDD, PR opened' },
@@ -98,7 +98,7 @@ const MERGE_SCHEMA = {
 }
 
 const briefFor = (lane) =>
-  `You are the implementer for lane "${lane.name}" of Frejsi${milestone ? `, milestone ${milestone}` : ''}.\n\n` +
+  `You are the implementer for lane "${lane.name}" of Nænsom${milestone ? `, milestone ${milestone}` : ''}.\n\n` +
   `Issue(s): ${lane.issues.map((n) => `#${n}`).join(', ')} (read them with gh issue view).\n` +
   `Worktree: ${lane.worktree}\nBranch: ${lane.branch} (already created from origin/${base})\n` +
   `You own: ${lane.owns.join(', ')}\n` +
@@ -163,7 +163,7 @@ const results = await pipeline(
       return state
     }
     const merge = await callAgent(
-      `You are the implementer for lane "${lane.name}" of Frejsi; your PR #${built.pr} has passed the gates. Merge it and keep main green:\n` +
+      `You are the implementer for lane "${lane.name}" of Nænsom; your PR #${built.pr} has passed the gates. Merge it and keep main green:\n` +
       `1. Resolve every Codex review thread on the PR (reply with the fix commit or the reason, then resolve). If a thread raises a real defect, fix it first in a signed-off commit.\n` +
       `2. Wait for the ci check in the foreground: gh pr checks ${built.pr} --watch (bounded; if it is red, fix it, never skip).\n` +
       `3. Merge: gh pr merge ${built.pr} --rebase --delete-branch. Never --admin. If GitHub refuses because of a conflict with ${base}, rebase your branch on origin/${base} in your worktree, run the full checks, push, and merge.\n` +

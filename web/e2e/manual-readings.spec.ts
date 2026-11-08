@@ -1,7 +1,7 @@
 // A space without a sensor (v0.5.0, spec §3 and §7): Mette is a carer in "Arnes rum", whose
 // source is `manual`. She types a finger-prick value, the hero shows it with its age and no arrow,
 // and the write has its `reading` event. Lærke, a viewer, can neither write nor receive a value.
-import { prisma } from "@frejsi/shared";
+import { prisma } from "@naensom/shared";
 import type { Page } from "@playwright/test";
 import { expect, test } from "./test";
 

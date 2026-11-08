@@ -1,6 +1,6 @@
 ---
 name: gate-pr
-description: Review a Frejsi pull request with the three gate agents (spec-guardian for hard rules, reviewer for correctness, copy-reviewer for i18n and tone) and report only findings that survive a refutation attempt. Use when the owner says "review PR 42", "gate this PR", "is 42 ready to merge", or before opening a PR yourself. Pass --comment to post the result on the PR.
+description: Review a Nænsom pull request with the three gate agents (spec-guardian for hard rules, reviewer for correctness, copy-reviewer for i18n and tone) and report only findings that survive a refutation attempt. Use when the owner says "review PR 42", "gate this PR", "is 42 ready to merge", or before opening a PR yourself. Pass --comment to post the result on the PR.
 ---
 
 # gate-pr

@@ -1,5 +1,5 @@
 "use client";
-import type { FoodCategory } from "@frejsi/shared/schemas/food";
+import type { FoodCategory } from "@naensom/shared/schemas/food";
 import { useTranslations } from "next-intl";
 
 import { FoodSymbol } from "@/components/food/FoodSymbol";

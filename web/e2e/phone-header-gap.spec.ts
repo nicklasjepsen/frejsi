@@ -2,7 +2,7 @@
 // alone (its `main`, under the header), so no screen draws its own or forgets it. Measured, not
 // snapshotted: a runner's font rasteriser differs from a workstation's by a few pixels, which is no
 // finding. From 1280 px the phone header is hidden and the desktop main column keeps its own 28 px.
-import { prisma } from "@frejsi/shared";
+import { prisma } from "@naensom/shared";
 import type { Locator, Page } from "@playwright/test";
 
 import { inviteLink, registerFromInvite, seededSpace } from "./support";

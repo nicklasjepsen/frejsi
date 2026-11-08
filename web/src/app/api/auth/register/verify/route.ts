@@ -1,4 +1,4 @@
-import { log } from "@frejsi/shared";
+import { log } from "@naensom/shared";
 import type { RegistrationResponseJSON } from "@simplewebauthn/server";
 import { z } from "zod";
 

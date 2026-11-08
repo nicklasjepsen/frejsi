@@ -3,8 +3,8 @@
 // translates, exactly as the other Settings calls do.
 // Values come from the pure modules by path, never from the shared index: a client bundle must not
 // pull in the Prisma client or App Insights that the index exports (plan §2; see routing.ts).
-import { ApiError } from "@frejsi/shared/schemas/api";
-import { PumpSettingsView, type ConnectPumpBody } from "@frejsi/shared/schemas/pump";
+import { ApiError } from "@naensom/shared/schemas/api";
+import { PumpSettingsView, type ConnectPumpBody } from "@naensom/shared/schemas/pump";
 import { z } from "zod";
 
 import { ApiFailure } from "./settings-client";

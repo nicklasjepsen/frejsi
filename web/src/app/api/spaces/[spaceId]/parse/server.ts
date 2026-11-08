@@ -4,9 +4,9 @@ import {
   type FoodRepository,
   type FoodSource,
   type SessionContext,
-} from "@frejsi/shared";
-import type { AiProvider } from "@frejsi/shared/ai";
-import { foodSources } from "@frejsi/shared/food";
+} from "@naensom/shared";
+import type { AiProvider } from "@naensom/shared/ai";
+import { foodSources } from "@naensom/shared/food";
 import { aiForSpace } from "@/ai/provider";
 import type { SessionDb } from "@/lib/auth/session";
 

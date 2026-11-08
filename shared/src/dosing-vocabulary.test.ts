@@ -50,8 +50,8 @@ describe("dosing allow-list, v0.3.0 (plan §9, task 3)", () => {
   // ("Fjern bolustidspunkt" needs no test: the compound never matched the whole word "bolus".)
   it("no longer passes the removed bolus tap's note or its 'remove bolus time'", () => {
     for (const text of [
-      '"Bolus givet nu" gemmer kun tidspunktet, så det kan ses på kurven. Frejsi regner aldrig insulin.',
-      '"Bolus given now" saves only the time so it can be seen on the curve. Frejsi never calculates insulin.',
+      '"Bolus givet nu" gemmer kun tidspunktet, så det kan ses på kurven. Nænsom regner aldrig insulin.',
+      '"Bolus given now" saves only the time so it can be seen on the curve. Nænsom never calculates insulin.',
       "Remove bolus time",
     ]) {
       expect(findDosingVocabulary([["k", text]]), text).not.toEqual([]);

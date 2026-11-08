@@ -63,7 +63,7 @@ const nightscoutProtocol = [
 
 /**
  * Hard rule: glucose sources are read-only. The one caller of fetch under shared/src/glucose/ is
- * the Dexcom and Nightscout transports, whose allow-lists hold the reads Frejsi makes; a new source adds its own
+ * the Dexcom and Nightscout transports, whose allow-lists hold the reads Nænsom makes; a new source adds its own
  * transport file to the ignores below, with its own allow-list, instead of calling fetch from its
  * adapter.
  */
@@ -303,10 +303,10 @@ const danishLettersRule = {
 
 export const boundaries = [
   {
-    name: "frejsi/boundaries/db",
+    name: "naensom/boundaries/db",
     files: ["**/*.ts", "**/*.tsx", "**/*.mts", "**/*.cts"],
     plugins: {
-      "frejsi-db": {
+      "naensom-db": {
         rules: {
           vendor: {
             meta: { type: "problem", schema: [] },
@@ -330,13 +330,13 @@ export const boundaries = [
         },
       },
     },
-    rules: { "frejsi-db/vendor": "error" },
+    rules: { "naensom-db/vendor": "error" },
   },
   {
-    name: "frejsi/boundaries/push",
+    name: "naensom/boundaries/push",
     files: ["**/*.ts", "**/*.tsx", "**/*.mts", "**/*.cts"],
     plugins: {
-      "frejsi-push": {
+      "naensom-push": {
         rules: {
           vendor: {
             meta: { type: "problem", schema: [] },
@@ -357,22 +357,22 @@ export const boundaries = [
         },
       },
     },
-    rules: { "frejsi-push/vendor": "error" },
+    rules: { "naensom-push/vendor": "error" },
   },
   {
-    name: "frejsi/boundaries/pump",
+    name: "naensom/boundaries/pump",
     files: ["shared/src/pump/**/*.ts"],
-    plugins: { "frejsi-pump": { rules: { adapter: pumpBoundaryRule } } },
-    rules: { "frejsi-pump/adapter": "error" },
+    plugins: { "naensom-pump": { rules: { adapter: pumpBoundaryRule } } },
+    rules: { "naensom-pump/adapter": "error" },
   },
   {
-    name: "frejsi/boundaries/ai",
+    name: "naensom/boundaries/ai",
     files: ["**/*.ts", "**/*.tsx", "**/*.mts", "**/*.cts"],
-    plugins: { "frejsi-ai": { rules: { boundaries: aiBoundaryRule } } },
-    rules: { "frejsi-ai/boundaries": "error" },
+    plugins: { "naensom-ai": { rules: { boundaries: aiBoundaryRule } } },
+    rules: { "naensom-ai/boundaries": "error" },
   },
   {
-    name: "frejsi/boundaries",
+    name: "naensom/boundaries",
     files: ["**/*.ts", "**/*.tsx", "**/*.mts", "**/*.cts"],
     rules: {
       "no-restricted-imports": [
@@ -397,7 +397,7 @@ export const boundaries = [
             noFakes,
             {
               group: ["**/shared/src/**", "**/../shared/**"],
-              message: "Import domain code from @frejsi/shared, not by relative path (plan §2).",
+              message: "Import domain code from @naensom/shared, not by relative path (plan §2).",
             },
           ],
         },
@@ -406,7 +406,7 @@ export const boundaries = [
     },
   },
   {
-    name: "frejsi/boundaries/fake-consumers",
+    name: "naensom/boundaries/fake-consumers",
     files: FAKE_CONSUMERS,
     rules: {
       "no-restricted-imports": [
@@ -426,7 +426,7 @@ export const boundaries = [
           patterns: [
             {
               group: ["**/shared/src/**", "**/../shared/**"],
-              message: "Import domain code from @frejsi/shared, not by relative path (plan §2).",
+              message: "Import domain code from @naensom/shared, not by relative path (plan §2).",
             },
           ],
         },
@@ -434,7 +434,7 @@ export const boundaries = [
     },
   },
   {
-    name: "frejsi/boundaries/shared-internal",
+    name: "naensom/boundaries/shared-internal",
     // Inside shared/, relative imports between its own modules are the normal thing.
     files: ["shared/**/*.ts"],
     rules: {
@@ -458,7 +458,7 @@ export const boundaries = [
     },
   },
   {
-    name: "frejsi/boundaries/shared-tests",
+    name: "naensom/boundaries/shared-tests",
     files: ["shared/**/*.test.ts", "shared/test/**/*.ts"],
     rules: {
       "no-restricted-imports": [
@@ -480,7 +480,7 @@ export const boundaries = [
     },
   },
   {
-    name: "frejsi/boundaries/pubsub",
+    name: "naensom/boundaries/pubsub",
     files: ["shared/src/events/pubsub.ts"],
     rules: {
       "no-restricted-imports": [
@@ -497,7 +497,7 @@ export const boundaries = [
     },
   },
   {
-    name: "frejsi/boundaries/keyvault",
+    name: "naensom/boundaries/keyvault",
     files: ["shared/src/secrets/keyvault.ts"],
     rules: {
       "no-restricted-imports": [
@@ -511,12 +511,12 @@ export const boundaries = [
     },
   },
   {
-    name: "frejsi/boundaries/telemetry",
+    name: "naensom/boundaries/telemetry",
     files: ["shared/src/telemetry.ts"],
     rules: { "no-restricted-imports": "off" },
   },
   {
-    name: "frejsi/boundaries/emit",
+    name: "naensom/boundaries/emit",
     files: ["shared/src/events/emit.ts"],
     rules: {
       "no-restricted-syntax": [
@@ -530,17 +530,17 @@ export const boundaries = [
     },
   },
   {
-    name: "frejsi/boundaries/dexcom-share",
+    name: "naensom/boundaries/dexcom-share",
     files: ["shared/src/glucose/dexcom-share/**/*.ts"],
     rules: { "no-restricted-syntax": ["error", eventWrite, ...nightscoutProtocol] },
   },
   {
-    name: "frejsi/boundaries/nightscout",
+    name: "naensom/boundaries/nightscout",
     files: ["shared/src/glucose/nightscout/**/*.ts"],
     rules: { "no-restricted-syntax": ["error", eventWrite, ...dexcomHost] },
   },
   {
-    name: "frejsi/boundaries/glucose-read-only",
+    name: "naensom/boundaries/glucose-read-only",
     files: ["shared/src/glucose/**/*.ts"],
     ignores: [
       "shared/src/glucose/dexcom-share/**",
@@ -558,7 +558,7 @@ export const boundaries = [
     },
   },
   {
-    name: "frejsi/boundaries/glucose-read-only/dexcom-share",
+    name: "naensom/boundaries/glucose-read-only/dexcom-share",
     files: ["shared/src/glucose/dexcom-share/**/*.ts"],
     ignores: glucoseFetchCallers,
     rules: {
@@ -566,14 +566,14 @@ export const boundaries = [
     },
   },
   {
-    name: "frejsi/boundaries/glucose-read-only/nightscout",
+    name: "naensom/boundaries/glucose-read-only/nightscout",
     files: ["shared/src/glucose/nightscout/**/*.ts"],
     ignores: glucoseFetchCallers,
     rules: { "no-restricted-syntax": ["error", eventWrite, ...dexcomHost, ...glucoseFetch] },
   },
   {
     // The adapters' default `fetch` is wired in these two files and nowhere else in the poller.
-    name: "frejsi/boundaries/poller-fetch",
+    name: "naensom/boundaries/poller-fetch",
     files: ["poller/src/**/*.ts"],
     ignores: [
       "poller/src/sources.ts",
@@ -598,7 +598,7 @@ export const boundaries = [
     // Code in shared/ and poller/ is English too (v0.5.0 plan section 2). The exclusions are data that
     // is Danish on purpose: the Frida dataset, the search fold table, the dosing word list, the AI
     // prompts and the Danish column names of a Dexcom Clarity export. Tests and fixtures are exempt.
-    name: "frejsi/boundaries/english-in-shared-and-poller",
+    name: "naensom/boundaries/english-in-shared-and-poller",
     files: ["shared/src/**/*.ts", "poller/src/**/*.ts"],
     ignores: [
       "**/*.test.ts",
@@ -613,14 +613,19 @@ export const boundaries = [
     ],
     // A rule of its own, because a second `no-restricted-syntax` block would replace the boundary
     // selectors that already apply to these files.
-    plugins: { "frejsi-english": { rules: { "danish-letters": danishLettersRule } } },
-    rules: { "frejsi-english/danish-letters": "error" },
+    plugins: { "naensom-english": { rules: { "danish-letters": danishLettersRule } } },
+    rules: { "naensom-english/danish-letters": "error" },
   },
   {
-    name: "frejsi/boundaries/english-in-web",
+    name: "naensom/boundaries/english-in-web",
     // UI strings live in web/messages/<locale>/<namespace>.json; code under web/src is English.
     files: ["web/src/**/*.ts", "web/src/**/*.tsx"],
-    ignores: ["web/src/**/*.test.ts", "web/src/**/*.test.tsx"],
+    ignores: [
+      "web/src/**/*.test.ts",
+      "web/src/**/*.test.tsx",
+      // The product name, Nænsom; everything else visible comes from web/messages.
+      "web/src/lib/brand.ts",
+    ],
     rules: {
       "no-restricted-syntax": [
         "error",

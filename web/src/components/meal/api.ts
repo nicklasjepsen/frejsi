@@ -1,19 +1,19 @@
 // The browser side of the routes the log screen writes through: task 4's foods routes and task 6's
 // lookup and meals routes (plan §7). Every write goes through them, so every write emits; nothing
-// here touches the database. Schema modules, not the @frejsi/shared barrel: this is bundled for the
+// here touches the database. Schema modules, not the @naensom/shared barrel: this is bundled for the
 // browser, and the barrel also exports Prisma and the Azure clients.
-import { ApiError, type ApiErrorCode } from "@frejsi/shared/schemas/api";
+import { ApiError, type ApiErrorCode } from "@naensom/shared/schemas/api";
 import {
   CreateFoodRequest,
   FoodView,
   LookupResponse,
   type FoodCandidate,
-} from "@frejsi/shared/schemas/food";
+} from "@naensom/shared/schemas/food";
 import {
   MealView,
   type CreateMealRequest,
   type UpdateMealRequest,
-} from "@frejsi/shared/schemas/meal";
+} from "@naensom/shared/schemas/meal";
 import { z } from "zod";
 
 export class LogApiError extends Error {

@@ -1,6 +1,6 @@
 "use client";
 
-import type { Theme } from "@frejsi/shared/schemas/settings";
+import type { Theme } from "@naensom/shared/schemas/settings";
 import { useEffect } from "react";
 
 import { applyTheme, documentTheme } from "@/lib/theme/theme";

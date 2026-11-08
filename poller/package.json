@@ -1,5 +1,5 @@
 {
-  "name": "@frejsi/poller",
+  "name": "@naensom/poller",
   "version": "0.0.0",
   "private": true,
   "description": "Azure Functions app (Node 22): polls the glucose source every five minutes.",
@@ -15,7 +15,7 @@
   },
   "dependencies": {
     "@azure/functions": "4.16.5",
-    "@frejsi/shared": "workspace:*",
+    "@naensom/shared": "workspace:*",
     "@opentelemetry/api-logs": "0.221.0",
     "@prisma/client": "6.19.3",
     "applicationinsights": "3.17.0"

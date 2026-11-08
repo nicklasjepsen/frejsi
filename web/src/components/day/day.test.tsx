@@ -1,6 +1,6 @@
 import "@testing-library/jest-dom/vitest";
 
-import type { DayMealView } from "@frejsi/shared/schemas/meal";
+import type { DayMealView } from "@naensom/shared/schemas/meal";
 import { cleanup, render, screen, within } from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
 import type { ReactNode } from "react";

@@ -3,7 +3,7 @@
 // run with NODE_ENV=production.
 import { spawnSync } from "node:child_process";
 
-import { prisma, type EventEnvelope } from "@frejsi/shared";
+import { prisma, type EventEnvelope } from "@naensom/shared";
 import { expect, test } from "./test";
 
 import { SEED_PEOPLE } from "../scripts/seed";

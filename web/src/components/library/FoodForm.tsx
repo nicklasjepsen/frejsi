@@ -1,12 +1,12 @@
 "use client";
-import { carbsFor } from "@frejsi/shared/food/portions";
+import { carbsFor } from "@naensom/shared/food/portions";
 import {
   CreateFoodRequest,
   UpdateFoodRequest,
   type FoodCategory,
   type FoodView,
   type Portion,
-} from "@frejsi/shared/schemas/food";
+} from "@naensom/shared/schemas/food";
 import { useTranslations } from "next-intl";
 import { useEffect, useId, useRef, useState, type FormEvent } from "react";
 

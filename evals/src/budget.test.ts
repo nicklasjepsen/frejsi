@@ -1,6 +1,6 @@
 import { expect, it, vi } from "vitest";
 import { RunBudget } from "./budget";
-import { aiProviders } from "@frejsi/shared/ai";
+import { aiProviders } from "@naensom/shared/ai";
 it("retries 429 after the header delay and counts retries toward the transport cap", async () => {
   vi.useFakeTimers();
   const fetch = vi
@@ -58,7 +58,7 @@ it("passes the bounded transport through the registry into the real adapter with
     { fetch: budget.fetch },
   ).anthropic;
   if (!provider) throw new Error("missing provider");
-  const { normaliseFoodName } = await import("@frejsi/shared/ai/search/normalise");
+  const { normaliseFoodName } = await import("@naensom/shared/ai/search/normalise");
   expect((await normaliseFoodName(provider, "EXAMPLE BREAD", "en"))?.name).toBe("Example bread");
   expect(budget.calls).toBe(1);
   budget.close();
@@ -92,7 +92,7 @@ it("allows a retry-after longer than the production request timeout within the e
     { fetch: budget.fetch, timeout: 180_000 },
   ).anthropic;
   if (!provider) throw new Error("missing provider");
-  const { normaliseFoodName } = await import("@frejsi/shared/ai/search/normalise");
+  const { normaliseFoodName } = await import("@naensom/shared/ai/search/normalise");
   const result = budget.run(() => normaliseFoodName(provider, "EXAMPLE BREAD", "en"));
   await vi.advanceTimersByTimeAsync(35_001);
   expect((await result)?.name).toBe("Example bread");

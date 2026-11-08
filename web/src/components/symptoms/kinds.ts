@@ -3,7 +3,7 @@ import {
   DEFAULT_SYMPTOM_KINDS,
   type SpaceSymptomKind,
   type SymptomKind,
-} from "@frejsi/shared/schemas/symptom";
+} from "@naensom/shared/schemas/symptom";
 import { useTranslations } from "next-intl";
 import type { AppLocale } from "@/lib/i18n/routing";
 

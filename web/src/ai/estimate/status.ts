@@ -1,5 +1,5 @@
-import { dayRange, prisma, type SessionContext } from "@frejsi/shared";
-import { PrismaAiCallRepository } from "@frejsi/shared/ai";
+import { dayRange, prisma, type SessionContext } from "@naensom/shared";
+import { PrismaAiCallRepository } from "@naensom/shared/ai";
 import { aiForSpace } from "@/ai/provider";
 import { assertRole } from "@/lib/auth/session";
 

@@ -20,7 +20,7 @@ import {
   type Logger,
   type ProbeResult,
   type Secrets,
-} from "@frejsi/shared";
+} from "@naensom/shared";
 
 /** What a probe needs: the connect request without its `spaceId`, for the types that are polled. */
 export type ProbeRequest = DistributiveOmit<

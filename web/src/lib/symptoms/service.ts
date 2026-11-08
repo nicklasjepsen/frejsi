@@ -9,8 +9,8 @@ import {
   isKnownKind,
   type SessionContext,
   type SpaceSymptomKind,
-} from "@frejsi/shared";
-import { SYMPTOM_WINDOW_MINUTES, type LoggedSymptom } from "@frejsi/shared/ai/insight/input";
+} from "@naensom/shared";
+import { SYMPTOM_WINDOW_MINUTES, type LoggedSymptom } from "@naensom/shared/ai/insight/input";
 import { PrismaSymptomRepository, type SymptomRecord, type SymptomRepository } from "./repository";
 import { createSymptomWriter, type SymptomWriter } from "./transaction";
 

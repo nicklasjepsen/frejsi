@@ -1,6 +1,6 @@
 "use client";
-import { foldForSearch } from "@frejsi/shared/food/search";
-import type { FoodView } from "@frejsi/shared/schemas/food";
+import { foldForSearch } from "@naensom/shared/food/search";
+import type { FoodView } from "@naensom/shared/schemas/food";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { useState } from "react";

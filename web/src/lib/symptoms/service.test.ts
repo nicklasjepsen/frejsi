@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, expect, it } from "vitest";
-import { EventEnvelope, EventPayloads, SessionContext, type EmitFn } from "@frejsi/shared";
+import { EventEnvelope, EventPayloads, SessionContext, type EmitFn } from "@naensom/shared";
 import {
   createSymptom,
   deleteSymptom,

@@ -134,7 +134,7 @@ describe("the Danish-letters lint rule", () => {
   ])("fails a Danish string or template in %s", async (file) => {
     const found = await messages(file, danish);
     expect(found).toHaveLength(2);
-    expect(found[0]).toContain("frejsi-english/danish-letters");
+    expect(found[0]).toContain("naensom-english/danish-letters");
   });
 
   it.each([
@@ -155,6 +155,6 @@ describe("the Danish-letters lint rule", () => {
   it("is named by the web rule too, so the three packages share one pattern", () => {
     const config = readFileSync(path.join(root, "eslint.config.js"), "utf8");
     expect(config).toContain('const DANISH_LETTERS = "[æøåÆØÅ]"');
-    expect(config).toContain("frejsi/boundaries/english-in-shared-and-poller");
+    expect(config).toContain("naensom/boundaries/english-in-shared-and-poller");
   });
 });

@@ -1,7 +1,7 @@
 // What the invitation landing page may know about a link (task 6): the `InviteView` contract
-// from @frejsi/shared and nothing else. The route and the page both read through here, so the
+// from @naensom/shared and nothing else. The route and the page both read through here, so the
 // space id, the member list and the token itself never reach the browser as data.
-import { InviteView, Role } from "@frejsi/shared";
+import { InviteView, Role } from "@naensom/shared";
 
 import type { DbDeps } from "@/lib/auth/core";
 import { loadInvite } from "@/lib/auth/invites";

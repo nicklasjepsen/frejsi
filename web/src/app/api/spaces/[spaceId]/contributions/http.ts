@@ -1,4 +1,4 @@
-import { createEmit, toApiError, type SessionContext } from "@frejsi/shared";
+import { createEmit, toApiError, type SessionContext } from "@naensom/shared";
 import { json, sessionIdFrom } from "@/app/api/auth/http";
 import { assertRole, loadSession } from "@/lib/auth/session";
 import { resolveContributions, type ResolvedContributions } from "@/lib/contributions";

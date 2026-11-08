@@ -3,7 +3,7 @@ import "@testing-library/jest-dom/vitest";
 import { readFileSync } from "node:fs";
 import path from "node:path";
 
-import type { Reading } from "@frejsi/shared";
+import type { Reading } from "@naensom/shared";
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -46,7 +46,7 @@ vi.mock("next/navigation", () => ({
 
 import { fakeApi, food, meal, type FakeApi } from "@/components/simple/test-support";
 
-import { DayHistoryView, type DayHistoryMeal } from "@frejsi/shared/schemas/history";
+import { DayHistoryView, type DayHistoryMeal } from "@naensom/shared/schemas/history";
 
 import { NowScreen, type NowScreenProps } from "./NowScreen";
 
@@ -135,7 +135,7 @@ beforeEach(() => {
   vi.stubGlobal("fetch", async (input: RequestInfo | URL, init?: RequestInit) => {
     const url = new URL(
       typeof input === "string" ? input : input instanceof URL ? input.href : input.url,
-      "https://frejsi.example",
+      "https://naensom.example",
     );
     if (url.pathname.endsWith("/ai"))
       return Response.json({

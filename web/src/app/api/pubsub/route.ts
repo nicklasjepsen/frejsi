@@ -1,4 +1,4 @@
-import { HttpError, Role } from "@frejsi/shared";
+import { HttpError, Role } from "@naensom/shared";
 import { z } from "zod";
 
 import { route } from "@/app/api/auth/http";

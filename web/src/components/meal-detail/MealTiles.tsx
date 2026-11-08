@@ -1,7 +1,7 @@
 "use client";
 
-import type { GlucoseUnit } from "@frejsi/shared/schemas/glucose";
-import type { MealStats, Target } from "@frejsi/shared/schemas/history";
+import type { GlucoseUnit } from "@naensom/shared/schemas/glucose";
+import type { MealStats, Target } from "@naensom/shared/schemas/history";
 import { useLocale, useTranslations } from "next-intl";
 
 import { formatBound } from "@/components/glucose/format";

@@ -1,4 +1,4 @@
-import type { PhotoBytes, PhotoSize, PhotoStore } from "@frejsi/shared/photos/types";
+import type { PhotoBytes, PhotoSize, PhotoStore } from "@naensom/shared/photos/types";
 
 /** Extends the existing store boundary without changing other lanes' PhotoStore consumers. */
 export interface ReadablePhotoStore extends PhotoStore {

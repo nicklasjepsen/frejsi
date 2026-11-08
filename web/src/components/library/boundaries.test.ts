@@ -23,7 +23,7 @@ describe("Bibliotek boundaries (plan task 5 hard rules)", () => {
     expect(files.length).toBeGreaterThan(5);
     for (const file of files) {
       const text = readFileSync(file, "utf8");
-      expect(text, file).not.toMatch(/@prisma\/client|from "@frejsi\/shared"|lib\/foods|\bemit\(/);
+      expect(text, file).not.toMatch(/@prisma\/client|from "@naensom\/shared"|lib\/foods|\bemit\(/);
     }
   });
 

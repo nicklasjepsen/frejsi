@@ -1,4 +1,4 @@
-import { log } from "@frejsi/shared";
+import { log } from "@naensom/shared";
 
 import { noContent } from "@/app/api/auth/http";
 import { requireMutation, spaceRoute } from "@/components/people/space-route";

@@ -88,7 +88,7 @@ describe("the prisma singleton", () => {
     delete process.env.DATABASE_URL;
     delete process.env.SQL_SERVER_FQDN;
     delete process.env.SQL_DATABASE;
-    delete (globalThis as { __frejsiPrisma?: unknown }).__frejsiPrisma;
+    delete (globalThis as { __naensomPrisma?: unknown }).__naensomPrisma;
     vi.resetModules();
     try {
       const mod = await import("./client");

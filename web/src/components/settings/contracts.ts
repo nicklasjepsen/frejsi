@@ -9,7 +9,7 @@ import {
   Locale,
   SourceStatus,
   Theme,
-} from "@frejsi/shared";
+} from "@naensom/shared";
 import { z } from "zod";
 
 const atLeastOne = (value: Record<string, unknown>) =>

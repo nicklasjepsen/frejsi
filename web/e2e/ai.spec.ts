@@ -1,6 +1,6 @@
 import path from "node:path";
-import { prisma, createEmit, weekRange } from "@frejsi/shared";
-import { createInsight, PrismaInsightRepository } from "@frejsi/shared/insights/store";
+import { prisma, createEmit, weekRange } from "@naensom/shared";
+import { createInsight, PrismaInsightRepository } from "@naensom/shared/insights/store";
 import { SEED_TRANSCRIPT } from "../scripts/seed";
 import { inviteLink, registerFromInvite, seededSpace } from "./support";
 import { expect, test } from "./test";

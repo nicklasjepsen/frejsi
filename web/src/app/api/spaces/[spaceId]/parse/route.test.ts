@@ -1,11 +1,11 @@
 // @vitest-environment node
 import { afterEach, expect, it, vi } from "vitest";
-import { HttpError } from "@frejsi/shared";
-import { FakeAiProvider } from "@frejsi/shared/ai/fake";
-import { CappedAiProvider } from "@frejsi/shared/ai/capped";
-import { MemoryAiCallRepository } from "@frejsi/shared/ai/calls";
-import { MemoryFoodRepository } from "@frejsi/shared/food/memory";
-import { FakeFoodSource } from "@frejsi/shared/food/fake";
+import { HttpError } from "@naensom/shared";
+import { FakeAiProvider } from "@naensom/shared/ai/fake";
+import { CappedAiProvider } from "@naensom/shared/ai/capped";
+import { MemoryAiCallRepository } from "@naensom/shared/ai/calls";
+import { MemoryFoodRepository } from "@naensom/shared/food/memory";
+import { FakeFoodSource } from "@naensom/shared/food/fake";
 import { FakeLiveDb, captureLog, liveRequest, spaceContext } from "@/lib/live/test-support";
 import { configureParse } from "./server";
 import { GET, POST } from "./route";

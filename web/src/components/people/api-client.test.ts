@@ -46,7 +46,7 @@ describe("peopleApi", () => {
   it("posts an invite as JSON and returns the created link", async () => {
     const created = {
       id: "h1",
-      url: "https://frejsi.example/invite/t",
+      url: "https://naensom.example/invite/t",
       name: "New Person",
       role: "carer",
       expiresAt: "2026-10-22T08:00:00.000Z",
@@ -82,7 +82,7 @@ describe("peopleApi", () => {
     fetchMock.mockResolvedValueOnce(
       reply(200, {
         id: "h2",
-        url: "https://frejsi.example/invite/t2",
+        url: "https://naensom.example/invite/t2",
         name: "Pending",
         role: "carer",
         expiresAt: "2026-10-22T08:00:00.000Z",

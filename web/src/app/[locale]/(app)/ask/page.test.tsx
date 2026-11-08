@@ -1,4 +1,4 @@
-import type { SessionContext } from "@frejsi/shared";
+import type { SessionContext } from "@naensom/shared";
 import { afterEach, expect, it, vi } from "vitest";
 import { AskFlow } from "@/components/estimate/AskFlow";
 

@@ -1,5 +1,5 @@
 import "@testing-library/jest-dom/vitest";
-import type { FoodView, LookupResponse } from "@frejsi/shared/schemas/food";
+import type { FoodView, LookupResponse } from "@naensom/shared/schemas/food";
 import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
 import type { ReactNode } from "react";

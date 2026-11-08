@@ -1,6 +1,6 @@
 "use client";
 
-import type { Accent, Role } from "@frejsi/shared";
+import type { Accent, Role } from "@naensom/shared";
 import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
 

@@ -15,7 +15,7 @@ import {
   type EventEnvelope,
   type EventSink,
   type PrismaClient,
-} from "@frejsi/shared";
+} from "@naensom/shared";
 import { z } from "zod";
 
 import { MANUAL_FUTURE_MS, MANUAL_WINDOW_MS, toMmol } from "./range";

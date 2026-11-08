@@ -1,6 +1,6 @@
 export const meta = {
   name: 'ship-milestone',
-  description: 'Take a Frejsi milestone to production: build and merge every lane via build-lanes, then tag the version and watch release.yml create the GitHub release',
+  description: 'Take a Nænsom milestone to production: build and merge every lane via build-lanes, then tag the version and watch release.yml create the GitHub release',
   whenToUse: 'After /start-milestone has shown the lane split and got an OK and created the worktrees. Pass { milestone, base, lanes } as args.',
   phases: [
     { title: 'Lanes', detail: 'build-lanes: build, gate, fix, merge, watch main' },

@@ -1,4 +1,4 @@
-// Public surface of @frejsi/shared. Append-only after task 1 (plan §2): add lines, never reorder.
+// Public surface of @naensom/shared. Append-only after task 1 (plan §2): add lines, never reorder.
 // The in-memory fakes are deliberately not here; tests, the seed and the CLI import them by path.
 
 export * from "./schemas/index";

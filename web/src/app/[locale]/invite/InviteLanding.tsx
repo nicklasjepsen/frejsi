@@ -1,6 +1,6 @@
 "use client";
 
-import type { InviteView } from "@frejsi/shared";
+import type { InviteView } from "@naensom/shared";
 import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { useState, type ReactNode } from "react";

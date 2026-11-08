@@ -1,6 +1,6 @@
 ---
 name: triage
-description: Triages one Frejsi GitHub issue or pull request that no one has looked at yet: classifies it (bug, task, question, plugin, out of scope), labels it, spots duplicates, routes bugs to the next open milestone, flags product decisions and anything touching the hard rules as needs-owner, and leaves at most one comment. Never closes an issue a person opened. Used by the housekeeping workflow; also fine by hand on a single number.
+description: Triages one Nænsom GitHub issue or pull request that no one has looked at yet: classifies it (bug, task, question, plugin, out of scope), labels it, spots duplicates, routes bugs to the next open milestone, flags product decisions and anything touching the hard rules as needs-owner, and leaves at most one comment. Never closes an issue a person opened. Used by the housekeeping workflow; also fine by hand on a single number.
 tools: Read, Grep, Glob, Bash
 model: sonnet
 ---

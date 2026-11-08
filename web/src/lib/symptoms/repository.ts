@@ -1,5 +1,5 @@
-import { HttpError, parseSpaceKinds, prisma, type PrismaClient } from "@frejsi/shared";
-import type { Severity, SpaceSymptomKind, SymptomKind } from "@frejsi/shared";
+import { HttpError, parseSpaceKinds, prisma, type PrismaClient } from "@naensom/shared";
+import type { Severity, SpaceSymptomKind, SymptomKind } from "@naensom/shared";
 
 /** A symptom as stored, with the logger's name. Never a reading: a viewer may read it. */
 export interface SymptomRecord {

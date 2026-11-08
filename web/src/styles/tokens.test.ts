@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
 
-import { Accent } from "@frejsi/shared";
+import { Accent } from "@naensom/shared";
 import { describe, expect, it } from "vitest";
 
 // Prettier writes hex colours in lower case; tokens.json has them in upper case. Compare lower.

@@ -6,7 +6,7 @@ import {
   type GlucoseImportSource,
 } from "./types";
 
-/** Every export format Frejsi reads, tried in order; a fork adds its own here. */
+/** Every export format Nænsom reads, tried in order; a fork adds its own here. */
 export const GLUCOSE_IMPORT_SOURCES: readonly GlucoseImportSource[] = [clarityImport];
 
 /** The first format that recognises the text parses it; none recognising it is `import-unrecognised`. */

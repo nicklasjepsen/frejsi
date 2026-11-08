@@ -79,7 +79,7 @@ describe("SourcePicker (settings/source, phone; design gap derived from the desk
     mount("da", fetchImpl as unknown as typeof fetch);
     fireEvent.click(screen.getByRole("button", { name: "Vælg" }));
     expect(screen.getByTestId("manual-confirm")).toHaveTextContent(
-      "Skift til manuelle målinger? Frejsi henter så ikke længere fra Dexcom Share.",
+      "Skift til manuelle målinger? Nænsom henter så ikke længere fra Dexcom Share.",
     );
     expect(calls).toEqual([]);
     fireEvent.click(screen.getByRole("button", { name: "Skift til manuelt" }));

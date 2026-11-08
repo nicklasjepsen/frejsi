@@ -14,7 +14,7 @@
     "data": "Data and export"
   },
   "source": {
-    "lead": "Where Frejsi gets {subject}'s readings from. One source at a time.",
+    "lead": "Where Nænsom gets {subject}'s readings from. One source at a time.",
     "rowConnected": "{source} · connected · last reading {time}",
     "rowConnectedNoReading": "{source} · connected · no readings yet",
     "rowDisconnected": "{source} · no connection",
@@ -40,13 +40,13 @@
     "rowManualNoReading": "{source} · no readings yet",
     "choose": "Choose",
     "manualNote": "Readings are typed in on the Now screen.",
-    "manualConfirm": "Switch to manual readings? Frejsi will then no longer fetch from {source}.",
+    "manualConfirm": "Switch to manual readings? Nænsom will then no longer fetch from {source}.",
     "manualConfirmYes": "Switch to manual",
-    "pickerLead": "Choose where Frejsi gets the readings from. One source at a time."
+    "pickerLead": "Choose where Nænsom gets the readings from. One source at a time."
   },
   "connect": {
     "title": "Change login",
-    "lead": "Sign in with the account the sensor app shares from. Frejsi keeps the login in a locked vault only – never in the database.",
+    "lead": "Sign in with the account the sensor app shares from. Nænsom keeps the login in a locked vault only – never in the database.",
     "username": "Username",
     "password": "Password",
     "region": "Server",
@@ -61,7 +61,7 @@
     "toSettings": "Back to settings",
     "nightscout": {
       "title": "Connect Nightscout",
-      "lead": "Enter the address of your own Nightscout site. Frejsi keeps the address and the access in a locked vault – never in the database.",
+      "lead": "Enter the address of your own Nightscout site. Nænsom keeps the address and the access in a locked vault – never in the database.",
       "url": "Address of your Nightscout site",
       "urlPlaceholder": "https://",
       "secretKind": "Access token · API secret",
@@ -85,11 +85,11 @@
     "unconfigured": "not set up here",
     "noEmbed": "search without AI",
     "notConfigured": "AI is not set up here yet.",
-    "phoneNotice": "AI never sees raw readings – only statistics such as “peak 9.6 after 1 hour”. Photos and text are sent only on a tap. Your browser recognises your voice, rather than Frejsi. At most {cap} calls a day.",
+    "phoneNotice": "AI never sees raw readings – only statistics such as “peak 9.6 after 1 hour”. Photos and text are sent only on a tap. Your browser recognises your voice, rather than Nænsom. At most {cap} calls a day.",
     "readingsLead": "Raw readings are never sent.",
     "readingsNotice": "The model only receives statistics such as “peak 9.6 after 1 hour”.",
     "actionLead": "Photos and text",
-    "actionNotice": "are sent only on an explicit tap. Your browser recognises your voice, rather than Frejsi.",
+    "actionNotice": "are sent only on an explicit tap. Your browser recognises your voice, rather than Nænsom.",
     "capLead": "At most {cap} calls a day",
     "capNotice": "in this space. Today: {n}.",
     "close": "Close"

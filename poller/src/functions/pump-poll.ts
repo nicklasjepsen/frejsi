@@ -1,5 +1,5 @@
 import { app } from "@azure/functions";
-import { createEventSinkFromEnv, createSecretsFromEnv, prisma, type PumpDb } from "@frejsi/shared";
+import { createEventSinkFromEnv, createSecretsFromEnv, prisma, type PumpDb } from "@naensom/shared";
 
 import { createPumpHandler, PUMP_SCHEDULE } from "../pump-handler";
 import { createPumpSourceFactory } from "../sources";

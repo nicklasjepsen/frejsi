@@ -5,7 +5,7 @@ import {
   mealSlot,
   mealTitle,
   type Locale,
-} from "@frejsi/shared";
+} from "@naensom/shared";
 import { mealLogger } from "@/lib/meals/logger";
 
 import type { HistoryDeps, HistoryMeal } from "./types";

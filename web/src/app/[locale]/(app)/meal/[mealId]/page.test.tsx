@@ -1,4 +1,4 @@
-import type { SessionContext } from "@frejsi/shared";
+import type { SessionContext } from "@naensom/shared";
 import type { ReactElement } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
@@ -9,7 +9,7 @@ const mocks = vi.hoisted(() => ({
   shell: null as { space: { id: string; role: string; timezone: string } } | null,
   unitCalls: [] as string[],
 }));
-vi.mock("@frejsi/shared", async (actual) => ({
+vi.mock("@naensom/shared", async (actual) => ({
   ...(await actual<object>()),
   prisma: { space: { findUnique: () => Promise.resolve({ aiEnabled: true }) } },
 }));

@@ -55,7 +55,7 @@ instead of a new one ([an existing SQL server](../infra/README.md#an-existing-sq
 Fork the repository. Keep `baseName` as it is, or set it in `infra/main.bicepparam` (at most seven
 characters; resource names stay globally unique through a suffix derived from the resource group).
 
-Create a resource group for Frejsi alone: any name, any region Static Web Apps supports (West Europe
+Create a resource group for Nænsom alone: any name, any region Static Web Apps supports (West Europe
 works). Nothing else may live in it, because `deploy.sh` finds each resource by type and expects
 exactly one of each. If you do not call the group `frejsi`, set the repository variable
 `AZURE_RESOURCE_GROUP` to its name in step 4.
@@ -161,7 +161,7 @@ Under Settings, Secrets and variables, Actions:
 | secret   | `CI_SQL_SA_PASSWORD`    | any strong password; only for the SQL Server container the release suite starts                                                                                                                                                          |
 
 `ALERT_EMAIL` is a secret and not a variable because the run logs of a public repository are public
-and variables are printed in them unmasked. Frejsi also uses the address as the contact of its
+and variables are printed in them unmasked. Nænsom also uses the address as the contact of its
 browser push messages.
 
 ```sh
@@ -250,7 +250,7 @@ Do this before you create the first space. A passkey is bound to the hostname th
 `APP_ORIGIN` names. An owner who registers on `<something>.azurestaticapps.net` cannot sign in on
 your domain later, and there is no way to move a passkey.
 
-1. At your DNS provider create a CNAME from your name (for example `frejsi.example.org`) to the
+1. At your DNS provider create a CNAME from your name (for example `naensom.example.org`) to the
    default hostname from step 5. If the provider cannot CNAME (an apex domain), use the TXT record the
    portal's "Custom domains" page shows instead.
 2. Set the repository variable `CUSTOM_DOMAIN` to the name.
@@ -295,7 +295,7 @@ the curve stays empty.
 
 ### The alert, and what it means for a manual-only deployment
 
-"Frejsi: no glucose reading stored for 35 minutes" e-mails `ALERT_EMAIL` when no reading has been
+"Nænsom: no glucose reading stored for 35 minutes" e-mails `ALERT_EMAIL` when no reading has been
 stored for 35 minutes. It counts the `reading.stored` event, which the poller sends for each new
 sensor reading and the typed-in value route sends for each finger-prick. On a deployment whose only
 source is Manuelt it therefore fires whenever nobody has measured for 35 minutes. That is true, not a
@@ -316,7 +316,7 @@ Open Food Facts is also optional: it needs the Key Vault secrets `off-contribute
 ## Docker Compose (any host with Docker)
 
 The same app on a machine of your own, with no Azure account: a laptop, a home server, a small VPS.
-Everything is in [docker/](../docker/README.md). It is a second way to run Frejsi, not a replacement:
+Everything is in [docker/](../docker/README.md). It is a second way to run Nænsom, not a replacement:
 the Azure path above is the one every release is shipped and checked on.
 
 **Prerequisites.** Docker with the Compose plugin (`docker compose version` prints a version),

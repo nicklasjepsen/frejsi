@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Frejsi production deploy. Called by release.yml (job `deploy`) after `infra/main.bicep` has been
+# Nænsom production deploy. Called by release.yml (job `deploy`) after `infra/main.bicep` has been
 # applied; never from a session (docs/agent-workflow.md section 9).
 #
 # What it does, in order:

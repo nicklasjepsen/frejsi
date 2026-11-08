@@ -1,8 +1,8 @@
-# Review rules for Frejsi
+# Review rules for Nænsom
 
 These rules apply to every reviewer of a pull request here: Codex, Copilot, Claude Code's gate agents
 and people. They are the only place review rules live. The project's working rules are in `CLAUDE.md`;
-the design spec is in `docs/superpowers/specs/2026-10-14-frejsi-design.md`.
+the design spec is in `docs/superpowers/specs/2026-10-14-naensom-design.md`.
 
 ## Report
 

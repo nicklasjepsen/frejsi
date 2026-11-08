@@ -44,7 +44,7 @@ importers:
 
   evals:
     dependencies:
-      '@frejsi/shared':
+      '@naensom/shared':
         specifier: workspace:*
         version: link:../shared
       sharp:
@@ -59,7 +59,7 @@ importers:
       '@azure/functions':
         specifier: 4.16.5
         version: 4.16.5
-      '@frejsi/shared':
+      '@naensom/shared':
         specifier: workspace:*
         version: link:../shared
       '@opentelemetry/api-logs':
@@ -163,7 +163,7 @@ importers:
 
   web:
     dependencies:
-      '@frejsi/shared':
+      '@naensom/shared':
         specifier: workspace:*
         version: link:../shared
       '@simplewebauthn/browser':

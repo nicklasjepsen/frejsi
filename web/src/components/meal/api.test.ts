@@ -1,4 +1,4 @@
-import type { FoodView, LookupResponse } from "@frejsi/shared/schemas/food";
+import type { FoodView, LookupResponse } from "@naensom/shared/schemas/food";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {

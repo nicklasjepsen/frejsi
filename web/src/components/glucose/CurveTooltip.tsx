@@ -1,6 +1,6 @@
 "use client";
 
-import type { GlucoseUnit } from "@frejsi/shared";
+import type { GlucoseUnit } from "@naensom/shared";
 import { useLocale, useTranslations } from "next-intl";
 import {
   useCallback,

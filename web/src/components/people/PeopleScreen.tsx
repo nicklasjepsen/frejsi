@@ -1,6 +1,6 @@
 "use client";
 
-import type { ApiErrorCode, Role } from "@frejsi/shared";
+import type { ApiErrorCode, Role } from "@naensom/shared";
 import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import { Fragment, useCallback, useRef, useState, type KeyboardEvent } from "react";

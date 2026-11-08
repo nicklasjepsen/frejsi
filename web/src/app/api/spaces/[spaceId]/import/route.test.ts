@@ -2,7 +2,7 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
 
-import { EventEnvelope, type EmitFn, type GlucoseImportResult } from "@frejsi/shared";
+import { EventEnvelope, type EmitFn, type GlucoseImportResult } from "@naensom/shared";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { configureImport } from "@/lib/import/server";
@@ -109,7 +109,7 @@ async function post(sessionId: string | null, body: unknown, spaceId = "s1") {
   const headers: Record<string, string> = { "content-type": "application/json" };
   if (sessionId) headers.cookie = `frejsi_session=${sessionId}`;
   const res = await POST(
-    new Request(`https://frejsi.example/api/spaces/${spaceId}/import`, {
+    new Request(`https://naensom.example/api/spaces/${spaceId}/import`, {
       method: "POST",
       headers,
       body: typeof body === "string" ? body : JSON.stringify(body),

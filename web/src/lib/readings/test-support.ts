@@ -1,6 +1,6 @@
 // An in-memory write side over `FakeLiveDb`: the delegates `addManualReading` and `emit` use, with
 // a rollback when the transaction throws. Imported by *.test.ts only.
-import type { EventEnvelope, EventSink } from "@frejsi/shared";
+import type { EventEnvelope, EventSink } from "@naensom/shared";
 
 import type { FakeLiveDb } from "@/lib/live/test-support";
 

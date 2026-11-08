@@ -1,7 +1,7 @@
 "use client";
-import type { RecipeParseRequest } from "@frejsi/shared/schemas/ai";
-import type { ApiErrorCode } from "@frejsi/shared/schemas/api";
-import type { FoodView, RecipeReview as Review } from "@frejsi/shared/schemas/food";
+import type { RecipeParseRequest } from "@naensom/shared/schemas/ai";
+import type { ApiErrorCode } from "@naensom/shared/schemas/api";
+import type { FoodView, RecipeReview as Review } from "@naensom/shared/schemas/food";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { useEffect, useState } from "react";

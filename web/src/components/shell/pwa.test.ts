@@ -32,8 +32,8 @@ describe("manifest.webmanifest (plan §6)", () => {
   const manifest = JSON.parse(read("manifest.webmanifest")) as Manifest;
 
   it("has a name, display standalone and a start_url", () => {
-    expect(manifest.name).toBe("Frejsi");
-    expect(manifest.short_name).toBe("Frejsi");
+    expect(manifest.name).toBe("Nænsom");
+    expect(manifest.short_name).toBe("Nænsom");
     expect(manifest.display).toBe("standalone");
     expect(manifest.start_url).toBe("/");
   });
@@ -119,7 +119,7 @@ function loadWorker(
       },
       skipWaiting: () => undefined,
       clients: { claim: () => Promise.resolve() },
-      location: { origin: "https://frejsi.example", search },
+      location: { origin: "https://naensom.example", search },
     },
     caches: {
       open: (name: string) => {
@@ -160,7 +160,7 @@ function loadWorker(
   };
   const get = (url: string, mode = "no-cors"): FakeRequest => ({
     method: "GET",
-    url: `https://frejsi.example${url}`,
+    url: `https://naensom.example${url}`,
     mode,
   });
   return {

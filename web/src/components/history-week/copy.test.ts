@@ -1,6 +1,6 @@
 import { expect, it } from "vitest";
 import { getMessages } from "@/lib/i18n/messages";
-import { findDosingVocabulary, messageStrings } from "@frejsi/shared/dosing-vocabulary";
+import { findDosingVocabulary, messageStrings } from "@naensom/shared/dosing-vocabulary";
 
 it("has matching Danish and English keys and descriptive copy without advice", () => {
   const da = getMessages("da").historyWeek;

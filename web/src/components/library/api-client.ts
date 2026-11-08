@@ -3,16 +3,16 @@
 // stable ApiError code. The screens never write anything else: every write goes through these
 // routes, whose services emit (CLAUDE.md "every write goes through emit").
 //
-// Schema modules, not the @frejsi/shared barrel: this runs in the browser, and the barrel also
+// Schema modules, not the @naensom/shared barrel: this runs in the browser, and the barrel also
 // exports Prisma.
-import { ApiError, type ApiErrorCode } from "@frejsi/shared/schemas/api";
+import { ApiError, type ApiErrorCode } from "@naensom/shared/schemas/api";
 import {
   ContributionsView,
   FoodView,
   LookupResponse,
   type CreateFoodRequest,
   type UpdateFoodRequest,
-} from "@frejsi/shared/schemas/food";
+} from "@naensom/shared/schemas/food";
 import { z } from "zod";
 
 export class LibraryApiError extends Error {

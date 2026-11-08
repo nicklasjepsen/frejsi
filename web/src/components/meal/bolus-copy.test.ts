@@ -1,4 +1,4 @@
-import { findDosingVocabulary, messageStrings } from "@frejsi/shared/dosing-vocabulary";
+import { findDosingVocabulary, messageStrings } from "@naensom/shared/dosing-vocabulary";
 import { describe, expect, it } from "vitest";
 
 import da from "../../../messages/da/log.json";

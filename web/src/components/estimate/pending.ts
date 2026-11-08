@@ -1,4 +1,4 @@
-import type { PhotoEstimate } from "@frejsi/shared/schemas/ai";
+import type { PhotoEstimate } from "@naensom/shared/schemas/ai";
 
 // One transient capture, never local/session storage or a URL. Reloading requires a new capture.
 export interface PendingEstimate {

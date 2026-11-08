@@ -14,7 +14,7 @@ import {
   MINUTE_MS,
   type Locale,
   type WeekNumbers,
-} from "@frejsi/shared";
+} from "@naensom/shared";
 import { localDate } from "@/app/api/spaces/[spaceId]/day/load-day";
 import { dateAfter, requireSpace, untilNow } from "./views";
 import type { HistoryDeps } from "./types";

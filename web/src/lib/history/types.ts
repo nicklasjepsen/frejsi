@@ -5,8 +5,8 @@ import type {
   Portion,
   Reading,
   Target,
-} from "@frejsi/shared";
-import type { PhotoStore } from "@frejsi/shared/photos";
+} from "@naensom/shared";
+import type { PhotoStore } from "@naensom/shared/photos";
 export interface HistoryItem extends MealItemView {
   foodId?: string | undefined;
   food?: { portions: Portion[]; carbsPer100g?: number | undefined } | undefined;

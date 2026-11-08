@@ -7,8 +7,8 @@ import {
   type MealItemView,
   type MealSymbol,
   type PrismaClient,
-} from "@frejsi/shared";
-import { Food as FoodSchema, Portion, Recipe } from "@frejsi/shared";
+} from "@naensom/shared";
+import { Food as FoodSchema, Portion, Recipe } from "@naensom/shared";
 import { z } from "zod";
 
 /** An item as saved: the food's category rides along for `mealSymbol()` and is not persisted. */

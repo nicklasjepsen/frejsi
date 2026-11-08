@@ -1,4 +1,4 @@
-import { GlucoseSourceType } from "@frejsi/shared";
+import { GlucoseSourceType } from "@naensom/shared";
 import { redirect } from "next/navigation";
 
 import { ConnectSourceForm } from "@/components/settings/ConnectSourceForm";

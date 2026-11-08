@@ -5,11 +5,11 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
 
-import type { Reading } from "@frejsi/shared/schemas/glucose";
-import { MealCurveView, type PreviousMealView } from "@frejsi/shared/schemas/history";
-import { MealView } from "@frejsi/shared/schemas/meal";
-import { mealStats } from "@frejsi/shared/stats/meal";
-import { mealWindow } from "@frejsi/shared/stats/window";
+import type { Reading } from "@naensom/shared/schemas/glucose";
+import { MealCurveView, type PreviousMealView } from "@naensom/shared/schemas/history";
+import { MealView } from "@naensom/shared/schemas/meal";
+import { mealStats } from "@naensom/shared/stats/meal";
+import { mealWindow } from "@naensom/shared/stats/window";
 
 interface CurveFixture {
   mealTs: string;

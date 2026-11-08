@@ -1,6 +1,6 @@
 "use client";
 
-import type { DayView } from "@frejsi/shared/schemas/meal";
+import type { DayView } from "@naensom/shared/schemas/meal";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import type { FeedEventType } from "@/lib/live/live-feed";

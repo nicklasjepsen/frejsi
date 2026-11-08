@@ -1,6 +1,6 @@
 // @vitest-environment node
-import { createLogger, type SessionContext } from "@frejsi/shared";
-import { type MemoryPhotoStore } from "@frejsi/shared/photos/memory";
+import { createLogger, type SessionContext } from "@naensom/shared";
+import { type MemoryPhotoStore } from "@naensom/shared/photos/memory";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   createFood,
@@ -551,10 +551,10 @@ it("renaming clears the vector and model, preserving search after a human edit",
 });
 
 it("addCandidate keeps its key-free signature and never obtains or calls AI", async () => {
-  const { FakeAiProvider } = await import("@frejsi/shared/ai/fake");
-  const { CappedAiProvider } = await import("@frejsi/shared/ai");
-  const { MemoryAiCallRepository } = await import("@frejsi/shared/ai/calls");
-  const { searchEmbed } = await import("@frejsi/shared/ai/search/embed");
+  const { FakeAiProvider } = await import("@naensom/shared/ai/fake");
+  const { CappedAiProvider } = await import("@naensom/shared/ai");
+  const { MemoryAiCallRepository } = await import("@naensom/shared/ai/calls");
+  const { searchEmbed } = await import("@naensom/shared/ai/search/embed");
   const rig = foodTestRig();
   const fake = new FakeAiProvider();
   const provider = new CappedAiProvider(fake, new MemoryAiCallRepository(), {
@@ -587,12 +587,12 @@ it("keeps a human rename's source provenance while the source plugin is disabled
 });
 
 it("keeps keyword hits before semantic hits in the recent-food filter", async () => {
-  const { Food } = await import("@frejsi/shared/schemas/food");
-  const { MemoryFoodRepository } = await import("@frejsi/shared/food/memory");
-  const { FakeAiProvider } = await import("@frejsi/shared/ai/fake");
-  const { CappedAiProvider } = await import("@frejsi/shared/ai");
-  const { MemoryAiCallRepository } = await import("@frejsi/shared/ai/calls");
-  const { searchEmbed } = await import("@frejsi/shared/ai/search/embed");
+  const { Food } = await import("@naensom/shared/schemas/food");
+  const { MemoryFoodRepository } = await import("@naensom/shared/food/memory");
+  const { FakeAiProvider } = await import("@naensom/shared/ai/fake");
+  const { CappedAiProvider } = await import("@naensom/shared/ai");
+  const { MemoryAiCallRepository } = await import("@naensom/shared/ai/calls");
+  const { searchEmbed } = await import("@naensom/shared/ai/search/embed");
   const vector = [1, ...Array<number>(1023).fill(0)];
   const foods = [
     { id: "keyword", name: "Cloud pear", nameSearch: "cloud pear" },

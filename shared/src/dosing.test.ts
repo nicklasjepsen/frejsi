@@ -43,7 +43,7 @@ function readUiMessages(): Record<string, unknown> {
   return files;
 }
 
-describe("dosing vocabulary (the hard rule: Frejsi never computes or suggests insulin)", () => {
+describe("dosing vocabulary (the hard rule: Nænsom never computes or suggests insulin)", () => {
   it("has exactly the list and the allow-list from the plan (§8)", () => {
     expect([...DOSING_WORDS]).toEqual([
       "insulin",
@@ -64,11 +64,11 @@ describe("dosing vocabulary (the hard rule: Frejsi never computes or suggests in
     ]);
     expect([...DOSING_ALLOW_LIST]).toEqual([
       "regner aldrig insulin",
-      "Frejsi · åben kildekode · regner aldrig insulin",
-      "Frejsi er åben kildekode, regner aldrig insulin og erstatter ikke din sensor-app eller pumpe-app.",
+      "Nænsom · åben kildekode · regner aldrig insulin",
+      "Nænsom er åben kildekode, regner aldrig insulin og erstatter ikke din sensor-app eller pumpe-app.",
       "never calculates insulin",
-      "Frejsi · open source · never calculates insulin",
-      "Frejsi is open source, never calculates insulin and does not replace your sensor app or pump app.",
+      "Nænsom · open source · never calculates insulin",
+      "Nænsom is open source, never calculates insulin and does not replace your sensor app or pump app.",
       "Bolus givet nu",
       "Bolus før måltid",
       "bolus given now",

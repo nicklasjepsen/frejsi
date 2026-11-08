@@ -1,9 +1,9 @@
 // The browser side of the recipes routes and the share receiver: one typed function per call,
 // every answer validated against the shared contracts. Schema modules only (this is bundled for
-// the browser; the @frejsi/shared barrel also exports Prisma).
-import { RecipeParseRequest } from "@frejsi/shared/schemas/ai";
-import { ApiError, type ApiErrorCode } from "@frejsi/shared/schemas/api";
-import { FoodView, RecipeReview } from "@frejsi/shared/schemas/food";
+// the browser; the @naensom/shared barrel also exports Prisma).
+import { RecipeParseRequest } from "@naensom/shared/schemas/ai";
+import { ApiError, type ApiErrorCode } from "@naensom/shared/schemas/api";
+import { FoodView, RecipeReview } from "@naensom/shared/schemas/food";
 import type { z } from "zod";
 import { RecalcRecipeRequest, SaveRecipeRequest, SharedRecipe } from "@/lib/recipes/contracts";
 

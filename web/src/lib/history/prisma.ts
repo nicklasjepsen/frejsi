@@ -1,4 +1,4 @@
-import { prisma, Portion, storedSymbol, type PrismaClient, type Reading } from "@frejsi/shared";
+import { prisma, Portion, storedSymbol, type PrismaClient, type Reading } from "@naensom/shared";
 import { z } from "zod";
 import type { HistoryMeal, HistoryRepository } from "./types";
 const include = {

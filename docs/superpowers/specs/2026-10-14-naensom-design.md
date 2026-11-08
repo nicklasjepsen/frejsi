@@ -1,5 +1,7 @@
 # Frejsi — Design Spec
 
+> Historical: the product is now called Nænsom (renamed 2026-11-08). This spec keeps the name it was written under.
+
 **Status:** sections 1–4 approved by the owner on 2026-10-14; section 5 (AI) approved in principle, the "ask an adult" flow is to be confirmed during UI design; sections 6–9 are not yet designed. This document is the design brief for the UI work (Claude Design) and the input to the implementation plan (`writing-plans`). Nothing has been implemented.
 
 **Language:** all project communication, prompts, code, comments and docs are in English. The product UI ships in Danish first (`da`) with English (`en`) from day one.

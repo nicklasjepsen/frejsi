@@ -1,4 +1,4 @@
-import { HttpError, log, prisma } from "@frejsi/shared";
+import { HttpError, log, prisma } from "@naensom/shared";
 import { cookies } from "next/headers";
 
 import { clearedSessionCookie, json } from "@/app/api/auth/http";

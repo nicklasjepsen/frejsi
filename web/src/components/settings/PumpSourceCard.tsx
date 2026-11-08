@@ -1,8 +1,8 @@
 "use client";
 
 // Values come from the pure modules by path, never from the shared index (see ConnectSourceForm).
-import type { ApiErrorCode } from "@frejsi/shared";
-import type { PumpSettingsView } from "@frejsi/shared/schemas/pump";
+import type { ApiErrorCode } from "@naensom/shared";
+import type { PumpSettingsView } from "@naensom/shared/schemas/pump";
 import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";

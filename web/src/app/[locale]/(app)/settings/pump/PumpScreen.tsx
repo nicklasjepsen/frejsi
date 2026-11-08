@@ -1,6 +1,6 @@
 "use client";
 
-import type { PumpSettingsView } from "@frejsi/shared/schemas/pump";
+import type { PumpSettingsView } from "@naensom/shared/schemas/pump";
 import { useTranslations } from "next-intl";
 
 import { SettingsLiveRefresh } from "@/components/settings/SettingsLiveRefresh";

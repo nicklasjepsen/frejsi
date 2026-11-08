@@ -1,6 +1,6 @@
-# Frejsi infrastructure
+# Nænsom infrastructure
 
-Everything Frejsi runs on lives in one Azure resource group, described in Bicep here and applied
+Everything Nænsom runs on lives in one Azure resource group, described in Bicep here and applied
 only by the release pipeline (`.github/workflows/release.yml`, job `infra`). Nobody runs `az` from a
 session; a change to infra is a PR whose Bicep diff is the review, and the owner's one tap on the
 `production-infra` environment is the approval (`docs/agent-workflow.md` sections 6 and 9).
@@ -49,7 +49,7 @@ Failed or empty reads abort before replacing SWA settings. Without either a phot
 secret the setting is omitted; services can answer `503 photo-unavailable` while the rest works.
 
 Server consumers import the `PhotoStore` contract, `processPhoto` and the store factory from
-`@frejsi/shared/photos`; the root shared export deliberately excludes photos so the poller avoids
+`@naensom/shared/photos`; the root shared export deliberately excludes photos so the poller avoids
 native image processing. Browser `downscale` prepares JPEG bytes locally; the server always decodes
 and re-encodes again. `sharp` is externalized and its native packages traced into the Next standalone
 build. Task 10's release build check must still exercise processing inside the deployed artifact.
@@ -124,12 +124,12 @@ Then the subject's glucose source is connected in Settings on the site, never an
 Use this when Azure will not create a SQL server in the resource group's region for your
 subscription (`az sql db list-editions` or the first release answers "Provisioning is restricted in
 this region"), or when you already pay for a server. Static Web Apps offers few regions, so moving
-the whole group is often not an option. Frejsi's production database works this way: Azure SQL is
+the whole group is often not an option. Nænsom's production database works this way: Azure SQL is
 restricted in West Europe on its subscription.
 
 With `SQL_SERVER_ID` set, Bicep creates no SQL server and never touches the existing one; the
 database, its tier and the server's settings are yours. The deploy principal gets exactly two things
-on that server: `db_owner` in the Frejsi database (to create the application's contained user and run
+on that server: `db_owner` in the Nænsom database (to create the application's contained user and run
 migrations), and a custom role that lets it open and close its own temporary firewall rule. It is
 not the server's Entra admin and has no rights over the other databases on it. Do this once, before
 the first release, as the server's Entra admin; the role names below are examples:

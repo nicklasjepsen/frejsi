@@ -1,4 +1,4 @@
-import { HttpError, log, prisma, Role } from "@frejsi/shared";
+import { HttpError, log, prisma, Role } from "@naensom/shared";
 
 import { json, parseBody } from "@/app/api/auth/http";
 import { CreateInviteBody, CreatedInviteView } from "@/components/people/contract";

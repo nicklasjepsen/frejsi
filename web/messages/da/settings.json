@@ -14,7 +14,7 @@
     "data": "Data og eksport"
   },
   "source": {
-    "lead": "Hvor Frejsi henter {subject}s målinger fra. Én kilde ad gangen.",
+    "lead": "Hvor Nænsom henter {subject}s målinger fra. Én kilde ad gangen.",
     "rowConnected": "{source} · forbundet · sidste måling {time}",
     "rowConnectedNoReading": "{source} · forbundet · ingen målinger endnu",
     "rowDisconnected": "{source} · ingen forbindelse",
@@ -40,13 +40,13 @@
     "rowManualNoReading": "{source} · ingen målinger endnu",
     "choose": "Vælg",
     "manualNote": "Målinger tastes ind på Nu-skærmen.",
-    "manualConfirm": "Skift til manuelle målinger? Frejsi henter så ikke længere fra {source}.",
+    "manualConfirm": "Skift til manuelle målinger? Nænsom henter så ikke længere fra {source}.",
     "manualConfirmYes": "Skift til manuelt",
-    "pickerLead": "Vælg, hvor Frejsi henter målingerne fra. Én kilde ad gangen."
+    "pickerLead": "Vælg, hvor Nænsom henter målingerne fra. Én kilde ad gangen."
   },
   "connect": {
     "title": "Skift login",
-    "lead": "Log ind med den konto, som sensor-appen deler fra. Frejsi gemmer kun login i en låst boks – aldrig i databasen.",
+    "lead": "Log ind med den konto, som sensor-appen deler fra. Nænsom gemmer kun login i en låst boks – aldrig i databasen.",
     "username": "Brugernavn",
     "password": "Kodeord",
     "region": "Server",
@@ -61,7 +61,7 @@
     "toSettings": "Til indstillinger",
     "nightscout": {
       "title": "Forbind Nightscout",
-      "lead": "Skriv adressen på din egen Nightscout-side. Frejsi gemmer adressen og adgangen i en låst boks – aldrig i databasen.",
+      "lead": "Skriv adressen på din egen Nightscout-side. Nænsom gemmer adressen og adgangen i en låst boks – aldrig i databasen.",
       "url": "Adresse på din Nightscout-side",
       "urlPlaceholder": "https://",
       "secretKind": "Adgangstoken · API-secret",
@@ -85,11 +85,11 @@
     "unconfigured": "ikke sat op her",
     "noEmbed": "søgning uden AI",
     "notConfigured": "AI er ikke sat op her endnu.",
-    "phoneNotice": "AI ser aldrig rå målinger – kun tal som “top 9,6 efter 1 time”. Billeder og tekst sendes kun, når nogen trykker. Stemmen genkendes af din browser, ikke af Frejsi. Højst {cap} kald om dagen.",
+    "phoneNotice": "AI ser aldrig rå målinger – kun tal som “top 9,6 efter 1 time”. Billeder og tekst sendes kun, når nogen trykker. Stemmen genkendes af din browser, ikke af Nænsom. Højst {cap} kald om dagen.",
     "readingsLead": "Rå målinger sendes aldrig.",
     "readingsNotice": "Modellen får kun tal som “top 9,6 efter 1 time”.",
     "actionLead": "Billeder og tekst",
-    "actionNotice": "sendes kun, når nogen aktivt trykker. Stemmen genkendes af din browser, ikke af Frejsi.",
+    "actionNotice": "sendes kun, når nogen aktivt trykker. Stemmen genkendes af din browser, ikke af Nænsom.",
     "capLead": "Højst {cap} kald om dagen",
     "capNotice": "i dette rum. I dag: {n}.",
     "close": "Luk"

@@ -1,5 +1,5 @@
 "use client";
-import { mealSlot } from "@frejsi/shared/meals/title";
+import { mealSlot } from "@naensom/shared/meals/title";
 import { useLocale, useTranslations } from "next-intl";
 import { useEffect, useMemo, useState } from "react";
 

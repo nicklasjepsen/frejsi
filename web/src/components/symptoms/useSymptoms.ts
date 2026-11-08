@@ -1,6 +1,6 @@
 "use client";
-import { dayRange } from "@frejsi/shared/meals/day-range";
-import type { SymptomView } from "@frejsi/shared/schemas/symptom";
+import { dayRange } from "@naensom/shared/meals/day-range";
+import type { SymptomView } from "@naensom/shared/schemas/symptom";
 import { useCallback, useEffect, useState } from "react";
 import { localDateOf } from "@/components/day/format";
 import { useLiveFeed } from "@/lib/live/useLiveFeed";

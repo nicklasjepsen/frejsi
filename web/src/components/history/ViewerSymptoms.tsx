@@ -1,5 +1,5 @@
 "use client";
-import { dayRange } from "@frejsi/shared/meals/day-range";
+import { dayRange } from "@naensom/shared/meals/day-range";
 import { useTranslations } from "next-intl";
 import { useMemo, useState } from "react";
 import type { FeedEventType } from "@/lib/live/live-feed";

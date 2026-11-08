@@ -1,7 +1,7 @@
-import type { SessionContext } from "@frejsi/shared";
-import { HttpError } from "@frejsi/shared";
-import type { AiProvider } from "@frejsi/shared/ai";
-import { parseRecipe, type ParsedRecipe, type RecipeInput } from "@frejsi/shared/ai/recipe/parse";
+import type { SessionContext } from "@naensom/shared";
+import { HttpError } from "@naensom/shared";
+import type { AiProvider } from "@naensom/shared/ai";
+import { parseRecipe, type ParsedRecipe, type RecipeInput } from "@naensom/shared/ai/recipe/parse";
 import { aiForSpace } from "@/ai/provider";
 import { assertRole } from "@/lib/auth/session";
 

@@ -1,22 +1,22 @@
 import { app } from "@azure/functions";
 import { createHash } from "node:crypto";
-import { emit, HttpError, log, prisma, type EmitFn, type Logger } from "@frejsi/shared";
+import { emit, HttpError, log, prisma, type EmitFn, type Logger } from "@naensom/shared";
 import {
   aiProviders,
   CappedAiProvider,
   PrismaAiCallRepository,
   type AiProvider,
-} from "@frejsi/shared/ai";
-import { narrateWeek } from "@frejsi/shared/ai/insight/week";
-import { createInsight, PrismaInsightRepository } from "@frejsi/shared/insights/store";
-import type { InsightRepository } from "@frejsi/shared/insights/types";
+} from "@naensom/shared/ai";
+import { narrateWeek } from "@naensom/shared/ai/insight/week";
+import { createInsight, PrismaInsightRepository } from "@naensom/shared/insights/store";
+import type { InsightRepository } from "@naensom/shared/insights/types";
 import {
   buildWeekInsightInput,
   PrismaWeekSource,
   weeklyWindow,
   type WeekSource,
   type WeekSpace,
-} from "@frejsi/shared/insights/week-input";
+} from "@naensom/shared/insights/week-input";
 export interface WeeklyDeps {
   source: WeekSource;
   repo: InsightRepository;

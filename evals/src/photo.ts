@@ -1,6 +1,6 @@
 import path from "node:path";
 import sharp from "sharp";
-import { processPhoto } from "@frejsi/shared/photos";
+import { processPhoto } from "@naensom/shared/photos";
 export function photoPath(name: string): string {
   if (!/^[a-zA-Z0-9][a-zA-Z0-9_-]*\.jpe?g$/.test(name)) throw new Error("invalid photo filename");
   return path.resolve(import.meta.dirname, "../cases/photo/images", name);

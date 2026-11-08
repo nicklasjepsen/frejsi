@@ -8,7 +8,7 @@ import {
   type EventEnvelope,
   type EventSink,
   type PrismaClient,
-} from "@frejsi/shared";
+} from "@naensom/shared";
 import { PrismaPumpLinks, type PumpLinks } from "./pump";
 import { PrismaMealRepository, type MealRepository } from "./repository";
 

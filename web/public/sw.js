@@ -1,4 +1,4 @@
-/* Frejsi service worker: push notifications only (photo questions, docs/operations.md).
+/* Nænsom service worker: push notifications only (photo questions, docs/operations.md).
  *
  * It has no fetch handler on purpose. With one, every page load waits for the worker to start
  * before the request even leaves the phone: the load reports (/api/diag/load) showed 2.5-4 s on an

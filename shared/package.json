@@ -1,5 +1,5 @@
 {
-  "name": "@frejsi/shared",
+  "name": "@naensom/shared",
   "version": "0.0.0",
   "private": true,
   "description": "Contracts and domain logic shared by web and poller. No framework imports.",

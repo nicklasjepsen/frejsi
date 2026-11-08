@@ -1,12 +1,12 @@
-# How agents build and ship Frejsi
+# How agents build and ship Nænsom
 
-Frejsi is built by AI agent teams with one human owner. This document is the operating model: what each
+Nænsom is built by AI agent teams with one human owner. This document is the operating model: what each
 agent does, what runs in parallel, which gates a change passes, how a milestone becomes a production
 release, and what only the owner decides. Everything here is in the repository so any agent (Claude
 Code, Codex, Copilot) and any contributor sees the same rules.
 
 The project rules live in `CLAUDE.md` and the design spec in
-`docs/superpowers/specs/2026-10-14-frejsi-design.md`. This file never restates them; it says who checks
+`docs/superpowers/specs/2026-10-14-naensom-design.md`. This file never restates them; it says who checks
 them and when.
 
 ## 1. The unit of work is a milestone
@@ -79,7 +79,7 @@ end-to-end suite, then queueing one at a time behind a 12–57 minute test deplo
 "branches must be up to date" invalidating every other PR's checks on each merge. The lanes spent more
 time in the queue than in the editor.
 
-Frejsi does the opposite:
+Nænsom does the opposite:
 
 - **A lane is a vertical slice** of the milestone: adapter + poller + API + the UI that shows it, or
   the whole invite flow. Four to six lanes per milestone, each one PR of a few hundred to a couple of

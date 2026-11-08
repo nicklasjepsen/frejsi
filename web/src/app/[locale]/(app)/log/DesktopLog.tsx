@@ -1,5 +1,5 @@
 "use client";
-import type { FoodView, LookupResponse } from "@frejsi/shared/schemas/food";
+import type { FoodView, LookupResponse } from "@naensom/shared/schemas/food";
 import { useLocale, useTranslations } from "next-intl";
 import { useEffect, useState, type KeyboardEvent } from "react";
 

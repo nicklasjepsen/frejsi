@@ -1,4 +1,4 @@
-import { prisma } from "@frejsi/shared";
+import { prisma } from "@naensom/shared";
 import { redirect } from "next/navigation";
 
 import { MealDetail, SimpleMealView } from "@/components/meal-detail";

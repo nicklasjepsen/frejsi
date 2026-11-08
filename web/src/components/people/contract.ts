@@ -1,11 +1,11 @@
 // The People contract between the routes under /api/spaces/[spaceId]/{members,invites,passkeys}
 // and the screen (plan task 7). Web-only: the poller and the AI never see these shapes, so they
-// live next to the components rather than in @frejsi/shared. There is no glucose field in here
+// live next to the components rather than in @naensom/shared. There is no glucose field in here
 // and no schema for one: a viewer may read the members list (CLAUDE.md, spec §2).
 //
-// The Zod schemas come from their own module, not the @frejsi/shared barrel: this file is
+// The Zod schemas come from their own module, not the @naensom/shared barrel: this file is
 // bundled for the browser, and the barrel also exports Prisma and the Azure clients.
-import { Role } from "@frejsi/shared/schemas/auth";
+import { Role } from "@naensom/shared/schemas/auth";
 import { z } from "zod";
 
 /** One passkey of a member, as People shows it. Never the credential or the public key. */

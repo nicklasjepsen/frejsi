@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 const shared = vi.hoisted(() => ({ startTelemetry: vi.fn(() => Promise.resolve()) }));
-vi.mock("@frejsi/shared", () => ({ startTelemetry: shared.startTelemetry }));
+vi.mock("@naensom/shared", () => ({ startTelemetry: shared.startTelemetry }));
 
 import { register } from "./instrumentation";
 

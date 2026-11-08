@@ -134,7 +134,7 @@ it("composes push when VAPID is complete and preserves live token and revocation
       WEB_PUBSUB_ENDPOINT: "https://pubsub.example",
       VAPID_PRIVATE_KEY: "fictional",
       VAPID_PUBLIC_KEY: "fictional",
-      VAPID_SUBJECT: "https://frejsi.example",
+      VAPID_SUBJECT: "https://naensom.example",
     },
     { fromEndpoint: () => client, fromConnectionString: () => client },
   );

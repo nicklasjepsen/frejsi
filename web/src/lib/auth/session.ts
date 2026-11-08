@@ -7,7 +7,7 @@ import {
   type EmitFn,
   type PrismaClient,
   type Role,
-} from "@frejsi/shared";
+} from "@naensom/shared";
 
 export const SESSION_COOKIE = "frejsi_session";
 /** 90 days, as the cookie's Max-Age (plan §6). */

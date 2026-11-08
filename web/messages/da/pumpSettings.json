@@ -21,7 +21,7 @@
     "connected": "Forbundet · senest fra pumpen {time}",
     "connectedNothing": "Forbundet · intet fra pumpen endnu"
   },
-  "lag": "Frejsi kigger efter hvert 15. minut. Pumpen sender sin historik med op til en times forsinkelse.",
+  "lag": "Nænsom kigger efter hvert 15. minut. Pumpen sender sin historik med op til en times forsinkelse.",
   "ownerOnly": "Det er ejeren, der forbinder og afbryder.",
   "vaultNote": "Adressen og adgangen gemmes i en låst boks – aldrig i databasen.",
   "connect": "Forbind",

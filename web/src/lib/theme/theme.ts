@@ -2,7 +2,7 @@
 // `data-theme` attribute on <html> that tokens.css reads, and the colour of the browser chrome.
 // Values come from the pure schema module by path, never from the shared index: this runs in the
 // client bundle too, which must not pull in the Prisma client (plan §2; see routing.ts).
-import { type Theme, themeOrDefault } from "@frejsi/shared/schemas/settings";
+import { type Theme, themeOrDefault } from "@naensom/shared/schemas/settings";
 
 /**
  * Mirrors the stored preference so the root layout can set `data-theme` before the first paint.

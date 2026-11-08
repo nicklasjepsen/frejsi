@@ -1,6 +1,6 @@
 // In-memory SQL delegates for the symptom repository, service and transaction tests. Imported by
 // *.test.ts and the route tests only. Fictional people throughout.
-import type { PrismaClient } from "@frejsi/shared";
+import type { PrismaClient } from "@naensom/shared";
 import { PrismaSymptomRepository, type SymptomDb } from "./repository";
 
 export interface Row {

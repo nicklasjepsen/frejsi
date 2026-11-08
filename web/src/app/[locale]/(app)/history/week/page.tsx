@@ -1,5 +1,5 @@
-import { prisma } from "@frejsi/shared";
-import { GlucoseUnit } from "@frejsi/shared/schemas/glucose";
+import { prisma } from "@naensom/shared";
+import { GlucoseUnit } from "@naensom/shared/schemas/glucose";
 import { redirect } from "next/navigation";
 import { HistoryWeekScreen } from "@/components/history-week/HistoryWeekScreen";
 import { selectedWeek } from "@/components/history-week/dates";

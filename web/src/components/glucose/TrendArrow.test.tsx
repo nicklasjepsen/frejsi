@@ -1,6 +1,6 @@
 import "@testing-library/jest-dom/vitest";
 
-import { Trend } from "@frejsi/shared";
+import { Trend } from "@naensom/shared";
 import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
 

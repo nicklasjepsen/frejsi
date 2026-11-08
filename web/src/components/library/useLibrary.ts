@@ -1,5 +1,5 @@
 "use client";
-import type { FoodView } from "@frejsi/shared/schemas/food";
+import type { FoodView } from "@naensom/shared/schemas/food";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { FIXED_FILTERS, libraryApi, OWN_ORIGINS, type LibraryFilter } from "./api-client";

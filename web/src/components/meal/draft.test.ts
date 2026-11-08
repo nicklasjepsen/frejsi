@@ -1,5 +1,5 @@
-import type { FoodView } from "@frejsi/shared/schemas/food";
-import type { MealView } from "@frejsi/shared/schemas/meal";
+import type { FoodView } from "@naensom/shared/schemas/food";
+import type { MealView } from "@naensom/shared/schemas/meal";
 import { describe, expect, it } from "vitest";
 
 import {

@@ -4,8 +4,8 @@
 // a way the screens can translate. It never reads or logs the responses beyond what it returns.
 // The two schemas by their own paths: the shared index also exports Prisma and App Insights,
 // which have no place in the browser bundle this module is part of.
-import { ApiError, type ApiErrorCode } from "@frejsi/shared/schemas/api";
-import { Role } from "@frejsi/shared/schemas/auth";
+import { ApiError, type ApiErrorCode } from "@naensom/shared/schemas/api";
+import { Role } from "@naensom/shared/schemas/auth";
 import {
   browserSupportsWebAuthn,
   startAuthentication,

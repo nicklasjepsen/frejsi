@@ -1,4 +1,4 @@
-import { log } from "@frejsi/shared";
+import { log } from "@naensom/shared";
 import { z } from "zod";
 
 import { startRegistration, assertOrigin } from "@/lib/auth/webauthn";

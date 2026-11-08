@@ -1,4 +1,4 @@
-import { mergeSemantic } from "@frejsi/shared/ai/search/rank";
+import { mergeSemantic } from "@naensom/shared/ai/search/rank";
 import { randomUUID } from "node:crypto";
 import { z } from "zod";
 import {
@@ -16,9 +16,9 @@ import {
   foldForSearch,
   type FoodCandidate,
   type SessionContext,
-} from "@frejsi/shared";
-import { OWN_FOOD_ORIGINS } from "@frejsi/shared/food/types";
-import { photoKey, processPhoto } from "@frejsi/shared/photos";
+} from "@naensom/shared";
+import { OWN_FOOD_ORIGINS } from "@naensom/shared/food/types";
+import { photoKey, processPhoto } from "@naensom/shared/photos";
 import { assertRole } from "@/lib/auth/session";
 import {
   foodTransaction,

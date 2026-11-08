@@ -3,8 +3,8 @@ import "@testing-library/jest-dom/vitest";
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import path from "node:path";
 
-import type { Role } from "@frejsi/shared";
-import type { DayView } from "@frejsi/shared/schemas/meal";
+import type { Role } from "@naensom/shared";
+import type { DayView } from "@naensom/shared/schemas/meal";
 import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";

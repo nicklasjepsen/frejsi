@@ -1,6 +1,6 @@
 # Operations
 
-How to run Frejsi in production: the first space, the one alert, rolling back, changing the
+How to run Nænsom in production: the first space, the one alert, rolling back, changing the
 Dexcom login and importing a Clarity export. It assumes the Azure setup in `infra/README.md` ("What the owner does once") is done.
 Spec §7 and §9; plan `docs/superpowers/plans/2026-10-14-v0.1.0-foundation.md` §7, §9 and task 10.
 
@@ -41,7 +41,7 @@ once any space exists, so it does nothing after this.
    the Static Web App's default hostname instead (`az staticwebapp list -g frejsi --query '[0].defaultHostname' -o tsv`).
 
 4. Open `inviteUrl` on your phone and create the passkey. The link can be used once and expires after
-   seven days. Nobody logs it, including Frejsi, so it exists only in your terminal: clear the
+   seven days. Nobody logs it, including Nænsom, so it exists only in your terminal: clear the
    scrollback when you are done.
 5. Invite everyone else from **Personer** (owners only): an invitation link or a QR code per person,
    with the role they get. An extra device for someone who is already in the space is "Tilføj en
@@ -58,7 +58,7 @@ What the answers mean:
 
 ## The 35-minute alert
 
-**"Frejsi: no glucose reading stored for 35 minutes"** goes to `ALERT_EMAIL` when the poller has not
+**"Nænsom: no glucose reading stored for 35 minutes"** goes to `ALERT_EMAIL` when the poller has not
 stored a single reading for 35 minutes. It counts the `reading.stored` event the poller sends for
 every new row, so it measures the whole chain: Dexcom Share, the poller, the database. A sensor change
 gives a gap of about 30 minutes, which is why the limit is 35. The alert resolves itself with the
@@ -74,7 +74,7 @@ corrected; a time that holds a sensor reading is refused (`reading-exists`).
 Check in this order and stop at the first thing that is wrong:
 
 1. **The sensor and the Dexcom app.** If the Dexcom app shows no values either (a sensor change, the
-   warm-up, the phone out of range or Share switched off in the app), Frejsi has nothing to fetch.
+   warm-up, the phone out of range or Share switched off in the app), Nænsom has nothing to fetch.
    Wait for the app to show values again; the poller fills the gap by itself (it reaches back to the
    last stored reading, up to a day).
 2. **Settings → Glukosekilde.** "Ingen forbindelse" means three cycles in a row failed against the
@@ -124,7 +124,7 @@ should stop working now (a login that was changed because it leaked) is disabled
 portal, Key Vault → Secrets → `glucose-<spaceId>` → that version → Enabled: No, or
 `az keyvault secret set-attributes --vault-name <vault> --name glucose-<spaceId> --version <version> --enabled false`.
 Key Vault has no per-version delete, and deleting the secret removes every version including the
-one the space refers to. Frejsi only reads with that login: it never uploads readings or changes followers,
+one the space refers to. Nænsom only reads with that login: it never uploads readings or changes followers,
 invitations or alert settings on the Dexcom account, and the adapter refuses any such call in code.
 
 1. Sign in as an **owner** and open **Indstillinger → Glukosekilde → Skift login** (on the phone,
@@ -132,7 +132,7 @@ invitations or alert settings on the Dexcom account, and the adapter refuses any
 2. Enter the username and password of the Dexcom account that **shares** the data (the one on the
    phone running the Dexcom app, not a follower's), and the server region: EU for accounts outside
    the US.
-3. **Forbind.** Frejsi asks Dexcom right away, and on a working login also reads the last day:
+3. **Forbind.** Nænsom asks Dexcom right away, and on a working login also reads the last day:
    - accepted: the status turns "Forbundet" and the next cycle (within five minutes) fetches.
    - accepted, but "der kom ingen målinger for det sidste døgn": the login works and is saved, but
      the account returned no readings for the last day. Almost always a follower's login instead of
@@ -193,7 +193,7 @@ What the import does:
 - **Everything else** in the file (the patient, device and alert rows, calibrations, exercise,
   health and the dosing rows) is counted and otherwise left unread; a test on the fixture proves no
   value or word of those rows survives the parse, the rows, the events, the answer or the log.
-- **Refusals**, each a stable code the screen translates: "Det ligner ikke en eksportfil, Frejsi
+- **Refusals**, each a stable code the screen translates: "Det ligner ikke en eksportfil, Nænsom
   kender." (`import-unrecognised`, no Clarity header or no unit in the glucose column), "Der var
   ingen målinger eller kulhydrater i filen." (`import-empty`), and `validation` for a file over
   20 MB of text.
@@ -334,7 +334,7 @@ Frida is a bundled JSON dataset, not a runtime download or database import. To r
 2. Use **available carbohydrate, excluding fibre** (parameter 172 in the pinned workbook), not
    carbohydrate by difference. Recheck the column headers for a new version; do not subtract fibre
    again. Keep the workbook and CSV outside the repository.
-3. Run `pnpm --filter ./shared frida:import /tmp/frejsi-frida.csv`, then import to
+3. Run `pnpm --filter ./shared frida:import /tmp/naensom-frida.csv`, then import to
    `/tmp/frida-check.json` as the optional second argument and compare the two outputs. Run
    `pnpm --filter ./shared test src/food/frida`.
 4. Commit the generated `shared/src/food/frida/data/frida.json` and its updated provenance,
@@ -440,12 +440,12 @@ API so the earlier release assertions retain their original data.
 
 What the pump delivered, imported read-only and shown as pump history: the time and delivered units
 of each bolus the pump recorded, shown to owners and carers outside simpleMode, never to a viewer,
-never to an AI model. Frejsi never computes, suggests or lets anyone enter insulin; the pump record
+never to an AI model. Nænsom never computes, suggests or lets anyone enter insulin; the pump record
 changes none of that. Migration `0006_pump` adds the `PumpBolus` table, the four pump columns on
 `Space` (`pumpSource`, `pumpStatus`, `pumpFailures`, `lastPumpAt`) and `Meal.pumpBolusId` and
 `Meal.source`.
 
-**Connecting.** Frejsi reads the pump from a Nightscout site that something else fills; for a
+**Connecting.** Nænsom reads the pump from a Nightscout site that something else fills; for a
 Tandem pump that is tconnectsync, which copies the t:connect upload to Nightscout as `Combo Bolus`
 treatments. An owner opens Indstillinger → Pumpehistorik (desktop: the card under the glucose
 source; phone: the row that opens `settings/pump`), enters the site's address and a read-only token
@@ -461,7 +461,7 @@ Carers see the status and the newest record's time; only an owner connects and d
 **The timer, the lag and the window.** `pump-poll` runs at second 0 of every fifteenth minute
 (`0 */15 * * * *`) with a 0–20 s random wait, in the same Function App as the glucose poll and
 apart from it, so a slow site never delays a reading. Tandem uploads the pump's history about
-hourly and not in real time, so a bolus can reach Frejsi up to an hour after it was given; the
+hourly and not in real time, so a bolus can reach Nænsom up to an hour after it was given; the
 curve says how far the record reaches ("Pumpe til 11:58") so the gap is never read as "no bolus".
 Each run reads `since = max(now − 14 d, min(now − 24 h, lastPumpAt − 3 h))`: a full day every time,
 three hours behind the newest stored bolus, and two weeks on the first run after connecting. A
@@ -484,10 +484,10 @@ emits its own `pump.meals`. An open screen that missed the earlier days' rows re
 last event. This is known and accepted.
 
 **What is never stored.** Temp Basal, basal rates, Sleep, IOB and every other treatment type are
-filtered out in the query and never reach Frejsi. Of a bolus record only five fields are read
+filtered out in the query and never reach Nænsom. Of a bolus record only five fields are read
 (`pump_event_id`, `created_at`, `insulin` as `units`, `notes` as the kind, `carbs`); `glucose`,
 `enteredBy`, `utcOffset`, `_id` and the rest are dropped at the parse. The site's address and the
-token live in Key Vault only, never in the database, a log line or an error. Frejsi never writes to
+token live in Key Vault only, never in the database, a log line or an error. Nænsom never writes to
 the pump, to t:connect or to the Nightscout site: the adapter's allow-list holds `GET
 treatments.json` and nothing else for the pump.
 
@@ -501,7 +501,7 @@ never an address, a token, units or carbs.
 | `pump.space-failed` with `fetch-failed:401`      | The site refused the token (a new `API_SECRET`, a deleted subject). Three failed runs in a row set the card to "Forbindelsen svigter siden …". | An owner opens Pumpehistorik → "Skift adgang" and enters the current token. The next good run sets it back to "Forbundet".   |
 | `fetch-failed:Timeout` or `fetch-failed:Network` | The site did not answer in time (a sleeping free host, DNS, a lapsed certificate).                                                             | Open the site in a browser; the pump record reconnects by itself when the site answers.                                      |
 | `source-unavailable:…`                           | The poller could not read `pump-<spaceId>` from Key Vault (the version named by the reference is gone, or the identity lost its role).         | Check the secret's versions and the poller's role on the vault (`infra/README.md`), or connect again from Pumpehistorik.     |
-| `pump.cycle` `ok` with `count` 0 for hours       | The site holds no new bolus: tconnectsync has stopped, or the phone has not uploaded to t:connect.                                             | Check tconnectsync's log and the t:connect app. Nothing in Frejsi needs changing; the next run reads the day again.          |
+| `pump.cycle` `ok` with `count` 0 for hours       | The site holds no new bolus: tconnectsync has stopped, or the phone has not uploaded to t:connect.                                             | Check tconnectsync's log and the t:connect app. Nothing in Nænsom needs changing; the next run reads the day again.          |
 | `pump.dropped` with a `count`                    | That many `Combo Bolus` records could not be read (no `pump_event_id`, an unparseable time, units outside 0–50) and were skipped.              | Look at the newest treatments on the site; a change in tconnectsync's output is the usual cause. The other records are kept. |
 | `pump.page-cap`                                  | Five full pages came back (1000 records on a normal run, 5000 on a first run): far more than one pump's boluses. Older records were not read.  | Check that the site holds one pump's record and that the token belongs to the right subject.                                 |
 | `pump.meals-skipped` with `owner-missing`        | The owner who connected the pump record is no longer a user, so no pump meal can be made in their name. Links still change.                    | An owner connects the pump record again ("Skift adgang"), which records them as `connectedBy`.                               |
@@ -629,7 +629,7 @@ After the first live run, record its baseline and tighten thresholds in a review
 Settings → AI help is opt-in per space and owner-managed; carers can read the provider, capabilities
 and local-day usage. An unconfigured provider cannot be selected. Switching AI off is allowed even
 if its provider key has since been removed. The notices explain that only computed statistics reach
-the model and that the browser's voice recognition service is separate from Frejsi.
+the model and that the browser's voice recognition service is separate from Nænsom.
 
 With AI enabled and VAPID configured, owners and carers can turn on notifications for the current
 browser in that section. Permission is requested only when the switch is tapped. A denied or
@@ -687,7 +687,7 @@ from different providers cannot be compared.
 
 An `ai-rejected` log code means structured output or the generated-text guard failed after the
 service's bounded retry. The content is discarded; never add generated content to diagnostics.
-Voice recognition uses the browser vendor's speech service; Frejsi receives the transcript only
+Voice recognition uses the browser vendor's speech service; Nænsom receives the transcript only
 when the user submits it. Selecting a local AI provider does not make browser speech recognition
 local. Full live evals cost approximately $2 per run, use the dedicated eval key only, and run the
 complete corpus with `EVALS_SCOPE=release`. Without that key only the recorded fake corpus runs.
@@ -730,7 +730,7 @@ polled like a Dexcom Share space, every five minutes, and the 35-minute alert ab
 | ------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------- |
 | The space turns `disconnected` and the poller log says `fetch-failed:401` | The site answered 401: the token or the API secret was changed on the Nightscout site (a new `API_SECRET`, a deleted subject). Three failed cycles in a row mark the source disconnected; the next good cycle clears it. | An owner opens Glukosekilde → Nightscout → "Skift login" and enters the current credential. Nothing else needs changing.                |
 | `fetch-failed:Timeout` or `fetch-failed:Network`                          | The site was unreachable for the poller (a sleeping free-tier host, a lapsed certificate, DNS).                                                                                                                          | Open the site in a browser. A free host that sleeps needs a ping or a paid plan; the source reconnects by itself when the site answers. |
-| `fetch-failed:301`, `302`, `307` or `308`                                 | The site redirects. Frejsi does not follow redirects, because the credential travels in a header and could be handed to another host.                                                                                    | Enter the address the redirect ends at, for example `https://` and the `www.` form if the site forces it.                               |
+| `fetch-failed:301`, `302`, `307` or `308`                                 | The site redirects. Nænsom does not follow redirects, because the credential travels in a header and could be handed to another host.                                                                                    | Enter the address the redirect ends at, for example `https://` and the `www.` form if the site forces it.                               |
 | The form refuses the address                                              | Only `https://` addresses are accepted, without a query, a fragment or a user name in them. A site on `http://` cannot be connected.                                                                                     | Put the site behind HTTPS (most hosts offer it with one setting), then connect the `https://` address.                                  |
 | `fetch-failed:UnexpectedShape`                                            | The site answered, but not with Nightscout's `entries/sgv.json`. The address points at the wrong page.                                                                                                                   | Use the site's root address, not `/api/...` or `/report`.                                                                               |
 

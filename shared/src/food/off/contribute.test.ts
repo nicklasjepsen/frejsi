@@ -73,7 +73,7 @@ describe("OffContributor request", () => {
     const headers = new Headers(init.headers);
     expect(headers.get("content-type")).toBe("application/x-www-form-urlencoded");
     expect(headers.get("user-agent")).toBe(
-      "Frejsi/1.2.3 (+https://github.com/nicklasjepsen/frejsi)",
+      "Naensom/1.2.3 (+https://github.com/nicklasjepsen/frejsi)",
     );
     expect(headers.has("authorization")).toBe(false);
     const body = new URLSearchParams(init.body as string);
@@ -81,14 +81,14 @@ describe("OffContributor request", () => {
       code: "2000000000008",
       user_id: USER,
       password: PASSWORD,
-      app_name: "Frejsi",
+      app_name: "Naensom",
       app_version: "1.2.3",
       app_uuid: correction.appRef,
       nutrition_data_per: "100g",
       nutriment_carbohydrates: "40",
       nutriment_carbohydrates_unit: "g",
       serving_size: "45 g",
-      comment: "Correction from Frejsi",
+      comment: "Correction from Naensom",
     });
     expect(body.has("product_name")).toBe(false);
   });

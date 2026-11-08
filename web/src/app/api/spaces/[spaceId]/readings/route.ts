@@ -1,4 +1,4 @@
-import { HttpError } from "@frejsi/shared";
+import { HttpError } from "@naensom/shared";
 
 import { parseBody } from "@/app/api/auth/http";
 import { DEFAULT_WINDOW_HOURS, WindowHours } from "@/lib/live/contracts";

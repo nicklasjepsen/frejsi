@@ -1,6 +1,6 @@
 // The curve's pump copy (v0.7.0 plan §7, §9): `pump.json` in both locales with the same keys, units
 // only through the `{units}` placeholder that `formatUnits` fills, and nothing that advises.
-import { findPumpCopyVocabulary, findSuggestionVocabulary } from "@frejsi/shared/dosing-vocabulary";
+import { findPumpCopyVocabulary, findSuggestionVocabulary } from "@naensom/shared/dosing-vocabulary";
 import { describe, expect, it } from "vitest";
 
 import da from "../../../messages/da/pump.json";

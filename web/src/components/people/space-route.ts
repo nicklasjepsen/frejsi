@@ -2,7 +2,7 @@
 // order of checks every mutation makes (origin, then role, then body), so that nothing is parsed
 // or written for a request that may not. Builds on the auth routes' `route()`, which turns a
 // thrown HttpError into an ApiError response and one no-PII log line.
-import type { Role, SessionContext } from "@frejsi/shared";
+import type { Role, SessionContext } from "@naensom/shared";
 
 import { route } from "@/app/api/auth/http";
 import { requireRole } from "@/lib/auth/session";

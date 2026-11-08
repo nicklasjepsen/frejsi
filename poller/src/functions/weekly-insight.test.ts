@@ -1,11 +1,11 @@
 import { expect, it, vi } from "vitest";
 vi.mock("@azure/functions", () => ({ app: { timer: vi.fn() } }));
 import { runWeeklyInsights } from "./weekly-insight";
-import { MemoryInsightRepository, MemoryWeekSource } from "@frejsi/shared/insights/memory";
-import { FakeAiProvider } from "@frejsi/shared/ai/fake";
-import { CappedAiProvider } from "@frejsi/shared/ai/capped";
-import { MemoryAiCallRepository } from "@frejsi/shared/ai/calls";
-import { createLogger, type EmitFn } from "@frejsi/shared";
+import { MemoryInsightRepository, MemoryWeekSource } from "@naensom/shared/insights/memory";
+import { FakeAiProvider } from "@naensom/shared/ai/fake";
+import { CappedAiProvider } from "@naensom/shared/ai/capped";
+import { MemoryAiCallRepository } from "@naensom/shared/ai/calls";
+import { createLogger, type EmitFn } from "@naensom/shared";
 it("isolates failures, logs only codes, and stores each eligible space once", async () => {
   const source = new MemoryWeekSource();
   source.enabledSpaces.push(

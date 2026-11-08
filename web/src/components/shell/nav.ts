@@ -1,4 +1,4 @@
-import type { Role } from "@frejsi/shared";
+import type { Role } from "@naensom/shared";
 
 import type { Messages } from "@/lib/i18n/messages";
 

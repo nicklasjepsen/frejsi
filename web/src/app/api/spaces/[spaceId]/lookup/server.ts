@@ -1,8 +1,8 @@
-import { PrismaFoodRepository, prisma, type FoodRepository, type FoodSource } from "@frejsi/shared";
-import { foodSources } from "@frejsi/shared/food";
-import { createPhotoStoreFromEnv, type PhotoStore } from "@frejsi/shared/photos";
-import type { SearchEmbed } from "@frejsi/shared/food/types";
-import type { SessionContext } from "@frejsi/shared";
+import { PrismaFoodRepository, prisma, type FoodRepository, type FoodSource } from "@naensom/shared";
+import { foodSources } from "@naensom/shared/food";
+import { createPhotoStoreFromEnv, type PhotoStore } from "@naensom/shared/photos";
+import type { SearchEmbed } from "@naensom/shared/food/types";
+import type { SessionContext } from "@naensom/shared";
 import { foodSearchEmbed } from "@/lib/foods/semantic";
 import type { SessionDb } from "@/lib/auth/session";
 

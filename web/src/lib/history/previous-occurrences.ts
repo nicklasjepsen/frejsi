@@ -1,4 +1,4 @@
-import { dishKey } from "@frejsi/shared";
+import { dishKey } from "@naensom/shared";
 import type { HistoryMeal, HistoryRepository } from "./types";
 export async function previousOccurrences(
   meal: HistoryMeal,

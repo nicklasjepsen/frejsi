@@ -1,4 +1,4 @@
-import { prisma } from "@frejsi/shared";
+import { prisma } from "@naensom/shared";
 import { expect, test } from "./test";
 import { SEED_DISH } from "../scripts/seed";
 import { inviteLink, registerFromInvite, seededSpace } from "./support";

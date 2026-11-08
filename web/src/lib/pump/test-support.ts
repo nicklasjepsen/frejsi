@@ -1,7 +1,7 @@
 // An in-memory stand-in for the two delegates `loadPumpHistory` reads: the space's pump status and
 // the stored boluses with their meal links. Records every `select` it was asked for, so a test can
 // prove the read never asks for a field outside `PumpBolusView`. Imported by *.test.ts only.
-import { Prisma } from "@frejsi/shared";
+import { Prisma } from "@naensom/shared";
 
 import type { PumpReadDb } from "./history";
 

@@ -12,7 +12,7 @@ import {
   type ImportDb,
   type ImportedCarbs,
   type SessionContext,
-} from "@frejsi/shared";
+} from "@naensom/shared";
 
 import { getMessages } from "@/lib/i18n/messages";
 import { LOCALES } from "@/lib/i18n/routing";

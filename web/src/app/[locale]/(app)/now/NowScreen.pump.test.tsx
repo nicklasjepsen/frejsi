@@ -1,8 +1,8 @@
 import "@testing-library/jest-dom/vitest";
 
-import type { Reading } from "@frejsi/shared";
-import { DayHistoryView, type DayHistoryMeal } from "@frejsi/shared/schemas/history";
-import type { PumpBolusView } from "@frejsi/shared/schemas/pump";
+import type { Reading } from "@naensom/shared";
+import { DayHistoryView, type DayHistoryMeal } from "@naensom/shared/schemas/history";
+import type { PumpBolusView } from "@naensom/shared/schemas/pump";
 import { act, cleanup, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -102,7 +102,7 @@ beforeEach(() => {
   vi.stubGlobal("fetch", (input: RequestInfo | URL) => {
     const url = new URL(
       typeof input === "string" ? input : input instanceof URL ? input.href : input.url,
-      "https://frejsi.example",
+      "https://naensom.example",
     );
     calls.push(`${url.pathname}${url.search}`);
     const path = url.pathname.replace("/api/spaces/s1/", "");
@@ -266,7 +266,7 @@ describe("Nu with the pump record (v0.7.0 plan §9)", () => {
     await waitFor(() => {
       expect(pumpCalls()).toHaveLength(1);
     });
-    const query = new URL(pumpCalls()[0] ?? "", "https://frejsi.example").searchParams;
+    const query = new URL(pumpCalls()[0] ?? "", "https://naensom.example").searchParams;
     expect(Date.parse(query.get("from") ?? "")).toBeLessThan(at.getTime() - 24 * 3_600_000);
     expect(Date.parse(query.get("to") ?? "")).toBeGreaterThanOrEqual(at.getTime());
   });

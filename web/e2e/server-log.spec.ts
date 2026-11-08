@@ -2,7 +2,7 @@
 // seeded person or the space.
 import fs from "node:fs";
 
-import { prisma } from "@frejsi/shared";
+import { prisma } from "@naensom/shared";
 import { expect, test } from "./test";
 
 import { SEED_NAMES } from "../scripts/seed";

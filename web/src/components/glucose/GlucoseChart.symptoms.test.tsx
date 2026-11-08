@@ -1,7 +1,7 @@
 import "@testing-library/jest-dom/vitest";
 
-import type { Reading } from "@frejsi/shared";
-import { MealSymbol } from "@frejsi/shared/schemas/food";
+import type { Reading } from "@naensom/shared";
+import { MealSymbol } from "@naensom/shared/schemas/food";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";

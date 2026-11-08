@@ -1,4 +1,4 @@
-import { HttpError } from "@frejsi/shared";
+import { HttpError } from "@naensom/shared";
 import { foodRoute } from "../foods/http";
 import { PHOTO_URL_LIMIT } from "@/ai/estimate/photo";
 

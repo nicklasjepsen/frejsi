@@ -1,6 +1,6 @@
 "use client";
 
-import type { DayMealView } from "@frejsi/shared/schemas/meal";
+import type { DayMealView } from "@naensom/shared/schemas/meal";
 import { useLocale, useTranslations } from "next-intl";
 import Link from "next/link";
 import { useRef, useState } from "react";

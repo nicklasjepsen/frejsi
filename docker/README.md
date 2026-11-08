@@ -1,6 +1,6 @@
-# Frejsi on Docker Compose
+# Nænsom on Docker Compose
 
-Everything needed to run Frejsi on one host with Docker and nothing else. The walkthrough for people
+Everything needed to run Nænsom on one host with Docker and nothing else. The walkthrough for people
 is the "Docker Compose (any host with Docker)" section of
 [docs/deploy-your-own.md](../docs/deploy-your-own.md#docker-compose-any-host-with-docker); this page
 is the reference for the files and the record of the one manual verification.

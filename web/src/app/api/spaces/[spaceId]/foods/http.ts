@@ -1,4 +1,4 @@
-import { createEmit, HttpError, toApiError, type SessionContext } from "@frejsi/shared";
+import { createEmit, HttpError, toApiError, type SessionContext } from "@naensom/shared";
 import { json, sessionIdFrom } from "@/app/api/auth/http";
 import { assertRole, loadSession } from "@/lib/auth/session";
 import { resolveFoods, type ResolvedFoods } from "@/lib/foods/core";

@@ -1,5 +1,5 @@
-import type { ParsedItem } from "@frejsi/shared/schemas/ai";
-import type { FoodCandidate, FoodView } from "@frejsi/shared/schemas/food";
+import type { ParsedItem } from "@naensom/shared/schemas/ai";
+import type { FoodCandidate, FoodView } from "@naensom/shared/schemas/food";
 import type { DraftItem, MealDraft } from "../meal/draft";
 
 type PreparedItem = Omit<DraftItem, "key">;

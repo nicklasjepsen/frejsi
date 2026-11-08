@@ -1,5 +1,5 @@
 // @vitest-environment node
-import { InviteView } from "@frejsi/shared";
+import { InviteView } from "@naensom/shared";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { createInvite } from "@/lib/auth/invites";
@@ -7,7 +7,7 @@ import { FakeAuthDb } from "@/lib/auth/test-support";
 
 import { GET } from "./[token]/route";
 
-/** The route reads `prisma` from @frejsi/shared; it is swapped for the in-memory fake. */
+/** The route reads `prisma` from @naensom/shared; it is swapped for the in-memory fake. */
 const shared = vi.hoisted(() => {
   const holder: { db: Record<string, unknown> } = { db: {} };
   return {
@@ -15,12 +15,12 @@ const shared = vi.hoisted(() => {
     prisma: new Proxy({}, { get: (_target, key: string) => holder.db[key] }),
   };
 });
-vi.mock("@frejsi/shared", async (importOriginal) => ({
+vi.mock("@naensom/shared", async (importOriginal) => ({
   ...(await importOriginal<Record<string, unknown>>()),
   prisma: shared.prisma,
 }));
 
-const ORIGIN = "https://frejsi.example";
+const ORIGIN = "https://naensom.example";
 const T0 = new Date("2026-10-15T08:00:00.000Z");
 const DAY = 24 * 60 * 60 * 1000;
 

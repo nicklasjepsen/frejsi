@@ -3,7 +3,7 @@ import "@testing-library/jest-dom/vitest";
 import { readFileSync } from "node:fs";
 import path from "node:path";
 
-import { FoodCategory, MealSymbol } from "@frejsi/shared/schemas/food";
+import { FoodCategory, MealSymbol } from "@naensom/shared/schemas/food";
 import { cleanup, render } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
 

@@ -1,10 +1,10 @@
 "use client";
 
-import type { GlucoseUnit } from "@frejsi/shared/schemas/glucose";
-import type { DayHistoryMeal } from "@frejsi/shared/schemas/history";
+import type { GlucoseUnit } from "@naensom/shared/schemas/glucose";
+import type { DayHistoryMeal } from "@naensom/shared/schemas/history";
 import { PeakValue, formatDuration } from "@/components/stats";
 
-import type { DayMealView } from "@frejsi/shared/schemas/meal";
+import type { DayMealView } from "@naensom/shared/schemas/meal";
 import { useLocale, useTranslations } from "next-intl";
 import Link from "next/link";
 import { useRef, useState } from "react";

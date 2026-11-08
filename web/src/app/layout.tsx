@@ -5,6 +5,7 @@ import type { ReactNode } from "react";
 
 import "@/styles/globals.css";
 
+import { APP_NAME } from "@/lib/brand";
 import { LoadTiming } from "@/components/shell/LoadTiming";
 import { ServiceWorker } from "@/components/shell/ServiceWorker";
 import { LOCALE_HEADER, resolveLocale } from "@/lib/i18n/routing";
@@ -32,10 +33,10 @@ const display = Newsreader({
 });
 
 export const metadata: Metadata = {
-  title: { default: "Frejsi", template: "%s · Frejsi" },
-  applicationName: "Frejsi",
+  title: { default: APP_NAME, template: `%s · ${APP_NAME}` },
+  applicationName: APP_NAME,
   manifest: "/manifest.webmanifest",
-  appleWebApp: { capable: true, title: "Frejsi", statusBarStyle: "default" },
+  appleWebApp: { capable: true, title: APP_NAME, statusBarStyle: "default" },
   icons: {
     icon: [
       { url: "/icons/icon.svg", type: "image/svg+xml" },

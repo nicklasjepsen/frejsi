@@ -2,8 +2,8 @@
 // `GET day` and `POST meals` in the shapes of the shared Zod contracts, parses every body it is
 // sent, and records every call so a test can assert what a screen sent. The real routes are
 // exercised by components/meal/clients.routes.test.ts. Imported only from *.test.ts(x).
-import { FoodView } from "@frejsi/shared/schemas/food";
-import { CreateMealRequest, DayView, type DayMealView } from "@frejsi/shared/schemas/meal";
+import { FoodView } from "@naensom/shared/schemas/food";
+import { CreateMealRequest, DayView, type DayMealView } from "@naensom/shared/schemas/meal";
 
 export interface RecordedCall {
   method: string;
@@ -83,7 +83,7 @@ export function fakeApi(
       await Promise.resolve();
       const url = new URL(
         typeof input === "string" ? input : input instanceof URL ? input.href : input.url,
-        "https://frejsi.example",
+        "https://naensom.example",
       );
       const method = (init.method ?? "GET").toUpperCase();
       const body: unknown = typeof init.body === "string" ? JSON.parse(init.body) : undefined;

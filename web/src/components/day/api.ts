@@ -1,8 +1,8 @@
 // The browser side of `GET day` (plan §7, task 8): the one meal read every member may make. The
 // answer is parsed with the strict `DayView`, so nothing the contract does not name reaches a
-// screen. Schema modules, not the @frejsi/shared barrel: this is bundled for the browser.
-import { ApiError, type ApiErrorCode } from "@frejsi/shared/schemas/api";
-import { DayView } from "@frejsi/shared/schemas/meal";
+// screen. Schema modules, not the @naensom/shared barrel: this is bundled for the browser.
+import { ApiError, type ApiErrorCode } from "@naensom/shared/schemas/api";
+import { DayView } from "@naensom/shared/schemas/meal";
 
 export class DayApiError extends Error {
   constructor(

@@ -1,4 +1,4 @@
-import type { Neighbours, Reading } from "@frejsi/shared";
+import type { Neighbours, Reading } from "@naensom/shared";
 import type { HistoryMeal, HistoryRepository, HistorySpace } from "./types";
 /** Test fake: records repository reads without mocking the read services. */
 export class MemoryHistoryRepository implements HistoryRepository {

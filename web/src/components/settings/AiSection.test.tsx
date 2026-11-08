@@ -1,7 +1,7 @@
 import "@testing-library/jest-dom/vitest";
 import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, expect, it, vi } from "vitest";
-import type { AiUsage } from "@frejsi/shared/schemas/ai";
+import type { AiUsage } from "@naensom/shared/schemas/ai";
 import { I18nProvider } from "@/lib/i18n/Provider";
 import { getMessages } from "@/lib/i18n/messages";
 import { AiSection } from "./AiSection";

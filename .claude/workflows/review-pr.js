@@ -1,6 +1,6 @@
 export const meta = {
   name: 'review-pr',
-  description: 'Review one Frejsi PR with the three gate agents, then try to refute every finding before reporting it',
+  description: 'Review one Nænsom PR with the three gate agents, then try to refute every finding before reporting it',
   whenToUse: 'On any open PR, before the owner reads it. Pass { pr: <number> } as args.',
   phases: [
     { title: 'Find', detail: 'spec-guardian, reviewer, copy-reviewer' },

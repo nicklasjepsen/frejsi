@@ -1,8 +1,8 @@
 // @vitest-environment node
 import { describe, expect, it, vi } from "vitest";
-import { SessionContext, type EmitTx } from "@frejsi/shared";
-import { MemoryEventSink } from "@frejsi/shared/events/memory";
-import { MemoryPhotoStore } from "@frejsi/shared/photos/memory";
+import { SessionContext, type EmitTx } from "@naensom/shared";
+import { MemoryEventSink } from "@naensom/shared/events/memory";
+import { MemoryPhotoStore } from "@naensom/shared/photos/memory";
 import { createMeal, updateMeal, deleteMeal, setMealPhoto } from "./service";
 import { database } from "./test-support";
 import { createMealWriter, type MealWriteDb } from "./transaction";

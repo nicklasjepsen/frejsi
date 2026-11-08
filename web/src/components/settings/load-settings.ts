@@ -10,7 +10,7 @@ import {
   type PumpSettingsView,
   type SessionContext,
   type SpaceSettings,
-} from "@frejsi/shared";
+} from "@naensom/shared";
 
 import {
   latestSourceStatusSince,

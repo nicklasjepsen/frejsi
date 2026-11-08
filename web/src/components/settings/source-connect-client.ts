@@ -2,7 +2,7 @@
 // probes the credential and writes it to Key Vault with its own identity; the web app only
 // forwards the request and reads the result. The credential is in the request body and nowhere
 // else: not stored, not logged, not in the error.
-import { ConnectSourceResult, type ConnectSourceRequest } from "@frejsi/shared";
+import { ConnectSourceResult, type ConnectSourceRequest } from "@naensom/shared";
 
 /**
  * The environment, read for the two app settings `infra/deploy.sh` writes for the web app:

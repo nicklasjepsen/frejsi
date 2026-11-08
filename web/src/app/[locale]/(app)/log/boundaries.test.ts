@@ -34,10 +34,10 @@ describe("log screen boundaries", () => {
 
   it.each(
     files.map((f) => [path.relative(path.resolve(import.meta.dirname, "../../../.."), f), f]),
-  )("%s imports no Prisma, no server module and not the @frejsi/shared barrel", (_name, file) => {
+  )("%s imports no Prisma, no server module and not the @naensom/shared barrel", (_name, file) => {
     const text = readFileSync(file, "utf8");
     expect(text).not.toMatch(/@prisma\/client|\bprisma\b\./);
-    expect(text).not.toMatch(/from "@frejsi\/shared"/);
+    expect(text).not.toMatch(/from "@naensom\/shared"/);
     expect(text).not.toMatch(/@\/lib\/(auth|live\/server|foods|meals)/);
   });
 });

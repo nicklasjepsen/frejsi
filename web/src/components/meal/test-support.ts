@@ -30,7 +30,7 @@ export function fetchFake(): FetchFake {
       vi.stubGlobal(
         "fetch",
         vi.fn((input: string, init?: RequestInit) => {
-          const url = new URL(input, "https://frejsi.example");
+          const url = new URL(input, "https://naensom.example");
           const method = init?.method ?? "GET";
           const call: RecordedCall = {
             method,

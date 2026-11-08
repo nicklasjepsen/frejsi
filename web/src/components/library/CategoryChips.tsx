@@ -1,5 +1,5 @@
 "use client";
-import { FoodCategory } from "@frejsi/shared/schemas/food";
+import { FoodCategory } from "@naensom/shared/schemas/food";
 import { useTranslations } from "next-intl";
 import type { KeyboardEvent } from "react";
 

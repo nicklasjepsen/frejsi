@@ -1,12 +1,12 @@
 import { describe, expect, it, vi } from "vitest";
 vi.mock("@azure/functions", () => ({ app: { timer: vi.fn() } }));
-import { Food } from "@frejsi/shared/schemas/food";
-import { createLogger, type EmitFn } from "@frejsi/shared";
-import { FakeAiProvider, type RecordedAiCall } from "@frejsi/shared/ai/fake";
-import { MemoryAiCallRepository } from "@frejsi/shared/ai/calls";
-import { MemoryFoodRepository } from "@frejsi/shared/food/memory";
-import { OWN_FOOD_ORIGINS } from "@frejsi/shared/food/types";
-import type { FoodCategory } from "@frejsi/shared/schemas/food";
+import { Food } from "@naensom/shared/schemas/food";
+import { createLogger, type EmitFn } from "@naensom/shared";
+import { FakeAiProvider, type RecordedAiCall } from "@naensom/shared/ai/fake";
+import { MemoryAiCallRepository } from "@naensom/shared/ai/calls";
+import { MemoryFoodRepository } from "@naensom/shared/food/memory";
+import { OWN_FOOD_ORIGINS } from "@naensom/shared/food/types";
+import type { FoodCategory } from "@naensom/shared/schemas/food";
 import { runEnrichment, SCHEDULE } from "./enrich-foods";
 
 /** The in-memory repository plus the category pass of v0.6.0 (the memory fake is another lane's). */

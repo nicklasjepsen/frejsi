@@ -1,4 +1,4 @@
-import { log } from "@frejsi/shared";
+import { log } from "@naensom/shared";
 
 import { json, route } from "../../auth/http";
 import { inviteView } from "../invite-view";

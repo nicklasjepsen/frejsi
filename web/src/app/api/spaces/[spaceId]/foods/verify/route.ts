@@ -1,4 +1,4 @@
-import { VerifyFoodsRequest } from "@frejsi/shared";
+import { VerifyFoodsRequest } from "@naensom/shared";
 import { json, parseBody } from "@/app/api/auth/http";
 import { verifyFoods } from "@/lib/foods";
 import { foodRoute } from "../http";

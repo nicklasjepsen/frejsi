@@ -13,7 +13,7 @@ import {
   type PrismaClient,
   type Role,
   type SessionContext,
-} from "@frejsi/shared";
+} from "@naensom/shared";
 
 import { json, route, sessionIdFrom } from "@/app/api/auth/http";
 import { assertRole, loadSession, type SessionDb } from "@/lib/auth/session";

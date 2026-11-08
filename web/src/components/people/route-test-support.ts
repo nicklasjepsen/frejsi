@@ -1,13 +1,13 @@
 // The world the People route tests run in: the in-memory auth db seeded with one space and a
 // member of every role, each with a session, a recording event sink, and the captured log.
-// Imported by *.test.ts only. The test file itself mocks `@frejsi/shared` and `next/headers`
+// Imported by *.test.ts only. The test file itself mocks `@naensom/shared` and `next/headers`
 // (vi.mock is hoisted per file) and hands the holders to `createWorld`.
-import type { EventSink } from "@frejsi/shared";
+import type { EventSink } from "@naensom/shared";
 import { vi } from "vitest";
 
 import { FakeAuthDb, recordingSink, type RecordedEvent } from "@/lib/auth/test-support";
 
-export const ORIGIN = "https://frejsi.example";
+export const ORIGIN = "https://naensom.example";
 export const T0 = new Date("2026-10-15T08:00:00.000Z");
 export const days = (n: number) => new Date(T0.getTime() + n * 24 * 60 * 60 * 1000);
 

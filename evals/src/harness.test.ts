@@ -1,5 +1,5 @@
 import { expect, it, vi } from "vitest";
-import { aiProviders } from "@frejsi/shared/ai";
+import { aiProviders } from "@naensom/shared/ai";
 import { loadCases, type EvalCase } from "./cases";
 import { execute, runSet } from "./harness";
 import { type RunBudget } from "./budget";

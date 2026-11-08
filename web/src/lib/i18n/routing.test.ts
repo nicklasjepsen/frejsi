@@ -1,4 +1,4 @@
-import { Locale } from "@frejsi/shared";
+import { Locale } from "@naensom/shared";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
@@ -14,7 +14,7 @@ import {
 
 describe("routing", () => {
   it("knows exactly the locales of the shared contract, da first and default", () => {
-    // Duplicated on purpose: the middleware runs on the edge and must not import @frejsi/shared.
+    // Duplicated on purpose: the middleware runs on the edge and must not import @naensom/shared.
     expect([...LOCALES]).toEqual([...Locale.options]);
     expect(FALLBACK_LOCALE).toBe("da");
   });

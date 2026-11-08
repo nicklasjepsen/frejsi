@@ -1,10 +1,10 @@
-# Contributing to Frejsi
+# Contributing to Nænsom
 
-Thank you. Frejsi is small and early; the best contributions right now are food-source plugins for your country, glucose-source adapters, translations, and corrections to the spec.
+Thank you. Nænsom is small and early; the best contributions right now are food-source plugins for your country, glucose-source adapters, translations, and corrections to the spec.
 
 ## Ground rules
 
-- **Frejsi never computes, suggests or lets anyone enter insulin.** Pull requests that add an insulin input, a calculation, a ratio, a correction or a "you should" will be closed. The one exception is pump history: the time and delivered units of a bolus the pump recorded, imported read-only, shown to owners and carers outside simpleMode, never to a viewer, never to an AI model. This is a product boundary, not a technical limitation.
+- **Nænsom never computes, suggests or lets anyone enter insulin.** Pull requests that add an insulin input, a calculation, a ratio, a correction or a "you should" will be closed. The one exception is pump history: the time and delivered units of a bolus the pump recorded, imported read-only, shown to owners and carers outside simpleMode, never to a viewer, never to an AI model. This is a product boundary, not a technical limitation.
 - Everything that enters the food library from an external source or AI is unverified until a human ticks it. Keep it that way.
 - No real people, no real health data in fixtures, seeds, screenshots or docs.
 

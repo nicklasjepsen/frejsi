@@ -1,4 +1,4 @@
-import { HttpError } from "@frejsi/shared";
+import { HttpError } from "@naensom/shared";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 

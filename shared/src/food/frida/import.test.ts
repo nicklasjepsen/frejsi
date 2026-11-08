@@ -12,7 +12,7 @@ afterEach(async () => {
   await Promise.all(dirs.splice(0).map((dir) => rm(dir, { recursive: true, force: true })));
 });
 it("imports only available carbohydrate, sorts numerically and emits identical bytes twice", async () => {
-  const directory = await mkdtemp(join(tmpdir(), "frejsi-frida-"));
+  const directory = await mkdtemp(join(tmpdir(), "naensom-frida-"));
   dirs.push(directory);
   const output = join(directory, "data.json");
   const csv = new URL("../../../../fixtures/frida/frida-excerpt.csv", import.meta.url);

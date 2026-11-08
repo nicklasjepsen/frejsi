@@ -1,5 +1,5 @@
-import type { Reading } from "@frejsi/shared";
-import type { PumpBolusView } from "@frejsi/shared/schemas/pump";
+import type { Reading } from "@naensom/shared";
+import type { PumpBolusView } from "@naensom/shared/schemas/pump";
 import { describe, expect, it } from "vitest";
 
 import {

@@ -2,7 +2,7 @@
 // back, a second open screen hears the entry through the feed (the polling fallback here: no Web
 // PubSub in this run), "Mere…" adds severity and a note, and Alma's simpleMode picker is tiles
 // only. Runs at 360 px (phone) and 1280 px (desktop); the push itself is unit-tested on the sink.
-import { prisma } from "@frejsi/shared";
+import { prisma } from "@naensom/shared";
 
 import { assertMealOnly, inviteLink, navLabels, registerFromInvite, seededSpace } from "./support";
 import { expect, test } from "./test";

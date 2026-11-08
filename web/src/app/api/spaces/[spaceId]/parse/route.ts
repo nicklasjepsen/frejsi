@@ -1,5 +1,5 @@
-import { HttpError, log } from "@frejsi/shared";
-import { ParseRequest } from "@frejsi/shared/schemas/ai";
+import { HttpError, log } from "@naensom/shared";
+import { ParseRequest } from "@naensom/shared/schemas/ai";
 import { parseForSession } from "@/ai/parse/service";
 import { parseBody } from "@/app/api/auth/http";
 import { json, requireSpaceRole, spaceRoute } from "@/lib/live/server";

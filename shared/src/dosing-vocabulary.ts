@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 /**
- * The hard rule in test form (plan §8, restated in v0.7.0 plan §7): Frejsi never computes,
+ * The hard rule in test form (plan §8, restated in v0.7.0 plan §7): Nænsom never computes,
  * suggests or lets anyone enter insulin. These words and phrases must not appear in UI strings,
  * in the keys of any exported Zod schema, or (from v0.4.0) in generated insight text. The bare
  * words `enhed`/`units` are not listed because here they mean devices and the glucose unit.
@@ -36,11 +36,11 @@ export const DOSING_WORDS = [
  */
 export const DOSING_ALLOW_LIST = [
   "regner aldrig insulin",
-  "Frejsi · åben kildekode · regner aldrig insulin",
-  "Frejsi er åben kildekode, regner aldrig insulin og erstatter ikke din sensor-app eller pumpe-app.",
+  "Nænsom · åben kildekode · regner aldrig insulin",
+  "Nænsom er åben kildekode, regner aldrig insulin og erstatter ikke din sensor-app eller pumpe-app.",
   "never calculates insulin",
-  "Frejsi · open source · never calculates insulin",
-  "Frejsi is open source, never calculates insulin and does not replace your sensor app or pump app.",
+  "Nænsom · open source · never calculates insulin",
+  "Nænsom is open source, never calculates insulin and does not replace your sensor app or pump app.",
   "Bolus givet nu",
   "Bolus før måltid",
   "bolus given now",

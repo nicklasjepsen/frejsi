@@ -103,7 +103,7 @@ afterEach(() => {
 });
 
 it("reads the event and diffs the PR head against its merge base, not the checkout's merge commit", () => {
-  const dir = mkdtempSync(path.join(tmpdir(), "frejsi-docs-"));
+  const dir = mkdtempSync(path.join(tmpdir(), "naensom-docs-"));
   temporary.push(dir);
   // A git hook exports GIT_DIR and GIT_INDEX_FILE; without this the test would rewrite the
   // repository that is pushing, not the temporary one.

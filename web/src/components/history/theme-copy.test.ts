@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { expect, it } from "vitest";
-import { messageStrings } from "@frejsi/shared/dosing-vocabulary";
+import { messageStrings } from "@naensom/shared/dosing-vocabulary";
 import da from "../../../messages/da/history.json";
 import en from "../../../messages/en/history.json";
 const read = (name: string) => readFileSync(path.resolve(import.meta.dirname, name), "utf8");

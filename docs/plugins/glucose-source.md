@@ -21,7 +21,7 @@ message keys and a `SourceCard`.
   the last day on the same instance and reports the count, so keep the session a probe opened
   rather than logging in again. Log the service's own refusal code (never the credential) through
   the `log` option: it is what tells a wrong password from a locked account in App Insights.
-- **Read-only.** Frejsi never writes to a glucose service: no uploads, no follower or alert changes,
+- **Read-only.** Nænsom never writes to a glucose service: no uploads, no follower or alert changes,
   even when the credential would allow it. Your transport carries an allow-list of the methods and
   paths it may call and refuses anything else before `fetch` is called (see `READ_ONLY_ENDPOINTS` in
   `shared/src/glucose/nightscout/transport.ts`).
@@ -60,7 +60,7 @@ database and never calls `emit()`.
      These two files are the only places the real `fetch` reaches a glucose adapter.
 5. **Add the lint rule.** In `eslint.config.js`, put the vendor's host and path strings into a
    `no-restricted-syntax` selector like `dexcomHost` and `nightscoutProtocol`, add it to the rules
-   that apply to every file and to the other adapters' blocks, and add a `frejsi/boundaries/<id>`
+   that apply to every file and to the other adapters' blocks, and add a `naensom/boundaries/<id>`
    block for your own folder that leaves it out. Your `lint-boundaries.test.ts` proves it on probe
    files, as `shared/src/glucose/nightscout/lint-boundaries.test.ts` does.
 6. **Wire the web app.** The Settings route

@@ -1,6 +1,6 @@
 "use client";
 
-import type { GlucoseUnit, Reading } from "@frejsi/shared/schemas/index";
+import type { GlucoseUnit, Reading } from "@naensom/shared/schemas/index";
 import { useTranslations } from "next-intl";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 

@@ -1,5 +1,5 @@
 "use client";
-import type { FoodView } from "@frejsi/shared/schemas/food";
+import type { FoodView } from "@naensom/shared/schemas/food";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { useCallback, useEffect, useId, useRef, useState } from "react";

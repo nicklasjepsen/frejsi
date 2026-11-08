@@ -44,7 +44,7 @@ beforeEach(() => {
   vi.stubGlobal(
     "fetch",
     vi.fn((input: string) => {
-      const url = new URL(input, "https://frejsi.example");
+      const url = new URL(input, "https://naensom.example");
       calls.push(`${url.pathname}${url.search}`);
       if (url.pathname.endsWith("/symptoms/kinds"))
         return Promise.resolve(

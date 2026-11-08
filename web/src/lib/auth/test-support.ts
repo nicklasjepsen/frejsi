@@ -10,7 +10,7 @@ import {
   sign,
 } from "node:crypto";
 
-import type { EventEnvelope, EventSink, EventType } from "@frejsi/shared";
+import type { EventEnvelope, EventSink, EventType } from "@naensom/shared";
 import { isoCBOR } from "@simplewebauthn/server/helpers";
 import type {
   AuthenticationResponseJSON,

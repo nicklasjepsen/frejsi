@@ -2,7 +2,7 @@
 // and infra/deploy.sh zips as is (plan decision 30; Kudu cannot resolve pnpm workspace links).
 //
 //   dist/index.js                        one esbuild bundle: the entry registers both functions, so
-//                                        they share a single copy of @frejsi/shared (telemetry,
+//                                        they share a single copy of @naensom/shared (telemetry,
 //                                        Prisma client); package.json#main's glob matches it
 //   dist/host.json                       copied
 //   dist/package.json                    the externals below as its only dependencies

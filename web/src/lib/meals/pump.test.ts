@@ -3,8 +3,8 @@
 // writer over in-memory SQL delegates. Every meal change the match causes besides the person's
 // own meal goes out in `pump.meals` on the glucose group, never as `meal.updated`.
 import { describe, expect, it } from "vitest";
-import { SessionContext } from "@frejsi/shared";
-import { MemoryPhotoStore } from "@frejsi/shared/photos/memory";
+import { SessionContext } from "@naensom/shared";
+import { MemoryPhotoStore } from "@naensom/shared/photos/memory";
 import { createMeal, deleteMeal, getMeal, setMealPhoto, updateMeal } from "./service";
 import { bolus, mealRow, writerHarness } from "./test-support";
 

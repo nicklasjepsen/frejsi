@@ -5,7 +5,7 @@ import {
   type Logger,
   type PumpCycleDeps,
   type PumpSpaceOutcome,
-} from "@frejsi/shared";
+} from "@naensom/shared";
 
 /**
  * Second 0 of every fifteenth minute (v0.7.0 plan §5, decision 3): the pump record lags by up to

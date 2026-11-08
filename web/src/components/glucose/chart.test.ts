@@ -1,4 +1,4 @@
-import type { Reading } from "@frejsi/shared";
+import type { Reading } from "@naensom/shared";
 import { describe, expect, it } from "vitest";
 
 import { chartGeometry, type ChartInput } from "./chart";

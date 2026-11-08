@@ -1,4 +1,4 @@
-import { Health, createLogger } from "@frejsi/shared";
+import { Health, createLogger } from "@naensom/shared";
 import { describe, expect, it } from "vitest";
 
 import { FRESH_READING_MINUTES, computeHealth, type HealthDb } from "./health";

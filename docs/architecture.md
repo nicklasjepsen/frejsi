@@ -1,8 +1,8 @@
 # Architecture
 
-A short map of how Frejsi is put together, for someone who is going to read the code or write a
+A short map of how Nænsom is put together, for someone who is going to read the code or write a
 plugin. It describes what the code does today. The original design spec
-([docs/superpowers/specs/2026-10-14-frejsi-design.md](superpowers/specs/2026-10-14-frejsi-design.md))
+([docs/superpowers/specs/2026-10-14-naensom-design.md](superpowers/specs/2026-10-14-naensom-design.md))
 is the history; [CLAUDE.md](../CLAUDE.md) holds the hard rules; [deploy-your-own.md](deploy-your-own.md)
 is how to run a copy.
 
@@ -60,7 +60,7 @@ is enforced in the API, not the component.
 
 ## The three plugin interfaces
 
-Everything outside the app that Frejsi talks to sits behind one of three interfaces. Each has a
+Everything outside the app that Nænsom talks to sits behind one of three interfaces. Each has a
 registry that decides what is switched on, and a fake for tests.
 
 ### `GlucoseSource`: where readings come from
@@ -85,7 +85,7 @@ registry that decides what is switched on, and a fake for tests.
   (`web/src/components/settings/SourceCards.tsx`).
 - The fake: `shared/src/glucose/fake.ts`, chosen with `FAKE_GLUCOSE_SOURCE=1`.
 
-Glucose sources are read-only: Frejsi never writes to a CGM or a glucose service, and each adapter
+Glucose sources are read-only: Nænsom never writes to a CGM or a glucose service, and each adapter
 calls only the endpoints on its own allow-list.
 
 ### `PumpSource`: where the pump record comes from (v0.7.0)
@@ -174,7 +174,7 @@ the same for `"dk"`) and on `"Europe/Copenhagen"` anywhere in `web/src`, `poller
 - `shared/src/food/off/`: the `OFF_COUNTRY` fallback.
 - `.env.example`: an example value is not a default.
 
-A lint rule (`frejsi/boundaries/english-in-shared-and-poller`, next to the one for `web/src`) also
+A lint rule (`naensom/boundaries/english-in-shared-and-poller`, next to the one for `web/src`) also
 keeps the letters æ, ø and å out of string literals in `shared/src` and `poller/src`, apart from tests,
 the Frida dataset (`shared/src/food/frida/data/`), the search fold table (`shared/src/food/search.ts`),
 the dosing word list (`shared/src/dosing-vocabulary.ts`, `shared/src/ai/guard.ts`), the AI prompts
@@ -215,7 +215,7 @@ that proves it on probe files (`shared/src/events/lint-boundaries.test.ts` and t
 
 These are checked in review and by tests; see [CLAUDE.md](../CLAUDE.md).
 
-- **No insulin dosing.** Frejsi never computes, suggests or lets anyone enter insulin: no input field, no calculation, no ratio, no correction, no "you should", not in code, AI output schemas, prompts or copy. The one exception is **pump history**: the time and delivered units of a bolus the pump recorded, imported read-only, shown to owners and carers outside simpleMode, never to a viewer, never to an AI model. Showing what the pump delivered is allowed; setting or advising a dose is not.
+- **No insulin dosing.** Nænsom never computes, suggests or lets anyone enter insulin: no input field, no calculation, no ratio, no correction, no "you should", not in code, AI output schemas, prompts or copy. The one exception is **pump history**: the time and delivered units of a bolus the pump recorded, imported read-only, shown to owners and carers outside simpleMode, never to a viewer, never to an AI model. Showing what the pump delivered is allowed; setting or advising a dose is not.
   A food plugin returns carbohydrates, a glucose plugin returns readings; only a `PumpSource` returns
   what the pump delivered, and it computes nothing from it.
 - **Unverified until a human ticks it.** Anything a food source returns reaches the library with

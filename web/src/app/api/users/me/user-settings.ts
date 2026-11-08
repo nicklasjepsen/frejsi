@@ -1,7 +1,7 @@
 // The only place a user's presentation settings (locale, simpleMode, accent, theme) are written. Both
 // `/api/users/me` (one's own) and `/api/spaces/:id/settings/members/:userId` (an owner, for a
 // member) call this; the caller has already decided who may change what.
-import { HttpError, UserSettings } from "@frejsi/shared";
+import { HttpError, UserSettings } from "@naensom/shared";
 
 import { definedOnly, type UserSettingsPatch } from "@/components/settings/contracts";
 import { run, type AuthDeps } from "@/lib/auth/core";

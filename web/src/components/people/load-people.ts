@@ -1,6 +1,6 @@
 // Server side of People: the one query behind `GET /api/spaces/:id/members` and the page. The
 // writes live in `@/lib/auth/{members,invites,webauthn}` (plan task 5); this module only reads.
-import { prisma, Role, type PrismaClient } from "@frejsi/shared";
+import { prisma, Role, type PrismaClient } from "@naensom/shared";
 
 import { hashToken } from "@/lib/auth/invites";
 

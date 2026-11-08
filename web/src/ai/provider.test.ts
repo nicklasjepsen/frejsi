@@ -1,7 +1,7 @@
 // @vitest-environment node
 import { readFileSync } from "node:fs";
-import { CappedAiProvider, type AiCallRow } from "@frejsi/shared/ai";
-import { AiProviderId, NormalisedFood } from "@frejsi/shared/schemas/ai";
+import { CappedAiProvider, type AiCallRow } from "@naensom/shared/ai";
+import { AiProviderId, NormalisedFood } from "@naensom/shared/schemas/ai";
 import { describe, expect, it } from "vitest";
 import { aiForSpace, type AiProviderDeps } from "./provider";
 import { actor } from "@/lib/foods/test-fixture.test";

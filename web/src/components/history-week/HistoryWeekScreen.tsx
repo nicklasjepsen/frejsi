@@ -1,7 +1,7 @@
 "use client";
-import type { GlucoseUnit } from "@frejsi/shared/schemas/glucose";
-import { WeekHistoryView } from "@frejsi/shared/schemas/history";
-import { dayRange } from "@frejsi/shared/meals/day-range";
+import type { GlucoseUnit } from "@naensom/shared/schemas/glucose";
+import { WeekHistoryView } from "@naensom/shared/schemas/history";
+import { dayRange } from "@naensom/shared/meals/day-range";
 import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { useRouter } from "next/navigation";

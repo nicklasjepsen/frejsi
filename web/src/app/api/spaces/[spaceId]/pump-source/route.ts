@@ -5,7 +5,7 @@ import {
   parseSecretRef,
   prisma,
   pumpSecretName,
-} from "@frejsi/shared";
+} from "@naensom/shared";
 
 import { json, logOutcome, parseBody, settingsRoute } from "@/components/settings/api-route";
 import {
@@ -13,7 +13,7 @@ import {
   type ConnectedPumpSettings,
 } from "@/components/settings/pump-source-client";
 import { requireRole } from "@/lib/auth/session";
-import type { Role } from "@frejsi/shared";
+import type { Role } from "@naensom/shared";
 
 import { connectPump } from "./connect-pump";
 import {

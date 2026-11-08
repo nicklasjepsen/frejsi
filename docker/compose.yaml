@@ -1,4 +1,4 @@
-# Frejsi on any host with Docker (docs/deploy-your-own.md, "Docker Compose"). Run docker/init-secrets.sh
+# Nænsom on any host with Docker (docs/deploy-your-own.md, "Docker Compose"). Run docker/init-secrets.sh
 # once first, then: docker compose -f docker/compose.yaml up --build
 #
 # No secret is written here: every credential is read from docker/.env (generated, ignored by git

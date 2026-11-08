@@ -1,7 +1,7 @@
 // A dish from a recipe (v0.6.0 §6): pasted text against the fake provider, the review form, "Gem"
 // into the library as an unverified dish of origin recipe; "Gem som opskrift" from a logged meal;
 // and the share receiver, driven directly (the share sheet itself is a phone, decision 13.5).
-import { prisma } from "@frejsi/shared";
+import { prisma } from "@naensom/shared";
 import { SEED_DISH } from "../scripts/seed";
 import { inviteLink, registerFromInvite, seededSpace } from "./support";
 import { expect, test } from "./test";

@@ -7,7 +7,7 @@ const html = (body: string) =>
   new Response(body, { status: 200, headers: { "content-type": "text/html; charset=utf-8" } });
 
 describe("fetchRecipePage (https only, 2 MB and 10 s caps, no redirects off the host)", () => {
-  it("fetches an https page once with the Frejsi user agent, no credentials and manual redirects", async () => {
+  it("fetches an https page once with the Nænsom user agent, no credentials and manual redirects", async () => {
     const fetch = vi.fn<Fetch>(() => Promise.resolve(html("<p>fictional</p>")));
     await expect(
       fetchRecipePage("https://recipes.example/lasagne?print=1", { fetch, resolve: publicHost }),
@@ -19,7 +19,7 @@ describe("fetchRecipePage (https only, 2 MB and 10 s caps, no redirects off the 
     expect(init).toMatchObject({
       redirect: "manual",
       credentials: "omit",
-      headers: { "user-agent": "Frejsi", accept: "text/html" },
+      headers: { "user-agent": "Naensom", accept: "text/html" },
     });
     expect(init?.signal).toBeInstanceOf(AbortSignal);
   });

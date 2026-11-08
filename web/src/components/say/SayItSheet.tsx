@@ -1,5 +1,5 @@
 "use client";
-import type { ParsedItem, ParsedMeal } from "@frejsi/shared/schemas/ai";
+import type { ParsedItem, ParsedMeal } from "@naensom/shared/schemas/ai";
 import { useTranslations } from "next-intl";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { PhotoPicker } from "../food/PhotoPicker";

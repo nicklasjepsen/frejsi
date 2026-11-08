@@ -1,4 +1,4 @@
-import { log, prisma, type Role } from "@frejsi/shared";
+import { log, prisma, type Role } from "@naensom/shared";
 import { requireSpaceRole } from "@/lib/live/server";
 import type { SessionDb } from "@/lib/auth/session";
 import { symptomDeps, type SymptomDeps } from "./service";

@@ -54,7 +54,7 @@ afterEach(() => {
 
 const post = (sessionId: string | null, body: unknown, spaceId = "s1") =>
   POST(
-    new Request(`https://frejsi.example/api/spaces/${spaceId}/readings`, {
+    new Request(`https://naensom.example/api/spaces/${spaceId}/readings`, {
       method: "POST",
       headers: {
         "content-type": "application/json",

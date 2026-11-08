@@ -1,6 +1,6 @@
 ---
 name: housekeeping
-description: Background triage and cleanup for Frejsi, run twice daily by the housekeeping GitHub Actions workflow (not part of PR CI) and on demand. Triages untouched issues and PRs with the triage agent, merges green Dependabot minors, marks stale PRs, deletes fully merged branches, fixes milestone hygiene, and keeps one "Waiting on the owner" issue current. Use when the owner says "run housekeeping", "triage the backlog", "clean up branches", "what's waiting on me". Never closes an issue a person opened; never merges a lane PR.
+description: Background triage and cleanup for Nænsom, run twice daily by the housekeeping GitHub Actions workflow (not part of PR CI) and on demand. Triages untouched issues and PRs with the triage agent, merges green Dependabot minors, marks stale PRs, deletes fully merged branches, fixes milestone hygiene, and keeps one "Waiting on the owner" issue current. Use when the owner says "run housekeeping", "triage the backlog", "clean up branches", "what's waiting on me". Never closes an issue a person opened; never merges a lane PR.
 ---
 
 # housekeeping
@@ -99,7 +99,7 @@ Only on Mondays (UTC, `date -u +%u` is `1`); other days skip this step. Use the 
    existing Azure resources are not evidence of a successful release. Distinguish code on main,
    planned work and released behavior. Follow the tag's code when describing that release.
 4. If nothing is stale, make no PR. Otherwise create the drift worktree with
-   `git worktree add -b docs/drift-<date> /tmp/frejsi-docs-drift-<date> origin/main` and update only
+   `git worktree add -b docs/drift-<date> /tmp/naensom-docs-drift-<date> origin/main` and update only
    the stale facts in these five files, using fictional examples only. Follow `/land` for full checks, signed-off
    conventional commits, review and CI. Open one PR titled `docs: drift <date>`, label `area:docs`,
    with the normal template and a `## Docs` list of changed paths. Put uncertain claims in **For

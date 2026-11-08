@@ -59,7 +59,7 @@ describe("the recipe boundaries (plan task 4 hard rules)", () => {
     expect(
       await errors(
         "web/src/lib/recipes/service.ts",
-        'import { CappedAiProvider } from "@frejsi/shared/ai"; new CappedAiProvider();',
+        'import { CappedAiProvider } from "@naensom/shared/ai"; new CappedAiProvider();',
       ),
     ).toContainEqual(expect.stringContaining("web provider factory"));
   });

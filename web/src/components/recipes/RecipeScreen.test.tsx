@@ -1,5 +1,5 @@
 import "@testing-library/jest-dom/vitest";
-import type { FoodView, RecipeReview as Review } from "@frejsi/shared/schemas/food";
+import type { FoodView, RecipeReview as Review } from "@naensom/shared/schemas/food";
 import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 

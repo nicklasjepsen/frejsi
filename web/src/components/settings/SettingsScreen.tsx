@@ -2,12 +2,12 @@
 
 // Values come from the pure modules by path, never from the shared index: a client bundle must not
 // pull in the Prisma client or App Insights that the index exports (plan §2; see routing.ts).
-import type { AiUsage } from "@frejsi/shared/schemas/ai";
+import type { AiUsage } from "@naensom/shared/schemas/ai";
 import { AiSection } from "./AiSection";
-import type { ApiErrorCode, SpaceSettings } from "@frejsi/shared";
-import { mgdlToMmol, mmolToMgdl } from "@frejsi/shared/glucose/units";
-import { GlucoseUnit } from "@frejsi/shared/schemas/glucose";
-import { Locale } from "@frejsi/shared/schemas/settings";
+import type { ApiErrorCode, SpaceSettings } from "@naensom/shared";
+import { mgdlToMmol, mmolToMgdl } from "@naensom/shared/glucose/units";
+import { GlucoseUnit } from "@naensom/shared/schemas/glucose";
+import { Locale } from "@naensom/shared/schemas/settings";
 import { useFormatter, useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";

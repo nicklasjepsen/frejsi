@@ -1,7 +1,7 @@
 "use client";
 import { useRef } from "react";
 import { useTranslations } from "next-intl";
-import type { AiProviderId, AiUsage, UpdateSpaceSettingsRequest } from "@frejsi/shared/schemas/ai";
+import type { AiProviderId, AiUsage, UpdateSpaceSettingsRequest } from "@naensom/shared/schemas/ai";
 import { Card } from "@/components/ui/Card";
 import { Chip } from "@/components/ui/Chip";
 import { Notice } from "@/components/ui/Notice";

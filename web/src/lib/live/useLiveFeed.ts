@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useSyncExternalStore } from "react";
 
-import type { Reading } from "@frejsi/shared/schemas/index";
+import type { Reading } from "@naensom/shared/schemas/index";
 
 import {
   LiveFeed,

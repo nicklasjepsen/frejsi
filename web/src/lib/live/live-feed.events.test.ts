@@ -1,7 +1,7 @@
 // @vitest-environment node
 // The additive event surface of the feed (plan §7, task 8): `events` and `onEvent`, and the
 // events-only feed a viewer's screen uses. The v0.1.0 protocol tests in live-feed.test.ts stand.
-import type { EventEnvelope } from "@frejsi/shared";
+import type { EventEnvelope } from "@naensom/shared";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { CURSOR_ONLY_SINCE, type EventsPage, type ReadingsWindow } from "./contracts";

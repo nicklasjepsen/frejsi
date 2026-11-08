@@ -55,7 +55,7 @@ function connectEvent({ userId = "owner-1", query, headers = {} }: ConnectOption
     ...fixture.body,
     query: query ?? { ...fixture.body.query, spaceId: ["s1"] },
   };
-  return new Request("https://frejsi.example/api/pubsub", {
+  return new Request("https://naensom.example/api/pubsub", {
     method: "POST",
     headers: all,
     body: JSON.stringify(body),
@@ -99,7 +99,7 @@ async function groupsOf(response: Response): Promise<string[]> {
 describe("OPTIONS /api/pubsub: CloudEvents abuse protection", () => {
   it("allows its own Web PubSub origin and nothing else", async () => {
     const own = await OPTIONS(
-      new Request("https://frejsi.example/api/pubsub", {
+      new Request("https://naensom.example/api/pubsub", {
         method: "OPTIONS",
         headers: { "WebHook-Request-Origin": ORIGIN },
       }),
@@ -108,7 +108,7 @@ describe("OPTIONS /api/pubsub: CloudEvents abuse protection", () => {
     expect(own.headers.get("WebHook-Allowed-Origin")).toBe(ORIGIN);
 
     const other = await OPTIONS(
-      new Request("https://frejsi.example/api/pubsub", {
+      new Request("https://naensom.example/api/pubsub", {
         method: "OPTIONS",
         headers: { "WebHook-Request-Origin": "someone-else.webpubsub.azure.com" },
       }),
@@ -211,7 +211,7 @@ describe("POST /api/pubsub: only the Web PubSub service can call it", () => {
     configureLive({ db: fake.db, now: () => T0, upstream: null });
     expect((await POST(connectEvent())).status).toBe(503);
     const preflight = await OPTIONS(
-      new Request("https://frejsi.example/api/pubsub", {
+      new Request("https://naensom.example/api/pubsub", {
         method: "OPTIONS",
         headers: { "WebHook-Request-Origin": ORIGIN },
       }),

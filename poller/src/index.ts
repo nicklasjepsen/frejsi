@@ -1,9 +1,9 @@
 import { app } from "@azure/functions";
-import { log, startTelemetry } from "@frejsi/shared";
+import { log, startTelemetry } from "@naensom/shared";
 
 // Azure Functions v4 programming model. The function modules register themselves on import,
 // and everything is one esbuild bundle (dist/index.js), so they share a single copy of
-// @frejsi/shared: the telemetry started below is the one the timer tracks reading.stored through,
+// @naensom/shared: the telemetry started below is the one the timer tracks reading.stored through,
 // and there is one Prisma client. app.setup() may run after registration; only startup is final.
 import "./functions/poll";
 import "./functions/pump-poll";
