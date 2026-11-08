@@ -287,9 +287,10 @@ export function createLiveRegisterHandler(deps: RegisterDeps) {
     let restartReading = false;
 
     if (data.nightscoutUrl === LIVE_DEMO_URL) {
-      if (row.tokenSecretRef !== null) await deps.secrets.delete(liveSecretName(id));
+      // The stored credential stays (and goes with the subscription): Key Vault keeps a deleted
+      // name for its retention, so deleting it here would block switching back to the site.
       if (!row.isDemo) restartReading = true;
-      Object.assign(patch, { isDemo: true, nightscoutHost: null, tokenSecretRef: null });
+      patch.isDemo = true;
     } else {
       const storedValue =
         row.tokenSecretRef === null ? undefined : await deps.secrets.get(row.tokenSecretRef);
@@ -299,22 +300,28 @@ export function createLiveRegisterHandler(deps: RegisterDeps) {
       if (stored?.url !== data.nightscoutUrl || stored.token !== token) {
         const written = await storeCredential(id, data.nightscoutUrl, token, ip);
         if ("response" in written) return written.response;
-        Object.assign(patch, {
-          isDemo: false,
-          nightscoutHost: hostOf(data.nightscoutUrl),
-          tokenSecretRef: written.ref,
-        });
+        patch.nightscoutHost = hostOf(data.nightscoutUrl);
+        patch.tokenSecretRef = written.ref;
         restartReading = true;
       }
+      if (row.isDemo) restartReading = true;
+      patch.isDemo = false;
     }
 
     if (data.pushToStartToken !== undefined) patch.pushToStartToken = data.pushToStartToken;
     if (data.deviceToken !== undefined) patch.deviceToken = data.deviceToken;
     if (data.activityPushToken !== undefined || data.activityStartedAt !== undefined) {
+      const token =
+        data.activityPushToken === undefined ? row.activityPushToken : data.activityPushToken;
+      // Left out, the start time is the stored one for the same activity, now for a new one.
       const startedAt =
-        data.activityStartedAt === undefined || data.activityStartedAt === null
-          ? null
-          : new Date(data.activityStartedAt);
+        data.activityStartedAt === undefined
+          ? token === row.activityPushToken
+            ? row.activityStartedAt
+            : new Date(now)
+          : data.activityStartedAt === null
+            ? null
+            : new Date(data.activityStartedAt);
       // An activity older than the one the relay already knows (the app reporting the activity the
       // 8-hour restart just ended) is ignored; anything else is the app's current state.
       const older =
@@ -322,8 +329,6 @@ export function createLiveRegisterHandler(deps: RegisterDeps) {
         row.activityStartedAt !== null &&
         startedAt.getTime() < row.activityStartedAt.getTime();
       if (!older) {
-        const token =
-          data.activityPushToken === undefined ? row.activityPushToken : data.activityPushToken;
         if (token !== row.activityPushToken) restartReading = true;
         patch.activityPushToken = token;
         patch.activityStartedAt = startedAt;

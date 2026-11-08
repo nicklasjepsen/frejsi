@@ -313,15 +313,40 @@ describe("POST /api/live/register: update", () => {
     });
   });
 
-  it("switches to the demo and deletes the stored credential", async () => {
+  it("switches to the demo and back, keeping the stored credential (Key Vault soft-deletes names)", async () => {
     const h = await created();
     await h.register(request({ ...body, subscriptionId: ID, nightscoutUrl: "demo" }, auth));
     expect(h.store.rows.get(ID)).toMatchObject({
       isDemo: true,
-      tokenSecretRef: null,
-      nightscoutHost: null,
+      tokenSecretRef: `${liveSecretName(ID)}/1`,
     });
+    await expect(h.secrets.get(liveSecretName(ID))).resolves.toBeDefined();
+    const { nightscoutToken: _token, ...keep } = body;
+    const back = await h.register(request({ ...keep, subscriptionId: ID }, auth));
+    expect(back.status).toBe(200);
+    expect(h.validated).toEqual([]);
+    expect(h.store.rows.get(ID)).toMatchObject({
+      isDemo: false,
+      tokenSecretRef: `${liveSecretName(ID)}/1`,
+      lastReadingAt: null,
+    });
+    // Removing the phone still deletes the credential the demo kept.
+    await h.unregister(request("", auth, { subscriptionId: ID }));
     await expect(h.secrets.get(liveSecretName(ID))).resolves.toBeUndefined();
+  });
+
+  it("keeps the activity's start time when an update leaves it out for the same token", async () => {
+    const h = await created();
+    const { activityStartedAt: _started, ...rest } = body;
+    await h.register(request({ ...rest, subscriptionId: ID }, auth));
+    expect(h.store.rows.get(ID)?.activityStartedAt).toEqual(new Date("2026-11-08T11:00:00Z"));
+    await h.register(
+      request({ ...rest, subscriptionId: ID, activityPushToken: "e5".repeat(32) }, auth),
+    );
+    expect(h.store.rows.get(ID)).toMatchObject({
+      activityPushToken: "e5".repeat(32),
+      activityStartedAt: new Date(T0 + 60_000),
+    });
   });
 
   it("logs the subscription id and a code, never the address, token or secret", async () => {
