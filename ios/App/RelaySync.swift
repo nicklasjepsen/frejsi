@@ -64,6 +64,8 @@ final class RelaySync: ObservableObject {
                 retryDelay = Self.firstRetry
                 error = nil
                 logger.notice("registered")
+                // The relay answers again: a removal still waiting can go now.
+                PendingUnregisterSync.shared.retryIfDue()
             } catch {
                 let failure = error as? RelayError ?? .unreachable
                 self.error = failure
@@ -99,16 +101,30 @@ final class RelaySync: ObservableObject {
         if let credentials = RelayCredentialStore.read() {
             try await client.delete(credentials)
         }
-        forget()
+        RelayCredentialStore.clear()
+        reset()
     }
 
-    /// Forgets the registration on the phone only. The relay deletes it by itself after 30 days
-    /// without a push or a registration.
-    func forget() {
+    /// Removes the registration from the phone only, when the relay could not be reached. The
+    /// subscription id and device secret move to the pending removals (`PendingUnregisterSync`),
+    /// which the app keeps trying until the relay confirms; the relay also deletes it by itself
+    /// after 30 days without delivery.
+    func forget() async {
+        removing = true
+        defer { removing = false }
         pending = nil
         retryTask?.cancel()
         retryTask = nil
+        // A registration in flight stores its credentials first, so they are parked too.
+        await drainTask?.value
+        if let credentials = RelayCredentialStore.read() {
+            PendingUnregisterStore.add(credentials)
+        }
         RelayCredentialStore.clear()
+        reset()
+    }
+
+    private func reset() {
         lastSent = nil
         lastSentAt = nil
         retryDelay = Self.firstRetry

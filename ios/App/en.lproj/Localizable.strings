@@ -72,7 +72,7 @@
 "settings.remove.confirm.title" = "Remove this phone?";
 "settings.remove.confirm.message" = "You can set it up again with the link at any time.";
 "settings.remove.failed.title" = "Couldn't reach Nænsom's server";
-"settings.remove.failed.message" = "You can remove it from this phone now. The server deletes its copy by itself after 30 days.";
+"settings.remove.failed.message" = "You can remove it from this phone now. The app keeps trying to remove it from Nænsom's server. If that doesn't work, the server removes it by itself once nothing has reached the phone for 30 days.";
 "settings.remove.localOnly" = "Remove from this phone";
 
 "threshold.urgentLow" = "Urgent low";

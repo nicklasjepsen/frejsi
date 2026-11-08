@@ -72,7 +72,7 @@
 "settings.remove.confirm.title" = "Fjern denne telefon?";
 "settings.remove.confirm.message" = "Du kan altid sætte den op igen med linket.";
 "settings.remove.failed.title" = "Kunne ikke få fat i Nænsoms server";
-"settings.remove.failed.message" = "Du kan fjerne den fra denne telefon nu. Serveren sletter selv sin kopi efter 30 dage.";
+"settings.remove.failed.message" = "Du kan fjerne den fra denne telefon nu. Appen bliver ved med at prøve at fjerne den fra Nænsoms server. Lykkes det ikke, fjerner serveren den selv, når der ikke er kommet noget frem til telefonen i 30 dage.";
 "settings.remove.localOnly" = "Fjern fra denne telefon";
 
 "threshold.urgentLow" = "Akut lav";

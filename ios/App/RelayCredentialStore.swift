@@ -24,3 +24,37 @@ enum RelayCredentialStore {
         KeychainStore.delete(secretAccount)
     }
 }
+
+/// Removals the relay has not confirmed (`PendingUnregisters`), as one Keychain item in the app's
+/// own access group, apart from the active registration above: a new setup neither overwrites
+/// nor reuses them.
+@MainActor
+enum PendingUnregisterStore {
+    private static let account = "relay.pendingUnregisters"
+
+    static func load() -> PendingUnregisters {
+        PendingUnregisters.decode(KeychainStore.read(account))
+    }
+
+    static func add(_ credentials: RelayCredentials) {
+        var pending = load()
+        pending.add(credentials)
+        save(pending)
+    }
+
+    /// Re-reads the list before writing, so a removal added during an attempt is kept.
+    static func remove(_ subscriptionIds: Set<String>) {
+        guard !subscriptionIds.isEmpty else { return }
+        var pending = load()
+        pending.remove(subscriptionIds)
+        save(pending)
+    }
+
+    private static func save(_ pending: PendingUnregisters) {
+        if pending.isEmpty {
+            KeychainStore.delete(account)
+        } else {
+            KeychainStore.write(account, pending.encoded())
+        }
+    }
+}

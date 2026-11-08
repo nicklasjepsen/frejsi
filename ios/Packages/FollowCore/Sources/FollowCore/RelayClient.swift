@@ -128,7 +128,7 @@ public enum RelayError: Error, Equatable, Sendable {
 
 /// Registers this phone with the relay, keeps the registration current, and removes it.
 public struct RelayClient: Sendable {
-    private let transport: HTTPTransport
+    let transport: HTTPTransport
     private let baseURL: URL
 
     public init(transport: HTTPTransport, baseURL: URL = RelayConfig.baseURL) {
