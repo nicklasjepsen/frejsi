@@ -19,6 +19,8 @@ final class FollowModel: ObservableObject {
 
     /// Called with the newest reading whenever a fetch brings a newer one.
     var onNewReading: ((Reading, Reading?) -> Void)?
+    /// Called when the site's own thresholds arrive and change the ones in force.
+    var onThresholdsChanged: (() -> Void)?
 
     let feed = ReadingFeed(client: NightscoutClient(transport: URLSessionTransport()))
     /// Bumped whenever the source changes, so an answer for the previous one never lands.
@@ -99,7 +101,9 @@ final class FollowModel: ObservableObject {
         let found = try? await client.thresholds(site: site.absoluteString, token: token)
         guard asked == generation else { return }
         ThresholdStore.site = found
+        let before = thresholds
         thresholds = ThresholdStore.current
+        if thresholds != before { onThresholdsChanged?() }
     }
 
     // MARK: - Settings

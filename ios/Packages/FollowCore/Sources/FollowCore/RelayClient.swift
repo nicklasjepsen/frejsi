@@ -114,6 +114,16 @@ public enum RelayError: Error, Equatable, Sendable {
     case rateLimited
     case status(Int)
     case badResponse
+
+    /// Worth trying again later without any change on the phone: the network, a busy or failing
+    /// relay, or a Nightscout site the relay could not reach.
+    public var isTransient: Bool {
+        switch self {
+        case .unreachable, .rateLimited, .nightscoutUnreachable: return true
+        case .status(let code): return code >= 500
+        case .validation, .notHTTPS, .badDeviceSecret, .nightscoutRefused, .badResponse: return false
+        }
+    }
 }
 
 /// Registers this phone with the relay, keeps the registration current, and removes it.

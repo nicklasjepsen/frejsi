@@ -81,6 +81,13 @@ final class ReadingHistoryTests: XCTestCase {
         XCTAssertEqual(merged.map(\.mgdl), [130, 112, 100])
     }
 
+    func testKeepsTheNewestReadingHoweverOld() {
+        // A site silent for more than 12 hours still shows its last value (grey, with its age).
+        let fresh = [reading(60 * 13, 140), reading(60 * 14, 130)]
+        XCTAssertEqual(ReadingHistory.merge([], fresh, now: noon).map(\.mgdl), [140])
+        XCTAssertTrue(ReadingHistory.points([reading(60 * 13, 140)], window: .twelveHours, now: noon).isEmpty)
+    }
+
     func testAWindowShowsItsHoursOldestFirst() {
         let readings = [reading(0, 1), reading(170, 2), reading(181, 3), reading(359, 4), reading(361, 5), reading(700, 6)]
         XCTAssertEqual(ReadingHistory.points(readings, window: .threeHours, now: noon).map(\.mgdl), [2, 1])
