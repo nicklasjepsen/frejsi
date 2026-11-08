@@ -38,6 +38,8 @@ final class AppModel: ObservableObject {
             self?.scheduleSync()
         }
         live.observe()
+        // A removal the relay has not confirmed yet is tried again, followed site or not.
+        PendingUnregisterSync.shared.retryIfDue()
         // An address and token saved before the widgets existed move to the shared access group.
         KeychainStore.shareWithExtension()
         if follow.settings.alertsOn {
@@ -55,6 +57,7 @@ final class AppModel: ObservableObject {
     /// The app came to the foreground: read now, start or reuse the Live Activity, and tell the
     /// relay the phone is still here.
     func becameActive() {
+        PendingUnregisterSync.shared.retryIfDue()
         guard follow.source != nil else { return }
         Task {
             await follow.refresh()
@@ -202,18 +205,19 @@ final class AppModel: ObservableObject {
 
     /// Ends the activities, deletes the relay's copy and clears the phone, back to onboarding.
     /// Answers false, and changes nothing, when the relay cannot be reached and `localOnly` and
-    /// `fallBackToLocal` are false; the screen then offers to remove it from this phone only.
+    /// `fallBackToLocal` are false; the screen then offers to remove it from this phone only. A
+    /// removal from the phone only leaves the relay's deletion pending (`PendingUnregisterSync`).
     @discardableResult
     func remove(localOnly: Bool, fallBackToLocal: Bool = false) async -> Bool {
         syncTask?.cancel()
         if localOnly {
-            relay.forget()
+            await relay.forget()
         } else {
             do {
                 try await relay.remove()
             } catch {
                 guard fallBackToLocal else { return false }
-                relay.forget()
+                await relay.forget()
             }
         }
         await live.endAll()
