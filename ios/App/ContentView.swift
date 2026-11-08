@@ -20,9 +20,12 @@ struct ContentView: View {
                     Section {
                         thresholdSteppers
                     } header: {
-                        Text("Colours")
+                        Text(Self.say("Colours", "Farver"))
                     } footer: {
-                        Text("Green from low to high, yellow outside it, red at or beyond the urgent values, grey when the reading is more than 15 minutes old. Colours only: no alarms.")
+                        Text(Self.say(
+                            "Green from low to high, yellow outside it, red at or beyond the urgent values, grey when the reading is more than 15 minutes old. Colours only: no alarms.",
+                            "Grøn fra lav til høj, gul uden for, rød ved eller forbi de akutte værdier, grå når målingen er mere end 15 minutter gammel. Kun farver, ingen alarmer."
+                        ))
                     }
                     Section("Push tokens (for the push test)") { tokens }
                 }
@@ -103,7 +106,7 @@ struct ContentView: View {
                 activities.redraw()
             }
         }
-        Button("Use the Nightscout site's values") {
+        Button(Self.say("Use the Nightscout site's values", "Brug Nightscout-sidens værdier")) {
             model.resetThresholds()
             activities.redraw()
         }
@@ -111,11 +114,17 @@ struct ContentView: View {
 
     private static func label(_ kind: GlucoseThresholds.Kind) -> String {
         switch kind {
-        case .urgentLow: return "Urgent low"
-        case .low: return "Low"
-        case .high: return "High"
-        case .urgentHigh: return "Urgent high"
+        case .urgentLow: return say("Urgent low", "Akut lav")
+        case .low: return say("Low", "Lav")
+        case .high: return say("High", "Høj")
+        case .urgentHigh: return say("Urgent high", "Akut høj")
         }
+    }
+
+    /// English or Danish by the app's language. Stage 3 moves every string to a String Catalog;
+    /// the colour settings are bilingual already.
+    private static func say(_ english: String, _ danish: String) -> String {
+        AppLanguage.current == .da ? danish : english
     }
 
     @ViewBuilder private var tokens: some View {
