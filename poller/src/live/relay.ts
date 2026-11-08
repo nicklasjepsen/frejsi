@@ -358,9 +358,20 @@ async function alert(
   }
 }
 
-/** Clears the tokens Apple called invalid; removes the subscription when none is left. */
-async function settleTokens(deps: RelayDeps, pass: Pass): Promise<boolean> {
-  if (pass.invalid.size === 0) return false;
+/**
+ * Clears the tokens Apple called invalid, and removes the subscription when it can no longer
+ * reach the phone: when no token is left, or when Apple rejected the push-to-start token and no
+ * activity token is left either. A rejected push-to-start token means the app is gone from the
+ * phone (deleted, or its tokens reset); a device token left beside it would otherwise keep the
+ * row, and the reminders going, for as long as Apple accepted them. An activity token the app
+ * registered meanwhile keeps the subscription until that activity ends. Answers why it removed
+ * the row, or null.
+ */
+async function settleTokens(
+  deps: RelayDeps,
+  pass: Pass,
+): Promise<"tokens-invalid" | "push-to-start-invalid" | null> {
+  if (pass.invalid.size === 0) return null;
   const { row } = pass;
   for (const field of pass.invalid) {
     const token = row[field];
@@ -368,16 +379,17 @@ async function settleTokens(deps: RelayDeps, pass: Pass): Promise<boolean> {
     await deps.store.update(row.id, { [field]: null }, { [field]: token });
   }
   const current = await deps.store.get(row.id);
-  if (
-    current !== null &&
-    current.pushToStartToken === null &&
-    current.activityPushToken === null &&
-    current.deviceToken === null
-  ) {
+  // Gone already, or a push token is left that can still reach the phone.
+  if (current?.pushToStartToken !== null || current.activityPushToken !== null) return null;
+  if (current.deviceToken === null) {
     await removeSubscription(deps, current);
-    return true;
+    return "tokens-invalid";
   }
-  return false;
+  if (pass.invalid.has("pushToStartToken")) {
+    await removeSubscription(deps, current);
+    return "push-to-start-invalid";
+  }
+  return null;
 }
 
 /**
@@ -435,7 +447,10 @@ export async function checkSubscription(deps: RelayDeps, row: LiveRow): Promise<
     deps.log.warn("live.read-failed", { subscriptionId: row.id, code });
     await alert(deps, pass, undefined, known);
     const removed = await settleTokens(deps, pass);
-    if (removed) return "removed";
+    if (removed !== null) {
+      deps.log.info("live.removed", { subscriptionId: row.id, code: removed });
+      return "removed";
+    }
     pass.patch.failures = row.failures + 1;
     pass.patch.nextCheckAt = new Date(
       nextCheckAt(now, { newestReadingAt: known, restartFrom: restartFromOf(row) }),
@@ -498,8 +513,8 @@ export async function checkSubscription(deps: RelayDeps, row: LiveRow): Promise<
   }
 
   const removed = await settleTokens(deps, pass);
-  if (removed) {
-    deps.log.info("live.removed", { subscriptionId: row.id, code: "tokens-invalid" });
+  if (removed !== null) {
+    deps.log.info("live.removed", { subscriptionId: row.id, code: removed });
     return "removed";
   }
   await savePass(deps, pass);

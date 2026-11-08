@@ -420,6 +420,78 @@ describe("checkSubscription: tokens Apple calls invalid", () => {
     await expect(h.secrets.get(liveSecretName(r.id))).resolves.toBeUndefined();
     expect(h.lines.join("\n")).toContain('"code":"tokens-invalid"');
   });
+
+  describe("a push-to-start token Apple rejects at the 8-hour restart", () => {
+    const old = new Date(T0 - RESTART_AFTER_MS);
+    const gone = { status: 410, reason: "Unregistered" };
+
+    it("deletes the row and its secret when no activity token is left, even with a device token", async () => {
+      const r = row({ activityStartedAt: old, activityPushToken: null });
+      const h = harness([r], {
+        respond: (request) => (request.deviceToken === START ? gone : { status: 200 }),
+      });
+      await expect(checkSubscription(h.deps, r)).resolves.toBe("removed");
+      expect(h.get()).toBeUndefined();
+      await expect(h.secrets.get(liveSecretName(r.id))).resolves.toBeUndefined();
+      expect(h.lines.join("\n")).toContain('"code":"push-to-start-invalid"');
+    });
+
+    it("deletes it when the activity token is rejected too", async () => {
+      const r = row({ activityStartedAt: old });
+      const h = harness([r], {
+        respond: (request) =>
+          request.deviceToken === DEVICE
+            ? { status: 200 }
+            : { status: 400, reason: "BadDeviceToken" },
+      });
+      await expect(checkSubscription(h.deps, r)).resolves.toBe("removed");
+      expect(h.sent.map((s) => s.request.deviceToken)).toEqual([ACTIVITY, START]);
+      expect(h.get()).toBeUndefined();
+      await expect(h.secrets.get(liveSecretName(r.id))).resolves.toBeUndefined();
+    });
+
+    it("keeps it while a valid activity token is left; that activity keeps working until it ends", async () => {
+      const fresh = "d4".repeat(32);
+      const r = row({ activityStartedAt: old });
+      const h = harness([r], {
+        respond: (request) => {
+          if (request.deviceToken !== START) return { status: 200 };
+          // The app registers a new activity while the restart is being sent.
+          const current = must(h.store.rows.get(r.id));
+          h.store.rows.set(r.id, { ...current, activityPushToken: fresh });
+          return gone;
+        },
+      });
+      await checkSubscription(h.deps, r);
+      expect(h.get()).toMatchObject({
+        pushToStartToken: null,
+        activityPushToken: fresh,
+        deviceToken: DEVICE,
+      });
+      await expect(h.secrets.get(liveSecretName(r.id))).resolves.toBeDefined();
+
+      // Its updates still go out on the next reading.
+      h.setNow(T0 + 5 * min);
+      h.setEntries([entry(0, 125), entry(5, 120)]);
+      await checkSubscription(h.deps, must(h.get()));
+      expect(h.sent.at(-1)?.request.deviceToken).toBe(fresh);
+      expect(h.get()).toBeDefined();
+    });
+
+    it("keeps a subscription whose device token alone Apple rejects, while push tokens are left", async () => {
+      const r = row();
+      const h = harness([r], {
+        entries: [entry(2, 60)],
+        respond: (request) => (request.deviceToken === DEVICE ? gone : { status: 200 }),
+      });
+      await checkSubscription(h.deps, r);
+      expect(h.get()).toMatchObject({
+        deviceToken: null,
+        pushToStartToken: START,
+        activityPushToken: ACTIVITY,
+      });
+    });
+  });
 });
 
 describe("checkSubscription: what it does not trust", () => {
