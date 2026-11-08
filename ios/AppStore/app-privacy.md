@@ -24,6 +24,17 @@ What the relay derives and keeps: `lastReadingAt` (the time of the newest readin
 `lastAlertKind` and `lastAlertAt` (whether the last reminder was low, high or no new readings, and
 when), `lastPushAt`, `activityStartedAt`, `failures`, `createdAt`, `lastSeenAt`.
 
+Retention, as the code stands (2026-11-09): "Remove this phone" deletes the Key Vault secret
+first and then the row (`removeSubscription` in `relay.ts`), so a failure leaves the row to retry.
+The idle cleanup after 30 days and the cleanup of a subscription that never got a push token do it
+the other way round (`runLivePoll` and `checkSubscription` in `relay.ts`): the row goes first, and
+if the secret's delete then fails, nothing retries it, so that address and token can stay in Key
+Vault with no row pointing at them. Deleted secrets are also kept soft-deleted for 7 days
+(`softDeleteRetentionInDays` in `infra/modules/keyvault.bicep`) before Azure purges them. The
+"30 days" answer and the privacy policy hold only once those two paths delete the secret first (or
+a sweep removes `live-*` secrets without a row); that fix belongs in the poller, before submission
+(`checklist.md`). The policy should also say that a deleted copy is purged within 7 days.
+
 What it does not keep: glucose values. The relay reads the site, puts the newest value in one push
 to Apple and forgets it (`relay.ts`, `payloads.ts`). The logs carry the subscription id and outcome
 codes only, never an address, token, value or IP (`log.*` calls in `register.ts` and `relay.ts`).
@@ -119,3 +130,5 @@ this file recommends Yes.
       Microsoft and Apple as processors.
 - [ ] Nothing in the app or relay changed after this file's last check (see the top).
 - [ ] App Insights IP masking checked (above).
+- [ ] The relay's idle and no-token cleanups delete the Key Vault secret before the row, or a sweep
+      removes orphaned `live-*` secrets (see "Retention" above).

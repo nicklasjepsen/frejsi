@@ -44,6 +44,8 @@ See the contact details in App Review Information. We answer in English or Danis
 - The demo needs the relay running in production (`live-register` and `live-poll` in the poller,
   plan §4) with the production APNs environment. Try "Try the demo" on a TestFlight build first:
   the Live Activity must update with the app closed.
+- The notes say an unused copy is deleted after 30 days. That holds only once the relay's idle
+  cleanup deletes the Key Vault secret before the row (`app-privacy.md`, "Retention").
 - If the widgets are not in the submitted build yet, nothing here needs to change (the notes do not
   mention them), but the listing does: see `checklist.md`.
 - The numbers in step 2 and step 5 come from `poller/src/live/demo.ts` and the app's `DemoCurve`
