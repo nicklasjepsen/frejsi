@@ -35,7 +35,7 @@ public sealed class TrayIcon : IDisposable
         {
             ContextMenuStrip = menu,
             Visible = true,
-            Text = "Frejsi",
+            Text = "Nænsom",
         };
         _icon.MouseClick += (_, e) =>
         {
@@ -44,7 +44,7 @@ public sealed class TrayIcon : IDisposable
         SetPlaceholder("…");
     }
 
-    public void SetPlaceholder(string text) => Render(text, Theme.ToDrawing(Theme.Stale), "Frejsi");
+    public void SetPlaceholder(string text) => Render(text, Theme.ToDrawing(Theme.Stale), "Nænsom");
 
     public void Show(Reading reading, GlucoseUnit unit, double low, double high, DateTimeOffset now, string? problem)
     {

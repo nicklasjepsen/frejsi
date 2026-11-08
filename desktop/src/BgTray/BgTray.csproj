@@ -9,10 +9,10 @@
     <UseWindowsForms>true</UseWindowsForms>
     <EnableWindowsTargeting>true</EnableWindowsTargeting>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
-    <AssemblyName>FrejsiDesktop</AssemblyName>
+    <AssemblyName>NaensomDesktop</AssemblyName>
     <RootNamespace>BgTray</RootNamespace>
     <ApplicationIcon>app.ico</ApplicationIcon>
-    <Version>0.1.0</Version>
+    <Version>0.2.0</Version>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
     <!-- WPF takes its per-monitor DPI awareness from the manifest; the WinForms analyzer objects, but WinForms only draws the tray icon. -->
