@@ -31,12 +31,12 @@ final class PendingUnregistersTests: XCTestCase {
         XCTAssertTrue(pending.isEmpty)
     }
 
-    func testTheListStaysSmallAndDropsTheOldestFirst() {
+    func testNothingIsDroppedBeforeTheRelayConfirms() {
         var pending = PendingUnregisters()
-        for n in 1...(PendingUnregisters.limit + 2) { pending.add(credentials(n)) }
-        XCTAssertEqual(pending.entries.count, PendingUnregisters.limit)
-        XCTAssertEqual(pending.entries.first, credentials(3))
-        XCTAssertEqual(pending.entries.last, credentials(PendingUnregisters.limit + 2))
+        for n in 1...25 { pending.add(credentials(n)) }
+        XCTAssertEqual(pending.entries.count, 25)
+        XCTAssertEqual(pending.entries.first, credentials(1))
+        XCTAssertEqual(PendingUnregisters.decode(pending.encoded()).entries.count, 25)
     }
 
     func testConfirmedRemovalsAreDroppedAndTheRestKept() {

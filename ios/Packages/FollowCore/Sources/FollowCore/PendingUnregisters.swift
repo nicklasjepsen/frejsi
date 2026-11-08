@@ -9,16 +9,16 @@ import FoundationNetworking
 /// tries each again at launch, on return to the foreground, on a background wake and whenever it
 /// registers, until the relay answers that the subscription is gone.
 public struct PendingUnregisters: Codable, Equatable, Sendable {
-    /// At most this many are kept; the oldest goes first. The relay deletes an unremoved
-    /// subscription by itself after 30 days without delivery, so a dropped one still goes.
-    public static let limit = 10
     /// Attempts closer together than this are skipped (the foreground can come and go quickly).
     public static let retryAfter: TimeInterval = 30
 
     public private(set) var entries: [RelayCredentials]
 
+    /// Nothing is ever dropped before the relay confirms: the credentials are the only way to
+    /// delete a subscription Apple still delivers to. The list stays short by itself, one entry
+    /// per removal made while the relay was unreachable.
     public init(entries: [RelayCredentials] = []) {
-        self.entries = Array(entries.suffix(Self.limit))
+        self.entries = entries
     }
 
     public var isEmpty: Bool { entries.isEmpty }
@@ -28,7 +28,6 @@ public struct PendingUnregisters: Codable, Equatable, Sendable {
         guard !credentials.subscriptionId.isEmpty, !credentials.deviceSecret.isEmpty else { return }
         entries.removeAll { $0.subscriptionId == credentials.subscriptionId }
         entries.append(credentials)
-        if entries.count > Self.limit { entries.removeFirst(entries.count - Self.limit) }
     }
 
     /// Drops the removals the relay confirmed.

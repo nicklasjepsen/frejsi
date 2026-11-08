@@ -381,15 +381,16 @@ async function settleTokens(
   const current = await deps.store.get(row.id);
   // Gone already, or a push token is left that can still reach the phone.
   if (current?.pushToStartToken !== null || current.activityPushToken !== null) return null;
-  if (current.deviceToken === null) {
-    await removeSubscription(deps, current);
-    return "tokens-invalid";
-  }
-  if (pass.invalid.has("pushToStartToken")) {
-    await removeSubscription(deps, current);
-    return "push-to-start-invalid";
-  }
-  return null;
+  let reason: "tokens-invalid" | "push-to-start-invalid";
+  if (current.deviceToken === null) reason = "tokens-invalid";
+  else if (pass.invalid.has("pushToStartToken")) reason = "push-to-start-invalid";
+  else return null;
+  // Like the idle cleanup: the row first, and only if the app has not registered since this pass
+  // read it (a registration may have changed what the tokens mean, say Live Activity turned
+  // off); then its secret, tried twice, and swept within the hour when both tries failed.
+  if (!(await deps.store.deleteIfUnseen(row.id, row.lastSeenAt))) return null;
+  if (row.tokenSecretRef !== null) await deleteLiveSecret(deps, row.id);
+  return reason;
 }
 
 /**
