@@ -55,7 +55,7 @@
           "Når appen er sat op, melder den telefonen til hos Nænsoms server, så Live Activity og påmindelser virker, også når appen er lukket. Serveren gemmer én post pr. telefon med:"
         ],
         "list": [
-          "Nightscout-sidens adresse og tokenet. De ligger krypteret i Azure Key Vault og bruges kun til at læse de nyeste målinger fra siden. Serveren skriver aldrig noget til siden.",
+          "Nightscout-sidens adresse og tokenet. De ligger krypteret i Azure Key Vault og bruges kun til at læse de nyeste målinger fra siden. Skifter du adresse eller token, gemmer Key Vault den tidligere udgave ved siden af, indtil posten bliver slettet; så forsvinder alle udgaver. Serveren skriver aldrig noget til siden.",
           "Sidens værtsnavn for sig, så vi kan begrænse antallet af forespørgsler og hjælpe, hvis noget driller.",
           "De push-tokens, Apple giver appen til Live Activity og påmindelser. Det er tilfældige koder, som kun kan bruges til at nå appen på denne telefon.",
           "Dine indstillinger: enhed, de fire farvegrænser, om påmindelser er slået til, og sproget, så beskederne kommer på dit sprog.",
@@ -190,7 +190,8 @@
       {
         "heading": "Fjern denne telefon",
         "body": [
-          "»Fjern denne telefon« under Indstillinger stopper Live Activity og påmindelser, sletter kopien på Nænsoms server og fjerner adresse og token fra telefonen. Du kan altid sætte den op igen med linket."
+          "»Fjern denne telefon« under Indstillinger stopper Live Activity og påmindelser, sletter kopien på Nænsoms server og fjerner adresse og token fra telefonen. Du kan altid sætte den op igen med linket.",
+          "Kan Nænsoms server ikke nås, kan du fjerne det hele fra telefonen alene. Så kan serveren blive ved med at sende opdateringer og påmindelser, indtil der er gået 30 dage, uden at en er nået frem, eller indtil appen er slettet. Gør det derfor, mens telefonen er på nettet, hvis du kan."
         ],
         "list": []
       },
