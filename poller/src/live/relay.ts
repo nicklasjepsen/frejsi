@@ -101,7 +101,8 @@ export function createEntryReader(options: {
   timeoutMs?: number;
 }): ReadEntries {
   // By versioned reference: a version never changes, so a cached one is never out of date.
-  const credentials = new Map<string, ReturnType<typeof parseNightscoutCredential>>();
+  // The relay stores a token, never an API secret (live-register takes a `readable` token only).
+  const credentials = new Map<string, { url: string; token: string }>();
   return async (row, now) => {
     if (row.isDemo) return demoEntries(now, ENTRIES_PER_READ);
     const ref = row.tokenSecretRef;
@@ -110,13 +111,14 @@ export function createEntryReader(options: {
     if (credential === undefined) {
       const value = await options.secrets.get(ref);
       if (value === undefined) throw new NightscoutError("NoCredential", 0);
-      credential = parseNightscoutCredential(value);
+      const parsed = parseNightscoutCredential(value);
+      if (parsed.token === undefined) throw new NightscoutError("NoCredential", 0);
+      credential = { url: parsed.url, token: parsed.token };
       credentials.set(ref, credential);
     }
     const source = new NightscoutSource({
       url: credential.url,
       token: credential.token,
-      apiSecret: credential.apiSecret,
       timeoutMs: options.timeoutMs ?? RELAY_READ_TIMEOUT_MS,
       ...(options.fetch === undefined ? {} : { fetch: options.fetch }),
     });
