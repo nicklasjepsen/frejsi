@@ -49,7 +49,11 @@ final class FollowModel: ObservableObject {
             result = .failure(.unreachable)
         }
         guard asked == generation else { return }
-        if !siteThresholdsRead, case .success = result { await readSiteThresholds(generation: asked) }
+        // The site's thresholds are optional: read them beside the value, never before it.
+        if !siteThresholdsRead, case .success = result {
+            siteThresholdsRead = true
+            Task { await readSiteThresholds(generation: asked) }
+        }
         switch result {
         case .success(let latest):
             readings = latest
@@ -65,7 +69,6 @@ final class FollowModel: ObservableObject {
     private func readSiteThresholds(generation asked: Int) async {
         let found = try? await client.thresholds(site: site, token: token)
         guard asked == generation else { return }
-        siteThresholdsRead = true
         ThresholdStore.site = found
         thresholds = ThresholdStore.current
     }
