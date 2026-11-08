@@ -117,6 +117,19 @@ final class NightscoutClientTests: XCTestCase {
         XCTAssertNil(request.value(forHTTPHeaderField: "api-secret"))
     }
 
+    func testReadsTheSitesThresholdsFromStatusOnly() async throws {
+        let body = #"{"settings":{"thresholds":{"bgHigh":250,"bgTargetTop":170,"bgTargetBottom":70,"bgLow":54}}}"#
+        let transport = StubTransport(body: Data(body.utf8))
+        let thresholds = try await NightscoutClient(transport: transport).thresholds(site: "ns.example.org", token: "tok")
+        XCTAssertEqual(thresholds, GlucoseThresholds(urgentLowMgdl: 54, lowMgdl: 70, highMgdl: 170, urgentHighMgdl: 250))
+        let request = try XCTUnwrap(transport.requests.first)
+        XCTAssertEqual(request.httpMethod, "GET")
+        XCTAssertEqual(request.url?.absoluteString, "https://ns.example.org/api/v1/status.json")
+        XCTAssertEqual(request.value(forHTTPHeaderField: "api-secret"), "tok")
+        let none = try await NightscoutClient(transport: StubTransport(body: Data("{}".utf8))).thresholds(site: "ns.example.org", token: "tok")
+        XCTAssertNil(none)
+    }
+
     func testExplainsRefusalsInPlainWords() async {
         let cases: [(Int, NightscoutError, String)] = [
             (401, .tokenRefused, "token was refused"),

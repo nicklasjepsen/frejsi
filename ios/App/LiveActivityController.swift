@@ -66,6 +66,16 @@ final class LiveActivityController: ObservableObject {
         }
     }
 
+    /// Redraws running activities with their current content, so changed colour thresholds show at
+    /// once instead of at the next push.
+    func redraw() {
+        Task {
+            for activity in Activity<GlucoseActivityAttributes>.activities where activity.activityState == .active {
+                await activity.update(activity.content)
+            }
+        }
+    }
+
     func endAll() {
         Task {
             for activity in Activity<GlucoseActivityAttributes>.activities {

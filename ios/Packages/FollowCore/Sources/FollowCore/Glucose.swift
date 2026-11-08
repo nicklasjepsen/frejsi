@@ -12,12 +12,6 @@ public enum GlucoseUnit: String, Codable, Sendable, CaseIterable {
     }
 }
 
-public enum RangeState: String, Codable, Sendable {
-    case low
-    case inRange
-    case high
-}
-
 /// The language of the few words FollowCore formats itself (ages). The app follows the phone's
 /// language; anything that is not Danish is English.
 public enum Language: String, Sendable {
@@ -150,15 +144,6 @@ public enum Glucose {
         case "DoubleDown": return "⇊"
         default: return ""
         }
-    }
-
-    /// Low below the low threshold, high above the high one, both in mmol/L as the app stores them.
-    /// The thresholds colour the value; nothing else.
-    public static func classify(_ mgdl: Int, lowMmolL: Double, highMmolL: Double) -> RangeState {
-        let mmol = toMmolL(mgdl)
-        if mmol < lowMmolL { return .low }
-        if mmol > highMmolL { return .high }
-        return .inRange
     }
 
     public static func isStale(_ reading: Reading, now: Date) -> Bool {

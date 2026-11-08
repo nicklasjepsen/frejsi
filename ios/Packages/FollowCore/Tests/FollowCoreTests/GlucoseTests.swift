@@ -55,13 +55,6 @@ final class GlucoseTests: XCTestCase {
         XCTAssertEqual(Glucose.arrow(nil), "")
     }
 
-    func testClassifiesAgainstMmolThresholds() {
-        XCTAssertEqual(Glucose.classify(69, lowMmolL: 3.9, highMmolL: 10.0), .low)
-        XCTAssertEqual(Glucose.classify(70, lowMmolL: 3.9, highMmolL: 10.0), .inRange)
-        XCTAssertEqual(Glucose.classify(180, lowMmolL: 3.9, highMmolL: 10.0), .inRange)
-        XCTAssertEqual(Glucose.classify(182, lowMmolL: 3.9, highMmolL: 10.0), .high)
-    }
-
     func testStaleAfterFifteenMinutes() {
         XCTAssertFalse(Glucose.isStale(Reading(at: now.addingTimeInterval(-14 * 60), mgdl: 100, direction: "Flat"), now: now))
         XCTAssertTrue(Glucose.isStale(Reading(at: now.addingTimeInterval(-16 * 60), mgdl: 100, direction: "Flat"), now: now))

@@ -11,6 +11,9 @@ final class FollowModel: ObservableObject {
     @Published private(set) var readings: [Reading] = []
     @Published private(set) var error: String?
     @Published private(set) var lastChecked: Date?
+    /// The colour thresholds in force (ThresholdStore: the user's, the site's, or Nightscout's defaults).
+    @Published private(set) var thresholds: GlucoseThresholds = ThresholdStore.current
+    private var siteThresholdsRead = false
 
     private let client = NightscoutClient(transport: URLSessionTransport())
     /// Bumped on every save, so an answer for the previous site never lands under the new one.
@@ -28,6 +31,7 @@ final class FollowModel: ObservableObject {
         self.site = trimmedSite
         self.token = trimmedToken
         generation += 1
+        siteThresholdsRead = false
         readings = []
         error = nil
         Task { await refresh() }
@@ -45,6 +49,7 @@ final class FollowModel: ObservableObject {
             result = .failure(.unreachable)
         }
         guard asked == generation else { return }
+        if !siteThresholdsRead, case .success = result { await readSiteThresholds(generation: asked) }
         switch result {
         case .success(let latest):
             readings = latest
@@ -53,6 +58,30 @@ final class FollowModel: ObservableObject {
             error = failure.message
         }
         lastChecked = Date()
+    }
+
+    /// The site's own thresholds, once per saved site. A site that sends none, or an error, leaves
+    /// the defaults; this never blocks showing the value.
+    private func readSiteThresholds(generation asked: Int) async {
+        let found = try? await client.thresholds(site: site, token: token)
+        guard asked == generation else { return }
+        siteThresholdsRead = true
+        ThresholdStore.site = found
+        thresholds = ThresholdStore.current
+    }
+
+    /// One stepper press in the shown unit; saved as the user's own values.
+    func step(_ kind: GlucoseThresholds.Kind, by steps: Int, unit: GlucoseUnit) {
+        let next = thresholds.stepped(kind, by: steps, unit: unit)
+        guard next != thresholds else { return }
+        ThresholdStore.user = next
+        thresholds = ThresholdStore.current
+    }
+
+    /// Back to the site's values (or Nightscout's defaults).
+    func resetThresholds() {
+        ThresholdStore.user = nil
+        thresholds = ThresholdStore.current
     }
 
     /// Every 30 seconds while the screen is visible; SwiftUI cancels the task when it goes away.
