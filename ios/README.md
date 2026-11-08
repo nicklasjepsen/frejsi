@@ -80,6 +80,10 @@ Without an App Store Connect API key, fastlane asks for the Apple ID's password,
 
 The version is `MARKETING_VERSION` in `project.yml` (0.1.0); the build number is `CURRENT_PROJECT_VERSION`, which the lane sets. `ITSAppUsesNonExemptEncryption` is false (HTTPS only, through Apple's APIs), so uploads skip the export-compliance question. The icon is a placeholder, a white N on green, written by `scripts/make-placeholder-icon.py` with no external assets; replace `App/Assets.xcassets/AppIcon.appiconset/AppIcon-1024.png` with the real one.
 
+## App Store
+
+`AppStore/` holds the submission kit: the listing in Danish and English (`listing.da.md`, `listing.en.md`), the notes for App Review (`review-notes.md`), the App Privacy answers matched to what the app and the relay collect (`app-privacy.md`), the screenshot list and how to capture it from the demo (`screenshots.md`), and the submission steps in order, with what needs the owner (`checklist.md`). Update them in the same PR as any change to what the app shows, sends or stores.
+
 ## The push test (stage 2)
 
 The test that decides whether the app gets built: the Live Activity stays current with the app closed and the phone locked, across the 8-hour restart (plan §0, §7).
