@@ -12,26 +12,19 @@ import WidgetKit
 @main
 struct NaensomLiveActivityBundle: WidgetBundle {
     var body: some Widget {
-        // `.supplementalActivityFamilies` is iOS 18; the app supports 17.2 for push-to-start.
-        if #available(iOS 18.0, *) {
-            GlucoseLiveActivityWithSmallFamily()
-        } else {
-            GlucoseLiveActivity()
-        }
+        GlucoseLiveActivity()
     }
 }
 
 struct GlucoseLiveActivity: Widget {
     var body: some WidgetConfiguration {
-        glucoseActivityConfiguration()
-    }
-}
-
-@available(iOS 18.0, *)
-struct GlucoseLiveActivityWithSmallFamily: Widget {
-    var body: some WidgetConfiguration {
-        glucoseActivityConfiguration()
-            .supplementalActivityFamilies([.small])
+        // `.supplementalActivityFamilies` is iOS 18; the app supports 17.2 for push-to-start.
+        // WidgetBundleBuilder allows no `if #available`, so the check lives here instead.
+        if #available(iOS 18.0, *) {
+            return glucoseActivityConfiguration().supplementalActivityFamilies([.small])
+        } else {
+            return glucoseActivityConfiguration()
+        }
     }
 }
 
