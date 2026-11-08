@@ -1,4 +1,4 @@
-# Frejsi for iPhone — a Nightscout follower with Live Activity and CarPlay
+# Nænsom for iPhone (formerly Frejsi) — a Nightscout follower with Live Activity and CarPlay
 
 **Status:** Draft, 2026-11-08, from the owner's request in the project thread "Build own iOS glucose app with CarPlay". **Not approved yet.** The owner's decisions so far: build our own app instead of using Night Guard; other people (Freya's teachers, her mom, Susan, and later other families) install it from the App Store, not TestFlight; free at launch, a price may come later; the owner's Mac mini is the Mac for Xcode. §9 lists what is still open.
 
@@ -105,7 +105,7 @@ Each stage is a PR (or a lane) with its own tests, and ends with something the o
 
 Decided by the owner on 2026-11-08:
 
-1. **Name.** The product is being renamed, most likely to "Favn". The app and its bundle ID take the new name; nothing is published under "Frejsi" first.
+1. **Name.** The product is renamed to "Nænsom" (owner, 2026-11-08). The App Store name is "Nænsom"; the bundle ID uses the ASCII form, `ninja.jepsen.naensom` (extensions `.liveactivity`, `.widgets`), unless the naming work settles on another spelling first. Nothing is published under "Frejsi".
 2. **Developer account.** Individual, on the owner's Apple ID. Enrolled 2026-11-08, waiting for Apple's activation.
 3. **Alarms.** A simple low/high notification in the first release (§1, §4). No critical alerts yet.
 4. **Where the code lives.** `ios/` in this repo, like `desktop/`, with the contributor line from §8.
