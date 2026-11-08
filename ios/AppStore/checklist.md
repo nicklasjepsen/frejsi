@@ -9,6 +9,10 @@ legal judgement, or his name.
 
 - [ ] **The relay runs in production**: `live-register` and `live-poll` deployed with the production
       APNs environment, so the demo and the Live Activity work for a TestFlight or App Store build.
+- [ ] **Deletion holds what the privacy answers promise**: the relay's idle (30 days) and no-token
+      cleanups in `poller/src/live/relay.ts` delete the Key Vault secret before the row, like
+      `removeSubscription` does, or a sweep removes `live-*` secrets with no row (`app-privacy.md`,
+      "Retention"). A poller change, outside this kit.
 - [ ] **The support and privacy pages are live** at `https://naensom.jepsen.ninja/support` and
       `https://naensom.jepsen.ninja/privacy`, in Danish and English. The privacy page matches
       `app-privacy.md`. Apple checks that both URLs open.
@@ -35,7 +39,7 @@ legal judgement, or his name.
       calculates insulin" once, which is the allow-listed phrase; the listings use none of them.
       Re-run after any edit:
       `     grep -inwE 'insulin|dosis|dose|dosing|ratio|correction|korrektion|ICR|ISF|IE|IU|bolus' ios/AppStore/listing.*.md
-    `
+  `
       (no output is the pass).
 - [ ] **Lengths**: name and subtitle at most 30 characters, promotional text 170, description and
       What's New 4000, keywords 100. Apple counts the keyword field in bytes on some screens: the
