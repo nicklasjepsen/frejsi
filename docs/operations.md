@@ -544,7 +544,11 @@ reading's time, the push tokens, the thresholds and the subscription's state.
   `live-<id>` (a secret left without its row is deleted by the hourly sweep anyway, once it is an
   hour old). The app then gets `401 bad-device-secret` on its next registration.
 - **Cleanup.** A subscription goes when the app removes it, when Apple calls all its tokens
-  invalid, or after 30 days without a delivered push or a registration (with its secret). A secret
+  invalid, when Apple rejects its push-to-start token and no activity token is left
+  (`live.removed` with `push-to-start-invalid`, even with a device token left), or after 30 days
+  without a delivered push or a registration (with its secret). A phone removed while the relay
+  was unreachable keeps retrying the `DELETE` at launch and on every return to the foreground,
+  so a run of `DELETE`s answered 401 or 404 from one address is the app clearing its list. A secret
   delete that fails twice logs `live.secret-delete-failed`; the run in minute 0 of each hour then
   deletes every `live-<id>` older than an hour without a row and logs `live.secret-orphan-removed`.
   Repeated `live.secret-sweep-failed` lines mean the identity cannot list or delete secrets.
