@@ -1,4 +1,4 @@
-import { HttpError, prisma, type PrismaClient } from "@frejsi/shared";
+import { HttpError, prisma, type PrismaClient } from "@naensom/shared";
 
 import { hashToken } from "@/lib/auth/invites";
 

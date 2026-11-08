@@ -7,8 +7,8 @@ import type {
   FoodView,
   LookupResponse,
   LookupResult,
-} from "@frejsi/shared/schemas/food";
-import type { ParsedItem } from "@frejsi/shared/schemas/ai";
+} from "@naensom/shared/schemas/food";
+import type { ParsedItem } from "@naensom/shared/schemas/ai";
 import { aiUsage } from "@/components/say/api";
 import { appendParsedItems, prepareParsedItems } from "@/components/say/draft";
 import { useLiveFeed } from "@/lib/live/useLiveFeed";

@@ -1,6 +1,6 @@
-# Frejsi — UI brief (for Claude Design)
+# Nænsom — UI brief (for Claude Design)
 
-Design the UI first, then hand the result to Claude Code for implementation. Read `docs/superpowers/specs/2026-10-14-frejsi-design.md` for the full model; this file is the designer's cut.
+Design the UI first, then hand the result to Claude Code for implementation. Read `docs/superpowers/specs/2026-10-14-naensom-design.md` for the full model; this file is the designer's cut.
 
 ## What it is
 

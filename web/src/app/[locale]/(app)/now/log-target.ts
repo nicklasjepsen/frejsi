@@ -1,4 +1,4 @@
-import { normaliseBarcode } from "@frejsi/shared/food/barcode";
+import { normaliseBarcode } from "@naensom/shared/food/barcode";
 
 /**
  * Where Enter in the Nu-Desktop header goes: a valid 8, 12 or 13 digit code is a barcode, as a

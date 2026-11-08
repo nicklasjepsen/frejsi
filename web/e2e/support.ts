@@ -1,7 +1,7 @@
 // What the flows share: the seeded space as the database has it, a fresh add-a-device link for
 // a seeded person (made through `web/src/lib/auth/`, as People makes one), and passkey
 // registration through Chrome's virtual authenticator, so no test-only sign-in exists (decision 24).
-import { prisma } from "@frejsi/shared";
+import { prisma } from "@naensom/shared";
 import { expect, type Page } from "@playwright/test";
 
 import {

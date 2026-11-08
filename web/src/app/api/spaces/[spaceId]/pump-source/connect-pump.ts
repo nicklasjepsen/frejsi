@@ -2,7 +2,7 @@
 // 2): the same function and app settings as the glucose connect, with `purpose: "pump"` in a strict
 // body, so the function probes the Nightscout pump record and writes `pump-<spaceId>`. The address
 // and the token are in the request body and nowhere else: not stored, not logged, not in an error.
-import { ConnectPumpResult, type ConnectPumpRequest } from "@frejsi/shared";
+import { ConnectPumpResult, type ConnectPumpRequest } from "@naensom/shared";
 
 import {
   SOURCE_CONNECT_TIMEOUT_MS,

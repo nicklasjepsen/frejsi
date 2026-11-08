@@ -1,9 +1,9 @@
 // The browser side of the People routes: one typed function per call, every response validated
 // against the contract, every failure a `PeopleApiError` with the stable ApiError code the screen
 // translates. Same-origin, so the browser sends the Origin header the routes check.
-// Schema modules, not the @frejsi/shared barrel: this runs in the browser (see contract.ts).
-import { ApiError, type ApiErrorCode } from "@frejsi/shared/schemas/api";
-import type { Role } from "@frejsi/shared/schemas/auth";
+// Schema modules, not the @naensom/shared barrel: this runs in the browser (see contract.ts).
+import { ApiError, type ApiErrorCode } from "@naensom/shared/schemas/api";
+import type { Role } from "@naensom/shared/schemas/auth";
 import type { z } from "zod";
 
 import {

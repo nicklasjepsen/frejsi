@@ -1,4 +1,4 @@
-import type { FoodView, RecipeReview } from "@frejsi/shared/schemas/food";
+import type { FoodView, RecipeReview } from "@naensom/shared/schemas/food";
 import { describe, expect, it } from "vitest";
 import { linesFrom, linesFromIngredients, toIngredients, withAmount } from "./lines";
 

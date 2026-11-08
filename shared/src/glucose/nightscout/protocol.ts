@@ -4,7 +4,7 @@ import type { Trend } from "../../schemas/glucose";
 import type { PumpBolusKind } from "../../schemas/pump";
 
 /**
- * The Nightscout REST API v1 as Frejsi reads it. This file and `transport.ts` are the only places
+ * The Nightscout REST API v1 as Nænsom reads it. This file and `transport.ts` are the only places
  * in the repo that know the paths and the auth header (lint boundary). A Nightscout site is the
  * person's own server, so there is no host here: the URL comes from the credential.
  */
@@ -76,7 +76,7 @@ export function judgeVerifyAuth(body: unknown): VerifyAuthVerdict {
 
 /**
  * The treatment type tconnectsync writes for every bolus (v0.7.0 plan §5). Temp Basal, Sleep and
- * every other type are filtered out in the query and never reach Frejsi.
+ * every other type are filtered out in the query and never reach Nænsom.
  */
 export const BOLUS_EVENT_TYPE = "Combo Bolus";
 /** Records per page on a normal window, and on a first run (or a catch-up longer than a normal day). */

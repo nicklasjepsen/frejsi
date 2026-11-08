@@ -1,7 +1,7 @@
 // Who a meal view names as its logger (#244). A meal the pump record made from the pump's carbs is
 // stored under the owner who connected the pump, because `Meal.byUserId` is required; nobody logged
 // it, so until a person ticks "Det passer" or edits it the view names the pump and never that owner.
-import type { Locale } from "@frejsi/shared";
+import type { Locale } from "@naensom/shared";
 
 import { getMessages } from "@/lib/i18n/messages";
 

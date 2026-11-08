@@ -4,7 +4,7 @@ import type {
   FoodView,
   LookupResponse,
   LookupResult,
-} from "@frejsi/shared/schemas/food";
+} from "@naensom/shared/schemas/food";
 import { useLocale, useTranslations } from "next-intl";
 import Link from "next/link";
 

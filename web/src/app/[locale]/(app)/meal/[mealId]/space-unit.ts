@@ -1,4 +1,4 @@
-import { GlucoseUnit, prisma, type PrismaClient } from "@frejsi/shared";
+import { GlucoseUnit, prisma, type PrismaClient } from "@naensom/shared";
 
 export type SpaceUnitDb = Pick<PrismaClient, "space">;
 

@@ -1,7 +1,7 @@
 "use client";
 
 // Values come from the pure modules by path, never from the shared index (see ConnectSourceForm).
-import type { ApiErrorCode } from "@frejsi/shared";
+import type { ApiErrorCode } from "@naensom/shared";
 import { useTranslations } from "next-intl";
 import { useState, type FormEvent } from "react";
 

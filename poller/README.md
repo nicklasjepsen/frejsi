@@ -1,13 +1,13 @@
-# @frejsi/poller
+# @naensom/poller
 
-The Azure Functions app (Node 22, v4 programming model) that brings glucose into Frejsi. It polls
+The Azure Functions app (Node 22, v4 programming model) that brings glucose into Nænsom. It polls
 the configured source every five minutes, stores each new reading once and emits it as a `reading`
 event, and it holds the one endpoint that may see a source credential (a Dexcom login or a Nightscout
 address with its token or secret): `source-connect`, which checks the credential and puts it in Key
 Vault. Spec §3, §3b and §7; plan task 4. Since v0.7.0 it also reads the pump record, what the pump
 delivered, from a Nightscout site every fifteen minutes ([below](#pump-record)).
 
-Nothing here knows a host. The adapters and the cycle live in `@frejsi/shared`
+Nothing here knows a host. The adapters and the cycle live in `@naensom/shared`
 (`shared/src/glucose/dexcom-share/`, `shared/src/glucose/nightscout/`,
 `shared/src/glucose/poll-cycle.ts`) so the seed and the CLI
 run the same code; this package wires them to the Functions host, Prisma, Key Vault and App
@@ -17,7 +17,7 @@ The adapter only reads. It makes three calls, `General/AuthenticatePublisherAcco
 `General/LoginPublisherAccountById` and `Publisher/ReadPublisherLatestGlucoseValues`, all `POST`,
 and every one goes through `sendShareRequest` (`shared/src/glucose/dexcom-share/transport.ts`),
 which refuses any other path or method before a request is sent. The Share API would accept
-writes with the same publisher login (uploading readings, follower and alert changes); Frejsi never
+writes with the same publisher login (uploading readings, follower and alert changes); Nænsom never
 makes them (CLAUDE.md, hard rules), and a lint rule keeps `fetch` out of every other file under
 `shared/src/glucose/`. The Nightscout adapter reads the same way: two `GET` calls
 (`entries/sgv.json` and `verifyauth`, plus `treatments.json` for the pump record) through `sendNightscoutRequest`, the credential in the
@@ -128,7 +128,7 @@ pnpm --filter ./poller build
 zips as is (plan decision 30: Kudu cannot resolve pnpm workspace links):
 
 - `dist/index.js`: one bundle. The entry imports all function modules, so they share a single
-  copy of `@frejsi/shared` (the telemetry started at the entry is the one `poll` tracks through).
+  copy of `@naensom/shared` (the telemetry started at the entry is the one `poll` tracks through).
 - `dist/host.json`, `dist/package.json` (`main`, and the externals as its only dependencies).
 - `dist/node_modules/`: the externals, installed flat with pnpm from the store (no scripts), plus
   the Prisma client `prisma generate` produced for `shared/prisma/schema.prisma`, query engine for

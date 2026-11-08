@@ -1,6 +1,6 @@
 ---
 name: land
-description: Land the current Frejsi branch as a pull request the right way: full checks, signed-off conventional commits, Codex review, PR from the template, CI watched. Use when the owner says "land this", "open the PR", "ship it", or when an implementer reaches the end of its task. Never merges.
+description: Land the current Nænsom branch as a pull request the right way: full checks, signed-off conventional commits, Codex review, PR from the template, CI watched. Use when the owner says "land this", "open the PR", "ship it", or when an implementer reaches the end of its task. Never merges.
 ---
 
 # land

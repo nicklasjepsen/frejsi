@@ -12,9 +12,9 @@ import {
   type MatchBolusKind,
   type MatchMeal,
   type PrismaClient,
-} from "@frejsi/shared";
+} from "@naensom/shared";
 import type { z } from "zod";
-import type { PumpMealsPayload } from "@frejsi/shared/schemas/events";
+import type { PumpMealsPayload } from "@naensom/shared/schemas/events";
 
 const MINUTE = 60_000;
 

@@ -1,6 +1,6 @@
 // Server-side plumbing of the Settings routes: the one place a thrown error becomes an ApiError
 // response and a no-PII log line that carries the route, the outcome code and the ids only.
-import { log, toApiError, type ApiErrorCode, type LogFields } from "@frejsi/shared";
+import { log, toApiError, type ApiErrorCode, type LogFields } from "@naensom/shared";
 
 import { json } from "@/app/api/auth/http";
 

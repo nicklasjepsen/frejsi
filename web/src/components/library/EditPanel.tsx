@@ -1,5 +1,5 @@
 "use client";
-import type { FoodView } from "@frejsi/shared/schemas/food";
+import type { FoodView } from "@naensom/shared/schemas/food";
 import { useTranslations } from "next-intl";
 
 import { FoodForm } from "./FoodForm";

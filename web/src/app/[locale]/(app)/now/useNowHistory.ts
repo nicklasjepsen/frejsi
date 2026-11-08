@@ -1,6 +1,6 @@
 "use client";
 
-import { DayHistoryView, type DayHistoryMeal } from "@frejsi/shared/schemas/history";
+import { DayHistoryView, type DayHistoryMeal } from "@naensom/shared/schemas/history";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import type { FeedEventType } from "@/lib/live/live-feed";

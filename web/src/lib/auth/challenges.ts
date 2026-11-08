@@ -1,4 +1,4 @@
-import { HttpError } from "@frejsi/shared";
+import { HttpError } from "@naensom/shared";
 
 import { resolveTx, type DbDeps } from "./core";
 

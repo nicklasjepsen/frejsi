@@ -17,5 +17,5 @@ transmitter id and value is fictional; no file here came from a real export.
   readings including one `Høj`, one `Lav` and one without a value, one `Kulhydrater` entry and
   one dosing row. Its structure mirrors a real export; every value in it is made up.
 
-Frejsi reads readings and carb entries from these and nothing else; the dosing rows exist in the
+Nænsom reads readings and carb entries from these and nothing else; the dosing rows exist in the
 fixtures only so the tests can prove they leave no trace.

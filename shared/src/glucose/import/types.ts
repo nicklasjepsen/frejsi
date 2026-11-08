@@ -11,7 +11,7 @@ export interface ImportedCarbs {
  * What an export parses to. Readings and carbs only: nothing else in the file has a place here.
  * Rows of any other kind, insulin rows included, are counted in `otherRows` and never read beyond
  * their type. The import is not the pump-history path (CLAUDE.md hard rules): what the pump
- * delivered reaches Frejsi only through a `PumpSource`, read-only, in `shared/src/pump/`.
+ * delivered reaches Nænsom only through a `PumpSource`, read-only, in `shared/src/pump/`.
  */
 export interface GlucoseImportParse {
   format: GlucoseImportFormat;

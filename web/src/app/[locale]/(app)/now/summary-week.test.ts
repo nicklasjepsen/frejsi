@@ -1,5 +1,5 @@
 import { expect, it } from "vitest";
-import { weeklyWindow } from "@frejsi/shared/insights/week-input";
+import { weeklyWindow } from "@naensom/shared/insights/week-input";
 import { summaryWeek } from "./summary-week";
 
 it.each([

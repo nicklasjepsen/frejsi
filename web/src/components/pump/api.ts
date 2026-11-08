@@ -1,6 +1,6 @@
 // The client side of `GET /api/spaces/:id/pump` (v0.7.0 plan §4). Browser-safe: the schema module
 // only, never the shared barrel.
-import { PumpHistoryView } from "@frejsi/shared/schemas/pump";
+import { PumpHistoryView } from "@naensom/shared/schemas/pump";
 
 export class PumpRequestError extends Error {
   constructor(readonly status: number) {

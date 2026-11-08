@@ -1,4 +1,4 @@
-import { HttpError, prisma } from "@frejsi/shared";
+import { HttpError, prisma } from "@naensom/shared";
 
 import { json, logOutcome, parseBody, settingsRoute } from "@/components/settings/api-route";
 import { SpaceSettingsPatch } from "@/components/settings/contracts";

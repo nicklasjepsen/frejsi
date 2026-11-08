@@ -25,7 +25,7 @@ function seeded() {
 }
 
 beforeEach(() => {
-  process.env.APP_ORIGIN = "https://frejsi.example";
+  process.env.APP_ORIGIN = "https://naensom.example";
 });
 afterEach(() => {
   delete process.env.APP_ORIGIN;
@@ -42,7 +42,7 @@ describe("invite tokens", () => {
   });
 
   it("build the landing URL from APP_ORIGIN without a locale; the middleware routes it", () => {
-    expect(inviteUrl("abc")).toBe("https://frejsi.example/invite/abc");
+    expect(inviteUrl("abc")).toBe("https://naensom.example/invite/abc");
   });
 });
 

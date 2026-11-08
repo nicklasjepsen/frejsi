@@ -1,7 +1,7 @@
-import { assertNoDosing, findDosingTrip } from "@frejsi/shared/ai";
-import { foldForSearch } from "@frejsi/shared/food/search";
-import { assertKnownNumbers, numerals, unknownNumbers } from "@frejsi/shared/ai/insight/numbers";
-import type { ParsedItem, ParsedMeal } from "@frejsi/shared/schemas/ai";
+import { assertNoDosing, findDosingTrip } from "@naensom/shared/ai";
+import { foldForSearch } from "@naensom/shared/food/search";
+import { assertKnownNumbers, numerals, unknownNumbers } from "@naensom/shared/ai/insight/numbers";
+import type { ParsedItem, ParsedMeal } from "@naensom/shared/schemas/ai";
 import thresholds from "../thresholds.json";
 
 export function strings(value: unknown): string[] {

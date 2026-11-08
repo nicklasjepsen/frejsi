@@ -2,7 +2,7 @@
 
 Source: **The Danish Food Composition Database, version 6.1 (May 2026)**,
 published by the National Food Institute, Technical University of Denmark (DTU).
-DTU's Frida site now calls the dataset FCDB; the Frejsi plugin id remains `frida`.
+DTU's Frida site now calls the dataset FCDB; the Nænsom plugin id remains `frida`.
 
 - Dataset: https://doi.org/10.11583/DTU.32312844 (published 2026-06-09).
 - Metadata and file licence: https://api.figshare.com/v2/articles/32312844
@@ -26,7 +26,7 @@ Attribution line for this derived dataset:
 
 > The Danish Food Composition Database, version 6.1, May 2026. National Food
 > Institute, Technical University of Denmark. https://doi.org/10.11583/DTU.32312844 .
-> CC BY 4.0. Adapted for Frejsi: selected names, groups and available carbohydrate;
+> CC BY 4.0. Adapted for Nænsom: selected names, groups and available carbohydrate;
 > carbohydrate rounded to one decimal, entries without that value omitted.
 
 Names and nutrition in this production dataset describe generic foods from DTU;
@@ -36,7 +36,7 @@ personal records. It supplies unverified candidates, not a family's verification
 ## Refresh
 
 Download the pinned XLSX above (or select and document a newer DTU release).
-Verify its hash and licence again. Save it locally as `/tmp/frejsi-frida.xlsx`.
+Verify its hash and licence again. Save it locally as `/tmp/naensom-frida.xlsx`.
 Export a projection of `Data_Table` joined to the `Food` sheet for its English
 food-group name. The following Python 3 standard-library conversion is the one
 used for this committed output; it needs no spreadsheet library:
@@ -46,7 +46,7 @@ import csv
 import xml.etree.ElementTree as E
 import zipfile
 
-z = zipfile.ZipFile('/tmp/frejsi-frida.xlsx')
+z = zipfile.ZipFile('/tmp/naensom-frida.xlsx')
 ns = {'s': 'http://schemas.openxmlformats.org/spreadsheetml/2006/main'}
 strings = [''.join(n.itertext()) for n in E.fromstring(z.read('xl/sharedStrings.xml'))]
 
@@ -61,7 +61,7 @@ def rows(sheet):
         }
 
 groups = {r.get('C'): r.get('M', '') for r in list(rows('sheet4'))[1:]}
-with open('/tmp/frejsi-frida.csv', 'w') as f:
+with open('/tmp/naensom-frida.csv', 'w') as f:
     w = csv.writer(f)
     w.writerow(['FoodID', 'FødevareNavn', 'FoodName', 'FoodGroup',
                 'Available carbohydrates', 'Carbohydrate by difference', 'Dietary fibre'])
@@ -82,8 +82,8 @@ nutrients when DTU changes its layout.
 Run from the repository root:
 
 ```sh
-pnpm --filter ./shared frida:import /tmp/frejsi-frida.csv
-pnpm --filter ./shared frida:import /tmp/frejsi-frida.csv /tmp/frida-check.json
+pnpm --filter ./shared frida:import /tmp/naensom-frida.csv
+pnpm --filter ./shared frida:import /tmp/naensom-frida.csv /tmp/frida-check.json
 cmp shared/src/food/frida/data/frida.json /tmp/frida-check.json
 pnpm --filter ./shared test src/food/frida
 ```

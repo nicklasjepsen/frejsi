@@ -1,5 +1,5 @@
 "use client";
-import { DayView } from "@frejsi/shared/schemas/meal";
+import { DayView } from "@naensom/shared/schemas/meal";
 import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";

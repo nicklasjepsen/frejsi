@@ -49,7 +49,7 @@ describe("SoonPage (decision 15, 16)", () => {
       "Coming in a later version",
     );
     expect(
-      screen.getByText("This part of Frejsi isn't ready yet. Everything else works as it should."),
+      screen.getByText("This part of Nænsom isn't ready yet. Everything else works as it should."),
     ).toBeInTheDocument();
   });
 

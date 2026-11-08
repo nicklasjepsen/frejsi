@@ -1,7 +1,7 @@
 import "@testing-library/jest-dom/vitest";
 
-import type { DayHistoryView } from "@frejsi/shared/schemas/history";
-import type { PumpBolusView } from "@frejsi/shared/schemas/pump";
+import type { DayHistoryView } from "@naensom/shared/schemas/history";
+import type { PumpBolusView } from "@naensom/shared/schemas/pump";
 import { act, cleanup, render, screen, waitFor } from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";

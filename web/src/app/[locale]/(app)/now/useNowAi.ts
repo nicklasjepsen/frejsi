@@ -1,6 +1,6 @@
 "use client";
-import { AiUsage, WeekInsightView } from "@frejsi/shared/schemas/ai";
-import type { Role } from "@frejsi/shared";
+import { AiUsage, WeekInsightView } from "@naensom/shared/schemas/ai";
+import type { Role } from "@naensom/shared";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { summaryWeek } from "./summary-week";
 import type { LiveFeedView } from "@/lib/live/useLiveFeed";

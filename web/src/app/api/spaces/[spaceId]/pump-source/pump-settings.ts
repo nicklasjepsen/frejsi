@@ -8,7 +8,7 @@ import {
   PumpStatusPayload,
   SourceStatus,
   type PrismaClient,
-} from "@frejsi/shared";
+} from "@naensom/shared";
 
 import { run, type AuthDeps } from "@/lib/auth/core";
 

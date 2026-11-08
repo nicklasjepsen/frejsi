@@ -1,5 +1,5 @@
 // @vitest-environment node
-import { createEmit } from "@frejsi/shared";
+import { createEmit } from "@naensom/shared";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { CHALLENGE_TTL_MS } from "./challenges";
@@ -17,7 +17,7 @@ import {
   startRegistration,
 } from "./webauthn";
 
-const ORIGIN = "https://frejsi.example";
+const ORIGIN = "https://naensom.example";
 const T0 = new Date("2026-10-15T08:00:00.000Z");
 const at = (ms: number) => new Date(T0.getTime() + ms);
 const DAY = 24 * 60 * 60 * 1000;
@@ -77,7 +77,7 @@ afterEach(() => {
 describe("APP_ORIGIN", () => {
   it("is required, and the rpID is its host", () => {
     expect(appOrigin()).toBe(ORIGIN);
-    expect(rpId()).toBe("frejsi.example");
+    expect(rpId()).toBe("naensom.example");
     delete process.env.APP_ORIGIN;
     expect(() => appOrigin()).toThrow(/APP_ORIGIN/);
     expect(() => rpId()).toThrow(/APP_ORIGIN/);
@@ -109,7 +109,7 @@ describe("registration", () => {
       residentKey: "required",
       userVerification: "preferred",
     });
-    expect(options.rp.id).toBe("frejsi.example");
+    expect(options.rp.id).toBe("naensom.example");
     expect(options.user.name).toBe("Example Carer");
     expect(w.fake.rows("authChallenge")).toEqual([
       expect.objectContaining({
@@ -356,7 +356,7 @@ describe("login", () => {
   it("issues discoverable-credential options (no allowCredentials) with the rpID", async () => {
     const w = world();
     const { challengeId, options } = await startLogin(w.deps);
-    expect(options.rpId).toBe("frejsi.example");
+    expect(options.rpId).toBe("naensom.example");
     expect(options.allowCredentials ?? []).toEqual([]);
     expect(options.userVerification).toBe("preferred");
     expect(w.fake.rows("authChallenge")).toEqual([

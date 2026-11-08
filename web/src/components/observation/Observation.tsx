@@ -1,5 +1,5 @@
 "use client";
-import { MealInsightView } from "@frejsi/shared/schemas/ai";
+import { MealInsightView } from "@naensom/shared/schemas/ai";
 import { useTranslations } from "next-intl";
 import type { LiveFeedView } from "@/lib/live/useLiveFeed";
 import { useInsight } from "./useInsight";

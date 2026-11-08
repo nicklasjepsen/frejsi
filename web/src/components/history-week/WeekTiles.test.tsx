@@ -1,6 +1,6 @@
 import "@testing-library/jest-dom/vitest";
 
-import { WeekHistoryView } from "@frejsi/shared/schemas/history";
+import { WeekHistoryView } from "@naensom/shared/schemas/history";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";

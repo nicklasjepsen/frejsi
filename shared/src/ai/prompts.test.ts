@@ -31,7 +31,7 @@ it("guards every prompt file under AI, including nested service folders", () => 
   expect(check(dir)).toEqual(listing);
   // The foundation has no service prompts yet. Prove the scanner independently so this cannot
   // silently become an empty glob when the following lanes add their prompts.
-  const temp = mkdtempSync(path.join(tmpdir(), "frejsi-prompts-"));
+  const temp = mkdtempSync(path.join(tmpdir(), "naensom-prompts-"));
   try {
     mkdirSync(path.join(temp, "meal"));
     const file = path.join(temp, "meal", "prompt-week.ts");

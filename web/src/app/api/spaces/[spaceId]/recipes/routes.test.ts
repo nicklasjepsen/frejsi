@@ -1,13 +1,13 @@
 // @vitest-environment node
 import { readFileSync } from "node:fs";
 import path from "node:path";
-import { createLogger, type Food, type MealView } from "@frejsi/shared";
-import { FakeAiProvider, defaultFakeAnswer } from "@frejsi/shared/ai/fake";
-import { CappedAiProvider } from "@frejsi/shared/ai/capped";
-import { MemoryAiCallRepository } from "@frejsi/shared/ai/calls";
-import { HttpError } from "@frejsi/shared/schemas/api";
-import { MemoryFoodRepository } from "@frejsi/shared/food/memory";
-import type { MemoryPhotoStore } from "@frejsi/shared/photos/memory";
+import { createLogger, type Food, type MealView } from "@naensom/shared";
+import { FakeAiProvider, defaultFakeAnswer } from "@naensom/shared/ai/fake";
+import { CappedAiProvider } from "@naensom/shared/ai/capped";
+import { MemoryAiCallRepository } from "@naensom/shared/ai/calls";
+import { HttpError } from "@naensom/shared/schemas/api";
+import { MemoryFoodRepository } from "@naensom/shared/food/memory";
+import type { MemoryPhotoStore } from "@naensom/shared/photos/memory";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { FakeAuthDb } from "@/lib/auth/test-support";
 import {

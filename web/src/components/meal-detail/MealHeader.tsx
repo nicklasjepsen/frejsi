@@ -1,7 +1,7 @@
 "use client";
 
-import { formatUnits } from "@frejsi/shared/pump/units";
-import type { MealView } from "@frejsi/shared/schemas/meal";
+import { formatUnits } from "@naensom/shared/pump/units";
+import type { MealView } from "@naensom/shared/schemas/meal";
 import { useLocale, useTranslations } from "next-intl";
 import type { ReactNode } from "react";
 

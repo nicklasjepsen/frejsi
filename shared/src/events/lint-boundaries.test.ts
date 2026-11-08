@@ -49,7 +49,7 @@ describe("lint boundaries", () => {
 
   it("fail prisma.event.create outside emit.ts and allow it inside", async () => {
     const code =
-      'import { prisma } from "@frejsi/shared";\nexport const f = () => prisma.event.create({ data: {} });\n';
+      'import { prisma } from "@naensom/shared";\nexport const f = () => prisma.event.create({ data: {} });\n';
     expect(await messages("web/src/app/api/spaces/x/route.ts", code)).toEqual([
       expect.stringContaining("emit() in shared/src/events/emit.ts is the only writer of Event"),
     ]);
@@ -87,11 +87,11 @@ describe("lint boundaries", () => {
 
   it("let only tests, the seed and the CLI import the fakes", async () => {
     const fake =
-      'import { FakeGlucoseSource } from "@frejsi/shared/glucose/fake";\nexport const s = FakeGlucoseSource;\n';
+      'import { FakeGlucoseSource } from "@naensom/shared/glucose/fake";\nexport const s = FakeGlucoseSource;\n';
     const memory =
       'import { MemoryEventSink } from "../events/memory";\nexport const s = MemoryEventSink;\n';
     const secrets =
-      'import { MemorySecrets } from "@frejsi/shared/secrets/memory";\nexport const s = MemorySecrets;\n';
+      'import { MemorySecrets } from "@naensom/shared/secrets/memory";\nexport const s = MemorySecrets;\n';
     expect(await messages("poller/src/functions/poll.ts", fake)).toEqual([
       expect.stringContaining("tests, the seed and the CLI only"),
     ]);
@@ -103,16 +103,16 @@ describe("lint boundaries", () => {
     expect(await messages("web/src/lib/auth/session.test.ts", secrets)).toEqual([]);
   });
 
-  it("keep web and poller on @frejsi/shared, not relative paths into shared/src", async () => {
+  it("keep web and poller on @naensom/shared, not relative paths into shared/src", async () => {
     const relative =
       'import { emit } from "../../../shared/src/events/emit";\nexport const e = emit;\n';
     expect(await messages("web/src/lib/live/feed.ts", relative)).toEqual([
-      expect.stringContaining("Import domain code from @frejsi/shared"),
+      expect.stringContaining("Import domain code from @naensom/shared"),
     ]);
     expect(
       await messages(
         "web/src/lib/live/feed.ts",
-        'import { emit } from "@frejsi/shared";\nexport const e = emit;\n',
+        'import { emit } from "@naensom/shared";\nexport const e = emit;\n',
       ),
     ).toEqual([]);
   });

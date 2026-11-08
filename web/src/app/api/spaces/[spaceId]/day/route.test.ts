@@ -1,6 +1,6 @@
 // @vitest-environment node
-import { DayView } from "@frejsi/shared";
-import { MemoryPhotoStore } from "@frejsi/shared/photos/memory";
+import { DayView } from "@naensom/shared";
+import { MemoryPhotoStore } from "@naensom/shared/photos/memory";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { captureLog, FakeLiveDb, liveRequest, spaceContext } from "@/lib/live/test-support";

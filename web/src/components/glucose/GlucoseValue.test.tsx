@@ -1,6 +1,6 @@
 import "@testing-library/jest-dom/vitest";
 
-import type { Reading } from "@frejsi/shared";
+import type { Reading } from "@naensom/shared";
 import { act, cleanup, render, screen } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";

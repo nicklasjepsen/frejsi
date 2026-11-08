@@ -1,4 +1,4 @@
-import type { Role, SessionContext } from "@frejsi/shared";
+import type { Role, SessionContext } from "@naensom/shared";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({

@@ -6,7 +6,7 @@ import { describe, expect, it } from "vitest";
 import { qrModules, qrPath } from "./qr";
 import { QrCode } from "./QrCode";
 
-const LINK = "https://frejsi.example/invite/abcdefghijklmnopqrstuvwxyz0123456789ABCDEFG";
+const LINK = "https://naensom.example/invite/abcdefghijklmnopqrstuvwxyz0123456789ABCDEFG";
 
 describe("qrModules", () => {
   it("returns a square matrix with the finder pattern in the top-left corner", () => {

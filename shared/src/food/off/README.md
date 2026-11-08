@@ -27,7 +27,7 @@ argument. Without a country the source queries the world host once.
   Missing/invalid carbohydrates stay null. A serving needs known carbohydrates
   and a mass in grams; volumes are never treated as grams. Portion carbs round
   half up to whole grams. Invalid products are omitted. Images are not requested.
-- Every request sends `User-Agent: Frejsi/<version> (+https://github.com/nicklasjepsen/frejsi)`.
+- Every request sends `User-Agent: Naensom/<version> (+https://github.com/nicklasjepsen/frejsi)`.
   Caller cancellation reaches fetch; 429/budget exhaustion returns `rate-limited`,
   cancellation `timeout`, and other request/response failures `error`.
 
@@ -71,10 +71,10 @@ writes nothing to `Food` and imports no Prisma client or repository.
   `registry.ts` passes `OFF_CONTRIBUTE_HOST` through when set. The host and the
   path are literals only in this folder.
 - Fields: `code` (barcode), `user_id`, `password` (the deployment's OFF account),
-  `app_name=Frejsi`, `app_version`, `app_uuid=<appRef>` (a pseudonym, never a user
+  `app_name=Naensom`, `app_version`, `app_uuid=<appRef>` (a pseudonym, never a user
   or space id), `nutrition_data_per=100g`, `nutriment_carbohydrates`,
   `nutriment_carbohydrates_unit=g`, `serving_size=<grams> g` when given, and
-  `comment=Correction from Frejsi`. The carbohydrate fields are left out when no
+  `comment=Correction from Naensom`. The carbohydrate fields are left out when no
   value was corrected. No `product_name` is ever sent; nor a photo or a person.
   The `User-Agent` is the same as the read side's.
 - Known limit: OFF applies `nutrition_data_per` to every nutrient of the product. For

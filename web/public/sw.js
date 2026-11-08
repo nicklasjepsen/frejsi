@@ -1,4 +1,4 @@
-/* Frejsi service worker: the app is installable and opens offline after the first visit (plan §6).
+/* Nænsom service worker: the app is installable and opens offline after the first visit (plan §6).
  *
  * What is cached: the offline page, the manifest, the icons and Next's hashed static assets.
  * What is never cached: any page under a locale (they carry the signed-in person's name, space
@@ -13,7 +13,7 @@
 const VERSION = decodeURIComponent(
   (/[?&]v=([^&]*)/.exec(self.location.search || "") || [])[1] || "dev",
 );
-const CACHE = "frejsi-shell-" + VERSION;
+const CACHE = "naensom-shell-" + VERSION;
 const PRECACHE = [
   "/offline.html",
   "/manifest.webmanifest",
@@ -32,9 +32,9 @@ const NAVIGATION_TIMEOUT_MS = 10000;
 const OFFLINE_FALLBACK =
   '<!doctype html><html lang="da"><head><meta charset="utf-8">' +
   '<meta name="viewport" content="width=device-width, initial-scale=1">' +
-  '<title>Frejsi</title></head><body style="font-family:system-ui,sans-serif;padding:48px 24px;text-align:center">' +
-  "<h1>Ingen forbindelse lige nu</h1><p>Frejsi prøver igen af sig selv.</p>" +
-  '<p lang="en">No connection right now. Frejsi tries again by itself.</p>' +
+  '<title>Nænsom</title></head><body style="font-family:system-ui,sans-serif;padding:48px 24px;text-align:center">' +
+  "<h1>Ingen forbindelse lige nu</h1><p>Nænsom prøver igen af sig selv.</p>" +
+  '<p lang="en">No connection right now. Nænsom tries again by itself.</p>' +
   "<script>setInterval(function(){fetch('/api/health',{cache:'no-store'}).then(function(r){if(r.ok)location.reload()}).catch(function(){})},5000)</script>" +
   "</body></html>";
 

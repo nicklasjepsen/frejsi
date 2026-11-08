@@ -1,6 +1,6 @@
 "use client";
 
-import type { MealCurveView } from "@frejsi/shared/schemas/history";
+import type { MealCurveView } from "@naensom/shared/schemas/history";
 import { useTranslations } from "next-intl";
 import { useEffect, useRef, useState } from "react";
 

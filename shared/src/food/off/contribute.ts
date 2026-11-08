@@ -25,7 +25,7 @@ const WriteResponse = z.looseObject({
 const result = (status: ContributionResult["status"]): ContributionResult => ({ status });
 
 /**
- * Sends a human-approved carbohydrate/serving correction to OFF's write API as app "Frejsi".
+ * Sends a human-approved carbohydrate/serving correction to OFF's write API as app "Nænsom".
  * It reads no repository and writes nothing to `Food`; every failure is a status, never a
  * thrown value or log line, because the request carries the password and the barcode.
  */
@@ -47,7 +47,7 @@ export class OffContributor implements FoodContributor {
       code: input.barcode,
       user_id: this.options.user,
       password: this.options.password,
-      app_name: "Frejsi",
+      app_name: "Naensom",
       app_version: this.options.version,
       app_uuid: input.appRef,
     });
@@ -58,11 +58,11 @@ export class OffContributor implements FoodContributor {
       form.set("nutriment_carbohydrates_unit", "g");
     }
     if (input.servingSize) form.set("serving_size", `${input.servingSize.grams} g`);
-    form.set("comment", "Correction from Frejsi");
+    form.set("comment", "Correction from Naensom");
 
     const headers: Record<string, string> = {
       "Content-Type": "application/x-www-form-urlencoded",
-      "User-Agent": `Frejsi/${this.options.version} (+https://github.com/nicklasjepsen/frejsi)`,
+      "User-Agent": `Naensom/${this.options.version} (+https://github.com/nicklasjepsen/frejsi)`,
     };
     // OFF's staging host sits behind HTTP basic authentication, publicly documented as off:off.
     if (this.host === STAGING_HOST)

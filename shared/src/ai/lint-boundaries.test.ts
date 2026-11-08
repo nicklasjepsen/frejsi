@@ -26,11 +26,11 @@ async function errors(filePath: string, code: string) {
 it("keeps raw glucose and history out of both AI folders", async () => {
   for (const file of ["shared/src/ai/parse/service.ts", "web/src/ai/provider.ts"]) {
     for (const code of [
-      'import { Reading as R } from "@frejsi/shared";',
+      'import { Reading as R } from "@naensom/shared";',
       'import { readingsBetween } from "../history";',
       'import type { HistoryRepository } from "../history";',
       'import * as raw from "../../glucose/types";',
-      'import { x } from "@frejsi/shared/insights/week-input";',
+      'import { x } from "@naensom/shared/insights/week-input";',
       'import { x } from "@/lib/history/repository";',
       "export const x = prisma.reading.findMany();",
       'export const x = prisma["reading"].findMany();',
@@ -38,7 +38,7 @@ it("keeps raw glucose and history out of both AI folders", async () => {
       expect(await errors(file, code), code).toContainEqual(
         expect.stringContaining("Raw readings"),
       );
-    expect(await errors(file, 'import type { InsightStats } from "@frejsi/shared";')).toEqual([]);
+    expect(await errors(file, 'import type { InsightStats } from "@naensom/shared";')).toEqual([]);
   }
 });
 it("keeps provider calls in services and the provider infrastructure", async () => {
@@ -61,10 +61,10 @@ it("keeps provider calls in services and the provider infrastructure", async () 
 });
 it("limits fake and memory imports without changing existing fake rules", async () => {
   const imports = [
-    'import { FakeAiProvider } from "@frejsi/shared/ai/fake";',
-    'import { MemoryAiCallRepository as Calls } from "@frejsi/shared/ai/calls";',
-    'import { MemoryInsightRepository } from "@frejsi/shared/insights/memory";',
-    'import { MemoryPushSubscriptionRepository } from "@frejsi/shared/push/memory";',
+    'import { FakeAiProvider } from "@naensom/shared/ai/fake";',
+    'import { MemoryAiCallRepository as Calls } from "@naensom/shared/ai/calls";',
+    'import { MemoryInsightRepository } from "@naensom/shared/insights/memory";',
+    'import { MemoryPushSubscriptionRepository } from "@naensom/shared/push/memory";',
   ];
   for (const code of imports) {
     expect(await errors("web/src/app/api/spaces/x/route.ts", code)).toContainEqual(
@@ -82,14 +82,14 @@ it("limits fake and memory imports without changing existing fake rules", async 
   expect(
     await errors(
       "web/src/app/api/spaces/x/route.ts",
-      'import { MemoryEventSink } from "@frejsi/shared/events/memory";',
+      'import { MemoryEventSink } from "@naensom/shared/events/memory";',
     ),
   ).toHaveLength(1);
 });
 it("allows registry calls only in the named factories, timers and evals", async () => {
   for (const code of [
     "aiProviders({});",
-    'import { aiProviders as build } from "@frejsi/shared/ai"; build({});',
+    'import { aiProviders as build } from "@naensom/shared/ai"; build({});',
   ]) {
     for (const file of ["web/src/app/api/spaces/x/route.ts", "shared/src/ai/parse/service.ts"])
       expect(await errors(file, code)).toContainEqual(expect.stringContaining("registry callers"));
@@ -133,8 +133,8 @@ it("does not leak provider implementations through the public barrels", () => {
 
 it("closes namespace and aliased-constructor escapes from the AI boundaries", async () => {
   for (const code of [
-    'import * as shared from "@frejsi/shared"; export type Raw = shared.Reading;',
-    'import * as shared from "@frejsi/shared"; shared.readingsBetween();',
+    'import * as shared from "@naensom/shared"; export type Raw = shared.Reading;',
+    'import * as shared from "@naensom/shared"; shared.readingsBetween();',
     'import * as history from "@/lib/history";',
   ])
     expect(await errors("web/src/ai/provider.ts", code)).toContainEqual(
@@ -143,12 +143,12 @@ it("closes namespace and aliased-constructor escapes from the AI boundaries", as
   expect(
     await errors(
       "web/src/app/api/spaces/x/route.ts",
-      'import * as repository from "@frejsi/shared/ai/calls"; new repository.MemoryAiCallRepository();',
+      'import * as repository from "@naensom/shared/ai/calls"; new repository.MemoryAiCallRepository();',
     ),
   ).toContainEqual(expect.stringContaining("Fake and memory"));
   for (const code of [
-    'import { CappedAiProvider as Wrapped } from "@frejsi/shared/ai"; new Wrapped();',
-    'import * as shared from "@frejsi/shared/ai"; new shared.CappedAiProvider();',
+    'import { CappedAiProvider as Wrapped } from "@naensom/shared/ai"; new Wrapped();',
+    'import * as shared from "@naensom/shared/ai"; new shared.CappedAiProvider();',
   ]) {
     expect(await errors("web/src/app/api/spaces/x/route.ts", code)).toContainEqual(
       expect.stringContaining("web provider factory"),

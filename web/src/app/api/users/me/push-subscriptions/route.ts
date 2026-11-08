@@ -1,7 +1,7 @@
-import { pushEndpointAllowed } from "@frejsi/shared/push/endpoint";
+import { pushEndpointAllowed } from "@naensom/shared/push/endpoint";
 import { cookies } from "next/headers";
-import { HttpError, prisma } from "@frejsi/shared";
-import { PushSubscriptionRequest } from "@frejsi/shared/schemas/ai";
+import { HttpError, prisma } from "@naensom/shared";
+import { PushSubscriptionRequest } from "@naensom/shared/schemas/ai";
 import { json, parseBody, settingsRoute } from "@/components/settings/api-route";
 import { requireRole, SESSION_COOKIE } from "@/lib/auth/session";
 import { savePushSubscription } from "@/lib/push/store";

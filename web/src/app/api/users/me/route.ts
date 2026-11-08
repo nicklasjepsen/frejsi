@@ -1,4 +1,4 @@
-import { HttpError, UserSettings } from "@frejsi/shared";
+import { HttpError, UserSettings } from "@naensom/shared";
 
 import { json, logOutcome, parseBody, settingsRoute } from "@/components/settings/api-route";
 import { UserSettingsPatch } from "@/components/settings/contracts";

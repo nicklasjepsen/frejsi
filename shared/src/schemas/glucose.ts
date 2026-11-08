@@ -160,7 +160,7 @@ export const GlucoseImportRequest = z.strictObject({
 });
 export type GlucoseImportRequest = z.infer<typeof GlucoseImportRequest>;
 
-/** Counts only: what was added, what was there already, what the file held that Frejsi keeps no record of. */
+/** Counts only: what was added, what was there already, what the file held that Nænsom keeps no record of. */
 export const GlucoseImportResult = z.strictObject({
   format: GlucoseImportFormat,
   readings: z.strictObject({

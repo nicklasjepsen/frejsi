@@ -1,5 +1,5 @@
 "use client";
-import type { FoodCandidate, FoodView } from "@frejsi/shared/schemas/food";
+import type { FoodCandidate, FoodView } from "@naensom/shared/schemas/food";
 import { useLocale, useTranslations } from "next-intl";
 
 /** The source line of a food row: "Open Food Facts · 40 g pr. 100 g · 1 skive · 18 g". */

@@ -1,7 +1,7 @@
 "use client";
 
-import type { Role } from "@frejsi/shared/schemas/index";
-import type { PumpBolusView, PumpHistoryView } from "@frejsi/shared/schemas/pump";
+import type { Role } from "@naensom/shared/schemas/index";
+import type { PumpBolusView, PumpHistoryView } from "@naensom/shared/schemas/pump";
 import { useCallback, useEffect, useState } from "react";
 
 import type { FeedEventType } from "@/lib/live/live-feed";

@@ -2,14 +2,14 @@
 // `ApiFailure` with its stable code, which the screens translate (plan §9).
 // Values come from the pure modules by path, never from the shared index: a client bundle must not
 // pull in the Prisma client or App Insights that the index exports (plan §2; see routing.ts).
-import type { ApiErrorCode } from "@frejsi/shared";
-import { ApiError } from "@frejsi/shared/schemas/api";
-import { GlucoseImportResult, type GlucoseImportRequest } from "@frejsi/shared/schemas/glucose";
+import type { ApiErrorCode } from "@naensom/shared";
+import { ApiError } from "@naensom/shared/schemas/api";
+import { GlucoseImportResult, type GlucoseImportRequest } from "@naensom/shared/schemas/glucose";
 import {
   ConnectedSourceSettings,
   SpaceSettings,
   UserSettings,
-} from "@frejsi/shared/schemas/settings";
+} from "@naensom/shared/schemas/settings";
 import type { z } from "zod";
 
 import type { ConnectSourceBody, SpaceSettingsPatch, UserSettingsPatch } from "./contracts";

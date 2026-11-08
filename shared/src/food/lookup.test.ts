@@ -200,7 +200,7 @@ describe("Prisma food repository", () => {
 
 describe("configured source registry", () => {
   it("exposes configured sources through the food subpath", async () => {
-    const food = await import("@frejsi/shared/food");
+    const food = await import("@naensom/shared/food");
     expect(food.foodSources({})).toEqual([]);
     expect(food.registerFoodSource).toBe(registerFoodSource);
   });

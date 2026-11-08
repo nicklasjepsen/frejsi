@@ -1,7 +1,7 @@
 // "Send rettelsen til Open Food Facts" (spec §4): a carer ticks the box on an OFF food, the send
 // is recorded as `food.contributed`, and nothing goes out without the tick. The contributor is the
 // local fake (`FAKE_FOOD_CONTRIBUTOR=1`), so Open Food Facts is never contacted. A viewer is refused.
-import { prisma } from "@frejsi/shared";
+import { prisma } from "@naensom/shared";
 import { expect, test } from "./test";
 
 import { inviteLink, registerFromInvite, seededSpace } from "./support";

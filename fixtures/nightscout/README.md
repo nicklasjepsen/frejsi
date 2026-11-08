@@ -4,7 +4,7 @@ Hand-written responses in the shapes the Nightscout REST API v1 returns. Nothing
 from a real site: the host is `example-ns.example.invalid`, the ids and device names are made up, and
 the readings are a made-up run on 2026-10-15 from 10:00 UTC. The treatments are a made-up day of
 boluses on the same date, with round units and carbs. `insulin` is Nightscout's own key for the
-delivered units; Frejsi reads it only in the Nightscout adapter and stores it as `units`. They stay
+delivered units; Nænsom reads it only in the Nightscout adapter and stores it as `units`. They stay
 hand-written until the owner's Nightscout site (v0.5.0 task 10) is used to verify the shapes.
 
 | File                             | Call                           | Shape                                                                                                    |

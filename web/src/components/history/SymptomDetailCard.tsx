@@ -1,5 +1,5 @@
 "use client";
-import type { SpaceSymptomKind, SymptomView } from "@frejsi/shared/schemas/symptom";
+import type { SpaceSymptomKind, SymptomView } from "@naensom/shared/schemas/symptom";
 import { useTranslations } from "next-intl";
 import { useEffect, useRef, useState, type KeyboardEvent } from "react";
 

@@ -1,5 +1,5 @@
 /**
- * The locales, duplicated from `Locale` in @frejsi/shared on purpose: this module is imported by
+ * The locales, duplicated from `Locale` in @naensom/shared on purpose: this module is imported by
  * the middleware, which runs on the edge and must not pull in the Prisma client that the shared
  * index exports. A test asserts the two lists stay equal.
  */
@@ -29,7 +29,7 @@ export function defaultLocale(
 /** The cookie that remembers the locale a visitor last used, so `/` goes there next time. */
 export const LOCALE_COOKIE = "frejsi_locale";
 /** The request header the middleware sets so the root layout can put `lang` on `<html>`. */
-export const LOCALE_HEADER = "x-frejsi-locale";
+export const LOCALE_HEADER = "x-naensom-locale";
 
 export function isLocale(value: unknown): value is AppLocale {
   return typeof value === "string" && (LOCALES as readonly string[]).includes(value);

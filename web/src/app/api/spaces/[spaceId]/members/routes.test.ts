@@ -1,5 +1,5 @@
 // @vitest-environment node
-import type { EventEnvelope, EventSink, LiveGroupRevoker } from "@frejsi/shared";
+import type { EventEnvelope, EventSink, LiveGroupRevoker } from "@naensom/shared";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { PeopleView } from "@/components/people/contract";
@@ -38,7 +38,7 @@ const holders = vi.hoisted(() => {
     sink,
   };
 });
-vi.mock("@frejsi/shared", async (importOriginal) => ({
+vi.mock("@naensom/shared", async (importOriginal) => ({
   ...(await importOriginal<Record<string, unknown>>()),
   prisma: holders.prisma,
   createEventSinkFromEnv: () => holders.sink,
@@ -132,7 +132,7 @@ let world: World;
 let live: ReturnType<typeof liveConnections>;
 beforeEach(() => {
   vi.useFakeTimers({ now: new Date("2026-10-15T08:00:00.000Z"), toFake: ["Date"] });
-  process.env.APP_ORIGIN = "https://frejsi.example";
+  process.env.APP_ORIGIN = "https://naensom.example";
   world = createWorld(holders);
   live = liveConnections();
   holders.shared.live = live.revoker;

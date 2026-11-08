@@ -1,6 +1,8 @@
 import { useTranslations } from "next-intl";
 import type { ReactNode } from "react";
 
+import { APP_NAME } from "@/lib/brand";
+
 import styles from "./public.module.css";
 
 /**
@@ -15,7 +17,7 @@ export function PublicPage({ children }: { children: ReactNode }) {
     <div className={styles.page}>
       <div className={styles.inner}>
         <div className={styles.wordmark} data-testid="wordmark">
-          Frejsi
+          {APP_NAME}
         </div>
         <main className={styles.main}>{children}</main>
         <p className={styles.footer}>{t("footer")}</p>

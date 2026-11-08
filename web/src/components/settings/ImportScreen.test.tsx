@@ -155,7 +155,7 @@ describe("ImportScreen (#154)", () => {
     choose("name,carbs\n");
     fireEvent.click(screen.getByRole("button", { name: "Importér" }));
     expect(await screen.findByRole("alert")).toHaveTextContent(
-      "Det ligner ikke en eksportfil, Frejsi kender.",
+      "Det ligner ikke en eksportfil, Nænsom kender.",
     );
     expect(screen.queryByTestId("import-result")).toBeNull();
     expect(screen.getByRole("button", { name: "Importér" })).toBeEnabled();

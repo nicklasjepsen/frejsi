@@ -1,5 +1,5 @@
 "use client";
-import type { SpaceSymptomKind, SymptomView } from "@frejsi/shared";
+import type { SpaceSymptomKind, SymptomView } from "@naensom/shared";
 import { useTranslations } from "next-intl";
 import type { AppLocale } from "@/lib/i18n/routing";
 import { formatClock } from "@/lib/i18n/time";

@@ -1,5 +1,5 @@
 "use client";
-import type { CreateFoodRequest } from "@frejsi/shared/schemas/food";
+import type { CreateFoodRequest } from "@naensom/shared/schemas/food";
 import { useTranslations } from "next-intl";
 import { useState, type FormEvent } from "react";
 

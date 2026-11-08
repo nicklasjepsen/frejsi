@@ -1,5 +1,5 @@
 "use client";
-import type { PhotoEstimate } from "@frejsi/shared/schemas/ai";
+import type { PhotoEstimate } from "@naensom/shared/schemas/ai";
 import { useTranslations } from "next-intl";
 import { BackButton } from "@/components/ui/BackButton";
 import { Button } from "@/components/ui/Button";

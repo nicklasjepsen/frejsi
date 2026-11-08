@@ -2,7 +2,7 @@
 // the seed call these functions; nothing else writes the Invite table.
 import { createHash, randomBytes } from "node:crypto";
 
-import { HttpError, type Role } from "@frejsi/shared";
+import { HttpError, type Role } from "@naensom/shared";
 
 import { appOrigin, resolveTx, run, type AuthDeps, type DbDeps, type TxDeps } from "./core";
 

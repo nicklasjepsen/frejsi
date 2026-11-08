@@ -104,7 +104,7 @@ phase('Check')
 const taskText = JSON.stringify(plan.tasks, null, 1)
 const [collisions, coverage] = await parallel([
   () => callAgent(
-    `Here is a task list for Frejsi:\n${taskText}\n\nFind every pair of tasks that would run in the same wave (neither depends on the other, directly or transitively) and own the same path or a parent/child of the same path. Shared append-only files (pnpm-workspace.yaml, shared/src/index.ts, web/messages/*.json, infra/main.bicep) do not count. Also flag a task whose owns list is empty or is a whole package root (web/, poller/, shared/, infra/). Set ok=false if you find any.`,
+    `Here is a task list for Nænsom:\n${taskText}\n\nFind every pair of tasks that would run in the same wave (neither depends on the other, directly or transitively) and own the same path or a parent/child of the same path. Shared append-only files (pnpm-workspace.yaml, shared/src/index.ts, web/messages/*.json, infra/main.bicep) do not count. Also flag a task whose owns list is empty or is a whole package root (web/, poller/, shared/, infra/). Set ok=false if you find any.`,
     as('plumbing', { label: 'critic:collisions', phase: 'Check', schema: CRITIC_SCHEMA }),
   ),
   () => callAgent(

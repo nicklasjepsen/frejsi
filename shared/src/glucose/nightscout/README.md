@@ -2,7 +2,7 @@
 
 `NightscoutSource` reads glucose from a person's own [Nightscout](https://nightscout.github.io/)
 site through its REST API v1 (spec §3). `NightscoutPumpSource` reads the pump record from the same
-kind of site (v0.7.0, [below](#pump-record)). Frejsi only reads: it never writes entries, treatments
+kind of site (v0.7.0, [below](#pump-record)). Nænsom only reads: it never writes entries, treatments
 or a profile, even when the credential would allow it.
 
 ## Calls
@@ -72,7 +72,7 @@ by `source-connect` with `purpose: "pump"`; the database keeps `{ type, secretRe
 **The call.** `GET /api/v1/treatments.json?find[created_at][$gte]=<since, ISO>&find[eventType]=Combo
 Bolus&count=<n>`, with the credential in `api-secret` as above. `Combo Bolus` is what tconnectsync
 writes for every Tandem bolus; Temp Basal (hundreds a day), Sleep and every other treatment type are
-filtered out in the query and never reach Frejsi. `n` is 200, or 1000 for a window longer than a
+filtered out in the query and never reach Nænsom. `n` is 200, or 1000 for a window longer than a
 normal day plus three hours (a first run's 14 days, or a catch-up after a long outage).
 
 **Paging.** Nightscout answers newest first. While a page comes back full, the next one adds

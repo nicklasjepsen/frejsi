@@ -1,7 +1,7 @@
 import { readdirSync, readFileSync } from "node:fs";
 import path from "node:path";
 
-import { ApiErrorCode } from "@frejsi/shared";
+import { ApiErrorCode } from "@naensom/shared";
 import { describe, expect, it } from "vitest";
 
 import { getMessages } from "./messages";

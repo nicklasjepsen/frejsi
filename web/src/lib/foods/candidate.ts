@@ -4,7 +4,7 @@ import {
   type FoodCandidate,
   type FoodSource,
   type Locale,
-} from "@frejsi/shared";
+} from "@naensom/shared";
 
 /** One bounded call to a source: 2.5 s, then the signal aborts and the pick is unavailable. */
 async function bounded<T>(run: (signal: AbortSignal) => Promise<T>): Promise<T> {

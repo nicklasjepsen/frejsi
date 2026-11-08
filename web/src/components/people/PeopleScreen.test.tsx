@@ -110,7 +110,7 @@ const view: PeopleView = {
 
 const created: CreatedInviteView = {
   id: "inv-new",
-  url: "https://frejsi.example/invite/newtoken",
+  url: "https://naensom.example/invite/newtoken",
   name: "Morfar Søren",
   role: "carer",
   expiresAt: new Date(NOW.getTime() + 7 * DAY).toISOString(),

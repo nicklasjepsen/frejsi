@@ -1,5 +1,5 @@
-import { HttpError, log } from "@frejsi/shared";
-import { processPhoto } from "@frejsi/shared/photos";
+import { HttpError, log } from "@naensom/shared";
+import { processPhoto } from "@naensom/shared/photos";
 import { route, sessionIdFrom } from "@/app/api/auth/http";
 import { loadSession } from "@/lib/auth/session";
 import { localeHref, resolveLocale } from "@/lib/i18n/routing";

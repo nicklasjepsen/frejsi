@@ -71,7 +71,7 @@ describe("CurveCard and the symptoms in the meal's window (v0.6.0 plan §5)", ()
     vi.stubGlobal(
       "fetch",
       vi.fn((input: string) => {
-        const url = new URL(input, "https://frejsi.example");
+        const url = new URL(input, "https://naensom.example");
         calls.push(`${url.pathname}${url.search}`);
         if (url.pathname.endsWith("/symptoms/kinds"))
           return Promise.resolve(Response.json({ kinds: [] }));
@@ -140,7 +140,7 @@ describe("CurveCard and the pump record (v0.7.0 plan §9)", () => {
     vi.stubGlobal(
       "fetch",
       vi.fn((input: string) => {
-        const url = new URL(input, "https://frejsi.example");
+        const url = new URL(input, "https://naensom.example");
         calls.push(`${url.pathname}${url.search}`);
         if (url.pathname.endsWith("/pump"))
           return Promise.resolve(Response.json({ boluses, status: "connected" }));

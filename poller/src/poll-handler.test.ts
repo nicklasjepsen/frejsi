@@ -1,4 +1,4 @@
-import { createLogger, type PollCycleDeps, type SpaceOutcome } from "@frejsi/shared";
+import { createLogger, type PollCycleDeps, type SpaceOutcome } from "@naensom/shared";
 import { describe, expect, it } from "vitest";
 
 import { createPollHandler, JITTER_MAX_MS, jitterMs, SCHEDULE } from "./poll-handler";

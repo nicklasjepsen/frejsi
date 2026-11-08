@@ -1,5 +1,5 @@
 // The pump route's plumbing (v0.7.0 plan §4): who may read, and the swappable database and clock.
-import { HttpError, prisma, type SessionContext } from "@frejsi/shared";
+import { HttpError, prisma, type SessionContext } from "@naensom/shared";
 
 import type { SessionDb } from "@/lib/auth/session";
 import { requireSpaceRole } from "@/lib/live/server";

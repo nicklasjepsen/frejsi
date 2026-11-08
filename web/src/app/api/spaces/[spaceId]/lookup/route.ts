@@ -5,7 +5,7 @@ import {
   lookup,
   normaliseBarcode,
   log,
-} from "@frejsi/shared";
+} from "@naensom/shared";
 import { json, requireSpaceRole, spaceRoute } from "@/lib/live/server";
 import { lookupDeps, lookupSessionDb } from "./server";
 

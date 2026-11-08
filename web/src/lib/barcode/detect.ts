@@ -2,7 +2,7 @@
 // browser has one that reads retail codes; otherwise the self-hosted zxing-wasm build, loaded only
 // when the scanner opens. iOS Safari has no `BarcodeDetector`, and the family's phones are iPhones.
 // Every value goes through `normaliseBarcode` before any lookup: a misread never reaches the API.
-import { normaliseBarcode } from "@frejsi/shared/food/barcode";
+import { normaliseBarcode } from "@naensom/shared/food/barcode";
 
 /** Where `web/public/zxing/` is served; the CDN default of zxing-wasm is never used. */
 export const ZXING_WASM_PATH = "/zxing/zxing_reader.wasm";

@@ -6,8 +6,8 @@ const nextConfig: NextConfig = {
   output: "standalone",
   // The monorepo root, so the standalone bundle traces files from shared/ as well.
   outputFileTracingRoot: path.join(import.meta.dirname, ".."),
-  // @frejsi/shared is consumed as TypeScript source.
-  transpilePackages: ["@frejsi/shared"],
+  // @naensom/shared is consumed as TypeScript source.
+  transpilePackages: ["@naensom/shared"],
   // Native engines and the App Insights SDK stay outside the webpack bundle.
   serverExternalPackages: ["@prisma/client", "applicationinsights", "sharp"],
   // The workspace hoists packages to the root node_modules (.npmrc node-linker=hoisted); include

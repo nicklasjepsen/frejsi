@@ -1,6 +1,6 @@
 ---
 name: release
-description: Release a finished Frejsi milestone to production: verify the milestone has no open issues and main is green, push the version tag, watch release.yml (full suite, infra, deploy, smoke, GitHub release, milestone closed), and report. Use when the owner says "release v0.2.0", "ship it to prod", "tag the release", or when ship-milestone reaches the end. Never deploys by any other path.
+description: Release a finished Nænsom milestone to production: verify the milestone has no open issues and main is green, push the version tag, watch release.yml (full suite, infra, deploy, smoke, GitHub release, milestone closed), and report. Use when the owner says "release v0.2.0", "ship it to prod", "tag the release", or when ship-milestone reaches the end. Never deploys by any other path.
 ---
 
 # release

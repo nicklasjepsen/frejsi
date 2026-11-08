@@ -1,4 +1,4 @@
-import { AddCandidateRequest, HttpError } from "@frejsi/shared";
+import { AddCandidateRequest, HttpError } from "@naensom/shared";
 import { json } from "@/app/api/auth/http";
 import { addCandidate, createFood, listFoods } from "@/lib/foods";
 import { foodRoute } from "./http";

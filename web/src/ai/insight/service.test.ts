@@ -1,11 +1,11 @@
 // @vitest-environment node
 import { expect, it, vi } from "vitest";
-import { HttpError, SessionContext, type EmitFn } from "@frejsi/shared";
-import { FakeAiProvider } from "@frejsi/shared/ai/fake";
-import { CappedAiProvider } from "@frejsi/shared/ai/capped";
-import { MemoryAiCallRepository } from "@frejsi/shared/ai/calls";
-import { MemoryInsightRepository } from "@frejsi/shared/insights/memory";
-import { buildMealInput } from "@frejsi/shared/ai/insight/input";
+import { HttpError, SessionContext, type EmitFn } from "@naensom/shared";
+import { FakeAiProvider } from "@naensom/shared/ai/fake";
+import { CappedAiProvider } from "@naensom/shared/ai/capped";
+import { MemoryAiCallRepository } from "@naensom/shared/ai/calls";
+import { MemoryInsightRepository } from "@naensom/shared/insights/memory";
+import { buildMealInput } from "@naensom/shared/ai/insight/input";
 import { mealInsight, symptomWindowOrNone } from "./service";
 const session = SessionContext.parse({
   userId: "fictional",

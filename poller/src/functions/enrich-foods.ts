@@ -9,20 +9,20 @@ import {
   type Logger,
   localeOrDefault,
   type Locale,
-} from "@frejsi/shared";
-import { foodSources } from "@frejsi/shared/food";
+} from "@naensom/shared";
+import { foodSources } from "@naensom/shared/food";
 import {
   aiProviders,
   CappedAiProvider,
   PrismaAiCallRepository,
   type AiProviderRegistry,
   type AiCallRepository,
-} from "@frejsi/shared/ai";
-import { AiProviderId } from "@frejsi/shared/schemas/ai";
-import type { EnrichmentRepository } from "@frejsi/shared/food/types";
-import { embeddingIdentity, embeddingRevision } from "@frejsi/shared/ai/search/model";
-import { categoriseFood } from "@frejsi/shared/ai/search/category";
-import { normaliseFoodName } from "@frejsi/shared/ai/search/normalise";
+} from "@naensom/shared/ai";
+import { AiProviderId } from "@naensom/shared/schemas/ai";
+import type { EnrichmentRepository } from "@naensom/shared/food/types";
+import { embeddingIdentity, embeddingRevision } from "@naensom/shared/ai/search/model";
+import { categoriseFood } from "@naensom/shared/ai/search/category";
+import { normaliseFoodName } from "@naensom/shared/ai/search/normalise";
 
 export const SCHEDULE = "0 */15 * * * *";
 interface EnrichmentSpace {

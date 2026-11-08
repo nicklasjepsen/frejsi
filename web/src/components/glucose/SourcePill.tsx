@@ -1,6 +1,6 @@
 "use client";
 
-import type { GlucoseSourceType, Reading, SourceStatus } from "@frejsi/shared";
+import type { GlucoseSourceType, Reading, SourceStatus } from "@naensom/shared";
 import { useTranslations } from "next-intl";
 
 import { formatClock } from "@/lib/i18n/time";

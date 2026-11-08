@@ -1,6 +1,6 @@
 ---
 name: planner
-description: Reads an approved Frejsi implementation plan under docs/superpowers/plans/ and emits the task list as structured data: one task per PR with title, spec section, paths it owns, acceptance criteria, dependencies and whether it touches the Prisma schema. Read-only. Used by the plan-to-issues workflow; never creates issues itself.
+description: Reads an approved Nænsom implementation plan under docs/superpowers/plans/ and emits the task list as structured data: one task per PR with title, spec section, paths it owns, acceptance criteria, dependencies and whether it touches the Prisma schema. Read-only. Used by the plan-to-issues workflow; never creates issues itself.
 tools: Read, Grep, Glob, Bash
 model: opus
 ---

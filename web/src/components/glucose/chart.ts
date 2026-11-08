@@ -1,10 +1,10 @@
 // The geometry of the glucose curve (tokens.json#chart): time → x across the plot, mmol → y, the
 // target band, the curve split at gaps, the end dot and the time ticks. Pure, so the sparkline
 // and the day curve are tested as numbers.
-import { formatUnits } from "@frejsi/shared/pump/units";
-import type { MealSymbol } from "@frejsi/shared/schemas/food";
-import type { GlucoseUnit, Reading } from "@frejsi/shared/schemas/index";
-import type { PumpBolusKind, PumpBolusView } from "@frejsi/shared/schemas/pump";
+import { formatUnits } from "@naensom/shared/pump/units";
+import type { MealSymbol } from "@naensom/shared/schemas/food";
+import type { GlucoseUnit, Reading } from "@naensom/shared/schemas/index";
+import type { PumpBolusKind, PumpBolusView } from "@naensom/shared/schemas/pump";
 
 import type { AppLocale } from "@/lib/i18n/routing";
 import { formatClock } from "@/lib/i18n/time";

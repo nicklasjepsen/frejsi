@@ -7,7 +7,7 @@ import {
   type EmitTx,
   type EventEnvelope,
   type EventSink,
-} from "@frejsi/shared";
+} from "@naensom/shared";
 import { PrismaSymptomRepository, type SymptomDb, type SymptomRepository } from "./repository";
 
 type SymptomTx = SymptomDb & EmitTx;

@@ -10,10 +10,10 @@ import {
   serializeCredential,
   serializeNightscoutCredential,
   type FetchLike,
-} from "@frejsi/shared";
-import { FakeGlucoseSource } from "@frejsi/shared/glucose/fake";
-import { MemoryEventSink } from "@frejsi/shared/events/memory";
-import { MemorySecrets } from "@frejsi/shared/secrets/memory";
+} from "@naensom/shared";
+import { FakeGlucoseSource } from "@naensom/shared/glucose/fake";
+import { MemoryEventSink } from "@naensom/shared/events/memory";
+import { MemorySecrets } from "@naensom/shared/secrets/memory";
 import { describe, expect, it } from "vitest";
 
 import { createPumpSourceFactory, createSourceFactory } from "./sources";

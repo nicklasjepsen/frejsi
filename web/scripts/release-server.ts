@@ -8,7 +8,7 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 
 const web = process.cwd();
-const isolated = mkdtempSync(path.join(tmpdir(), "frejsi-standalone-"));
+const isolated = mkdtempSync(path.join(tmpdir(), "naensom-standalone-"));
 cpSync(path.join(web, ".next/standalone"), isolated, { recursive: true, dereference: true });
 // As the Static Web Apps upload leaves it: the warm-up probe file only in the root public/, not in
 // web/public/. The root server.js must mirror it, or the probe check in e2e/build.spec.ts fails.

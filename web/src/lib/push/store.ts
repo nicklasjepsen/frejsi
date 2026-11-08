@@ -5,8 +5,8 @@ import {
   type EventEnvelope,
   type EventSink,
   type PrismaClient,
-} from "@frejsi/shared";
-import type { PushSubscriptionRequest } from "@frejsi/shared/schemas/ai";
+} from "@naensom/shared";
+import type { PushSubscriptionRequest } from "@naensom/shared/schemas/ai";
 
 /** Subscription changes and their event commit together; only delivery bookkeeping skips emit. */
 export async function savePushSubscription(

@@ -2,8 +2,8 @@
 // screens speak to the routes the same way. The list comes from `GET foods` only: for a simpleMode
 // session the route itself returns verified foods only (plan §11 decision 12), and the picker
 // keeps only verified foods for every session, so no client state can widen it (spec §2).
-import { carbsFor } from "@frejsi/shared/food/portions";
-import type { FoodView } from "@frejsi/shared/schemas/food";
+import { carbsFor } from "@naensom/shared/food/portions";
+import type { FoodView } from "@naensom/shared/schemas/food";
 
 import { createMeal, listFoods } from "@/components/meal/api";
 import { eatingInTs, type EatingIn } from "@/components/meal/draft";

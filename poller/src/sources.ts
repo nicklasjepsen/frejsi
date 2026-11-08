@@ -15,8 +15,8 @@ import {
   type PumpSpaceRow,
   type Secrets,
   type SourceFactory,
-} from "@frejsi/shared";
-import { FakeGlucoseSource } from "@frejsi/shared/glucose/fake";
+} from "@naensom/shared";
+import { FakeGlucoseSource } from "@naensom/shared/glucose/fake";
 
 export interface SourceFactoryOptions {
   /** Or a function that builds it on the first read, so the fake never needs Key Vault configured. */

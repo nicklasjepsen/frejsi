@@ -1,5 +1,5 @@
 // @vitest-environment node
-import type { EventSink } from "@frejsi/shared";
+import type { EventSink } from "@naensom/shared";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { createInvite } from "@/lib/auth/invites";
@@ -17,7 +17,7 @@ import { POST as logoutRoute } from "./logout/route";
 import { POST as registerOptions } from "./register/options/route";
 import { POST as registerVerify } from "./register/verify/route";
 
-/** The routes read `prisma` and the event sink from @frejsi/shared; both are swapped for fakes. */
+/** The routes read `prisma` and the event sink from @naensom/shared; both are swapped for fakes. */
 const shared = vi.hoisted(() => {
   const holder: { db: Record<string, unknown>; sink: EventSink } = {
     db: {},
@@ -31,13 +31,13 @@ const shared = vi.hoisted(() => {
     sink,
   };
 });
-vi.mock("@frejsi/shared", async (importOriginal) => ({
+vi.mock("@naensom/shared", async (importOriginal) => ({
   ...(await importOriginal<Record<string, unknown>>()),
   prisma: shared.prisma,
   createEventSinkFromEnv: () => shared.sink,
 }));
 
-const ORIGIN = "https://frejsi.example";
+const ORIGIN = "https://naensom.example";
 const T0 = new Date("2026-10-15T08:00:00.000Z");
 
 let fake: FakeAuthDb;
@@ -56,7 +56,7 @@ beforeEach(() => {
   fake.rows("space").push({ id: "s1", name: "Example space", timezone: "Europe/Copenhagen" });
   fake.rows("user").push({ id: "o1", name: "Example Owner" });
   fake.rows("membership").push({ userId: "o1", spaceId: "s1", role: "owner", createdAt: T0 });
-  authenticator = new VirtualAuthenticator("frejsi.example", ORIGIN);
+  authenticator = new VirtualAuthenticator("naensom.example", ORIGIN);
   logLines = [];
   vi.spyOn(process.stdout, "write").mockImplementation((chunk: unknown) => {
     logLines.push(String(chunk));
@@ -111,7 +111,7 @@ describe("POST /api/auth/register/options and /verify", () => {
       residentKey: "required",
       userVerification: "preferred",
     });
-    expect(body.options.rp).toMatchObject({ id: "frejsi.example" });
+    expect(body.options.rp).toMatchObject({ id: "naensom.example" });
   });
 
   it("register the user, membership, passkey and session, set the cookie and emit member.joined", async () => {

@@ -1,5 +1,5 @@
 // @vitest-environment node
-import { createLogger, HttpError } from "@frejsi/shared";
+import { createLogger, HttpError } from "@naensom/shared";
 import { describe, expect, it } from "vitest";
 
 import { transact, TRANSACTION_ATTEMPTS } from "./core";

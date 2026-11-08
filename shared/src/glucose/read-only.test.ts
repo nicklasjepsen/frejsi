@@ -7,7 +7,7 @@ import { NightscoutSource } from "./nightscout/source";
 import type { GlucoseSource } from "./types";
 
 /**
- * Hard rule (CLAUDE.md): glucose sources are read-only. Frejsi never writes to a CGM or glucose
+ * Hard rule (CLAUDE.md): glucose sources are read-only. Nænsom never writes to a CGM or glucose
  * service, even when the credential would allow it. Two guards:
  *
  * - the interface: `GlucoseSource` exposes exactly the read operations below, checked by

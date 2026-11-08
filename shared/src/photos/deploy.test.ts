@@ -12,7 +12,7 @@ afterEach(() => {
 });
 
 function deploy(existing: boolean, failure = "", account = "stfictionphotos", discovered = "") {
-  const dir = mkdtempSync(path.join(tmpdir(), "frejsi-photo-deploy-"));
+  const dir = mkdtempSync(path.join(tmpdir(), "naensom-photo-deploy-"));
   temporaryDirectories.push(dir);
   for (const folder of ["bin", "log", "repo/poller/dist", "repo/web/.next/standalone"])
     mkdirSync(path.join(dir, folder), { recursive: true });

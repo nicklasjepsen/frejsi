@@ -1,4 +1,4 @@
-import { HttpError } from "@frejsi/shared";
+import { HttpError } from "@naensom/shared";
 
 import { settingsRoute } from "@/components/settings/api-route";
 import { authorizeMeal } from "@/lib/meals/server";

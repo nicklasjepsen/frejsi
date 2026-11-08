@@ -1,4 +1,4 @@
-import { HttpError, type EmitFn, type SessionContext } from "@frejsi/shared";
+import { HttpError, type EmitFn, type SessionContext } from "@naensom/shared";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
@@ -12,7 +12,7 @@ import {
 
 const cookieJar = new Map<string, string>();
 
-/** The rows and the `emit` the mocked @frejsi/shared serves to requireRole(). */
+/** The rows and the `emit` the mocked @naensom/shared serves to requireRole(). */
 const shared = vi.hoisted(() => {
   const rows: Row[] = [];
   const emitted: unknown[][] = [];
@@ -33,7 +33,7 @@ const shared = vi.hoisted(() => {
     },
   };
 });
-vi.mock("@frejsi/shared", async (importOriginal) => ({
+vi.mock("@naensom/shared", async (importOriginal) => ({
   ...(await importOriginal<Record<string, unknown>>()),
   prisma: shared.prisma,
   emit: shared.emit,

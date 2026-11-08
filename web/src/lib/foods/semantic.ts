@@ -1,7 +1,7 @@
-import { prisma, type SessionContext } from "@frejsi/shared";
-import type { SearchEmbed } from "@frejsi/shared/food/types";
-import { embeddingRevision } from "@frejsi/shared/ai/search/model";
-import { searchEmbed } from "@frejsi/shared/ai/search/embed";
+import { prisma, type SessionContext } from "@naensom/shared";
+import type { SearchEmbed } from "@naensom/shared/food/types";
+import { embeddingRevision } from "@naensom/shared/ai/search/model";
+import { searchEmbed } from "@naensom/shared/ai/search/embed";
 import { aiForSpace } from "@/ai/provider";
 
 /** Factory failures and exhausted search calls all degrade to the keyword library. */

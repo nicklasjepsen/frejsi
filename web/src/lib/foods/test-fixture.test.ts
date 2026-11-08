@@ -7,8 +7,8 @@ import {
   type FoodCandidate,
   type FoodSourceStatus,
   type SessionContext,
-} from "@frejsi/shared";
-import { MemoryPhotoStore } from "@frejsi/shared/photos/memory";
+} from "@naensom/shared";
+import { MemoryPhotoStore } from "@naensom/shared/photos/memory";
 import { expect, it } from "vitest";
 import { configureFoods, type FoodDb, type FoodDeps, type FoodTx } from "./core";
 

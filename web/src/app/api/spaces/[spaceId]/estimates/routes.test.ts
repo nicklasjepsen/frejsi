@@ -1,10 +1,10 @@
 // @vitest-environment node
 import plate from "./fixtures/plate.json";
-import { createLogger } from "@frejsi/shared";
-import { FakeAiProvider, defaultFakeAnswer } from "@frejsi/shared/ai/fake";
-import { CappedAiProvider } from "@frejsi/shared/ai/capped";
-import { MemoryAiCallRepository } from "@frejsi/shared/ai/calls";
-import { type MemoryPhotoStore } from "@frejsi/shared/photos/memory";
+import { createLogger } from "@naensom/shared";
+import { FakeAiProvider, defaultFakeAnswer } from "@naensom/shared/ai/fake";
+import { CappedAiProvider } from "@naensom/shared/ai/capped";
+import { MemoryAiCallRepository } from "@naensom/shared/ai/calls";
+import { type MemoryPhotoStore } from "@naensom/shared/photos/memory";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { FakeAuthDb } from "@/lib/auth/test-support";
 import {

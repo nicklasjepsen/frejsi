@@ -1,7 +1,7 @@
-import { HttpError, prisma, type PrismaClient } from "@frejsi/shared";
-import { PrismaAiCallRepository, type AiCallRepository } from "@frejsi/shared/ai";
-import { dayRange } from "@frejsi/shared/meals/day-range";
-import { AiProviderId, AiUsage } from "@frejsi/shared/schemas/ai";
+import { HttpError, prisma, type PrismaClient } from "@naensom/shared";
+import { PrismaAiCallRepository, type AiCallRepository } from "@naensom/shared/ai";
+import { dayRange } from "@naensom/shared/meals/day-range";
+import { AiProviderId, AiUsage } from "@naensom/shared/schemas/ai";
 import { aiCap, configuredAiProviders } from "@/ai/provider";
 
 export async function loadAiUsage(

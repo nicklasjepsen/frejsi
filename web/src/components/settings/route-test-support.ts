@@ -3,7 +3,7 @@
 import type { FakeAuthDb } from "@/lib/auth/test-support";
 
 export const T0 = new Date("2026-10-15T08:00:00.000Z");
-export const ORIGIN = "https://frejsi.example";
+export const ORIGIN = "https://naensom.example";
 
 export const SESSIONS = {
   owner: "sess-owner",

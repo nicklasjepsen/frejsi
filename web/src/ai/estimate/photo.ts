@@ -1,5 +1,5 @@
-import { HttpError } from "@frejsi/shared";
-import { processPhoto } from "@frejsi/shared/photos";
+import { HttpError } from "@naensom/shared";
+import { processPhoto } from "@naensom/shared/photos";
 
 export const PHOTO_LIMIT = 8 * 1024 * 1024;
 export const PHOTO_URL_LIMIT = "data:image/jpeg;base64,".length + 4 * Math.ceil(PHOTO_LIMIT / 3);

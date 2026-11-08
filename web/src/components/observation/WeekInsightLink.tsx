@@ -1,5 +1,5 @@
 "use client";
-import { WeekInsightView } from "@frejsi/shared/schemas/ai";
+import { WeekInsightView } from "@naensom/shared/schemas/ai";
 import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { localeHref, type AppLocale } from "@/lib/i18n/routing";

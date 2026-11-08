@@ -11,7 +11,7 @@ vi.mock("@/components/shell/shell-session", () => ({
   getShellSession: () => Promise.resolve(mocks.session),
   getShell: () => Promise.resolve(mocks.shell),
 }));
-vi.mock("@frejsi/shared", () => ({ prisma: { space: { findUnique: mocks.findUnique } } }));
+vi.mock("@naensom/shared", () => ({ prisma: { space: { findUnique: mocks.findUnique } } }));
 vi.mock("next/navigation", () => ({
   redirect: (href: string) => {
     throw new Error(`redirect:${href}`);

@@ -1,6 +1,6 @@
 // @vitest-environment node
-import { createLogger } from "@frejsi/shared";
-import { FakeFoodContributor } from "@frejsi/shared/food/fake-contributor";
+import { createLogger } from "@naensom/shared";
+import { FakeFoodContributor } from "@naensom/shared/food/fake-contributor";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { FakeAuthDb } from "@/lib/auth/test-support";
 import {

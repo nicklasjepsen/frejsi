@@ -1,8 +1,8 @@
 "use client";
-import type { DayHistoryView } from "@frejsi/shared/schemas/history";
-import type { GlucoseUnit, Reading } from "@frejsi/shared/schemas/glucose";
-import type { Role } from "@frejsi/shared/schemas/index";
-import { dayStats } from "@frejsi/shared/stats";
+import type { DayHistoryView } from "@naensom/shared/schemas/history";
+import type { GlucoseUnit, Reading } from "@naensom/shared/schemas/glucose";
+import type { Role } from "@naensom/shared/schemas/index";
+import { dayStats } from "@naensom/shared/stats";
 import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import { useRef, useState, type KeyboardEvent, type ReactNode } from "react";

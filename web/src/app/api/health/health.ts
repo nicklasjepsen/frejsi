@@ -1,4 +1,4 @@
-import { log, type Health, type Logger, type PrismaClient } from "@frejsi/shared";
+import { log, type Health, type Logger, type PrismaClient } from "@naensom/shared";
 
 /** A reading newer than this is `fresh`; matches the 35-minute alert in Bicep (plan §9). */
 export const FRESH_READING_MINUTES = 35;

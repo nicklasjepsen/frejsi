@@ -10,7 +10,7 @@ import {
   type PrismaClient,
   type PumpBolusView,
   type PumpHistoryView,
-} from "@frejsi/shared";
+} from "@naensom/shared";
 
 export type PumpReadDb = Pick<PrismaClient, "space" | "pumpBolus">;
 

@@ -1,6 +1,6 @@
 "use client";
 
-import type { SpaceSettings } from "@frejsi/shared";
+import type { SpaceSettings } from "@naensom/shared";
 import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import { useState } from "react";

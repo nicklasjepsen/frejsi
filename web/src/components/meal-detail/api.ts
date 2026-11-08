@@ -2,11 +2,11 @@
 // for owners and carers, `GET meals/[id]` for the simpleMode view, which shows no glucose and so
 // never asks for any; and "Det passer" on a pump meal, `PATCH meals/[id]` with `{ adopt: true }`
 // (v0.7.0 plan §9). Answers are parsed with the strict contracts, so nothing the contract does
-// not name reaches a screen. Schema modules, not the @frejsi/shared barrel: this is bundled for
+// not name reaches a screen. Schema modules, not the @naensom/shared barrel: this is bundled for
 // the browser.
-import { ApiError, type ApiErrorCode } from "@frejsi/shared/schemas/api";
-import { MealCurveView } from "@frejsi/shared/schemas/history";
-import { MealView } from "@frejsi/shared/schemas/meal";
+import { ApiError, type ApiErrorCode } from "@naensom/shared/schemas/api";
+import { MealCurveView } from "@naensom/shared/schemas/history";
+import { MealView } from "@naensom/shared/schemas/meal";
 import type { z } from "zod";
 
 export class MealDetailError extends Error {

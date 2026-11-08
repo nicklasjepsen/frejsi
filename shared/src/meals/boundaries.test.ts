@@ -15,7 +15,7 @@ function violations(file: string, code: string): string[] {
   const check = (specifier: string) => {
     const resolved = specifier.startsWith(".")
       ? path.posix.normalize(path.posix.join(path.posix.dirname(file), specifier))
-      : specifier.replace(/^@frejsi\/shared\//, "shared/src/");
+      : specifier.replace(/^@naensom\/shared\//, "shared/src/");
     if (fakeFiles.includes(resolved.replace(/\.(?:ts|js)$/, ""))) found.push(specifier);
   };
   const visit = (node: ts.Node) => {
@@ -49,7 +49,7 @@ function files(directory: string): string[] {
 
 describe("food fake import boundaries", () => {
   it("rejects production imports, dynamic imports and barrel leaks while allowing tests, seed and CLI", () => {
-    const code = 'import { FakeFoodSource } from "@frejsi/shared/food/fake";';
+    const code = 'import { FakeFoodSource } from "@naensom/shared/food/fake";';
     expect(violations("web/src/lib/food.ts", code)).toHaveLength(1);
     expect(violations("web/src/lib/food.test.ts", code)).toEqual([]);
     expect(violations("web/scripts/seed.ts", code)).toEqual([]);
@@ -62,7 +62,7 @@ describe("food fake import boundaries", () => {
       ),
     ).toHaveLength(1);
     expect(
-      violations("web/src/lib/food.ts", 'const fake = import("@frejsi/shared/food/fake");'),
+      violations("web/src/lib/food.ts", 'const fake = import("@naensom/shared/food/fake");'),
     ).toHaveLength(1);
   });
   it("enforces the boundary across the actual production tree in CI", () => {

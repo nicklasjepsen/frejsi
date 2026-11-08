@@ -1,7 +1,7 @@
 // What the curve's tooltip points at (issue 243): the reading nearest the pointer in time, or a
 // marker within a few pixels of it, or on the meal curve an earlier occurrence lying nearer than
 // this one. Pure and in viewBox units, so the hit rules are tested as numbers.
-import type { Trend } from "@frejsi/shared/schemas/index";
+import type { Trend } from "@naensom/shared/schemas/index";
 
 /** A reading the curve draws, at its place in the viewBox. `trend` is null on the week tile. */
 export interface TipPoint {

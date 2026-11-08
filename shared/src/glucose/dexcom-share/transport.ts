@@ -13,14 +13,14 @@ export const defaultFetch: FetchLike = (input, init) => globalThis.fetch(input, 
 const HEADERS = {
   "content-type": "application/json",
   accept: "application/json",
-  "user-agent": "Frejsi",
+  "user-agent": "Naensom",
 };
 
 /**
  * Hard rule (CLAUDE.md): glucose sources are read-only. The Share API accepts writes with the same
  * publisher credential the adapter logs in with (uploading readings, creating or removing followers
  * and invitations, changing a follower's alert settings), any of which could show a follower wrong
- * numbers or silence a low alarm. This map is the whole set of calls Frejsi may make: a path is
+ * numbers or silence a low alarm. This map is the whole set of calls Nænsom may make: a path is
  * sent only when it is listed here with the method given, so a write cannot be sent by mistake.
  */
 export const READ_ONLY_ENDPOINTS: ReadonlyMap<string, string> = freezeMap(

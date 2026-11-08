@@ -1,6 +1,6 @@
 import "@testing-library/jest-dom/vitest";
-import type { Reading } from "@frejsi/shared/schemas/glucose";
-import type { FoodView, LookupResponse } from "@frejsi/shared/schemas/food";
+import type { Reading } from "@naensom/shared/schemas/glucose";
+import type { FoodView, LookupResponse } from "@naensom/shared/schemas/food";
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";

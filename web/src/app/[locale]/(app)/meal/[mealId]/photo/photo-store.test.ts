@@ -1,5 +1,5 @@
 // @vitest-environment node
-import { MemoryPhotoStore } from "@frejsi/shared/photos/memory";
+import { MemoryPhotoStore } from "@naensom/shared/photos/memory";
 import { describe, expect, it } from "vitest";
 import { HttpReadablePhotoStore } from "./photo-store";
 

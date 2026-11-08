@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, expect, it } from "vitest";
-import { dayStats, mealStats, weekStats, weekRange } from "@frejsi/shared";
+import { dayStats, mealStats, weekStats, weekRange } from "@naensom/shared";
 import { MemoryHistoryRepository } from "./memory";
 import { loadMealCurve } from "./meal-curve";
 import { loadHistoryDay } from "./day";

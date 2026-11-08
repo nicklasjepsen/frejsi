@@ -1,7 +1,7 @@
 "use client";
 
-import type { Role } from "@frejsi/shared/schemas/index";
-import { mealStats } from "@frejsi/shared/stats";
+import type { Role } from "@naensom/shared/schemas/index";
+import { mealStats } from "@naensom/shared/stats";
 import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import { useState } from "react";

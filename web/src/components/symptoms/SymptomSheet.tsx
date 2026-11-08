@@ -1,5 +1,5 @@
 "use client";
-import type { CreateSymptomRequest, Severity, SpaceSymptomKind, SymptomKind } from "@frejsi/shared";
+import type { CreateSymptomRequest, Severity, SpaceSymptomKind, SymptomKind } from "@naensom/shared";
 import { useTranslations } from "next-intl";
 import { useEffect, useRef, useState } from "react";
 import { localDateOf } from "@/components/day/format";

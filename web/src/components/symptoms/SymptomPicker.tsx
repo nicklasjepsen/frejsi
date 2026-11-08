@@ -1,5 +1,5 @@
 "use client";
-import type { CreateSymptomRequest, SpaceSymptomKind, SymptomKind, SymptomView } from "@frejsi/shared";
+import type { CreateSymptomRequest, SpaceSymptomKind, SymptomKind, SymptomView } from "@naensom/shared";
 import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";

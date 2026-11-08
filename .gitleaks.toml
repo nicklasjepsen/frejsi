@@ -1,5 +1,5 @@
 # gitleaks runs in ci.yml on every PR and push to main (docs/superpowers/plans §8).
-title = "frejsi"
+title = "naensom"
 
 [extend]
 useDefault = true

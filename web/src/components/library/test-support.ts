@@ -1,13 +1,13 @@
 // A fetch fake for the Bibliotek screens (plan §8): it serves the foods routes of task 4 from an
 // in-memory list, validated against the shared Zod contracts, and records every call so a test can
 // assert what the screen sent and when. Imported only from *.test.ts(x).
-import { foldForSearch } from "@frejsi/shared/food/search";
+import { foldForSearch } from "@naensom/shared/food/search";
 import {
   CreateFoodRequest,
   FoodView,
   UpdateFoodRequest,
   VerifyFoodsRequest,
-} from "@frejsi/shared/schemas/food";
+} from "@naensom/shared/schemas/food";
 import { z } from "zod";
 
 import artboard from "./artboard-foods.json";
@@ -90,7 +90,7 @@ export function fakeFoodsApi(initial: FoodView[], spaceId = "s1"): FakeFoodsApi 
       ),
   };
   function serve(input: string, init: RequestInit | undefined): Response {
-    const url = new URL(input, "https://frejsi.example.invalid");
+    const url = new URL(input, "https://naensom.example.invalid");
     const method = (init?.method ?? "GET").toUpperCase();
     const prefix = `/api/spaces/${spaceId}/`;
     if (!url.pathname.startsWith(prefix)) return error(404, "not-found");

@@ -36,7 +36,7 @@ resource noReadings 'Microsoft.Insights/scheduledQueryRules@2023-03-15-preview' 
   tags: tags
   kind: 'LogAlert'
   properties: {
-    displayName: 'Frejsi: no glucose reading stored for 35 minutes'
+    displayName: 'Nænsom: no glucose reading stored for 35 minutes'
     description: 'The poller has not stored a reading in 35 minutes. Check the source status in Settings, then the poller log. See docs/operations.md.'
     severity: 2
     enabled: true

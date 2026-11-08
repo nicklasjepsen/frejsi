@@ -1,6 +1,6 @@
 import "@testing-library/jest-dom/vitest";
 
-import type { PumpSettingsView } from "@frejsi/shared";
+import type { PumpSettingsView } from "@naensom/shared";
 import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { act } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";

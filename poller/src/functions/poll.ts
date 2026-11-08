@@ -1,5 +1,5 @@
 import { app } from "@azure/functions";
-import { createSecretsFromEnv, emit, prisma, type PollDb } from "@frejsi/shared";
+import { createSecretsFromEnv, emit, prisma, type PollDb } from "@naensom/shared";
 
 import { createPollHandler, SCHEDULE } from "../poll-handler";
 import { createSourceFactory } from "../sources";

@@ -1,4 +1,4 @@
-// Frejsi infrastructure: everything in resource group `frejsi` (spec section 1).
+// Nænsom infrastructure: everything in resource group `frejsi` (spec section 1).
 //
 // This file is a module list and nothing else (docs/agent-workflow.md section 3): lanes append a
 // module at the end and never reorder. Resources live in modules/. The release pipeline deploys it

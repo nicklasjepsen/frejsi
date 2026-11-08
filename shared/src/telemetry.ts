@@ -121,7 +121,7 @@ export function startTelemetry(
       spanProcessors: [piiSpanProcessor],
       logRecordProcessors: [piiLogRecordProcessor],
     });
-    logger = loaded.getLogger("frejsi");
+    logger = loaded.getLogger("naensom");
   })();
   return starting;
 }

@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
-import type { PhotoEstimate } from "@frejsi/shared/schemas/ai";
+import type { PhotoEstimate } from "@naensom/shared/schemas/ai";
 import { useTranslations } from "next-intl";
 import { PhotoPicker } from "@/components/food/PhotoPicker";
 import { PhotoTile } from "@/components/food/PhotoTile";

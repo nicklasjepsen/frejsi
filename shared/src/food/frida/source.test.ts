@@ -27,7 +27,7 @@ const entries = [
   { id: 3, name: { da: "Fiktiv grød", en: "" }, carbsPer100g: 15, group: "Not a Frida group" },
 ];
 it("lazily loads once, folds all words and falls back to the other locale", async () => {
-  const directory = await mkdtemp(join(tmpdir(), "frejsi-frida-"));
+  const directory = await mkdtemp(join(tmpdir(), "naensom-frida-"));
   dirs.push(directory);
   const file = join(directory, "fictional.json");
   await writeFile(file, JSON.stringify(entries));

@@ -1,4 +1,4 @@
-import { HttpError } from "@frejsi/shared";
+import { HttpError } from "@naensom/shared";
 import { json } from "@/app/api/auth/http";
 import { setFoodPhoto } from "@/lib/foods";
 import { foodRoute, photoBytes } from "../../http";

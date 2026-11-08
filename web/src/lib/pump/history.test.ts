@@ -1,5 +1,5 @@
 // @vitest-environment node
-import { PumpBolusView, PumpHistoryView } from "@frejsi/shared";
+import { PumpBolusView, PumpHistoryView } from "@naensom/shared";
 import { beforeEach, describe, expect, it } from "vitest";
 
 import { loadPumpHistory } from "./history";

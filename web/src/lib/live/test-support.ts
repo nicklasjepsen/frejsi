@@ -1,7 +1,7 @@
 // Test doubles for the live feed: an in-memory stand-in for the delegates the live routes and
 // `loadSession` read, a recording token issuer, and a fake socket. Imported by *.test.ts only.
-import type { Reading, Role } from "@frejsi/shared";
-import type { ClientToken, ClientTokenRequest, LiveTokenIssuer } from "@frejsi/shared";
+import type { Reading, Role } from "@naensom/shared";
+import type { ClientToken, ClientTokenRequest, LiveTokenIssuer } from "@naensom/shared";
 import { vi } from "vitest";
 
 import type { SessionDb } from "@/lib/auth/session";
@@ -263,7 +263,7 @@ export function fakeFetch(handlers: Record<string, (url: URL) => Response | Prom
   const fetchImpl = ((input: RequestInfo | URL) => {
     const url = new URL(
       typeof input === "string" ? input : input instanceof URL ? input.href : input.url,
-      "https://frejsi.example",
+      "https://naensom.example",
     );
     calls.push(`${url.pathname}${url.search}`);
     const key = Object.keys(handlers).find((prefix) => url.pathname.endsWith(prefix));
@@ -284,7 +284,7 @@ export function liveRequest(
   sessionId: string | null,
   query: Record<string, string> = {},
 ): Request {
-  const url = new URL(`https://frejsi.example/api/spaces/${spaceId}/${path}`);
+  const url = new URL(`https://naensom.example/api/spaces/${spaceId}/${path}`);
   for (const [key, value] of Object.entries(query)) url.searchParams.set(key, value);
   const headers: Record<string, string> = {};
   if (sessionId) headers.cookie = `frejsi_session=${sessionId}`;

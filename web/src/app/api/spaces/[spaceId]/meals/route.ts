@@ -1,4 +1,4 @@
-import { CreateMealRequest } from "@frejsi/shared";
+import { CreateMealRequest } from "@naensom/shared";
 import { json, parseBody } from "@/app/api/auth/http";
 import { spaceRoute } from "@/lib/live/server";
 import { authorizeMeal, mealOutcome } from "@/lib/meals/server";

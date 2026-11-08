@@ -1,5 +1,5 @@
 import { expect, it } from "vitest";
-import { CreateMealRequest } from "@frejsi/shared/schemas/meal";
+import { CreateMealRequest } from "@naensom/shared/schemas/meal";
 import { emptyDraft, toMealRequest } from "../meal/draft";
 import { prepareParsedItems, appendParsedItems } from "./draft";
 

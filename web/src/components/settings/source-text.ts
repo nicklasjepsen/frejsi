@@ -2,7 +2,7 @@
 
 import { useTranslations } from "next-intl";
 
-import type { GlucoseSourceType } from "@frejsi/shared/schemas/glucose";
+import type { GlucoseSourceType } from "@naensom/shared/schemas/glucose";
 import { formatClock } from "@/lib/i18n/time";
 import type { AppLocale } from "@/lib/i18n/routing";
 

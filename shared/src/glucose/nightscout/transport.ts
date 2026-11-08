@@ -21,7 +21,7 @@ export const defaultFetch: FetchLike = (input, init) => globalThis.fetch(input, 
 /**
  * Hard rule (CLAUDE.md): glucose sources are read-only. A Nightscout site accepts writes
  * (treatments, entries, profile) with the same credential; this map is the whole set of calls
- * Frejsi makes, and a path is sent only when it is listed here with the method given.
+ * Nænsom makes, and a path is sent only when it is listed here with the method given.
  */
 export const READ_ONLY_ENDPOINTS: ReadonlyMap<string, string> = freezeMap(
   new Map(Object.values(ENDPOINTS).map((endpoint) => [endpoint.path, endpoint.method])),
@@ -73,7 +73,7 @@ export async function sendNightscoutRequest(
   const search = query && query.size > 0 ? `?${query.toString()}` : "";
   return fetch(`${baseUrl.replace(/\/+$/, "")}${path}${search}`, {
     method,
-    headers: { accept: "application/json", "user-agent": "Frejsi", [AUTH_HEADER]: authValue(auth) },
+    headers: { accept: "application/json", "user-agent": "Naensom", [AUTH_HEADER]: authValue(auth) },
     signal,
     redirect: "manual",
   });

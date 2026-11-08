@@ -1,6 +1,6 @@
 "use client";
 
-import type { Trend } from "@frejsi/shared";
+import type { Trend } from "@naensom/shared";
 import { useTranslations } from "next-intl";
 
 import styles from "./glucose.module.css";

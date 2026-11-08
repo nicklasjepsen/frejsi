@@ -122,7 +122,7 @@ jobs:
         if: steps.exists.outputs.exists == 'false'
         run: |
           mkdir -p "$RUNNER_TEMP/placeholder"
-          printf '<!doctype html><title>Frejsi preview</title><p>Preview %s is being prepared.</p>\n' "$ENVIRONMENT_NAME" > "$RUNNER_TEMP/placeholder/index.html"
+          printf '<!doctype html><title>Nænsom preview</title><p>Preview %s is being prepared.</p>\n' "$ENVIRONMENT_NAME" > "$RUNNER_TEMP/placeholder/index.html"
           cp -r "$RUNNER_TEMP/placeholder" ./preview-placeholder
       - name: Create the preview environment (placeholder only)
         if: steps.exists.outputs.exists == 'false'

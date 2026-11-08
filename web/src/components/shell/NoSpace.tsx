@@ -1,6 +1,6 @@
 "use client";
 
-import type { Accent } from "@frejsi/shared";
+import type { Accent } from "@naensom/shared";
 import { useTranslations } from "next-intl";
 
 import { Card } from "@/components/ui/Card";

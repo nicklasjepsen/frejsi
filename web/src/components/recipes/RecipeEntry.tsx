@@ -1,5 +1,5 @@
 "use client";
-import type { RecipeParseRequest } from "@frejsi/shared/schemas/ai";
+import type { RecipeParseRequest } from "@naensom/shared/schemas/ai";
 import { useTranslations } from "next-intl";
 import { useId, useState } from "react";
 

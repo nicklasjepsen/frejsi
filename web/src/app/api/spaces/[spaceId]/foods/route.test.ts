@@ -1,11 +1,11 @@
 // @vitest-environment node
 import { afterEach, expect, it, vi } from "vitest";
-import { FakeAiProvider } from "@frejsi/shared/ai/fake";
-import { CappedAiProvider } from "@frejsi/shared/ai";
-import { MemoryAiCallRepository } from "@frejsi/shared/ai/calls";
-import { MemoryFoodRepository } from "@frejsi/shared/food/memory";
-import { Food } from "@frejsi/shared/schemas/food";
-import { searchEmbed } from "@frejsi/shared/ai/search/embed";
+import { FakeAiProvider } from "@naensom/shared/ai/fake";
+import { CappedAiProvider } from "@naensom/shared/ai";
+import { MemoryAiCallRepository } from "@naensom/shared/ai/calls";
+import { MemoryFoodRepository } from "@naensom/shared/food/memory";
+import { Food } from "@naensom/shared/schemas/food";
+import { searchEmbed } from "@naensom/shared/ai/search/embed";
 import { configureFoods } from "@/lib/foods";
 import { foodTestRig, T0 } from "@/lib/foods/test-fixture.test";
 import { FakeLiveDb, liveRequest, spaceContext } from "@/lib/live/test-support";

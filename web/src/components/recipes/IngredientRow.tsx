@@ -1,5 +1,5 @@
 "use client";
-import type { LookupResponse, LookupResult } from "@frejsi/shared/schemas/food";
+import type { LookupResponse, LookupResult } from "@naensom/shared/schemas/food";
 import { useTranslations } from "next-intl";
 import { useId, useState } from "react";
 

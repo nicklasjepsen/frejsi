@@ -2,7 +2,7 @@
 // reviewed lines, the yield and the source go in as they come out of RecipeReview. Pure Zod, so
 // the client component imports it too.
 import { z } from "zod";
-import { FoodCategory, RecipeIngredient, RecipeSource } from "@frejsi/shared/schemas/food";
+import { FoodCategory, RecipeIngredient, RecipeSource } from "@naensom/shared/schemas/food";
 
 const title = z.string().trim().min(1).max(200);
 const ingredients = z.array(RecipeIngredient).min(1).max(40);

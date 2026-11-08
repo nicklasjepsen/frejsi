@@ -1,6 +1,6 @@
 // The web app: Azure Static Web Apps, Standard plan, hybrid Next.js (spec section 1).
 // No identity providers are configured and web/staticwebapp.config.json carries no `auth` block:
-// Frejsi signs people in with passkeys (spec section 2b). App settings are written by infra/deploy.sh.
+// Nænsom signs people in with passkeys (spec section 2b). App settings are written by infra/deploy.sh.
 //
 // The custom domain is created only when `customDomain` is set, because CNAME validation needs the
 // site's default hostname to exist in DNS first (infra/README.md, owner step 7).

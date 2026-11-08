@@ -1,6 +1,6 @@
 "use client";
 
-import type { GlucoseUnit, Reading } from "@frejsi/shared";
+import type { GlucoseUnit, Reading } from "@naensom/shared";
 import { useLocale, useTranslations } from "next-intl";
 
 import { resolveLocale } from "@/lib/i18n/routing";

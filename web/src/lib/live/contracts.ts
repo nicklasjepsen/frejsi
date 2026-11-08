@@ -7,7 +7,7 @@ import {
   Reading,
   type Role,
   SourceStatus,
-} from "@frejsi/shared/schemas/index";
+} from "@naensom/shared/schemas/index";
 import { z } from "zod";
 
 /** The longest readings window a client may ask for (`readings?hours=1..24`, plan §5). */

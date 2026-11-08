@@ -1,5 +1,5 @@
-import { SpaceSymptomKind, SymptomView, SymptomsView } from "@frejsi/shared/schemas/symptom";
-import type { CreateSymptomRequest, UpdateSymptomRequest } from "@frejsi/shared/schemas/symptom";
+import { SpaceSymptomKind, SymptomView, SymptomsView } from "@naensom/shared/schemas/symptom";
+import type { CreateSymptomRequest, UpdateSymptomRequest } from "@naensom/shared/schemas/symptom";
 import { z } from "zod";
 
 export class SymptomRequestError extends Error {

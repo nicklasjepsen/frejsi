@@ -1,6 +1,6 @@
 ---
 name: create-issues
-description: Turn an approved Frejsi implementation plan (docs/superpowers/plans/*.md) into GitHub issues, one per task, every one carrying the release milestone (vX.Y.Z, created if missing), with owned paths and acceptance criteria. Use when the owner says "create the issues for <plan>", "break the plan into issues", "put v0.2.0 on the board". Not for a single ad-hoc issue; write that with gh issue create --milestone.
+description: Turn an approved Nænsom implementation plan (docs/superpowers/plans/*.md) into GitHub issues, one per task, every one carrying the release milestone (vX.Y.Z, created if missing), with owned paths and acceptance criteria. Use when the owner says "create the issues for <plan>", "break the plan into issues", "put v0.2.0 on the board". Not for a single ad-hoc issue; write that with gh issue create --milestone.
 ---
 
 # create-issues

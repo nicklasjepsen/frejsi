@@ -136,7 +136,7 @@ export async function fetchRecipePage(
         response = await fetch(url, {
           redirect: "manual",
           credentials: "omit",
-          headers: { "user-agent": "Frejsi", accept: "text/html" },
+          headers: { "user-agent": "Naensom", accept: "text/html" },
           signal: controller.signal,
         });
       } catch {

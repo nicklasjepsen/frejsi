@@ -48,7 +48,7 @@ writeFileSync(
   path.join(standalone, "package.json"),
   JSON.stringify(
     {
-      name: "frejsi-web-bundle",
+      name: "naensom-web-bundle",
       private: true,
       license: rootPackage.license ?? "AGPL-3.0-only",
       type: "commonjs",

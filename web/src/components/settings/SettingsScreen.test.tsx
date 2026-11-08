@@ -10,8 +10,8 @@ import { I18nProvider } from "@/lib/i18n/Provider";
 import { getMessages } from "@/lib/i18n/messages";
 import type { AppLocale } from "@/lib/i18n/routing";
 
-import type { SpaceSettings } from "@frejsi/shared";
-import { GlucoseSourceType } from "@frejsi/shared/schemas/glucose";
+import type { SpaceSettings } from "@naensom/shared";
+import { GlucoseSourceType } from "@naensom/shared/schemas/glucose";
 
 import type { SourceView } from "./contracts";
 import type { SettingsData, SettingsPerson } from "./load-settings";
@@ -140,7 +140,7 @@ describe("SettingsScreen · the source (Indstillinger-Telefon, Indstillinger-Des
       "Forbundet · sidste måling i dag 15:13 · EU-server · henter hvert 5. minut",
     );
     expect(
-      screen.getByText("Hvor Frejsi henter Almas målinger fra. Én kilde ad gangen."),
+      screen.getByText("Hvor Nænsom henter Almas målinger fra. Én kilde ad gangen."),
     ).toBeInTheDocument();
     expect(screen.getAllByRole("link", { name: "Skift login" })[0]).toHaveAttribute(
       "href",
@@ -162,7 +162,7 @@ describe("SettingsScreen · the source (Indstillinger-Telefon, Indstillinger-Des
     expect(within(section).queryByText("Kommer i en senere version")).toBeNull();
     expect(screen.getByRole("heading", { name: "AI-hjælp" })).toBeInTheDocument();
     expect(screen.getByRole("switch", { name: "AI-hjælp" })).toBeDisabled();
-    expect(screen.getByText("Frejsi · åben kildekode · regner aldrig insulin")).toBeInTheDocument();
+    expect(screen.getByText("Nænsom · åben kildekode · regner aldrig insulin")).toBeInTheDocument();
   });
 
   it("draws one card per source type, from the enum, with the drawn descriptions and buttons", () => {
@@ -233,7 +233,7 @@ describe("SettingsScreen · the source (Indstillinger-Telefon, Indstillinger-Des
     mount(connected, "da", settingsApi(fetchImpl as unknown as typeof fetch));
     fireEvent.click(screen.getByRole("button", { name: "Vælg" }));
     expect(screen.getByTestId("manual-confirm")).toHaveTextContent(
-      "Skift til manuelle målinger? Frejsi henter så ikke længere fra Dexcom Share.",
+      "Skift til manuelle målinger? Nænsom henter så ikke længere fra Dexcom Share.",
     );
     expect(calls).toEqual([]);
     fireEvent.click(screen.getByRole("button", { name: "Annullér" }));

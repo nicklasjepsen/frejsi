@@ -6,7 +6,7 @@ const shared = vi.hoisted(() => ({
     reading: { findFirst: () => Promise.resolve({ ts: new Date() }) },
   },
 }));
-vi.mock("@frejsi/shared", async (importOriginal) => ({
+vi.mock("@naensom/shared", async (importOriginal) => ({
   ...(await importOriginal<Record<string, unknown>>()),
   prisma: shared.prisma,
 }));

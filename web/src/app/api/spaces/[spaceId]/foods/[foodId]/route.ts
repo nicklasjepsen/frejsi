@@ -1,4 +1,4 @@
-import { UpdateFoodRequest } from "@frejsi/shared";
+import { UpdateFoodRequest } from "@naensom/shared";
 import { json, noContent, parseBody } from "@/app/api/auth/http";
 import { deleteFood, getFood, updateFood } from "@/lib/foods";
 import { foodRoute } from "../http";

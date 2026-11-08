@@ -1,6 +1,6 @@
 import { z } from "zod";
-import { PhotoEstimate } from "@frejsi/shared/schemas/ai";
-import { ApiError } from "@frejsi/shared/schemas/api";
+import { PhotoEstimate } from "@naensom/shared/schemas/ai";
+import { ApiError } from "@naensom/shared/schemas/api";
 
 export const EstimateStatus = z.strictObject({
   available: z.boolean(),

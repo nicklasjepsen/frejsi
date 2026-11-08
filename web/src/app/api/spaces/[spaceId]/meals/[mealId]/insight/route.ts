@@ -1,6 +1,6 @@
-import { HttpError, prisma } from "@frejsi/shared";
-import { GlucoseUnit } from "@frejsi/shared/schemas/glucose";
-import { buildMealInput, localParts } from "@frejsi/shared/ai/insight/input";
+import { HttpError, prisma } from "@naensom/shared";
+import { GlucoseUnit } from "@naensom/shared/schemas/glucose";
+import { buildMealInput, localParts } from "@naensom/shared/ai/insight/input";
 import { route, json } from "@/app/api/auth/http";
 import { insightDeps, mealInsight } from "@/ai/insight/service";
 import { authorizeHistory } from "@/lib/history/server";

@@ -1,7 +1,7 @@
 // The viewer never receives glucose (spec §2, plan §8): Lærke signs in from an add-a-device link,
 // gets the viewer shell, and no page she can open draws a value or carries a reading over the
 // wire, whatever the API is asked.
-import { prisma } from "@frejsi/shared";
+import { prisma } from "@naensom/shared";
 import { expect, test } from "./test";
 
 import { assertMealOnly, inviteLink, navLabels, registerFromInvite, seededSpace } from "./support";

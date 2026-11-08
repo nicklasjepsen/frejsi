@@ -1,7 +1,7 @@
 // @vitest-environment node
 import { expect, it } from "vitest";
-import type { PrismaClient } from "@frejsi/shared";
-import type { AiCallWindow } from "@frejsi/shared/ai";
+import type { PrismaClient } from "@naensom/shared";
+import type { AiCallWindow } from "@naensom/shared/ai";
 import { loadAiUsage } from "./usage";
 it("counts attempts in the space's local day across a DST change, with independent caps", async () => {
   const windows: AiCallWindow[] = [];

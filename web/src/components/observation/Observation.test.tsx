@@ -76,7 +76,7 @@ it("edits and copies the stored numbered weekly questions", async () => {
   ).toBe(true);
 });
 it("shows pending copy, refreshes this meal on insight.created, and suppresses off", async () => {
-  const { EventEnvelope } = await import("@frejsi/shared/schemas/events");
+  const { EventEnvelope } = await import("@naensom/shared/schemas/events");
   type Subscriber = NonNullable<React.ComponentProps<typeof Observation>["feed"]>["subscribe"];
   const handlers = new Map<string, (event: ReturnType<typeof EventEnvelope.parse>) => void>();
   const subscribe: Subscriber = (type, handler) => {

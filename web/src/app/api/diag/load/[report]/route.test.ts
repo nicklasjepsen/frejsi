@@ -5,7 +5,7 @@ import { loadTimingQuery, loadTimingUrl } from "@/lib/diag/load-timing";
 import { GET } from "./route";
 
 const call = (report: string) =>
-  GET(new Request(`https://frejsi.example/api/diag/load/${report}`), {
+  GET(new Request(`https://naensom.example/api/diag/load/${report}`), {
     params: Promise.resolve({ report }),
   });
 

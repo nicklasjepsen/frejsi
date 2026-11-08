@@ -1,6 +1,6 @@
 "use client";
-import type { GlucoseUnit } from "@frejsi/shared/schemas/glucose";
-import type { WeekHistoryView } from "@frejsi/shared/schemas/history";
+import type { GlucoseUnit } from "@naensom/shared/schemas/glucose";
+import type { WeekHistoryView } from "@naensom/shared/schemas/history";
 import { useTranslations } from "next-intl";
 import { formatBound } from "@/components/glucose/format";
 import { StatGrid, StatTile } from "@/components/stats/StatTile";

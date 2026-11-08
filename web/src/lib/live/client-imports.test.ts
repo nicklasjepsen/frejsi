@@ -1,4 +1,4 @@
-// The browser bundle must never follow the @frejsi/shared barrel: it exports Prisma and App
+// The browser bundle must never follow the @naensom/shared barrel: it exports Prisma and App
 // Insights, which no client bundle can resolve (`next build` fails on `fs`, `net`, `async_hooks`).
 // Client-side modules of this lane import the schemas and units by their browser-safe subpaths.
 import { readdirSync, readFileSync, statSync } from "node:fs";
@@ -22,10 +22,10 @@ function clientModules(folders: string[], serverOnly: string[]): string[] {
   return files.filter((f) => !serverOnly.some((s) => f.endsWith(s)));
 }
 
-const RUNTIME_BARREL_IMPORT = /^import\s+(?!type\s)[^;]*?from\s+"@frejsi\/shared";/m;
+const RUNTIME_BARREL_IMPORT = /^import\s+(?!type\s)[^;]*?from\s+"@naensom\/shared";/m;
 
 describe("client modules and the shared barrel", () => {
-  it("import runtime values only from browser-safe subpaths of @frejsi/shared", () => {
+  it("import runtime values only from browser-safe subpaths of @naensom/shared", () => {
     const files = clientModules(
       [
         "src/lib/live",

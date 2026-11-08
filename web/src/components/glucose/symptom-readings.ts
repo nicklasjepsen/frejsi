@@ -1,4 +1,4 @@
-import type { GlucoseUnit, Reading } from "@frejsi/shared/schemas/glucose";
+import type { GlucoseUnit, Reading } from "@naensom/shared/schemas/glucose";
 
 import type { AppLocale } from "@/lib/i18n/routing";
 

@@ -1,6 +1,6 @@
 "use client";
 
-import type { FoodView } from "@frejsi/shared/schemas/food";
+import type { FoodView } from "@naensom/shared/schemas/food";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { libraryApi } from "@/components/library/api-client";

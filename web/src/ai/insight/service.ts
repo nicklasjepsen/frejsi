@@ -1,11 +1,11 @@
 import { createHash } from "node:crypto";
-import { emit, HttpError, log, type EmitFn, type SessionContext } from "@frejsi/shared";
-import { type AiProvider } from "@frejsi/shared/ai";
-import { InsightInput, type MealInsightView } from "@frejsi/shared/schemas/ai";
-import { symptomsAround, type LoggedSymptom } from "@frejsi/shared/ai/insight/input";
-import { narrateMeal } from "@frejsi/shared/ai/insight/meal";
-import { createInsight, PrismaInsightRepository } from "@frejsi/shared/insights/store";
-import type { InsightRepository } from "@frejsi/shared/insights/types";
+import { emit, HttpError, log, type EmitFn, type SessionContext } from "@naensom/shared";
+import { type AiProvider } from "@naensom/shared/ai";
+import { InsightInput, type MealInsightView } from "@naensom/shared/schemas/ai";
+import { symptomsAround, type LoggedSymptom } from "@naensom/shared/ai/insight/input";
+import { narrateMeal } from "@naensom/shared/ai/insight/meal";
+import { createInsight, PrismaInsightRepository } from "@naensom/shared/insights/store";
+import type { InsightRepository } from "@naensom/shared/insights/types";
 import { mealSymptomWindow } from "@/lib/symptoms/service";
 import { aiForSpace } from "../provider";
 export interface InsightDeps {

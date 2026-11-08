@@ -91,7 +91,7 @@ describe("AppShell · normal mode (Main, Nu-Desktop)", () => {
   it("renders the sidebar with the wordmark, the space switcher card and the seven items with their shortcut hints", () => {
     mount();
     const side = sidebar();
-    expect(within(side).getByText("Frejsi")).toBeInTheDocument();
+    expect(within(side).getByText("Nænsom")).toBeInTheDocument();
     const summary = within(side).getByText("Skift rum").closest("summary");
     expect(summary).not.toBeNull();
     expect(within(summary ?? side).getByText("Almas rum")).toBeInTheDocument();
@@ -290,7 +290,7 @@ describe("AppShell · simpleMode (Nu-Simpel, Nu-Simpel-Desktop)", () => {
   it("renders the sidebar headed by the avatar and the person's name, no wordmark, no switcher, and the footer", () => {
     mount(simple);
     const side = sidebar();
-    expect(within(side).queryByText("Frejsi")).toBeNull();
+    expect(within(side).queryByText("Nænsom")).toBeNull();
     expect(within(side).queryByText("Skift rum")).toBeNull();
     expect(within(side).getByRole("heading", { name: "Alma" })).toBeInTheDocument();
     expect(

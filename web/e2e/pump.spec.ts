@@ -9,7 +9,7 @@ import {
   runPumpCycle,
   type EventSink,
   type PumpSource,
-} from "@frejsi/shared";
+} from "@naensom/shared";
 import type { Page } from "@playwright/test";
 
 import { seedTime } from "../scripts/seed";

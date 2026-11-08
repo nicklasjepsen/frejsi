@@ -1,4 +1,4 @@
-import { HttpError } from "@frejsi/shared";
+import { HttpError } from "@naensom/shared";
 import { json, route, sessionIdFrom } from "@/app/api/auth/http";
 import { loadSession } from "@/lib/auth/session";
 import { shareStore } from "@/lib/recipes/share-store";

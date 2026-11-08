@@ -9,10 +9,10 @@ import {
   type EventSink,
   type Logger,
   type PrismaClient,
-} from "@frejsi/shared";
-import { foodSources } from "@frejsi/shared/food";
-import { createPhotoStoreFromEnv, type PhotoStore } from "@frejsi/shared/photos";
-import type { FoodSource } from "@frejsi/shared";
+} from "@naensom/shared";
+import { foodSources } from "@naensom/shared/food";
+import { createPhotoStoreFromEnv, type PhotoStore } from "@naensom/shared/photos";
+import type { FoodSource } from "@naensom/shared";
 
 export type FoodTx = Pick<
   PrismaClient,
@@ -24,8 +24,8 @@ export interface FoodDb extends FoodTx {
     options?: { isolationLevel: "Serializable" },
   ): Promise<T>;
 }
-import type { FoodRepository, SearchEmbed } from "@frejsi/shared/food/types";
-import type { SessionContext } from "@frejsi/shared";
+import type { FoodRepository, SearchEmbed } from "@naensom/shared/food/types";
+import type { SessionContext } from "@naensom/shared";
 import { foodSearchEmbed } from "./semantic";
 import type { SessionDb } from "@/lib/auth/session";
 

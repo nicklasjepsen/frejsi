@@ -1,7 +1,7 @@
 // @vitest-environment node
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { EventEnvelope, EventPayloads, type EmitFn } from "@frejsi/shared";
-import { MemoryPhotoStore } from "@frejsi/shared/photos/memory";
+import { EventEnvelope, EventPayloads, type EmitFn } from "@naensom/shared";
+import { MemoryPhotoStore } from "@naensom/shared/photos/memory";
 import { FakeLiveDb, captureLog } from "@/lib/live/test-support";
 import type { MealRecord, MealRepository } from "@/lib/meals/repository";
 import { configureMeals } from "@/lib/meals/server";
@@ -16,7 +16,7 @@ const ctx = (mealId = "missing", spaceId = "s1") => ({
   params: Promise.resolve({ spaceId, mealId }),
 });
 const request = (method: string, user = "carer", body?: unknown) =>
-  new Request("https://frejsi.example.invalid/api/spaces/s1/meals", {
+  new Request("https://naensom.example.invalid/api/spaces/s1/meals", {
     method,
     headers: { cookie: `frejsi_session=sess-${user}`, "content-type": "application/json" },
     ...(body === undefined ? {} : { body: JSON.stringify(body) }),

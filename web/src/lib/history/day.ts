@@ -6,7 +6,7 @@ import {
   STATS_WINDOW_MINUTES,
   MINUTE_MS,
   type Locale,
-} from "@frejsi/shared";
+} from "@naensom/shared";
 import { localDate } from "@/app/api/spaces/[spaceId]/day/load-day";
 import { mealView, pumpLink, requireSpace, untilNow } from "./views";
 import type { HistoryDeps } from "./types";

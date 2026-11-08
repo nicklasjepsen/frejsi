@@ -50,7 +50,7 @@ export class ShareStore {
 }
 
 // One store per web process; survives the dev server's module reloads through globalThis.
-const key = Symbol.for("frejsi.recipes.share-store");
+const key = Symbol.for("naensom.recipes.share-store");
 const holder = globalThis as unknown as Record<symbol, ShareStore | undefined>;
 export function shareStore(): ShareStore {
   return (holder[key] ??= new ShareStore());

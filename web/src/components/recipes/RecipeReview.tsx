@@ -1,6 +1,6 @@
 "use client";
-import { computeRecipe } from "@frejsi/shared/ai/recipe/compute";
-import type { FoodView, RecipeReview as Review, RecipeSource } from "@frejsi/shared/schemas/food";
+import { computeRecipe } from "@naensom/shared/ai/recipe/compute";
+import type { FoodView, RecipeReview as Review, RecipeSource } from "@naensom/shared/schemas/food";
 import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { useId, useState, type FormEvent } from "react";

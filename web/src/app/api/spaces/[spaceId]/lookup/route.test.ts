@@ -1,14 +1,14 @@
-import type { SearchEmbed } from "@frejsi/shared/food/types";
-import { FakeAiProvider } from "@frejsi/shared/ai/fake";
-import { CappedAiProvider } from "@frejsi/shared/ai";
-import { MemoryAiCallRepository } from "@frejsi/shared/ai/calls";
-import { searchEmbed } from "@frejsi/shared/ai/search/embed";
+import type { SearchEmbed } from "@naensom/shared/food/types";
+import { FakeAiProvider } from "@naensom/shared/ai/fake";
+import { CappedAiProvider } from "@naensom/shared/ai";
+import { MemoryAiCallRepository } from "@naensom/shared/ai/calls";
+import { searchEmbed } from "@naensom/shared/ai/search/embed";
 // @vitest-environment node
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { Food, LookupResponse, HttpError } from "@frejsi/shared";
-import { FakeFoodSource } from "@frejsi/shared/food/fake";
-import { MemoryFoodRepository } from "@frejsi/shared/food/memory";
-import { MemoryPhotoStore } from "@frejsi/shared/photos/memory";
+import { Food, LookupResponse, HttpError } from "@naensom/shared";
+import { FakeFoodSource } from "@naensom/shared/food/fake";
+import { MemoryFoodRepository } from "@naensom/shared/food/memory";
+import { MemoryPhotoStore } from "@naensom/shared/photos/memory";
 import { FakeLiveDb, captureLog, liveRequest, spaceContext } from "@/lib/live/test-support";
 import { configureLookup } from "./server";
 import { GET } from "./route";

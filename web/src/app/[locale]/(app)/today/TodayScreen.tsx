@@ -1,7 +1,7 @@
 "use client";
 
-import type { Role } from "@frejsi/shared";
-import { DayView } from "@frejsi/shared/schemas/meal";
+import type { Role } from "@naensom/shared";
+import { DayView } from "@naensom/shared/schemas/meal";
 import { useTranslations } from "next-intl";
 import { useCallback, useEffect, useRef, useState } from "react";
 

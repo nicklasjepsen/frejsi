@@ -2,7 +2,7 @@
 
 // Values come from the pure modules by path, never from the shared index: a client bundle must not
 // pull in the Prisma client or App Insights that the index exports (plan §2; see routing.ts).
-import type { ApiErrorCode, GlucoseImportResult } from "@frejsi/shared";
+import type { ApiErrorCode, GlucoseImportResult } from "@naensom/shared";
 import { useFormatter, useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import { useId, useState, type ChangeEvent, type FormEvent } from "react";

@@ -1,6 +1,6 @@
 ---
 name: start-milestone
-description: Start a Frejsi milestone release and take it to production: list what the milestone still owes, propose 4–6 vertical-slice lanes, get an OK, create a worktree per lane, then run the ship-milestone workflow (build, gate, merge, tag, deploy, GitHub release). Use when the owner says "start v0.2.0", "ship the milestone", "start the rest of v0.3.0", "what of v0.2.0 is still free". Not for one issue in the current session: that is ordinary work under CLAUDE.md.
+description: Start a Nænsom milestone release and take it to production: list what the milestone still owes, propose 4–6 vertical-slice lanes, get an OK, create a worktree per lane, then run the ship-milestone workflow (build, gate, merge, tag, deploy, GitHub release). Use when the owner says "start v0.2.0", "ship the milestone", "start the rest of v0.3.0", "what of v0.2.0 is still free". Not for one issue in the current session: that is ordinary work under CLAUDE.md.
 ---
 
 # start-milestone

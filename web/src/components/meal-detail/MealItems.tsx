@@ -1,6 +1,6 @@
 "use client";
 
-import type { MealItemView } from "@frejsi/shared/schemas/meal";
+import type { MealItemView } from "@naensom/shared/schemas/meal";
 import { useTranslations } from "next-intl";
 
 import styles from "./meal-detail.module.css";

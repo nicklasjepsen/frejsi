@@ -4,7 +4,7 @@ import {
   log,
   prisma,
   type ConnectedSourceSettings,
-} from "@frejsi/shared";
+} from "@naensom/shared";
 
 import { json, logOutcome, parseBody, settingsRoute } from "@/components/settings/api-route";
 import { ConnectSourceBody } from "@/components/settings/contracts";

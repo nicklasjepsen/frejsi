@@ -11,8 +11,8 @@ import {
   storedSymbol,
   type Locale,
   type PrismaClient,
-} from "@frejsi/shared";
-import { createPhotoStoreFromEnv, type PhotoStore } from "@frejsi/shared/photos";
+} from "@naensom/shared";
+import { createPhotoStoreFromEnv, type PhotoStore } from "@naensom/shared/photos";
 import { z } from "zod";
 
 import type { SessionDb } from "@/lib/auth/session";

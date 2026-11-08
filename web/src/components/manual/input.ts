@@ -1,5 +1,5 @@
 // What the sheet's two fields mean: the typed number in the space's unit and the time of day.
-import type { GlucoseUnit } from "@frejsi/shared/schemas/index";
+import type { GlucoseUnit } from "@naensom/shared/schemas/index";
 
 import { formatClock, withLocalTime } from "@/app/[locale]/(app)/log/time";
 import { MANUAL_WINDOW_MS, toMmol } from "@/lib/readings/range";

@@ -1,5 +1,5 @@
 import "@testing-library/jest-dom/vitest";
-import type { LookupResponse } from "@frejsi/shared/schemas/food";
+import type { LookupResponse } from "@naensom/shared/schemas/food";
 import { cleanup, render, screen } from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
 import { afterEach, describe, expect, it, vi } from "vitest";

@@ -1,4 +1,4 @@
-import type { SymptomKind } from "@frejsi/shared";
+import type { SymptomKind } from "@naensom/shared";
 
 const STROKE = {
   fill: "none",

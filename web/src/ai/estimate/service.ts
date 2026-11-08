@@ -5,13 +5,13 @@ import {
   type EventEnvelope,
   type FoodSource,
   type SessionContext,
-} from "@frejsi/shared";
-import type { AiProvider } from "@frejsi/shared/ai";
-import { estimatePhoto } from "@frejsi/shared/ai/estimate/estimate";
-import { guardOutput } from "@frejsi/shared/ai/guard";
-import { AskRequest, EstimateRequest } from "@frejsi/shared/schemas/ai";
-import { FoodCandidate } from "@frejsi/shared/schemas/food";
-import type { PhotoStore } from "@frejsi/shared/photos";
+} from "@naensom/shared";
+import type { AiProvider } from "@naensom/shared/ai";
+import { estimatePhoto } from "@naensom/shared/ai/estimate/estimate";
+import { guardOutput } from "@naensom/shared/ai/guard";
+import { AskRequest, EstimateRequest } from "@naensom/shared/schemas/ai";
+import { FoodCandidate } from "@naensom/shared/schemas/food";
+import type { PhotoStore } from "@naensom/shared/photos";
 import { aiForSpace } from "@/ai/provider";
 import { assertRole } from "@/lib/auth/session";
 import { addCandidate, setFoodPhoto } from "@/lib/foods";

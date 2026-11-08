@@ -1,4 +1,4 @@
-import { AiUsage, ParsedMeal, PhotoEstimate } from "@frejsi/shared/schemas/ai";
+import { AiUsage, ParsedMeal, PhotoEstimate } from "@naensom/shared/schemas/ai";
 import { ParseAvailability } from "@/ai/parse/contract";
 import type { z } from "zod";
 

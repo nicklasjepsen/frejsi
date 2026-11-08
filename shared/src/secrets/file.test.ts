@@ -9,7 +9,7 @@ import { parseSecretRef, type Secrets } from "./types";
 
 let dir: string;
 beforeEach(() => {
-  dir = mkdtempSync(path.join(tmpdir(), "frejsi-secrets-"));
+  dir = mkdtempSync(path.join(tmpdir(), "naensom-secrets-"));
 });
 afterEach(() => {
   rmSync(dir, { recursive: true, force: true });

@@ -9,7 +9,7 @@ import {
   type EventType,
   type Logger,
   type PrismaClient,
-} from "@frejsi/shared";
+} from "@naensom/shared";
 
 /**
  * The Prisma delegates the auth modules read and write, `event` included: `transact` writes each

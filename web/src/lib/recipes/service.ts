@@ -8,19 +8,19 @@ import {
   type RecipeIngredient,
   type RecipeSource,
   type SessionContext,
-} from "@frejsi/shared";
-import { computeRecipe, type PortionLabels } from "@frejsi/shared/ai/recipe/compute";
+} from "@naensom/shared";
+import { computeRecipe, type PortionLabels } from "@naensom/shared/ai/recipe/compute";
 import {
   resolveIngredients,
   type ParsedLine,
   type RecipeLookup,
   type ResolvedLine,
-} from "@frejsi/shared/ai/recipe/ingredients";
-import { canonicalUnit, parseIngredientLine } from "@frejsi/shared/ai/recipe/jsonld";
-import { fetchRecipePage } from "@frejsi/shared/ai/recipe/page";
-import type { RecipeInput } from "@frejsi/shared/ai/recipe/parse";
-import type { PhotoStore } from "@frejsi/shared/photos";
-import { RecipeParseRequest } from "@frejsi/shared/schemas/ai";
+} from "@naensom/shared/ai/recipe/ingredients";
+import { canonicalUnit, parseIngredientLine } from "@naensom/shared/ai/recipe/jsonld";
+import { fetchRecipePage } from "@naensom/shared/ai/recipe/page";
+import type { RecipeInput } from "@naensom/shared/ai/recipe/parse";
+import type { PhotoStore } from "@naensom/shared/photos";
+import { RecipeParseRequest } from "@naensom/shared/schemas/ai";
 import { estimateImage } from "@/ai/estimate/photo";
 import { readRecipe } from "@/ai/recipe/service";
 import { assertRole } from "@/lib/auth/session";

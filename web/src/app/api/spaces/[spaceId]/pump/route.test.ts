@@ -1,5 +1,5 @@
 // @vitest-environment node
-import { PumpHistoryView } from "@frejsi/shared";
+import { PumpHistoryView } from "@naensom/shared";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { captureLog, FakeLiveDb, liveRequest, spaceContext } from "@/lib/live/test-support";

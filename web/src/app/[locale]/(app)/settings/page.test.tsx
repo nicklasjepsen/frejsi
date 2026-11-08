@@ -1,6 +1,6 @@
 import "@testing-library/jest-dom/vitest";
 
-import type { SessionContext } from "@frejsi/shared";
+import type { SessionContext } from "@naensom/shared";
 import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 

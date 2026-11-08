@@ -3,7 +3,7 @@
 // without any reading; a meal of rugbrød carries the bread symbol on history day and desktop Nu,
 // and a later change of the food's category leaves the past meal's symbol as it was. Runs at
 // 360 px (phone) and 1280 px (desktop).
-import { prisma } from "@frejsi/shared";
+import { prisma } from "@naensom/shared";
 
 import { assertMealOnly, inviteLink, registerFromInvite, seededSpace } from "./support";
 import { expect, test } from "./test";

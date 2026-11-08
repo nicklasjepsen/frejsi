@@ -1,7 +1,7 @@
 import "@testing-library/jest-dom/vitest";
 
-import type { Reading } from "@frejsi/shared";
-import type { PumpBolusView } from "@frejsi/shared/schemas/pump";
+import type { Reading } from "@naensom/shared";
+import type { PumpBolusView } from "@naensom/shared/schemas/pump";
 import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";

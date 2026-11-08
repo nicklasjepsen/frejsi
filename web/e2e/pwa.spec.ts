@@ -13,7 +13,7 @@ test("the manifest is served with its icons", async ({ page, request }) => {
   const response = await request.get("/manifest.webmanifest");
   expect(response.status()).toBe(200);
   const manifest = (await response.json()) as Manifest;
-  expect(manifest).toMatchObject({ name: "Frejsi", display: "standalone", start_url: "/" });
+  expect(manifest).toMatchObject({ name: "Nænsom", display: "standalone", start_url: "/" });
   const sizes = manifest.icons.map((icon) => icon.sizes);
   expect(sizes).toEqual(expect.arrayContaining(["192x192", "512x512"]));
   for (const icon of manifest.icons) {

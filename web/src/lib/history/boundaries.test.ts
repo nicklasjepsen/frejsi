@@ -44,7 +44,7 @@ it("enforces read-only history, the Prisma boundary and a tests-only memory fake
   expect(
     violations(
       "/lib/history/bad.ts",
-      "db.reading.create({}); emit(); import { prisma } from '@frejsi/shared';",
+      "db.reading.create({}); emit(); import { prisma } from '@naensom/shared';",
     ),
   ).toEqual(["write", "database"]);
   expect(

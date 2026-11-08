@@ -6,7 +6,7 @@ import {
   SpaceSettings,
   type GlucoseSourceType,
   type PrismaClient,
-} from "@frejsi/shared";
+} from "@naensom/shared";
 
 import { SourceView, definedOnly, type SpaceSettingsPatch } from "@/components/settings/contracts";
 import { configuredAiProviders } from "@/ai/provider";

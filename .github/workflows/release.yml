@@ -291,7 +291,7 @@ jobs:
             gh issue list --milestone "$TAG" --state closed --limit 200 --json number,title,labels \
               --jq '.[] | "- #\(.number) \(.title)" + (if any(.labels[]; .name=="needs-owner") then " (owner decision)" else "" end)'
             echo
-            echo "Frejsi never computes or suggests insulin doses. Every value from an external source or AI stays unverified until a person ticks it."
+            echo "Nænsom never computes or suggests insulin doses. Every value from an external source or AI stays unverified until a person ticks it."
           } > notes.md
           cat notes.md
       - name: GitHub release

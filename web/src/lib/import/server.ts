@@ -1,4 +1,4 @@
-import { emit as defaultEmit, log, prisma, type EmitFn } from "@frejsi/shared";
+import { emit as defaultEmit, log, prisma, type EmitFn } from "@naensom/shared";
 
 import type { SessionDb } from "@/lib/auth/session";
 import { requireSpaceRole } from "@/lib/live/server";

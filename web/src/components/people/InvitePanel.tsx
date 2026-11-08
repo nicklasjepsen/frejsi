@@ -1,6 +1,6 @@
 "use client";
 
-import type { Role } from "@frejsi/shared";
+import type { Role } from "@naensom/shared";
 import { useTranslations } from "next-intl";
 import { useId, useState, type FormEvent } from "react";
 

@@ -3,7 +3,7 @@ import "@testing-library/jest-dom/vitest";
 import { readFileSync } from "node:fs";
 import path from "node:path";
 
-import type { SessionContext } from "@frejsi/shared";
+import type { SessionContext } from "@naensom/shared";
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import type { ReactElement } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -59,7 +59,7 @@ describe("/[locale]/welcome · the returning sign-in (plan §6, design gap 23)",
   it("is reachable without a session: offers Log ind and, below it, that a first visit needs an invitation link", async () => {
     const { container } = await open();
     expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("Velkommen tilbage");
-    expect(screen.getByText("Frejsi", { selector: "[data-testid=wordmark]" })).toBeInTheDocument();
+    expect(screen.getByText("Nænsom", { selector: "[data-testid=wordmark]" })).toBeInTheDocument();
     const login = screen.getByRole("button", { name: "Log ind" });
     const firstTime = screen.getByText("Første gang her?");
     expect(firstTime).toBeInTheDocument();
@@ -69,7 +69,7 @@ describe("/[locale]/welcome · the returning sign-in (plan §6, design gap 23)",
     expect(container.textContent).toContain(
       "Så skal du have et invitationslink fra en ejer af rummet.",
     );
-    expect(container.textContent).toContain("Frejsi · åben kildekode · regner aldrig insulin");
+    expect(container.textContent).toContain("Nænsom · åben kildekode · regner aldrig insulin");
     expect(container.textContent).not.toContain("erstatter ikke");
     // No shell: no navigation, no tabs, no sidebar, and no field for a name or a password.
     expect(screen.queryByRole("navigation")).toBeNull();

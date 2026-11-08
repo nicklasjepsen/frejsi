@@ -1,4 +1,4 @@
-import { prisma, Role, type PrismaClient, type SessionContext } from "@frejsi/shared";
+import { prisma, Role, type PrismaClient, type SessionContext } from "@naensom/shared";
 
 export interface ShellSpace {
   id: string;

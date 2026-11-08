@@ -32,8 +32,8 @@ describe("manifest.webmanifest (plan §6)", () => {
   const manifest = JSON.parse(read("manifest.webmanifest")) as Manifest;
 
   it("has a name, display standalone and a start_url", () => {
-    expect(manifest.name).toBe("Frejsi");
-    expect(manifest.short_name).toBe("Frejsi");
+    expect(manifest.name).toBe("Nænsom");
+    expect(manifest.short_name).toBe("Nænsom");
     expect(manifest.display).toBe("standalone");
     expect(manifest.start_url).toBe("/");
   });
@@ -119,7 +119,7 @@ function loadWorker(
       },
       skipWaiting: () => undefined,
       clients: { claim: () => Promise.resolve() },
-      location: { origin: "https://frejsi.example", search },
+      location: { origin: "https://naensom.example", search },
     },
     caches: {
       open: (name: string) => {
@@ -160,7 +160,7 @@ function loadWorker(
   };
   const get = (url: string, mode = "no-cors"): FakeRequest => ({
     method: "GET",
-    url: `https://frejsi.example${url}`,
+    url: `https://naensom.example${url}`,
     mode,
   });
   return {
@@ -208,7 +208,7 @@ describe("sw.js (the offline shell)", () => {
     const worker = loadWorker(online);
     await worker.dispatch("install");
     const response = await worker.dispatch("fetch", worker.get("/da/now", "navigate"));
-    expect(await response?.text()).toBe("live https://frejsi.example/da/now");
+    expect(await response?.text()).toBe("live https://naensom.example/da/now");
     expect(worker.puts).toEqual([]);
     expect(worker.store.has("/da/now")).toBe(false);
   });
@@ -271,18 +271,18 @@ describe("sw.js (the offline shell)", () => {
   it("names its cache after the build version in the registration URL, and drops the other builds' caches", async () => {
     const worker = loadWorker(online, {
       search: "?v=v0.5.1",
-      existing: ["frejsi-shell-v2", "frejsi-shell-v0.5.0", "frejsi-shell-v0.5.1"],
+      existing: ["naensom-shell-v2", "naensom-shell-v0.5.0", "naensom-shell-v0.5.1"],
     });
     await worker.dispatch("install");
-    expect(worker.opened).toEqual(["frejsi-shell-v0.5.1"]);
+    expect(worker.opened).toEqual(["naensom-shell-v0.5.1"]);
     await worker.dispatch("activate");
-    expect(worker.deleted).toEqual(["frejsi-shell-v2", "frejsi-shell-v0.5.0"]);
+    expect(worker.deleted).toEqual(["naensom-shell-v2", "naensom-shell-v0.5.0"]);
   });
 
   it("falls back to a dev cache name without a version", async () => {
     const worker = loadWorker(online);
     await worker.dispatch("install");
-    expect(worker.opened).toEqual(["frejsi-shell-dev"]);
+    expect(worker.opened).toEqual(["naensom-shell-dev"]);
   });
 
   it("leaves other origins and non-GET requests to the browser", async () => {
@@ -298,7 +298,7 @@ describe("sw.js (the offline shell)", () => {
     expect(
       await worker.dispatch("fetch", {
         method: "POST",
-        url: "https://frejsi.example/da/now",
+        url: "https://naensom.example/da/now",
         mode: "navigate",
       }),
     ).toBeNull();

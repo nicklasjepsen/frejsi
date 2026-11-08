@@ -1,5 +1,5 @@
 // @vitest-environment node
-import type { EventEnvelope, Reading } from "@frejsi/shared";
+import type { EventEnvelope, Reading } from "@naensom/shared";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { EventsPage, ReadingsWindow } from "./contracts";

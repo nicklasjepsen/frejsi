@@ -1,5 +1,5 @@
 // @vitest-environment node
-import type { EventSink } from "@frejsi/shared";
+import type { EventSink } from "@naensom/shared";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { FakeAuthDb, recordingSink, type RecordedEvent } from "@/lib/auth/test-support";
@@ -19,13 +19,13 @@ const shared = vi.hoisted(() => {
     sink,
   };
 });
-vi.mock("@frejsi/shared", async (importOriginal) => ({
+vi.mock("@naensom/shared", async (importOriginal) => ({
   ...(await importOriginal<Record<string, unknown>>()),
   prisma: shared.prisma,
   createEventSinkFromEnv: () => shared.sink,
 }));
 
-const ORIGIN = "https://frejsi.example";
+const ORIGIN = "https://naensom.example";
 const TOKEN = "example-bootstrap-token-0123456789";
 const T0 = new Date("2026-10-15T08:00:00.000Z");
 const body = {

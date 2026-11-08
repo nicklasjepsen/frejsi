@@ -1,8 +1,8 @@
 import { readdir, readFile } from "node:fs/promises";
 import path from "node:path";
 import { z } from "zod";
-import { InsightInput, RecipeParse, WeekInsightInput } from "@frejsi/shared/schemas/ai";
-import type { CompleteResult } from "@frejsi/shared/ai";
+import { InsightInput, RecipeParse, WeekInsightInput } from "@naensom/shared/schemas/ai";
+import type { CompleteResult } from "@naensom/shared/ai";
 import { validatePhoto, photoPath } from "./photo";
 
 export const root = path.resolve(import.meta.dirname, "..");

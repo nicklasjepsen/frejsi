@@ -1,5 +1,5 @@
 // @vitest-environment node
-import { createLogger, FoodView } from "@frejsi/shared";
+import { createLogger, FoodView } from "@naensom/shared";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { FakeAuthDb } from "@/lib/auth/test-support";
 import {
@@ -106,7 +106,7 @@ it("reads, patches, verifies and deletes a space food and preserves meal snapsho
 it("processes a photo upload and deletion, with one update event each", async () => {
   rig.seed({ id: "a" });
   const bytes = Buffer.from("UklGRh4AAABXRUJQVlA4TBEAAAAvAAAAAAfQ//73v/+BiOh/AAA=", "base64");
-  const req = new Request("https://frejsi.example/api/spaces/s1/foods/a/photo", {
+  const req = new Request("https://naensom.example/api/spaces/s1/foods/a/photo", {
     method: "PUT",
     headers: { cookie: "frejsi_session=sess-carer", "content-type": "image/webp" },
     body: bytes,
@@ -123,7 +123,7 @@ it("refuses unavailable stores, unsupported uploads, excessive bytes and invalid
   const invalid = await call(putPhoto, "PUT", "not an image");
   expect(invalid.status).toBe(400);
   expect(await invalid.json()).toMatchObject({ error: { code: "photo-type" } });
-  const req = new Request("https://frejsi.example/photo", {
+  const req = new Request("https://naensom.example/photo", {
     method: "PUT",
     headers: { cookie: "frejsi_session=sess-carer" },
     body: new Uint8Array(8 * 1024 * 1024 + 1),

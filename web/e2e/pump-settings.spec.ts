@@ -4,7 +4,7 @@
 // `source-connect` is the local stub the global setup starts (`SOURCE_CONNECT_URL` points at it),
 // so nothing here talks to a real function or a real Nightscout; the address below is fictional
 // and is never fetched.
-import { prisma } from "@frejsi/shared";
+import { prisma } from "@naensom/shared";
 
 import { SOURCE_CONNECT_STUB } from "./env";
 import { inviteLink, registerFromInvite, seededSpace } from "./support";

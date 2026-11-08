@@ -6,7 +6,7 @@ import {
   type Logger,
   type PollCycleDeps,
   type SpaceOutcome,
-} from "@frejsi/shared";
+} from "@naensom/shared";
 
 /** Second 0 of every fifth minute (spec §3). */
 export const SCHEDULE = "0 */5 * * * *";

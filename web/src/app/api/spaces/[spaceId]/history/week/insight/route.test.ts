@@ -1,16 +1,16 @@
 // @vitest-environment node
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 const settings = vi.hoisted(() => ({ enabled: true, find: vi.fn() }));
-vi.mock("@frejsi/shared", async (actual) => ({
+vi.mock("@naensom/shared", async (actual) => ({
   ...(await actual<object>()),
   prisma: { space: { findUniqueOrThrow: settings.find } },
 }));
-import { type EmitFn } from "@frejsi/shared";
-import { FakeAiProvider } from "@frejsi/shared/ai/fake";
-import { CappedAiProvider } from "@frejsi/shared/ai/capped";
-import { MemoryAiCallRepository } from "@frejsi/shared/ai/calls";
-import { MemoryInsightRepository } from "@frejsi/shared/insights/memory";
-import { createInsight } from "@frejsi/shared/insights/store";
+import { type EmitFn } from "@naensom/shared";
+import { FakeAiProvider } from "@naensom/shared/ai/fake";
+import { CappedAiProvider } from "@naensom/shared/ai/capped";
+import { MemoryAiCallRepository } from "@naensom/shared/ai/calls";
+import { MemoryInsightRepository } from "@naensom/shared/insights/memory";
+import { createInsight } from "@naensom/shared/insights/store";
 import { configureInsights } from "@/ai/insight/service";
 import { FakeLiveDb, captureLog, liveRequest, spaceContext } from "@/lib/live/test-support";
 import { MemoryHistoryRepository } from "@/lib/history/memory";

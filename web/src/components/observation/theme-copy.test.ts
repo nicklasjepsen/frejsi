@@ -1,8 +1,8 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { expect, it } from "vitest";
-import { assertNoDosing } from "@frejsi/shared/ai/guard";
-import { messageStrings } from "@frejsi/shared/dosing-vocabulary";
+import { assertNoDosing } from "@naensom/shared/ai/guard";
+import { messageStrings } from "@naensom/shared/dosing-vocabulary";
 import { getMessages } from "@/lib/i18n/messages";
 const read = (file: string) => readFileSync(path.resolve(import.meta.dirname, file), "utf8");
 it("matches every observation translation and checks generated-text vocabulary without an allow-list", () => {

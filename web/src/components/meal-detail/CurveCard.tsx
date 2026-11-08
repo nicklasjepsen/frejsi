@@ -1,8 +1,8 @@
 "use client";
 
-import type { GlucoseUnit, Reading } from "@frejsi/shared/schemas/glucose";
-import type { MealCurveView } from "@frejsi/shared/schemas/history";
-import type { Role } from "@frejsi/shared/schemas/index";
+import type { GlucoseUnit, Reading } from "@naensom/shared/schemas/glucose";
+import type { MealCurveView } from "@naensom/shared/schemas/history";
+import type { Role } from "@naensom/shared/schemas/index";
 import { useLocale, useTranslations } from "next-intl";
 import { useState } from "react";
 

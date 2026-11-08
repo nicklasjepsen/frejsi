@@ -7,20 +7,20 @@ import {
   CappedAiProvider,
   type AiProvider,
   type CompleteResult,
-} from "@frejsi/shared/ai";
-import { MemoryAiCallRepository } from "@frejsi/shared/ai/calls";
-import { parseMeal } from "@frejsi/shared/ai/parse/parse";
-import { estimatePhoto } from "@frejsi/shared/ai/estimate/estimate";
-import { narrateMeal } from "@frejsi/shared/ai/insight/meal";
-import { narrateWeek } from "@frejsi/shared/ai/insight/week";
-import { narrationInput } from "@frejsi/shared/ai/insight/numbers";
-import { normaliseFoodName } from "@frejsi/shared/ai/search/normalise";
-import { computeRecipe } from "@frejsi/shared/ai/recipe/compute";
-import { resolveIngredients } from "@frejsi/shared/ai/recipe/ingredients";
-import { parseRecipe, type RecipeInput } from "@frejsi/shared/ai/recipe/parse";
-import { foldForSearch } from "@frejsi/shared/food/search";
-import { LookupResponse } from "@frejsi/shared/schemas/food";
-import { PhotoEstimate, RecipeParse } from "@frejsi/shared/schemas/ai";
+} from "@naensom/shared/ai";
+import { MemoryAiCallRepository } from "@naensom/shared/ai/calls";
+import { parseMeal } from "@naensom/shared/ai/parse/parse";
+import { estimatePhoto } from "@naensom/shared/ai/estimate/estimate";
+import { narrateMeal } from "@naensom/shared/ai/insight/meal";
+import { narrateWeek } from "@naensom/shared/ai/insight/week";
+import { narrationInput } from "@naensom/shared/ai/insight/numbers";
+import { normaliseFoodName } from "@naensom/shared/ai/search/normalise";
+import { computeRecipe } from "@naensom/shared/ai/recipe/compute";
+import { resolveIngredients } from "@naensom/shared/ai/recipe/ingredients";
+import { parseRecipe, type RecipeInput } from "@naensom/shared/ai/recipe/parse";
+import { foldForSearch } from "@naensom/shared/food/search";
+import { LookupResponse } from "@naensom/shared/schemas/food";
+import { PhotoEstimate, RecipeParse } from "@naensom/shared/schemas/ai";
 import library from "../fixtures/library.json";
 import { loadCases, recipeFixtures, selectCases, type EvalCase } from "./cases";
 import { RunBudget, type BudgetOptions } from "./budget";

@@ -1,6 +1,6 @@
 import "@testing-library/jest-dom/vitest";
-import type { DayHistoryView } from "@frejsi/shared/schemas/history";
-import type { DayView } from "@frejsi/shared/schemas/meal";
+import type { DayHistoryView } from "@naensom/shared/schemas/history";
+import type { DayView } from "@naensom/shared/schemas/meal";
 import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -656,7 +656,7 @@ describe("the Symptomer chip and the viewer's symptom rows (v0.6.0 plan §5)", (
     vi.stubGlobal(
       "fetch",
       vi.fn((input: string) => {
-        const url = new URL(input, "https://frejsi.example");
+        const url = new URL(input, "https://naensom.example");
         if (url.pathname.endsWith("/symptoms/kinds"))
           return Promise.resolve(Response.json({ kinds: [] }));
         if (url.pathname.endsWith("/symptoms")) {

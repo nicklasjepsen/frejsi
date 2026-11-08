@@ -1,6 +1,6 @@
 # Writing a food source
 
-A food source is where Frejsi looks up carbohydrates for a country or a dataset. Open Food Facts and
+A food source is where Nænsom looks up carbohydrates for a country or a dataset. Open Food Facts and
 the bundled DTU Frida dataset are the two that exist; the roadmap names `usda`, `bls` (Germany) and
 `matvaretabellen` (Norway) as the next ones, and this guide uses `usda` as its running example. Read
 [architecture.md](../architecture.md) first for the shape of the whole, and
@@ -25,7 +25,7 @@ flow are the app's.
   unique and stable inside your source (`usda:170393`), `carbsPer100g` to one decimal (or portions),
   and optionally a `barcode` and `portions`. A candidate has no `verified` field. Whatever you return
   reaches the library with `verified: false` until a person ticks it; do not try to mark it.
-- A source returns carbohydrates and names. Nothing about insulin, ever: Frejsi never computes,
+- A source returns carbohydrates and names. Nothing about insulin, ever: Nænsom never computes,
   suggests or lets anyone enter it, and the one place it shows what a pump delivered (pump
   history) is nowhere near a food source.
 

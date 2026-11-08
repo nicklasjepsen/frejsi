@@ -1,5 +1,5 @@
 // @vitest-environment node
-import type { EventSink } from "@frejsi/shared";
+import type { EventSink } from "@naensom/shared";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
@@ -28,7 +28,7 @@ const shared = vi.hoisted(() => {
     sink,
   };
 });
-vi.mock("@frejsi/shared", async (importOriginal) => ({
+vi.mock("@naensom/shared", async (importOriginal) => ({
   ...(await importOriginal<Record<string, unknown>>()),
   prisma: shared.prisma,
   createEventSinkFromEnv: () => shared.sink,
@@ -67,7 +67,7 @@ describe("GET ai", () => {
     vi.stubEnv("FAKE_AI_PROVIDER", "1");
     vi.stubEnv("VAPID_PUBLIC_KEY", "public-test");
     vi.stubEnv("VAPID_PRIVATE_KEY", "private-test");
-    vi.stubEnv("VAPID_SUBJECT", "https://frejsi.example");
+    vi.stubEnv("VAPID_SUBJECT", "https://naensom.example");
   });
   it.each(["owner", "carer"] as const)(
     "returns safe runtime usage to %s, including simple view",
@@ -100,7 +100,7 @@ describe("GET ai", () => {
         "providers",
         "pushPublicKey",
       ]);
-      expect(JSON.stringify(body)).not.toMatch(/private-test|frejsi.example|mmol|glucose|hostname/);
+      expect(JSON.stringify(body)).not.toMatch(/private-test|naensom.example|mmol|glucose|hostname/);
     },
   );
   it("rejects viewer and non-member before any usage repository read", async () => {

@@ -1,6 +1,6 @@
 // The only module that creates or changes memberships (plan task 5). Registration, the People
 // routes and the seed call these; nothing else writes the Membership table.
-import { HttpError, type Role } from "@frejsi/shared";
+import { HttpError, type Role } from "@naensom/shared";
 
 import { run, type AuthDeps, type AuthTx, type TxDeps } from "./core";
 

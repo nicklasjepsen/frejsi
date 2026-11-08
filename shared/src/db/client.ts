@@ -56,15 +56,15 @@ export function createPrismaFromEnv(env: DbEnv, deps: PrismaFactoryDeps = {}): P
   );
 }
 
-const globalForPrisma = globalThis as unknown as { __frejsiPrisma?: PrismaClient };
+const globalForPrisma = globalThis as unknown as { __naensomPrisma?: PrismaClient };
 
 function getClient(): PrismaClient {
-  globalForPrisma.__frejsiPrisma ??= createPrismaFromEnv(process.env);
-  return globalForPrisma.__frejsiPrisma;
+  globalForPrisma.__naensomPrisma ??= createPrismaFromEnv(process.env);
+  return globalForPrisma.__naensomPrisma;
 }
 
 /**
- * One client per process, constructed on first use: importing `@frejsi/shared` must not throw in a
+ * One client per process, constructed on first use: importing `@naensom/shared` must not throw in a
  * process with no database setting (web's unit tests, `next build`). Next.js dev reloads modules;
  * keeping the instance on `globalThis` stops a connection per reload.
  */

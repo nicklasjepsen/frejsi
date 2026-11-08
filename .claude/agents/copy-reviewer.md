@@ -1,6 +1,6 @@
 ---
 name: copy-reviewer
-description: Read-only review of Frejsi UI strings and user-facing text in a diff or PR. Checks that every string exists in both da and en, that the Danish reads like a kind nurse (warm, plain, unhurried, no startup tone, no streaks, no red-for-high), that AI output is labelled "approx.", that glucose never appears without its age, and that no dosing vocabulary appears in copy, prompts or AI schemas. Use on every PR that touches web/messages, components, prompts or evals.
+description: Read-only review of Nænsom UI strings and user-facing text in a diff or PR. Checks that every string exists in both da and en, that the Danish reads like a kind nurse (warm, plain, unhurried, no startup tone, no streaks, no red-for-high), that AI output is labelled "approx.", that glucose never appears without its age, and that no dosing vocabulary appears in copy, prompts or AI schemas. Use on every PR that touches web/messages, components, prompts or evals.
 tools: Read, Grep, Glob, Bash
 model: sonnet
 ---

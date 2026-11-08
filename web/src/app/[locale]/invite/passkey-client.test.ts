@@ -9,8 +9,8 @@ import {
   type WebAuthnBrowser,
 } from "./passkey-client";
 
-const creation = { challenge: "c1", rp: { id: "frejsi.example" } };
-const request = { challenge: "c2", rpId: "frejsi.example" };
+const creation = { challenge: "c1", rp: { id: "naensom.example" } };
+const request = { challenge: "c2", rpId: "naensom.example" };
 const attestation = { id: "cred", type: "public-key", response: {} };
 const assertion = { id: "cred", type: "public-key", response: {} };
 

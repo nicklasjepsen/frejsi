@@ -4,7 +4,7 @@ import {
   log,
   prisma,
   type LiveGroupRevoker,
-} from "@frejsi/shared";
+} from "@naensom/shared";
 
 import { noContent, parseBody } from "@/app/api/auth/http";
 import { ChangeRoleBody } from "@/components/people/contract";

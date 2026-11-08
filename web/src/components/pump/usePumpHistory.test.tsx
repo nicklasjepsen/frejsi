@@ -1,6 +1,6 @@
 import "@testing-library/jest-dom/vitest";
 
-import type { Role } from "@frejsi/shared/schemas/index";
+import type { Role } from "@naensom/shared/schemas/index";
 import { act, cleanup, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -58,7 +58,7 @@ beforeEach(() => {
   vi.stubGlobal(
     "fetch",
     vi.fn((input: string) => {
-      const url = new URL(input, "https://frejsi.example");
+      const url = new URL(input, "https://naensom.example");
       calls.push(`${url.pathname}${url.search}`);
       return Promise.resolve(answer());
     }),

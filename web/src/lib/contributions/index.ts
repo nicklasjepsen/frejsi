@@ -2,9 +2,9 @@
 // only for an explicit POST from a carer or owner, builds a correction from numbers alone (never a
 // name, never a person), writes nothing to `Food`, and emits `food.contributed` on success.
 import { createHash } from "node:crypto";
-import { HttpError, type FoodContributor, type SessionContext } from "@frejsi/shared";
-import { ContributionsView, FoodCorrection } from "@frejsi/shared/schemas/food";
-import { foodContributors } from "@frejsi/shared/food";
+import { HttpError, type FoodContributor, type SessionContext } from "@naensom/shared";
+import { ContributionsView, FoodCorrection } from "@naensom/shared/schemas/food";
+import { foodContributors } from "@naensom/shared/food";
 import { assertRole } from "@/lib/auth/session";
 import { foodTransaction, resolveFoods, type FoodDeps } from "@/lib/foods/core";
 

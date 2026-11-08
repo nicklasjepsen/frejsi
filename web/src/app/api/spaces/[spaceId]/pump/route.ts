@@ -1,4 +1,4 @@
-import { HttpError, PumpRangeQuery } from "@frejsi/shared";
+import { HttpError, PumpRangeQuery } from "@naensom/shared";
 
 import { json, log, spaceRoute } from "@/lib/live/server";
 import { loadPumpHistory } from "@/lib/pump/history";

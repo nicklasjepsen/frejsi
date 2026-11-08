@@ -1,8 +1,8 @@
 "use client";
-import type { GlucoseUnit } from "@frejsi/shared/schemas/index";
-import type { WeekHistoryView } from "@frejsi/shared/schemas/history";
-import type { SymptomView } from "@frejsi/shared/schemas/symptom";
-import { dayRange } from "@frejsi/shared/meals/day-range";
+import type { GlucoseUnit } from "@naensom/shared/schemas/index";
+import type { WeekHistoryView } from "@naensom/shared/schemas/history";
+import type { SymptomView } from "@naensom/shared/schemas/symptom";
+import { dayRange } from "@naensom/shared/meals/day-range";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { GlucoseChart } from "@/components/glucose/GlucoseChart";

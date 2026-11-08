@@ -1,4 +1,4 @@
-import { createSecretsFromEnv, emit, log, prisma, runPollCycle, type PollDb } from "@frejsi/shared";
+import { createSecretsFromEnv, emit, log, prisma, runPollCycle, type PollDb } from "@naensom/shared";
 
 import { parseCliArgs } from "./cli-args";
 import { createSourceFactory } from "./sources";

@@ -1,5 +1,5 @@
 "use client";
-import type { SpaceSymptomKind, SymptomView } from "@frejsi/shared/schemas/symptom";
+import type { SpaceSymptomKind, SymptomView } from "@naensom/shared/schemas/symptom";
 import { useCallback, useEffect, useState } from "react";
 
 import { loadSymptomKinds, loadSymptoms } from "@/components/symptoms/api";

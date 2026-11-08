@@ -1,4 +1,4 @@
-import { GlucoseImportRequest } from "@frejsi/shared";
+import { GlucoseImportRequest } from "@naensom/shared";
 
 import { json, parseBody } from "@/app/api/auth/http";
 import { authorizeImport, importOutcome } from "@/lib/import/server";
