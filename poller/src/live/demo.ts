@@ -14,27 +14,31 @@ export const DEMO_LAG_MS = 60_000;
 const TWO_PI = 2 * Math.PI;
 
 /**
- * Two slow waves around 125 mg/dL: a four-hour swing and a seventy-minute ripple, between about 67
- * and 183, so the demo shows in-range, low and high colours over an afternoon. Changes stay under
- * 2.5 mg/dL a minute, like a real sensor.
+ * The same curve as the app's `DemoCurve` (ios/Packages/FollowCore), so the app, its own Live
+ * Activity updates and the relay's pushes show the same value at the same moment:
+ *
+ *     mgdl(t) = round(140 + 55 sin(2 pi t / 10800) + 18 sin(2 pi t / 2700 + 1)),  t in Unix seconds
+ *
+ * a three-hour wave between about 67 and 213 mg/dL with a 45-minute ripple, so it passes through
+ * low, in range and high with the default thresholds.
  */
 export function demoMgdl(at: number): number {
-  const minutes = at / 60_000;
-  const value =
-    125 + 42 * Math.sin((TWO_PI * minutes) / 240) + 16 * Math.sin((TWO_PI * minutes) / 70 + 1.3);
-  return Math.round(Math.min(300, Math.max(50, value)));
+  const t = at / 1000;
+  return Math.round(
+    140 + 55 * Math.sin((TWO_PI * t) / 10_800) + 18 * Math.sin((TWO_PI * t) / 2_700 + 1),
+  );
 }
 
-/** Nightscout's direction word for a change over five minutes. */
+/** Nightscout's direction word for a change over five minutes, with `DemoCurve.direction`'s bands. */
 export function demoDirection(deltaPerFiveMinutes: number): string {
   const perMinute = deltaPerFiveMinutes / 5;
-  if (perMinute > 3) return "DoubleUp";
-  if (perMinute > 2) return "SingleUp";
-  if (perMinute > 1) return "FortyFiveUp";
-  if (perMinute >= -1) return "Flat";
-  if (perMinute >= -2) return "FortyFiveDown";
-  if (perMinute >= -3) return "SingleDown";
-  return "DoubleDown";
+  if (perMinute <= -3) return "DoubleDown";
+  if (perMinute <= -2) return "SingleDown";
+  if (perMinute <= -1) return "FortyFiveDown";
+  if (perMinute < 1) return "Flat";
+  if (perMinute < 2) return "FortyFiveUp";
+  if (perMinute < 3) return "SingleUp";
+  return "DoubleUp";
 }
 
 /** The newest `count` demo readings at `now`, newest first, like `NightscoutSource.latestEntries`. */
