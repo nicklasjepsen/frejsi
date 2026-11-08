@@ -5,7 +5,7 @@
     "supportLink": "Hjælp",
     "sourceLink": "Kildekoden",
     "updated": "Senest opdateret 9. november 2026.",
-    "controller": "Nicklas Møller Jepsen"
+    "controllerFallback": "den, der driver serveren (skriv til adressen herunder)"
   },
   "follow": {
     "pageTitle": "Åbn linket i Nænsom",
@@ -105,7 +105,7 @@
       {
         "heading": "Slet det hele med ét tryk",
         "body": [
-          "Tryk »Fjern denne telefon« under Indstillinger i appen. Det stopper Live Activity og påmindelser, sletter kopien på Nænsoms server og fjerner adresse og token fra telefonen. Kan serveren ikke nås lige da, sletter den selv kopien efter 30 dage. Sletter du appen, holder opdateringerne op, og posten bliver slettet, når Apple melder, at appen er væk."
+          "Tryk »Fjern denne telefon« under Indstillinger i appen. Det stopper Live Activity og påmindelser, sletter kopien på Nænsoms server og fjerner adresse og token fra telefonen. Kan serveren ikke nås lige da, kan du fjerne det hele fra telefonen alene. Så bliver serverens kopi slettet, når der er gået 30 dage, uden at en opdatering er nået frem til telefonen, eller når Apple melder, at appen er slettet. Vil du være sikker på, at den forsvinder med det samme, så tryk »Fjern denne telefon«, mens telefonen er på nettet. Sletter du appen, holder opdateringerne op, og posten bliver slettet, når Apple melder, at appen er væk."
         ],
         "list": []
       },
@@ -126,7 +126,7 @@
       {
         "heading": "Hvem står bag, og dine rettigheder",
         "body": [
-          "Nænsom er et open source-projekt, som drives af {controller} i Danmark. Han er dataansvarlig.",
+          "Nænsom er et open source-projekt. Dataansvarlig for denne server er {controller}.",
           "Vi behandler oplysningerne, fordi du beder om det, når du sætter appen op (dit udtrykkelige samtykke). Du trækker samtykket tilbage med »Fjern denne telefon«.",
           "Du har ret til at se og få slettet de oplysninger, vi har om dig, og til at klage til Datatilsynet (datatilsynet.dk). Serveren ved ikke, hvem du er, så nævn Nightscout-sidens værtsnavn, når du skriver, så vi kan finde posten. Skriv aldrig tokenet.",
           "Skriv til {email}."

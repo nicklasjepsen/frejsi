@@ -52,11 +52,22 @@ function fill(text: string, slots: Record<string, string>): string {
   return escapeHtml(text).replace(/\{(\w+)\}/g, (whole, name: string) => slots[name] ?? whole);
 }
 
-function slotsFor(copy: IosPageCopy): Record<string, string> {
+/**
+ * The data controller named on `/privacy`: the deployment's `PRIVACY_CONTROLLER` setting (a name and
+ * country, set as a repository variable, never committed), or a plain description without it.
+ */
+export function privacyController(
+  env: Readonly<Record<string, string | undefined>> = process.env,
+): string | null {
+  const value = env.PRIVACY_CONTROLLER?.trim();
+  return value === undefined || value === "" ? null : value;
+}
+
+function slotsFor(copy: IosPageCopy, controller: string | null): Record<string, string> {
   return {
     email: link(`mailto:${SUPPORT_EMAIL}`, SUPPORT_EMAIL),
     source: link(SOURCE_URL, "GitHub"),
-    controller: escapeHtml(copy.common.controller),
+    controller: escapeHtml(controller ?? copy.common.controllerFallback),
   };
 }
 
@@ -139,10 +150,14 @@ export function followPage(): string {
 }
 
 /** `/privacy` and `/support`, in one language with a link to the other. */
-export function textPage(kind: "privacy" | "support", lang: AppLocale): string {
+export function textPage(
+  kind: "privacy" | "support",
+  lang: AppLocale,
+  controller: string | null = null,
+): string {
   const copy = COPY[lang];
   const page = copy[kind];
-  const slots = slotsFor(copy);
+  const slots = slotsFor(copy, controller);
   const other = LOCALES.find((locale) => locale !== lang) ?? lang;
   const switcher = `<a href="/${kind}?lang=${other}" hreflang="${other}" lang="${other}">${escapeHtml(copy.common.otherLanguage)}</a>`;
   const sections = page.sections
