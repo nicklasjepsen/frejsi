@@ -1,5 +1,6 @@
-// Installability and the offline shell (spec §9, plan §8): the manifest and its icons are
-// served, and after a first visit the service worker answers a navigation without a network.
+// Installability (spec §9, plan §8): the manifest and its icons are served. The service worker is
+// for push only since v0.7.7: it registers, but a page load always comes from the network, so a slow
+// worker wake-up can never hold the app on a blank page (docs/operations.md).
 import { expect, test } from "./test";
 
 interface Manifest {
@@ -29,18 +30,14 @@ test("the manifest is served with its icons", async ({ page, request }) => {
   );
 });
 
-test("after the first visit the shell loads offline", async ({ page, context }) => {
+test("the service worker registers but never answers a page load", async ({ page }) => {
   await page.goto("/da/welcome");
   await page.evaluate(async () => {
     await navigator.serviceWorker.ready;
   });
   await page.waitForFunction(() => navigator.serviceWorker.controller !== null);
 
-  await context.setOffline(true);
-  try {
-    await page.reload();
-    await expect(page.getByRole("heading", { name: "Ingen forbindelse lige nu" })).toBeVisible();
-  } finally {
-    await context.setOffline(false);
-  }
+  const response = await page.reload();
+  expect(response?.ok()).toBe(true);
+  expect(response?.fromServiceWorker()).toBe(false);
 });
