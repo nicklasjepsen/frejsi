@@ -39,13 +39,13 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: FrejsiDesktop-win-x64
-          path: desktop/publish/FrejsiDesktop.exe
+          name: NaensomDesktop-win-x64
+          path: desktop/publish/NaensomDesktop.exe
 
       - name: Release
         if: startsWith(github.ref, 'refs/tags/desktop-v')
         uses: softprops/action-gh-release@v2
         with:
-          files: desktop/publish/FrejsiDesktop.exe
+          files: desktop/publish/NaensomDesktop.exe
           generate_release_notes: false
-          body: "Frejsi desktop glance for Windows. Download `FrejsiDesktop.exe`; see `desktop/README.md` for setup."
+          body: "Nænsom desktop glance for Windows. Download `NaensomDesktop.exe`; see `desktop/README.md` for setup."

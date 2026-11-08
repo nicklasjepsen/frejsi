@@ -26,7 +26,7 @@ public partial class App : Application
     {
         base.OnStartup(e);
 
-        _single = new Mutex(initiallyOwned: true, "Frejsi.Desktop.SingleInstance", out var first);
+        _single = new Mutex(initiallyOwned: true, "Naensom.Desktop.SingleInstance", out var first);
         if (!first)
         {
             Shutdown();
@@ -35,6 +35,7 @@ public partial class App : Application
 
         ApplyPalette();
         _settings = AppSettings.Load();
+        StartWithWindows.MoveFromOldName();
 
         _tray = new TrayIcon();
         _tray.ToggleRequested += (_, _) => ToggleWindow();

@@ -8,7 +8,7 @@ using BgTray.Core;
 namespace BgTray;
 
 /// <summary>
-/// What the app remembers, in <c>%AppData%\Frejsi\Desktop\settings.json</c>. The token is stored
+/// What the app remembers, in <c>%AppData%\Naensom\Desktop\settings.json</c>. The token is stored
 /// encrypted with Windows DPAPI for the current user, so the file holds no readable secret.
 /// </summary>
 public sealed class AppSettings
@@ -27,9 +27,13 @@ public sealed class AppSettings
     public bool IsConfigured => !string.IsNullOrWhiteSpace(SiteUrl) && !string.IsNullOrWhiteSpace(TokenProtected);
 
     public static string Directory =>
-        Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Frejsi", "Desktop");
+        Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Naensom", "Desktop");
 
     private static string FilePath => Path.Combine(Directory, "settings.json");
+
+    /// <summary>Where the app kept its settings while it was called Frejsi; read once if the new file is missing.</summary>
+    private static string LegacyFilePath =>
+        Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Frejsi", "Desktop", "settings.json");
 
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
@@ -41,8 +45,12 @@ public sealed class AppSettings
     {
         try
         {
-            if (!File.Exists(FilePath)) return new AppSettings();
-            return JsonSerializer.Deserialize<AppSettings>(File.ReadAllText(FilePath), JsonOptions) ?? new AppSettings();
+            var path = File.Exists(FilePath) ? FilePath : File.Exists(LegacyFilePath) ? LegacyFilePath : null;
+            if (path is null) return new AppSettings();
+            var settings = JsonSerializer.Deserialize<AppSettings>(File.ReadAllText(path), JsonOptions) ?? new AppSettings();
+            // The token stays readable: DPAPI ties it to the Windows account, not to the folder.
+            if (path == LegacyFilePath) settings.Save();
+            return settings;
         }
         catch (Exception e) when (e is IOException or JsonException or UnauthorizedAccessException)
         {
