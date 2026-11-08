@@ -1,0 +1,214 @@
+{
+  "common": {
+    "otherLanguage": "Read in English",
+    "privacyLink": "Privatliv",
+    "supportLink": "Hjælp",
+    "sourceLink": "Kildekoden",
+    "updated": "Senest opdateret 9. november 2026.",
+    "controller": "Nicklas Møller Jepsen"
+  },
+  "follow": {
+    "pageTitle": "Åbn linket i Nænsom",
+    "title": "Dette link åbner Nænsom",
+    "lead": "Nænsom er en iPhone-app, der viser blodsukkeret fra en Nightscout-side, som nogen har delt med dig. Du ser denne side, fordi appen ikke er på telefonen endnu.",
+    "steps": [
+      "Hent Nænsom i App Store.",
+      "Åbn appen én gang.",
+      "Gå tilbage til beskeden, og tryk på linket igen. Så åbner det i Nænsom, som sætter sig selv op."
+    ],
+    "appStore": "Hent Nænsom i App Store",
+    "haveApp": "Har du allerede appen? Hold fingeren på linket, og vælg »Åbn i Nænsom«.",
+    "private": "Linket indeholder adgangen til Nightscout-siden. Den del bliver på din telefon: den bliver ikke sendt til denne side, og vi gemmer den ikke. Del ikke linket med andre.",
+    "iphoneOnly": "Nænsom findes kun til iPhone."
+  },
+  "privacy": {
+    "pageTitle": "Privatliv",
+    "title": "Privatliv i Nænsom til iPhone",
+    "intro": [
+      "Nænsom viser blodsukkeret fra din egen Nightscout-side. Vi samler så lidt som muligt, vi sporer dig ikke, og du kan slette det hele med ét tryk.",
+      "Her står præcis, hvad der bliver gemt, hvor og hvor længe. Spørg endelig, hvis noget er uklart."
+    ],
+    "sections": [
+      {
+        "heading": "Kort fortalt",
+        "body": [],
+        "list": [
+          "Appen henter målingerne direkte fra din Nightscout-side.",
+          "For at Live Activity og påmindelser kan holdes opdateret, mens appen er lukket, læser Nænsoms server den nyeste måling og sender den til din telefon gennem Apple.",
+          "Serveren gemmer ingen målinger. Den husker kun, hvornår den nyeste måling blev taget.",
+          "Ingen sporing, ingen analyseværktøjer, ingen reklamer, og vi sælger ingen data.",
+          "»Fjern denne telefon« i appens indstillinger sletter serverens kopi med det samme."
+        ]
+      },
+      {
+        "heading": "På din telefon",
+        "body": [],
+        "list": [
+          "Sidens adresse og tokenet ligger i iPhonens nøglering (Keychain).",
+          "Dine indstillinger: enhed, de fire farvegrænser, og om Live Activity og påmindelser er slået til.",
+          "Målingerne, appen viser, henter den selv fra Nightscout-siden. De bliver ikke sendt til os."
+        ]
+      },
+      {
+        "heading": "Hos Nænsoms server",
+        "body": [
+          "Når appen er sat op, melder den telefonen til hos Nænsoms server, så Live Activity og påmindelser virker, også når appen er lukket. Serveren gemmer én post pr. telefon med:"
+        ],
+        "list": [
+          "Nightscout-sidens adresse og tokenet. De ligger krypteret i Azure Key Vault og bruges kun til at læse de nyeste målinger fra siden. Serveren skriver aldrig noget til siden.",
+          "Sidens værtsnavn for sig, så vi kan begrænse antallet af forespørgsler og hjælpe, hvis noget driller.",
+          "De push-tokens, Apple giver appen til Live Activity og påmindelser. Det er tilfældige koder, som kun kan bruges til at nå appen på denne telefon.",
+          "Dine indstillinger: enhed, de fire farvegrænser, om påmindelser er slået til, og sproget, så beskederne kommer på dit sprog.",
+          "Tidspunkter: hvornår den nyeste måling blev taget (kun tidspunktet, ikke værdien), hvornår der sidst blev sendt en opdatering, hvornår Live Activity startede, hvornår og hvilken slags påmindelse der sidst blev sendt (lav, høj eller ingen nye målinger), hvornår posten blev oprettet og sidst set, og hvornår siden skal læses næste gang.",
+          "Hvor mange forsøg i træk der er gået galt, om telefonen følger demoen, og om appen er en test- eller App Store-udgave.",
+          "Et fingeraftryk (hash) af en tilfældig hemmelighed, som kun din telefon kender, så kun den kan ændre eller slette posten."
+        ]
+      },
+      {
+        "heading": "Det gemmer vi ikke",
+        "body": [
+          "Serveren gemmer ingen målinger og ingen historik. Den kender ikke dit navn, din e-mail, dit telefonnummer eller hvor du er, og posten hører ikke til en Nænsom-konto. Din IP-adresse bruges et øjeblik i hukommelsen til at begrænse antallet af forespørgsler og bliver ikke gemt."
+        ],
+        "list": []
+      },
+      {
+        "heading": "Det får Apple",
+        "body": [
+          "Opdateringerne går gennem Apples push-tjeneste (Apple Push Notification service) til din telefon. En opdatering af Live Activity indeholder den nyeste målings værdi, pilen for retningen, ændringen siden målingen før og tidspunktet for målingen. En påmindelse indeholder den tekst, du ser på skærmen, med værdien og hvor gammel den er. Apple behandler dem efter Apples egne regler for privatliv.",
+          "Nænsoms server læser din Nightscout-side på samme måde som appen, så den, der driver siden, kan se forespørgslerne."
+        ],
+        "list": []
+      },
+      {
+        "heading": "Hvor det kører",
+        "body": [
+          "Serveren kører i Microsoft Azure i EU: i regionen West Europe (Nederlandene), og databasen ligger i regionen Sweden Central (Sverige). Bortset fra det, Apple får som beskrevet ovenfor, forlader oplysningerne ikke EU."
+        ],
+        "list": []
+      },
+      {
+        "heading": "Hvor længe",
+        "body": ["Posten og tokenet bliver slettet:"],
+        "list": [
+          "med det samme, når du trykker »Fjern denne telefon«,",
+          "når Apple melder, at telefonens push-tokens ikke gælder længere, fx fordi appen er slettet,",
+          "efter 30 dage, hvor ingen opdatering er nået frem til telefonen, og appen ikke har meldt sig hos serveren."
+        ]
+      },
+      {
+        "heading": "Når noget er slettet",
+        "body": [
+          "Key Vault gemmer et slettet token i 7 dage, så det kan gendannes efter en fejl. Derefter er det væk for altid. Serverens tekniske log gemmes i 30 dage. Den viser, hvad der skete, fx »opdatering sendt«, og postens tilfældige id, aldrig adressen, tokenet, din IP-adresse eller en måling."
+        ],
+        "list": []
+      },
+      {
+        "heading": "Slet det hele med ét tryk",
+        "body": [
+          "Tryk »Fjern denne telefon« under Indstillinger i appen. Det stopper Live Activity og påmindelser, sletter kopien på Nænsoms server og fjerner adresse og token fra telefonen. Kan serveren ikke nås lige da, sletter den selv kopien efter 30 dage. Sletter du appen, holder opdateringerne op, og posten bliver slettet, når Apple melder, at appen er væk."
+        ],
+        "list": []
+      },
+      {
+        "heading": "Ingen sporing",
+        "body": [
+          "Nænsom bruger ingen analyseværktøjer, ingen reklamer og ingen sporing på tværs af apps og hjemmesider. Oplysningerne bliver ikke solgt og ikke delt med andre end Microsoft, som driver serveren, og Apple, som bringer opdateringerne ud. Disse sider kører ingen scripts og bruger ingen sporingscookies."
+        ],
+        "list": []
+      },
+      {
+        "heading": "Ikke medicinsk udstyr",
+        "body": [
+          "Nænsom er ikke medicinsk udstyr og træffer ingen beslutninger om behandling. Den viser data fra din egen Nightscout-side. Behold CGM-appen og dens alarmer. Nænsom viser blodsukkeret; den overvåger det ikke."
+        ],
+        "list": []
+      },
+      {
+        "heading": "Hvem står bag, og dine rettigheder",
+        "body": [
+          "Nænsom er et open source-projekt, som drives af {controller} i Danmark. Han er dataansvarlig.",
+          "Vi behandler oplysningerne, fordi du beder om det, når du sætter appen op (dit udtrykkelige samtykke). Du trækker samtykket tilbage med »Fjern denne telefon«.",
+          "Du har ret til at se og få slettet de oplysninger, vi har om dig, og til at klage til Datatilsynet (datatilsynet.dk). Serveren ved ikke, hvem du er, så nævn Nightscout-sidens værtsnavn, når du skriver, så vi kan finde posten. Skriv aldrig tokenet.",
+          "Skriv til {email}."
+        ],
+        "list": []
+      }
+    ]
+  },
+  "support": {
+    "pageTitle": "Hjælp",
+    "title": "Hjælp til Nænsom til iPhone",
+    "intro": [
+      "Nænsom viser blodsukkeret fra en Nightscout-side på din iPhone: i appen, på låseskærmen, i Dynamic Island og på CarPlay-skærmen. Altid med, hvor gammel målingen er."
+    ],
+    "sections": [
+      {
+        "heading": "Kom i gang",
+        "body": ["Der er tre måder at sætte Nænsom op på:"],
+        "list": [
+          "Tryk på linket, du har fået af den, der passer Nightscout-siden. Har du ikke appen endnu, så hent den i App Store, åbn den én gang, og tryk på linket igen.",
+          "Scan QR-koden med linket: tryk »Scan QR-koden« i appen.",
+          "Skriv adresse og token selv: tryk »Skriv adresse og token«, skriv sidens adresse (den begynder med https://) og et token, der kun kan læse, og tryk »Test forbindelsen«."
+        ]
+      },
+      {
+        "heading": "Et token, der kun kan læse",
+        "body": [
+          "Brug altid et token med rollen readable i Nightscout. Nænsom skriver aldrig noget til siden."
+        ],
+        "list": []
+      },
+      {
+        "heading": "Prøv demoen",
+        "body": [
+          "Tryk »Prøv demoen« på den første skærm for at følge opdigtede målinger og se, hvordan Nænsom virker, uden en Nightscout-side."
+        ],
+        "list": []
+      },
+      {
+        "heading": "Live Activity og CarPlay",
+        "body": [
+          "Live Activity viser blodsukkeret på låseskærmen og i Dynamic Island. Nænsoms server holder den opdateret, også når appen er lukket. Med iOS 26 vises den også på CarPlay-skærmen.",
+          "Står der »Live Activity er stoppet, tryk for at starte igen«, så tryk på det. Er Live Activities slået fra, kan du slå dem til under Nænsom i iPhonens Indstillinger."
+        ],
+        "list": []
+      },
+      {
+        "heading": "Farver og alder",
+        "body": [
+          "Værdien er grøn fra lav til høj, gul uden for, rød ved eller forbi de akutte værdier og grå, når målingen er mere end 15 minutter gammel. Farverne er kun farver: de slår ikke alarm. Hvor gammel målingen er, står altid ved værdien."
+        ],
+        "list": []
+      },
+      {
+        "heading": "Påmindelser ved lav og høj",
+        "body": [
+          "Slår du dem til, får du en besked, når blodsukkeret går under lav eller over høj, og når der ikke er kommet nye målinger i 20 minutter. Beskederne følger lydløs og Fokus som alle andre beskeder."
+        ],
+        "list": []
+      },
+      {
+        "heading": "Fjern denne telefon",
+        "body": [
+          "»Fjern denne telefon« under Indstillinger stopper Live Activity og påmindelser, sletter kopien på Nænsoms server og fjerner adresse og token fra telefonen. Du kan altid sætte den op igen med linket."
+        ],
+        "list": []
+      },
+      {
+        "heading": "Vigtigt",
+        "body": [
+          "Behold CGM-appen og dens alarmer. Nænsom viser blodsukkeret; den overvåger det ikke. Nænsom er ikke medicinsk udstyr og træffer ingen beslutninger om behandling. Er du i tvivl om noget i behandlingen, så spørg jeres diabetesteam."
+        ],
+        "list": []
+      },
+      {
+        "heading": "Kontakt",
+        "body": [
+          "Skriv til {email}, så svarer vi, så snart vi kan. Skriv aldrig tokenet i en mail.",
+          "Fejl og ønsker kan også oprettes som et issue på {source}. Det er offentligt, så skriv ikke noget om dig selv der."
+        ],
+        "list": []
+      }
+    ]
+  }
+}

@@ -1,0 +1,214 @@
+{
+  "common": {
+    "otherLanguage": "Læs på dansk",
+    "privacyLink": "Privacy",
+    "supportLink": "Support",
+    "sourceLink": "Source code",
+    "updated": "Last updated 9 November 2026.",
+    "controller": "Nicklas Møller Jepsen"
+  },
+  "follow": {
+    "pageTitle": "Open the link in Nænsom",
+    "title": "This link opens Nænsom",
+    "lead": "Nænsom is an iPhone app that shows the glucose from a Nightscout site someone has shared with you. You are seeing this page because the app is not on this phone yet.",
+    "steps": [
+      "Get Nænsom from the App Store.",
+      "Open the app once.",
+      "Go back to the message and tap the link again. It then opens in Nænsom, which sets itself up."
+    ],
+    "appStore": "Get Nænsom on the App Store",
+    "haveApp": "Already have the app? Press and hold the link and choose “Open in Nænsom”.",
+    "private": "The link carries the access to the Nightscout site. That part stays on your phone: it is not sent to this page, and we do not keep it. Do not share the link with others.",
+    "iphoneOnly": "Nænsom is for iPhone only."
+  },
+  "privacy": {
+    "pageTitle": "Privacy",
+    "title": "Privacy in Nænsom for iPhone",
+    "intro": [
+      "Nænsom shows the glucose from your own Nightscout site. We collect as little as we can, we do not track you, and you can delete everything with one tap.",
+      "This page says exactly what is kept, where and for how long. Do ask if anything is unclear."
+    ],
+    "sections": [
+      {
+        "heading": "In short",
+        "body": [],
+        "list": [
+          "The app reads the readings straight from your Nightscout site.",
+          "So that the Live Activity and reminders stay current while the app is closed, Nænsom's server reads the newest reading and sends it to your phone through Apple.",
+          "The server keeps no readings. It remembers only when the newest reading was taken.",
+          "No tracking, no analytics, no ads, and we sell no data.",
+          "“Remove this phone” in the app's settings deletes the server's copy at once."
+        ]
+      },
+      {
+        "heading": "On your phone",
+        "body": [],
+        "list": [
+          "The site's address and the token are kept in the iPhone's Keychain.",
+          "Your settings: unit, the four colour thresholds, and whether the Live Activity and reminders are on.",
+          "The readings the app shows, it reads from the Nightscout site itself. They are not sent to us."
+        ]
+      },
+      {
+        "heading": "On Nænsom's server",
+        "body": [
+          "Once the app is set up, it registers the phone with Nænsom's server, so the Live Activity and reminders work while the app is closed. The server keeps one record per phone with:"
+        ],
+        "list": [
+          "The Nightscout site's address and the token. They are kept encrypted in Azure Key Vault and used only to read the newest readings from the site. The server never writes anything to the site.",
+          "The site's host name on its own, so we can limit the number of requests and help when something goes wrong.",
+          "The push tokens Apple gives the app for the Live Activity and reminders. They are random codes that can only be used to reach the app on this phone.",
+          "Your settings: unit, the four colour thresholds, whether reminders are on, and the language, so messages arrive in yours.",
+          "Times: when the newest reading was taken (the time only, not the value), when an update was last sent, when the Live Activity started, when and which kind of reminder was last sent (low, high or no new readings), when the record was created and last seen, and when the site is due to be read next.",
+          "How many attempts in a row have failed, whether the phone follows the demo, and whether the app is a test or App Store build.",
+          "A fingerprint (hash) of a random secret only your phone knows, so only that phone can change or delete the record."
+        ]
+      },
+      {
+        "heading": "What we do not keep",
+        "body": [
+          "The server keeps no readings and no history. It does not know your name, email, phone number or where you are, and the record belongs to no Nænsom account. Your IP address is used for a moment in memory to limit the number of requests and is not stored."
+        ],
+        "list": []
+      },
+      {
+        "heading": "What Apple receives",
+        "body": [
+          "Updates go to your phone through Apple's push service (Apple Push Notification service). A Live Activity update carries the newest reading's value, the direction arrow, the change since the reading before and the time the reading was taken. A reminder carries the text you see on the screen, with the value and how old it is. Apple handles them under Apple's own privacy rules.",
+          "Nænsom's server reads your Nightscout site the same way the app does, so whoever runs the site can see the requests."
+        ],
+        "list": []
+      },
+      {
+        "heading": "Where it runs",
+        "body": [
+          "The server runs on Microsoft Azure in the EU: in the West Europe region (the Netherlands), with the database in the Sweden Central region (Sweden). Apart from what Apple receives as described above, the information does not leave the EU."
+        ],
+        "list": []
+      },
+      {
+        "heading": "How long",
+        "body": ["The record and the token are deleted:"],
+        "list": [
+          "at once, when you tap “Remove this phone”,",
+          "when Apple reports that the phone's push tokens are no longer valid, for example because the app was deleted,",
+          "after 30 days in which no update reached the phone and the app has not registered with the server."
+        ]
+      },
+      {
+        "heading": "After deletion",
+        "body": [
+          "Key Vault keeps a deleted token for 7 days, so it can be recovered after a mistake. After that it is gone for good. The server's technical log is kept for 30 days. It shows what happened, such as “update sent”, and the record's random id, never the address, the token, your IP address or a reading."
+        ],
+        "list": []
+      },
+      {
+        "heading": "Delete everything with one tap",
+        "body": [
+          "Tap “Remove this phone” in the app's Settings. It stops the Live Activity and reminders, deletes the copy on Nænsom's server and removes the address and token from the phone. If the server cannot be reached just then, it deletes its copy by itself after 30 days. If you delete the app, the updates stop, and the record is deleted when Apple reports that the app is gone."
+        ],
+        "list": []
+      },
+      {
+        "heading": "No tracking",
+        "body": [
+          "Nænsom uses no analytics, no ads and no tracking across apps and websites. The information is not sold and not shared with anyone but Microsoft, which runs the server, and Apple, which delivers the updates. These pages run no scripts and use no tracking cookies."
+        ],
+        "list": []
+      },
+      {
+        "heading": "Not a medical device",
+        "body": [
+          "Nænsom is not a medical device and makes no treatment decisions. It shows data from your own Nightscout site. Keep the CGM app and its alarms. Nænsom shows the glucose; it does not monitor it."
+        ],
+        "list": []
+      },
+      {
+        "heading": "Who is behind it, and your rights",
+        "body": [
+          "Nænsom is an open-source project run by {controller} in Denmark, who is the data controller.",
+          "We handle the information because you ask us to when you set up the app (your explicit consent). You withdraw that consent with “Remove this phone”.",
+          "You have the right to see and have deleted the information we hold about you, and to complain to the Danish Data Protection Agency (Datatilsynet, datatilsynet.dk). The server does not know who you are, so mention the Nightscout site's host name when you write, so we can find the record. Never send the token.",
+          "Write to {email}."
+        ],
+        "list": []
+      }
+    ]
+  },
+  "support": {
+    "pageTitle": "Support",
+    "title": "Help with Nænsom for iPhone",
+    "intro": [
+      "Nænsom shows the glucose from a Nightscout site on your iPhone: in the app, on the lock screen, in the Dynamic Island and on the CarPlay screen. Always with how old the reading is."
+    ],
+    "sections": [
+      {
+        "heading": "Getting started",
+        "body": ["There are three ways to set up Nænsom:"],
+        "list": [
+          "Tap the link you were sent by the person who looks after the Nightscout site. If you do not have the app yet, get it from the App Store, open it once and tap the link again.",
+          "Scan the QR code with the link: tap “Scan the QR code” in the app.",
+          "Type the address and token yourself: tap “Type the address and token”, enter the site's address (it starts with https://) and a read-only token, and tap “Test connection”."
+        ]
+      },
+      {
+        "heading": "A read-only token",
+        "body": [
+          "Always use a token with the readable role in Nightscout. Nænsom never writes anything to the site."
+        ],
+        "list": []
+      },
+      {
+        "heading": "Try the demo",
+        "body": [
+          "Tap “Try the demo” on the first screen to follow made-up readings and see how Nænsom works, without a Nightscout site."
+        ],
+        "list": []
+      },
+      {
+        "heading": "Live Activity and CarPlay",
+        "body": [
+          "The Live Activity shows the glucose on the lock screen and in the Dynamic Island. Nænsom's server keeps it current, even when the app is closed. With iOS 26 it also shows on the CarPlay screen.",
+          "If it says “Live Activity stopped, tap to restart”, tap it. If Live Activities are turned off, you can turn them on under Nænsom in the iPhone's Settings."
+        ],
+        "list": []
+      },
+      {
+        "heading": "Colours and age",
+        "body": [
+          "The value is green from low to high, yellow outside it, red at or beyond the urgent values, and grey when the reading is more than 15 minutes old. The colours are colours only: they raise no alarm. How old the reading is always shows next to the value."
+        ],
+        "list": []
+      },
+      {
+        "heading": "Low and high reminders",
+        "body": [
+          "When they are on, you get a message when the glucose goes below low or above high, and when no new readings have arrived for 20 minutes. The messages follow silent mode and Focus like any other notification."
+        ],
+        "list": []
+      },
+      {
+        "heading": "Remove this phone",
+        "body": [
+          "“Remove this phone” in Settings stops the Live Activity and reminders, deletes the copy on Nænsom's server and removes the address and token from the phone. You can always set it up again with the link."
+        ],
+        "list": []
+      },
+      {
+        "heading": "Important",
+        "body": [
+          "Keep the CGM app and its alarms. Nænsom shows the glucose; it does not monitor it. Nænsom is not a medical device and makes no treatment decisions. If you are unsure about anything in the treatment, ask your diabetes team."
+        ],
+        "list": []
+      },
+      {
+        "heading": "Contact",
+        "body": [
+          "Write to {email} and we will answer as soon as we can. Never put the token in an email.",
+          "Bugs and wishes can also be filed as an issue on {source}. That is public, so do not write anything about yourself there."
+        ],
+        "list": []
+      }
+    ]
+  }
+}
