@@ -33,7 +33,7 @@ export interface PushTestOptions {
 }
 
 export interface PushTestDeps {
-  /** The newest entries, newest first (two, for the change). */
+  /** The newest entries, newest first (three: a duplicate still leaves one for the change). */
   readLatest(): Promise<Entry[]>;
   send(request: ApnsRequest): Promise<ApnsResult>;
   /** The current activity token: fixed, or re-read from a file each tick. */
