@@ -11,7 +11,8 @@
     "lint": "eslint .",
     "test": "vitest run --passWithNoTests",
     "start": "func start",
-    "poll": "tsx src/cli.ts"
+    "poll": "tsx src/cli.ts",
+    "push-test": "tsx src/push-test.ts"
   },
   "dependencies": {
     "@azure/functions": "4.16.5",
