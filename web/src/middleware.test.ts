@@ -4,7 +4,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { SESSION_COOKIE as AUTH_SESSION_COOKIE } from "@/lib/auth/session";
 
-import { SESSION_COOKIE, config, isProtectedPath, middleware } from "./middleware";
+import { IOS_APP_PAGES, SESSION_COOKIE, config, isProtectedPath, middleware } from "./middleware";
 
 const request = (path: string, init: { cookie?: string; acceptLanguage?: string } = {}) => {
   const headers = new Headers();
@@ -73,6 +73,23 @@ describe("middleware", () => {
     expect(re.test("/manifest.webmanifest")).toBe(false);
     expect(re.test("/sw.js")).toBe(false);
     expect(re.test("/icons/icon-192.png")).toBe(false);
+    // Apple fetches this and refuses a redirect.
+    expect(re.test("/.well-known/apple-app-site-association")).toBe(false);
+  });
+
+  it("lets the iPhone app's pages through at their bare paths: no redirect, no cookie", () => {
+    expect(IOS_APP_PAGES).toEqual(["/follow", "/privacy", "/support"]);
+    for (const path of IOS_APP_PAGES) {
+      const res = middleware(request(path, { acceptLanguage: "en" }));
+      expect(res.status, path).toBe(200);
+      expect(res.headers.get("location"), path).toBeNull();
+      expect(res.headers.get("set-cookie"), path).toBeNull();
+    }
+    const withQuery = middleware(request("/privacy?lang=en"));
+    expect(withQuery.headers.get("location")).toBeNull();
+    // Only the exact paths: anything below or beside them is routed as before.
+    expect(location(middleware(request("/followers")))).toBe("/da/welcome");
+    expect(location(middleware(request("/da/privacy")))).toBe("/da/welcome");
   });
 
   it("isProtectedPath knows the public pages", () => {

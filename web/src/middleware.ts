@@ -21,6 +21,13 @@ export const SESSION_COOKIE = "frejsi_session";
 /** Pages a visitor reaches without a session: the invite landing and the returning sign-in. */
 const PUBLIC_PAGES = ["/welcome", "/invite"];
 
+/**
+ * The iPhone app's pages, at these exact paths with no locale (the app links to them): plain route
+ * handlers that pick their own language. The middleware lets them through untouched, so they set no
+ * cookie and never redirect (plan 2026-11-08-ios-follower-app §3, §6).
+ */
+export const IOS_APP_PAGES = ["/follow", "/privacy", "/support"];
+
 const ONE_YEAR_SECONDS = 365 * 24 * 60 * 60;
 
 /** Everything under the locale that is not a public page lives in the `(app)` group. */
@@ -57,6 +64,7 @@ function rememberLocale(response: NextResponse, locale: AppLocale): NextResponse
  */
 export function middleware(request: NextRequest): NextResponse {
   const { pathname, search } = request.nextUrl;
+  if (IOS_APP_PAGES.includes(pathname)) return NextResponse.next();
   const stripped = stripLocale(pathname);
   const locale = stripped.locale ?? preferredLocale(request);
   const path = stripped.locale ? stripped.path : pathname;
@@ -78,6 +86,7 @@ export function middleware(request: NextRequest): NextResponse {
 }
 
 export const config = {
-  // Pages only: not the API, Next internals, or files such as the manifest, icons and sw.js.
+  // Pages only: not the API, Next internals, or files such as the manifest, icons and sw.js. A
+  // path with a dot is skipped, which keeps /.well-known/apple-app-site-association unredirected.
   matcher: ["/((?!api|_next|.*\\..*).*)"],
 };
