@@ -478,6 +478,27 @@ describe("checkSubscription: tokens Apple calls invalid", () => {
       expect(h.get()).toBeDefined();
     });
 
+    it("keeps it when the app registered during the pass, even with Live Activity turned off", async () => {
+      const r = row({ activityStartedAt: old, activityPushToken: null });
+      const h = harness([r], {
+        respond: (request) => {
+          if (request.deviceToken !== START) return { status: 200 };
+          // The app registers with Live Activity off: no push tokens, the device token stays.
+          const current = must(h.store.rows.get(r.id));
+          h.store.rows.set(r.id, {
+            ...current,
+            pushToStartToken: null,
+            activityPushToken: null,
+            lastSeenAt: new Date(T0),
+          });
+          return gone;
+        },
+      });
+      await expect(checkSubscription(h.deps, r)).resolves.not.toBe("removed");
+      expect(h.get()).toMatchObject({ deviceToken: DEVICE, pushToStartToken: null });
+      await expect(h.secrets.get(liveSecretName(r.id))).resolves.toBeDefined();
+    });
+
     it("keeps a subscription whose device token alone Apple rejects, while push tokens are left", async () => {
       const r = row();
       const h = harness([r], {

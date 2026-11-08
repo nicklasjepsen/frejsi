@@ -148,18 +148,18 @@ TestFlight and the App Store, as the app registered.
 
 **Cleanup.** `lastSeenAt` moves forward on every push Apple accepts and every registration. A token
 Apple answers 410, `BadDeviceToken` or `Unregistered` for is cleared; when no token is left the
-subscription is deleted with its Key Vault secret (the secret first). So is one whose push-to-start
-token Apple rejects at the 8-hour restart while no activity token is left (the restart ends the old
-one), even if a device token for reminders remains: the app is gone from the phone (`live.removed`
-with `push-to-start-invalid`). An activity token the app registered meanwhile keeps it until that
-activity ends. "Remove this phone" deletes both at once (an app that could not reach the relay keeps
-trying the `DELETE` until it answers 204, 401 or 404), and
-each run deletes up to 100 subscriptions whose `lastSeenAt` is 30 days old (only if the app has not
-registered since the run selected them). A subscription with no push token at all reads no site, is
-looked at hourly, and goes after a day without one. A reading dated more than two minutes ahead is a
+subscription is deleted with its Key Vault secret. So is one whose push-to-start token Apple
+rejects at the 8-hour restart while no activity token is left (the restart ends the old one), even
+if a device token for reminders remains: the app is gone from the phone (`live.removed` with
+`push-to-start-invalid`). An activity token the app registered meanwhile keeps it until that
+activity ends. "Remove this phone" deletes both at once (an app that could not reach the relay
+keeps trying the `DELETE` until it answers 204, 401 or 404), and each run deletes up to 100
+subscriptions whose `lastSeenAt` is 30 days old (only if the app has not registered since the run
+selected them). A subscription with no push token at all reads no site, is looked at hourly, and
+goes after a day without one. A reading dated more than two minutes ahead is a
 clock error and is ignored.
 
-The idle and tokenless cleanups delete the row first, guarded by `lastSeenAt` so a registration
+The idle, tokenless and invalid-token cleanups delete the row first, guarded by `lastSeenAt` so a registration
 that comes in meanwhile keeps its subscription and stored token, and then `live-<id>`, tried twice.
 A secret both tries failed for is not left for good: the run that starts in minute 0 of each hour
 lists the `live-` secrets (names and write times, never values, `Secrets.list`) and deletes every
