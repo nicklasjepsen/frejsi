@@ -10,7 +10,7 @@ import os
 /// - the **push-to-start token**, per app install, which starts a new activity with the app closed
 ///   (the 8-hour restart).
 ///
-/// In stage 2 nothing registers with a server yet: the tokens are logged and shown on screen so the
+/// In stage 2 nothing registers with a server yet: the tokens are shown on screen (and written locally in debug builds) so the
 /// operator can hand them to `pnpm --filter ./poller push-test` (ios/README.md). Stage 4 sends them
 /// to `live-register` instead.
 @MainActor
