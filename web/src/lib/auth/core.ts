@@ -181,20 +181,49 @@ export function run<T>(
 }
 
 /**
- * The app's origin, `https://frejsi.jepsen.ninja` in production (plan §7). Required: the RP ID
+ * The app's origin, `https://naensom.jepsen.ninja` in production (plan §7). Required: the RP ID
  * and the origin check of every ceremony derive from it, so there is no default.
  */
 export function appOrigin(): string {
   const value = process.env.APP_ORIGIN;
   if (!value) throw new Error("APP_ORIGIN is required");
+  return checkedOrigin(value, "APP_ORIGIN");
+}
+
+function checkedOrigin(value: string, name: string): string {
   const url = new URL(value);
   if (url.protocol !== "https:" && url.hostname !== "localhost") {
-    throw new Error("APP_ORIGIN must be https (or http://localhost for development)");
+    throw new Error(`${name} must be https (or http://localhost for development)`);
   }
   return url.origin;
 }
 
-/** The WebAuthn relying party id: the host of `APP_ORIGIN` (plan §6). */
+/**
+ * Every origin the app answers on: `APP_ORIGIN` first, then `APP_OTHER_ORIGINS` (comma separated),
+ * the addresses the app was reachable at before, which keep working for installed apps and old
+ * links. A ceremony from any of them is accepted; links the app hands out use `APP_ORIGIN`.
+ */
+export function appOrigins(): string[] {
+  const others = (process.env.APP_OTHER_ORIGINS ?? "")
+    .split(",")
+    .map((value) => value.trim())
+    .filter(Boolean)
+    .map((value) => checkedOrigin(value, "APP_OTHER_ORIGINS"));
+  return [...new Set([appOrigin(), ...others])];
+}
+
+/**
+ * The WebAuthn relying party id (plan §6): `PASSKEY_RP_ID` when set, otherwise the host of
+ * `APP_ORIGIN`. A passkey belongs to the RP ID it was made for, so when the app moves to a new
+ * address `PASSKEY_RP_ID` keeps the old host and the new origin is listed at the old host's
+ * `/.well-known/webauthn` (WebAuthn related origin requests), so existing passkeys keep working.
+ */
 export function rpId(): string {
-  return new URL(appOrigin()).hostname;
+  const configured = process.env.PASSKEY_RP_ID?.trim();
+  if (!configured) return new URL(appOrigin()).hostname;
+  const hosts = appOrigins().map((origin) => new URL(origin).hostname);
+  if (!hosts.includes(configured)) {
+    throw new Error("PASSKEY_RP_ID must be the host of APP_ORIGIN or of one of APP_OTHER_ORIGINS");
+  }
+  return configured;
 }

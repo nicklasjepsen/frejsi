@@ -19,7 +19,9 @@
 #   7. registers the hub's `connect` event handler at the web app's /api/pubsub (issue #95)
 #
 # Required environment: AZURE_SUBSCRIPTION_ID, AZURE_RESOURCE_GROUP, APP_VERSION (the tag), ALERT_EMAIL.
-# Optional: CUSTOM_DOMAIN (sets APP_ORIGIN; otherwise the default hostname), GITHUB_OUTPUT,
+# Optional: CUSTOM_DOMAIN (sets APP_ORIGIN; otherwise the default hostname), OTHER_DOMAINS (earlier
+# domains, comma separated, written as APP_OTHER_ORIGINS), PASSKEY_RP_ID (the passkey RP ID after a
+# move; one of those hosts), GITHUB_OUTPUT,
 # PHOTOS_STORAGE_ACCOUNT (dedicated photo account; creates blob-connection-string once),
 # SQL_SERVER_ID (resource ID of an existing SQL server holding the database; infra/README.md),
 # DEFAULT_LOCALE, FOOD_SOURCES, OFF_COUNTRY, OFF_CONTRIBUTE_HOST (written to the web app's settings
@@ -41,6 +43,24 @@ set -euo pipefail
 : "${APP_VERSION:?APP_VERSION is required (the release tag)}"
 : "${ALERT_EMAIL:?ALERT_EMAIL is required for the push contact}"
 CUSTOM_DOMAIN="${CUSTOM_DOMAIN:-}"
+OTHER_DOMAINS="${OTHER_DOMAINS:-}"
+PASSKEY_RP_ID="${PASSKEY_RP_ID:-}"
+APP_OTHER_ORIGINS=""
+if [ -n "$OTHER_DOMAINS" ]; then
+  IFS=',' read -r -a other_domains <<< "$OTHER_DOMAINS"
+  for domain in "${other_domains[@]}"; do
+    domain="${domain// /}"
+    [ -z "$domain" ] && continue
+    if ! [[ "$domain" =~ ^[a-z0-9]([a-z0-9.-]*[a-z0-9])?$ ]]; then
+      echo "::error::OTHER_DOMAINS must be host names, comma separated" >&2; exit 1
+    fi
+    APP_OTHER_ORIGINS="${APP_OTHER_ORIGINS:+$APP_OTHER_ORIGINS,}https://$domain"
+  done
+fi
+if [ -n "$PASSKEY_RP_ID" ] && [ "$PASSKEY_RP_ID" != "$CUSTOM_DOMAIN" ] \
+  && ! [[ ",$APP_OTHER_ORIGINS," == *",https://$PASSKEY_RP_ID,"* ]]; then
+  echo "::error::PASSKEY_RP_ID must be CUSTOM_DOMAIN or one of OTHER_DOMAINS" >&2; exit 1
+fi
 PHOTOS_STORAGE_ACCOUNT="${PHOTOS_STORAGE_ACCOUNT:-}"
 if [ -n "$PHOTOS_STORAGE_ACCOUNT" ] && ! [[ "$PHOTOS_STORAGE_ACCOUNT" =~ ^[a-z0-9]{3,24}$ ]]; then
   echo "::error::PHOTOS_STORAGE_ACCOUNT must be a storage account name" >&2; exit 1
@@ -364,6 +384,8 @@ fi
     --arg sourceConnectUrl "https://$FUNCTION_HOST/api/source-connect" \
     --arg appInsights "$APPI_CONNECTION" \
     --arg appOrigin "$APP_ORIGIN" \
+    --arg otherOrigins "$APP_OTHER_ORIGINS" \
+    --arg passkeyRpId "$PASSKEY_RP_ID" \
     --arg version "$APP_VERSION" \
     '{ properties: ({
          DATABASE_URL: ($databaseUrl | rtrimstr("\n")),
@@ -375,7 +397,9 @@ fi
          APPLICATIONINSIGHTS_CONNECTION_STRING: $appInsights,
          APP_ORIGIN: $appOrigin,
          NEXT_PUBLIC_APP_VERSION: $version }
-       + (if $blobConnection == "" then {} else {BLOB_CONNECTION_STRING: ($blobConnection | rtrimstr("\n"))} end)) }' > "$SWA_SETTINGS_FILE" )
+       + (if $blobConnection == "" then {} else {BLOB_CONNECTION_STRING: ($blobConnection | rtrimstr("\n"))} end)
+       + (if $otherOrigins == "" then {} else {APP_OTHER_ORIGINS: $otherOrigins} end)
+       + (if $passkeyRpId == "" then {} else {PASSKEY_RP_ID: $passkeyRpId} end)) }' > "$SWA_SETTINGS_FILE" )
 # --- Push contact and once-only VAPID pair (files only; never stdout or argv) ------------------
 if secret_exists vapid-public-key && ! secret_exists vapid-private-key; then
   echo "::error::VAPID private key is missing; restore the original pair" >&2; exit 1

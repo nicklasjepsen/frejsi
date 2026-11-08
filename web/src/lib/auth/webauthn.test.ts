@@ -3,7 +3,7 @@ import { createEmit } from "@naensom/shared";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { CHALLENGE_TTL_MS } from "./challenges";
-import { appOrigin, rpId } from "./core";
+import { appOrigin, appOrigins, rpId } from "./core";
 import { createInvite } from "./invites";
 import { loadSession, SESSION_MAX_AGE_SECONDS } from "./session";
 import { FakeAuthDb, recordingSink, VirtualAuthenticator } from "./test-support";
@@ -72,6 +72,8 @@ beforeEach(() => {
 });
 afterEach(() => {
   delete process.env.APP_ORIGIN;
+  delete process.env.APP_OTHER_ORIGINS;
+  delete process.env.PASSKEY_RP_ID;
 });
 
 describe("APP_ORIGIN", () => {
@@ -349,6 +351,54 @@ describe("registration", () => {
     expect(options.excludeCredentials?.map((c) => c.id)).toEqual(
       w.fake.rows("passkey").map((p) => p.credentialId),
     );
+  });
+});
+
+describe("a move to a new address (APP_OTHER_ORIGINS, PASSKEY_RP_ID)", () => {
+  const OLD = "https://old.example";
+
+  it("keeps the old host as the RP ID and accepts ceremonies from both origins", () => {
+    process.env.APP_OTHER_ORIGINS = `${OLD}, ${ORIGIN}`;
+    process.env.PASSKEY_RP_ID = "old.example";
+    expect(appOrigins()).toEqual([ORIGIN, OLD]);
+    expect(rpId()).toBe("old.example");
+    expect(() => {
+      assertOrigin(OLD);
+      assertOrigin(ORIGIN);
+    }).not.toThrow();
+    expect(
+      caught(() => {
+        assertOrigin("https://evil.example");
+      }),
+    ).toMatchObject({ status: 403 });
+  });
+
+  it("refuses a PASSKEY_RP_ID that is not the host of an origin the app answers on", () => {
+    process.env.PASSKEY_RP_ID = "evil.example";
+    expect(() => rpId()).toThrow(/PASSKEY_RP_ID/);
+  });
+
+  it("signs in at the new origin with a passkey made at the old one", async () => {
+    // Before the move: the app lives at the old address only.
+    process.env.APP_ORIGIN = OLD;
+    const w = world();
+    const atOld = new VirtualAuthenticator("old.example", OLD);
+    const token = await carerInvite(w);
+    const registration = await startRegistration(token, w.deps);
+    const registered = await finishRegistration(
+      { challengeId: registration.challengeId, response: atOld.register(registration.options) },
+      w.deps,
+    );
+
+    // After the move: the new address is APP_ORIGIN, the passkeys keep the old RP ID.
+    process.env.APP_ORIGIN = ORIGIN;
+    process.env.APP_OTHER_ORIGINS = OLD;
+    process.env.PASSKEY_RP_ID = "old.example";
+    const { challengeId, options } = await startLogin(w.deps);
+    expect(options.rpId).toBe("old.example");
+    const response = atOld.authenticate(options, { origin: ORIGIN });
+    const result = await finishLogin({ challengeId, response }, w.deps);
+    expect(result.userId).toBe(registered.userId);
   });
 });
 

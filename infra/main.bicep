@@ -26,6 +26,9 @@ param alertEmail string
 @description('Custom domain for the web app, for example frejsi.jepsen.ninja. Empty means none yet (first release, or a fork without a domain).')
 param customDomain string = ''
 
+@description('Earlier custom domains the web app keeps answering on, comma separated, for example frejsi.jepsen.ninja after a move. Each needs its CNAME. Empty means none.')
+param otherDomains string = ''
+
 @description('One-time token guarding POST /api/bootstrap. Regenerated on every deployment; the route is dead once a space exists.')
 @secure()
 param bootstrapToken string = newGuid()
@@ -120,6 +123,7 @@ module staticWebApp 'modules/staticwebapp.bicep' = {
     baseName: baseName
     suffix: suffix
     customDomain: customDomain
+    otherDomains: empty(otherDomains) ? [] : map(split(otherDomains, ','), d => trim(d))
   }
 }
 

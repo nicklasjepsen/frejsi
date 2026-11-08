@@ -10,6 +10,9 @@ param tags object
 param baseName string
 param suffix string
 param customDomain string
+// Earlier addresses that keep answering after a move to customDomain (infra/README.md, "Moving to a
+// new address"); each one keeps its CNAME.
+param otherDomains array = []
 
 // The suffix keeps the name unique across installations, like every other public-facing resource:
 // a fork that keeps baseName would otherwise fail its first deployment on a taken name.
@@ -35,6 +38,14 @@ resource domain 'Microsoft.Web/staticSites/customDomains@2024-04-01' = if (!empt
     validationMethod: 'cname-delegation'
   }
 }
+
+resource otherDomain 'Microsoft.Web/staticSites/customDomains@2024-04-01' = [for name in otherDomains: {
+  parent: site
+  name: name
+  properties: {
+    validationMethod: 'cname-delegation'
+  }
+}]
 
 output name string = site.name
 output id string = site.id

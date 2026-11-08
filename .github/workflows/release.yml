@@ -11,7 +11,7 @@ run-name: release ${{ github.event.inputs.tag || github.ref_name }}
 #
 # Azure access: OIDC federated credentials on the environments `production-infra` and `production`,
 # repository variables AZURE_CLIENT_ID, AZURE_TENANT_ID, AZURE_SUBSCRIPTION_ID and the optional
-# CUSTOM_DOMAIN and SQL_SERVER_ID, and the repository secret ALERT_EMAIL (a secret, so the address
+# CUSTOM_DOMAIN, OTHER_DOMAINS, PASSKEY_RP_ID and SQL_SERVER_ID, and the repository secret ALERT_EMAIL (a secret, so the address
 # stays out of this public repository's run logs) (infra/README.md, "What the owner does once"). The
 # infra job deploys infra/main.bicep with infra/main.bicepparam; the deploy job calls infra/deploy.sh.
 
@@ -169,6 +169,7 @@ jobs:
       # Read by infra/main.bicepparam through readEnvironmentVariable(); never committed.
       ALERT_EMAIL: ${{ secrets.ALERT_EMAIL }}
       CUSTOM_DOMAIN: ${{ vars.CUSTOM_DOMAIN }}
+      OTHER_DOMAINS: ${{ vars.OTHER_DOMAINS }}
       SQL_SERVER_ID: ${{ vars.SQL_SERVER_ID }}
     steps:
       - uses: actions/checkout@v7
@@ -243,6 +244,8 @@ jobs:
         env:
           AZURE_SUBSCRIPTION_ID: ${{ vars.AZURE_SUBSCRIPTION_ID }}
           CUSTOM_DOMAIN: ${{ vars.CUSTOM_DOMAIN }}
+          OTHER_DOMAINS: ${{ vars.OTHER_DOMAINS }}
+          PASSKEY_RP_ID: ${{ vars.PASSKEY_RP_ID }}
           SQL_SERVER_ID: ${{ vars.SQL_SERVER_ID }}
           # Optional country settings; deploy.sh writes each to the web app only when it is set.
           DEFAULT_LOCALE: ${{ vars.DEFAULT_LOCALE }}

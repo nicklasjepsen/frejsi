@@ -19,7 +19,7 @@ import { defaultLocale } from "@/lib/i18n/routing";
 
 import { consumeChallenge, createChallenge } from "./challenges";
 import {
-  appOrigin,
+  appOrigins,
   resolve,
   rpId,
   transact,
@@ -72,11 +72,11 @@ export interface LoginResult {
 }
 
 /**
- * The `Origin` header of a ceremony request must be the app's own origin (plan §6). The browser
- * sets it on every cross-site POST, so a request from another site cannot start or finish one.
+ * The `Origin` header of a ceremony request must be one of the app's own origins (plan §6). The
+ * browser sets it on every cross-site POST, so a request from another site cannot start or finish one.
  */
 export function assertOrigin(origin: string | null): void {
-  if (origin !== appOrigin()) throw new HttpError(403, "forbidden");
+  if (origin === null || !appOrigins().includes(origin)) throw new HttpError(403, "forbidden");
 }
 
 /** 32 random bytes, base64url: the `Session.id` and the cookie value (plan §3). */
@@ -156,7 +156,7 @@ export async function finishRegistration(
     verification = await verifyRegistrationResponse({
       response: input.response,
       expectedChallenge: challenge.challenge,
-      expectedOrigin: appOrigin(),
+      expectedOrigin: appOrigins(),
       expectedRPID: rpId(),
       requireUserVerification: false,
     });
@@ -249,7 +249,7 @@ export async function finishLogin(input: LoginInput, deps: AuthDeps = {}): Promi
     verification = await verifyAuthenticationResponse({
       response: input.response,
       expectedChallenge: challenge.challenge,
-      expectedOrigin: appOrigin(),
+      expectedOrigin: appOrigins(),
       expectedRPID: rpId(),
       credential: {
         id: passkey.credentialId,

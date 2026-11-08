@@ -99,8 +99,11 @@ test('Static Web App Standard with the custom domain and no identity providers',
   // Globally unique like the other public-facing names: a fork that keeps baseName must not collide.
   assert.match(resolve(swa.resource.name, swa.scope), /^frejsi-\[uniqueString\(resourceGroup\(\)\.id\)\]$/);
   const domains = byType('Microsoft.Web/staticSites/customDomains');
-  assert.equal(domains.length, 1, 'expected one (conditional) custom domain resource');
-  assert.ok(domains[0].resource.condition, 'custom domain must be conditional on the domain parameter');
+  // The custom domain (conditional on its parameter) and the earlier domains after a move (a loop
+  // over otherDomains, empty unless the OTHER_DOMAINS variable is set).
+  assert.equal(domains.length, 2, 'expected the custom domain and the other-domains loop');
+  assert.equal(domains.filter((d) => d.resource.condition).length, 1, 'custom domain must be conditional on the domain parameter');
+  assert.equal(domains.filter((d) => d.resource.copy).length, 1, 'other domains must be a loop over otherDomains');
   assert.equal(byType('Microsoft.Web/staticSites/config').length, 0, 'no auth/identity provider config on the SWA');
   const config = readIfExists(path.join(repoRoot, 'web/staticwebapp.config.json'));
   if (config) assert.ok(!('auth' in JSON.parse(config)), 'staticwebapp.config.json must not have an auth block');

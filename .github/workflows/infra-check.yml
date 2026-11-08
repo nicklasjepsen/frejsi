@@ -25,6 +25,7 @@ env:
   # variable read by release.yml and is never in the repository.
   ALERT_EMAIL: alerts@example.invalid
   CUSTOM_DOMAIN: ''
+  OTHER_DOMAINS: ''
 
 jobs:
   infra-check:

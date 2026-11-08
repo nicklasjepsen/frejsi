@@ -154,6 +154,27 @@ The database must be named `frejsi` (or set `SQL_DATABASE` in the deploy job). C
 cost latency: with the web app in West Europe and the server in Sweden Central, every query adds about
 20–30 ms.
 
+## Moving to a new address
+
+A passkey belongs to the host it was made on (its RP ID), so moving the app to a new domain would
+make everyone set up their passkey again, and an installed app on a phone keeps opening the old
+address. A move therefore keeps the old domain working beside the new one:
+
+1. Add the new domain's CNAME to the Static Web App's default hostname (`az staticwebapp show -g
+   <rg> -n <swa> --query defaultHostname`). Leave the old CNAME in place.
+2. Set the repository variables: `CUSTOM_DOMAIN` to the new domain, `OTHER_DOMAINS` to the old one
+   (comma separated if there are several), and `PASSKEY_RP_ID` to the old one.
+3. Release with the infra box ticked (a new tag, or `workflow_dispatch` on the current one). Bicep
+   adds the new custom domain and keeps the old one; `deploy.sh` writes `APP_ORIGIN` (the new
+   address, used in invite links), `APP_OTHER_ORIGINS` and `PASSKEY_RP_ID` to the web app.
+
+Both addresses then serve the same app. Sign-in is accepted from either origin, and passkeys keep
+the old RP ID: at the new address the browser checks the old host's `/.well-known/webauthn`, which
+lists every origin the app answers on (WebAuthn related origin requests; iOS and macOS 18 or later,
+Chrome and Edge 128 or later). Nothing redirects: an app installed from the old address keeps
+working, and people move to the new one in their own time by opening it and adding it to the home
+screen again. Sessions are per address, so the first visit to the new one asks for the passkey once.
+
 ## Deploy your own
 
 [docs/deploy-your-own.md](../docs/deploy-your-own.md) takes a fork from nothing to a running site:

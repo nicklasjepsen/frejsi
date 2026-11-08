@@ -11,6 +11,10 @@ param alertEmail = readEnvironmentVariable('ALERT_EMAIL', '')
 // Repository variable CUSTOM_DOMAIN, set after the first release once the CNAME exists (README step 7).
 param customDomain = readEnvironmentVariable('CUSTOM_DOMAIN', '')
 
+// Repository variable OTHER_DOMAINS: earlier custom domains that keep working after a move
+// (README, "Moving to a new address"). Unset: none.
+param otherDomains = readEnvironmentVariable('OTHER_DOMAINS', '')
+
 // Repository variable SQL_SERVER_ID: an existing SQL server for the database (README, "An existing
 // SQL server"). Unset: a dedicated server in the resource group.
 param sqlServerId = readEnvironmentVariable('SQL_SERVER_ID', '')

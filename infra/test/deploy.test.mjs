@@ -211,6 +211,30 @@ test('custom domain wins over the default hostname for APP_ORIGIN', () => {
   assert.match(r.githubOutput, /^app_origin=https:\/\/frejsi\.jepsen\.ninja$/m);
 });
 
+test('a move keeps the old domain as another origin and the passkey RP ID', () => {
+  const r = runDeploy({ env: { FAKE_EXISTING_SECRETS: 'database-url web-pubsub-connection-string bootstrap-token vapid-private-key vapid-public-key', CUSTOM_DOMAIN: 'new.example.org', OTHER_DOMAINS: 'old.example.org, older.example.org', PASSKEY_RP_ID: 'old.example.org' } });
+  assert.equal(r.status, 0, r.output);
+  const swa = JSON.parse(readFileSync(path.join(r.logDir, 'swa-appsettings.json'), 'utf8')).properties;
+  assert.equal(swa.APP_ORIGIN, 'https://new.example.org');
+  assert.equal(swa.APP_OTHER_ORIGINS, 'https://old.example.org,https://older.example.org');
+  assert.equal(swa.PASSKEY_RP_ID, 'old.example.org');
+});
+
+test('without a move the web app gets neither APP_OTHER_ORIGINS nor PASSKEY_RP_ID', () => {
+  const r = runDeploy({ env: { FAKE_EXISTING_SECRETS: 'database-url web-pubsub-connection-string bootstrap-token vapid-private-key vapid-public-key', CUSTOM_DOMAIN: 'new.example.org' } });
+  assert.equal(r.status, 0, r.output);
+  const swa = JSON.parse(readFileSync(path.join(r.logDir, 'swa-appsettings.json'), 'utf8')).properties;
+  assert.equal(swa.APP_OTHER_ORIGINS, undefined);
+  assert.equal(swa.PASSKEY_RP_ID, undefined);
+});
+
+test('a PASSKEY_RP_ID that is no domain of the app stops the deploy before Azure', () => {
+  const r = runDeploy({ env: { CUSTOM_DOMAIN: 'new.example.org', PASSKEY_RP_ID: 'evil.example.org' } });
+  assert.notEqual(r.status, 0);
+  assert.match(r.output, /PASSKEY_RP_ID must be/);
+  assert.equal(r.calls.length, 0);
+});
+
 test('the firewall rule is removed even when the migration fails', () => {
   const r = runDeploy({ env: { FAKE_EXISTING_SECRETS: 'database-url web-pubsub-connection-string bootstrap-token vapid-private-key vapid-public-key', FAKE_FAIL_AT: 'migrate' } });
   assert.notEqual(r.status, 0);
