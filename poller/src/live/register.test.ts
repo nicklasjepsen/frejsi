@@ -307,6 +307,19 @@ describe("POST /api/live/register: update", () => {
     });
   });
 
+  it("checks a subscription parked without tokens on the next run once it has one", async () => {
+    const h = await created();
+    await h.store.update(ID, {
+      pushToStartToken: null,
+      activityPushToken: null,
+      deviceToken: null,
+      nextCheckAt: new Date(T0 + 3_600_000),
+    });
+    const { activityPushToken: _a, activityStartedAt: _s, pushToStartToken: _p, ...rest } = body;
+    await h.register(request({ ...rest, subscriptionId: ID, deviceToken: "c3".repeat(32) }, auth));
+    expect(h.store.rows.get(ID)?.nextCheckAt).toEqual(new Date(T0 + 60_000));
+  });
+
   it("ignores an activity older than the one the relay restarted, so a restart does not loop", async () => {
     const h = await created();
     // The relay restarted at T0 and cleared the token; the app still reports the old activity.

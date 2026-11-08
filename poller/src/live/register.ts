@@ -341,6 +341,13 @@ export function createLiveRegisterHandler(deps: RegisterDeps) {
       patch.lastAlertKind = null;
       patch.lastAlertAt = null;
     }
+    const hadNoToken =
+      row.pushToStartToken === null && row.activityPushToken === null && row.deviceToken === null;
+    const hasToken = [patch.pushToStartToken, patch.activityPushToken, patch.deviceToken].some(
+      (token) => typeof token === "string",
+    );
+    // A subscription the relay parked for having no token is checked on the next run once it has one.
+    if (hadNoToken && hasToken) patch.nextCheckAt = new Date(now);
     if (restartReading) {
       // A new activity or a new site gets the newest reading on the next run, not five minutes on.
       patch.lastReadingAt = null;

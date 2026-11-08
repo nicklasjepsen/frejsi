@@ -405,6 +405,38 @@ describe("checkSubscription: tokens Apple calls invalid", () => {
   });
 });
 
+describe("checkSubscription: what it does not trust", () => {
+  it("ignores a reading dated in the future, so a clock error cannot stop the polling", async () => {
+    const r = row({ deviceToken: null });
+    const h = harness([r], { entries: [entry(-24 * 60, 120), entry(1, 118)] });
+    await checkSubscription(h.deps, r);
+    expect(h.get()?.lastReadingAt).toEqual(new Date(T0 - min));
+    expect(aps(must(h.sent[0]))).toMatchObject({ "content-state": { mgdl: 118 } });
+  });
+
+  it("reads no site for a subscription without any token, and removes it after a day", async () => {
+    const r = row({
+      pushToStartToken: null,
+      activityPushToken: null,
+      deviceToken: null,
+      lastSeenAt: new Date(T0 - 60 * min),
+    });
+    const h = harness([r]);
+    let reads = 0;
+    h.deps.readEntries = () => {
+      reads += 1;
+      return Promise.resolve([]);
+    };
+    await expect(checkSubscription(h.deps, r)).resolves.toBe("unchanged");
+    expect(reads).toBe(0);
+    expect(h.get()?.nextCheckAt).toEqual(new Date(T0 + 60 * min));
+    h.setNow(T0 + 24 * 60 * min);
+    await expect(checkSubscription(h.deps, must(h.get()))).resolves.toBe("removed");
+    expect(h.get()).toBeUndefined();
+    await expect(h.secrets.get(liveSecretName(r.id))).resolves.toBeUndefined();
+  });
+});
+
 describe("runLivePoll", () => {
   it("checks only the due subscriptions and writes one summary line", async () => {
     const due = row({ id: "sub-due-1", deviceToken: null });
@@ -441,6 +473,25 @@ describe("runLivePoll", () => {
     await expect(h.secrets.get(liveSecretName("sub-idle-1"))).resolves.toBeUndefined();
     expect(h.get("sub-alive")).toBeDefined();
     await expect(h.secrets.get(liveSecretName("sub-alive"))).resolves.toBeDefined();
+  });
+
+  it("keeps an idle subscription the app registered after the cleanup selected it", async () => {
+    const idle = row({
+      id: "sub-idle-2",
+      lastSeenAt: new Date(T0 - IDLE_AFTER_MS - 1),
+      nextCheckAt: new Date(T0 + min),
+    });
+    const h = harness([idle]);
+    const select = h.store.idle.bind(h.store);
+    h.store.idle = async (before, limit) => {
+      const rows = await select(before, limit);
+      // The app registers between the select and the delete.
+      await h.store.update("sub-idle-2", { lastSeenAt: new Date(T0) });
+      return rows;
+    };
+    await runLivePoll(h.deps);
+    expect(h.get("sub-idle-2")).toBeDefined();
+    await expect(h.secrets.get(liveSecretName("sub-idle-2"))).resolves.toBeDefined();
   });
 
   it("reads at most 16 sites at once and keeps going when one check throws", async () => {
