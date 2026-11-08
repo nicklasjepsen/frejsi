@@ -28,7 +28,8 @@ final class LiveActivityController: ObservableObject {
     private let logger = Logger(subsystem: "ninja.jepsen.naensom", category: "live-activity")
     private var observed = Set<String>()
     private var observing = false
-    private var tokenActivityId: String?
+    /// Each running activity's push token; the relay gets the newest activity's.
+    private var tokens: [String: String] = [:]
     private static let startedAtKey = "live.startedAt"
 
     /// Called once at launch. Also picks up activities the relay started by push-to-start while the
@@ -131,46 +132,70 @@ final class LiveActivityController: ObservableObject {
         await serially { [self] in await self.endNow() }
     }
 
-    private func endNow() async {
-        for activity in Activity<GlucoseActivityAttributes>.activities {
+    private func endNow(only ids: Set<String>? = nil) async {
+        for activity in Activity<GlucoseActivityAttributes>.activities where ids?.contains(activity.id) ?? true {
             await activity.end(nil, dismissalPolicy: .immediate)
+            tokens[activity.id] = nil
         }
-        isRunning = false
-        if activityToken != nil {
-            activityToken = nil
-            activityStartedAt = nil
-            tokenActivityId = nil
-            onTokensChanged?()
+        updateRunning()
+        chooseToken()
+    }
+
+    /// Whether iOS lets Nænsom show Live Activities (the user can turn them off in Settings).
+    var systemAllows: Bool { ActivityAuthorizationInfo().areActivitiesEnabled }
+
+    /// The activities still showing, with when the app started or first saw each.
+    func running() -> [LiveActivitySync.RunningActivity] {
+        Activity<GlucoseActivityAttributes>.activities.filter(Self.isLive).map {
+            LiveActivitySync.RunningActivity(id: $0.id, startedAt: Self.startedAt($0.id))
         }
+    }
+
+    /// Keeps one activity and ends the others (`LiveActivitySync.autoStart`'s `reuse`).
+    func keep(_ id: String, ending others: [String]) async {
+        if let kept = Activity<GlucoseActivityAttributes>.activities.first(where: { $0.id == id }) { watch(kept) }
+        guard !others.isEmpty else { return }
+        await serially { [self] in await self.endNow(only: Set(others)) }
+    }
+
+    /// The token the relay gets: the newest running activity's that has one.
+    private func chooseToken() {
+        let newest = running()
+            .filter { tokens[$0.id] != nil }
+            .max { ($0.startedAt, $0.id) < ($1.startedAt, $1.id) }
+        let token = newest.flatMap { tokens[$0.id] }
+        let startedAt = newest?.startedAt
+        guard token != activityToken || startedAt != activityStartedAt else { return }
+        activityToken = token
+        activityStartedAt = startedAt
+        onTokensChanged?()
     }
 
     private func watch(_ activity: Activity<GlucoseActivityAttributes>) {
         guard !observed.contains(activity.id) else { return }
         observed.insert(activity.id)
-        let startedAt = Self.startedAt(activity.id)
+        _ = Self.startedAt(activity.id)
         updateRunning()
+        if let data = activity.pushToken {
+            tokens[activity.id] = data.hexString
+            chooseToken()
+        }
         Task {
             for await data in activity.pushTokenUpdates {
                 let token = data.hexString
-                guard token != activityToken else { continue }
-                activityToken = token
-                activityStartedAt = startedAt
-                tokenActivityId = activity.id
+                guard tokens[activity.id] != token else { continue }
+                tokens[activity.id] = token
                 logToken("activity", token)
-                onTokensChanged?()
+                chooseToken()
             }
         }
         Task {
             for await state in activity.activityStateUpdates where state == .ended || state == .dismissed {
                 observed.remove(activity.id)
-                Self.forgetStartedAt(activity.id)
+                tokens[activity.id] = nil
                 updateRunning()
-                if tokenActivityId == activity.id {
-                    activityToken = nil
-                    activityStartedAt = nil
-                    tokenActivityId = nil
-                    onTokensChanged?()
-                }
+                chooseToken()
+                Self.forgetStartedAt(activity.id)
                 logger.info("activity \(state == .ended ? "ended" : "dismissed", privacy: .public)")
             }
         }
