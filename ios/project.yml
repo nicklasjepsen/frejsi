@@ -47,6 +47,8 @@ targets:
         NSSupportsLiveActivitiesFrequentUpdates: true
         UILaunchScreen: {}
         UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait]
+        # Portrait only: App Store validation then wants the app to opt out of iPad multitasking.
+        UIRequiresFullScreen: true
     entitlements:
       path: App/Naensom.entitlements
       properties:

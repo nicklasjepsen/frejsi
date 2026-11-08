@@ -73,6 +73,8 @@ fastlane beta
 
 It signs in to App Store Connect as the Apple ID signed in to Xcode, or, when `ASC_KEY_ID`, `ASC_ISSUER_ID` and `ASC_KEY_P8` (the key's PEM text) are set, with an App Store Connect API key, for CI later. Nothing secret is in the repo. The app record `ninja.jepsen.naensom` must exist in App Store Connect first.
 
+Without an App Store Connect API key, fastlane asks for the Apple ID's password, and while the team has no registered devices automatic signing cannot make the development profile an archive starts with. `scripts/upload-testflight.sh <build-number>` avoids both: it archives unsigned, signs the app and the extension ad hoc with their entitlements, and lets `xcodebuild -exportArchive` re-sign for the App Store and upload as the Apple ID in Xcode. Pass one more than the newest build in TestFlight; build 1 (0.1.0) was the first, uploaded this way.
+
 The version is `MARKETING_VERSION` in `project.yml` (0.1.0); the build number is `CURRENT_PROJECT_VERSION`, which the lane sets. `ITSAppUsesNonExemptEncryption` is false (HTTPS only, through Apple's APIs), so uploads skip the export-compliance question. The icon is a placeholder, a white N on green, written by `scripts/make-placeholder-icon.py` with no external assets; replace `App/Assets.xcassets/AppIcon.appiconset/AppIcon-1024.png` with the real one.
 
 ## The push test (stage 2)
