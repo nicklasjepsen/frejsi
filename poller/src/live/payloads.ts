@@ -85,6 +85,7 @@ export function startPayload(
   state: ContentState,
   attributes: ActivityAttributes,
   now: number,
+  alert: { title: string; body: string } = { title: "Live Activity", body: "Restarted" },
 ): object {
   return {
     aps: {
@@ -97,7 +98,23 @@ export function startPayload(
       // iOS 18+: the started activity gets its own update token (through the app's
       // pushTokenUpdates), so the next readings can reach it.
       "input-push-token": 1,
-      alert: { title: "Live Activity", body: "Restarted" },
+      alert,
+    },
+  };
+}
+
+/**
+ * A low, high or no-new-readings notification to the app's own device token (push type `alert`):
+ * time-sensitive, so it shows through a Focus that allows it, but it respects silent mode like any
+ * notification. The text is built by `liveAlertText` and always carries the reading's age.
+ */
+export function alertPayload(text: { title: string; body: string }): object {
+  return {
+    aps: {
+      alert: { title: text.title, body: text.body },
+      sound: "default",
+      "interruption-level": "time-sensitive",
+      "thread-id": "glucose",
     },
   };
 }

@@ -128,3 +128,32 @@ describe("the pump-poll function", () => {
     ]);
   });
 });
+
+describe("the iPhone push relay's functions", () => {
+  it("registers live-poll every minute and the anonymous register routes", async () => {
+    const timer =
+      vi.fn<(name: string, options: { schedule: string; runOnStartup: boolean }) => void>();
+    const http =
+      vi.fn<
+        (name: string, options: { methods: string[]; authLevel: string; route: string }) => void
+      >();
+    vi.resetModules();
+    vi.doMock("@azure/functions", () => ({ app: { timer, http } }));
+    try {
+      await import("./functions/live-poll");
+      await import("./functions/live-register");
+    } finally {
+      vi.doUnmock("@azure/functions");
+    }
+    expect(timer.mock.calls.map(([name, o]) => [name, o.schedule, o.runOnStartup])).toEqual([
+      ["live-poll", "0 * * * * *", false],
+    ]);
+    expect(http.mock.calls.map(([name, o]) => [name, o.methods, o.authLevel, o.route])).toEqual([
+      ["live-register", ["POST"], "anonymous", "live/register"],
+      ["live-unregister", ["DELETE"], "anonymous", "live/register/{subscriptionId}"],
+    ]);
+    const entry = readFileSync(path.join(pollerDir, "src/index.ts"), "utf8");
+    expect(entry).toContain('import "./functions/live-poll"');
+    expect(entry).toContain('import "./functions/live-register"');
+  });
+});

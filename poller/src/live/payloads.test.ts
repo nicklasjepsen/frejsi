@@ -4,6 +4,7 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 
 import {
+  alertPayload,
   ACTIVITY_ATTRIBUTES_TYPE,
   DEFAULT_ATTRIBUTES,
   contentState,
@@ -67,5 +68,25 @@ describe("payloads", () => {
     expect(payload.aps.event).toBe("start");
     expect(payload.aps["input-push-token"]).toBe(1);
     expect(JSON.stringify(payload.aps.alert)).not.toMatch(/\d/);
+  });
+
+  it("starts with the alert text it is given, in the subscription's language", () => {
+    const payload = startPayload(state, { unit: "mgdL" }, now, {
+      title: "Live Activity",
+      body: "Startet igen",
+    }) as { aps: { alert: unknown; attributes: unknown } };
+    expect(payload.aps.alert).toEqual({ title: "Live Activity", body: "Startet igen" });
+    expect(payload.aps.attributes).toEqual({ unit: "mgdL" });
+  });
+
+  it("sends an alert as a time-sensitive notification with sound", () => {
+    expect(alertPayload({ title: "Low: 3.6 mmol/L · 2 min ago", body: "A reminder." })).toEqual({
+      aps: {
+        alert: { title: "Low: 3.6 mmol/L · 2 min ago", body: "A reminder." },
+        sound: "default",
+        "interruption-level": "time-sensitive",
+        "thread-id": "glucose",
+      },
+    });
   });
 });
