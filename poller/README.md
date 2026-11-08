@@ -149,7 +149,10 @@ TestFlight and the App Store, as the app registered.
 **Cleanup.** `lastSeenAt` moves forward on every push Apple accepts and every registration. A token
 Apple answers 410, `BadDeviceToken` or `Unregistered` for is cleared; when no token is left the
 subscription is deleted with its Key Vault secret. "Remove this phone" deletes both at once, and
-each run deletes up to 100 subscriptions whose `lastSeenAt` is 30 days old.
+each run deletes up to 100 subscriptions whose `lastSeenAt` is 30 days old (only if the app has not
+registered since the run selected them). A subscription with no push token at all reads no site, is
+looked at hourly, and goes after a day without one. A reading dated more than two minutes ahead is a
+clock error and is ignored.
 
 **Logs** carry the subscription id and outcome codes (`update:200`, `start:410:Unregistered`,
 `alert-low:200`, `Timeout`), never an address, a token, a secret, an IP or a value.

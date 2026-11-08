@@ -57,6 +57,11 @@ export const MAX_CLEANUPS_PER_RUN = 100;
 export const RELAY_READ_TIMEOUT_MS = 15_000;
 /** The relay reads three entries: a duplicate still leaves one for the change. */
 export const ENTRIES_PER_READ = 3;
+/** A reading dated further ahead than this is a clock error and is ignored. */
+export const FUTURE_TOLERANCE_MS = 2 * 60_000;
+/** A subscription with no push token at all is not polled; it goes after a day without one. */
+export const TOKENLESS_GRACE_MS = 24 * 60 * 60_000;
+export const TOKENLESS_RECHECK_MS = 60 * 60_000;
 
 export type ReadEntries = (row: LiveRow, now: number) => Promise<NightscoutEntry[]>;
 export type SendPush = (environment: ApnsEnvironment, request: ApnsRequest) => Promise<ApnsResult>;
@@ -339,9 +344,27 @@ export async function checkSubscription(deps: RelayDeps, row: LiveRow): Promise<
   const pass: Pass = { row, now, patch: {}, invalid: new Set(), codes: [] };
   const known = row.lastReadingAt?.getTime() ?? null;
 
+  // Nothing can reach a phone without a token: no site is read, and after a day without one the
+  // subscription goes (an app registers its tokens within seconds of starting).
+  if (row.pushToStartToken === null && row.activityPushToken === null && row.deviceToken === null) {
+    if (now - row.lastSeenAt.getTime() >= TOKENLESS_GRACE_MS) {
+      if (await deps.store.deleteIfUnseen(row.id, row.lastSeenAt)) {
+        if (row.tokenSecretRef !== null) await deps.secrets.delete(liveSecretName(row.id));
+        deps.log.info("live.removed", { subscriptionId: row.id, code: "no-tokens" });
+        return "removed";
+      }
+      return "unchanged";
+    }
+    pass.patch.nextCheckAt = new Date(now + TOKENLESS_RECHECK_MS);
+    await savePass(deps, pass);
+    return "unchanged";
+  }
+
   let entries: NightscoutEntry[];
   try {
-    entries = await deps.readEntries(row, now);
+    entries = (await deps.readEntries(row, now)).filter(
+      (entry) => entry.date <= now + FUTURE_TOLERANCE_MS,
+    );
   } catch (error) {
     const code = error instanceof NightscoutError ? error.code : "unknown";
     deps.log.warn("live.read-failed", { subscriptionId: row.id, code });
@@ -456,7 +479,10 @@ export async function runLivePoll(deps: RelayDeps): Promise<Record<CheckOutcome,
   const idle = await deps.store.idle(new Date(started - IDLE_AFTER_MS), MAX_CLEANUPS_PER_RUN);
   for (const row of idle) {
     try {
-      await removeSubscription(deps, row);
+      // The row first, and only if the app has not registered since it was selected; then its
+      // secret. A secret left by a failed delete is logged and holds no row's data.
+      if (!(await deps.store.deleteIfUnseen(row.id, row.lastSeenAt))) continue;
+      if (row.tokenSecretRef !== null) await deps.secrets.delete(liveSecretName(row.id));
       deps.log.info("live.removed", { subscriptionId: row.id, code: "idle-30-days" });
     } catch (error) {
       deps.log.error("live.remove-failed", { subscriptionId: row.id, code: "idle" }, error);

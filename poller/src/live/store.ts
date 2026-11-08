@@ -45,6 +45,8 @@ export interface LiveStore {
   update(id: string, patch: LivePatch, expect?: LivePatch): Promise<boolean>;
   /** Deletes the row; a row that is already gone is fine. */
   delete(id: string): Promise<void>;
+  /** Deletes the row only while its `lastSeenAt` is still `lastSeenAt`; answers whether it did. */
+  deleteIfUnseen(id: string, lastSeenAt: Date): Promise<boolean>;
   /** The rows whose next check is at or before `before`, oldest first. */
   due(before: Date, limit: number): Promise<LiveRow[]>;
   /** Rows no push was accepted for and no registration came from since `before`. */
@@ -73,6 +75,11 @@ export class PrismaLiveStore implements LiveStore {
 
   async delete(id: string): Promise<void> {
     await this.db.liveSubscription.deleteMany({ where: { id } });
+  }
+
+  async deleteIfUnseen(id: string, lastSeenAt: Date): Promise<boolean> {
+    const { count } = await this.db.liveSubscription.deleteMany({ where: { id, lastSeenAt } });
+    return count > 0;
   }
 
   due(before: Date, limit: number): Promise<LiveRow[]> {
@@ -126,6 +133,13 @@ export class MemoryLiveStore implements LiveStore {
   delete(id: string): Promise<void> {
     this.rows.delete(id);
     return Promise.resolve();
+  }
+
+  deleteIfUnseen(id: string, lastSeenAt: Date): Promise<boolean> {
+    const row = this.rows.get(id);
+    if (row?.lastSeenAt.getTime() !== lastSeenAt.getTime()) return Promise.resolve(false);
+    this.rows.delete(id);
+    return Promise.resolve(true);
   }
 
   due(before: Date, limit: number): Promise<LiveRow[]> {
