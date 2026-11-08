@@ -29,7 +29,8 @@ export const USAGE = `pnpm --filter ./poller push-test [options]
   --priority 5|10               default 10
   --once                        one pass, then exit
 
-Environment: NS_URL and NS_TOKEN (the Nightscout site and a read-only token), and APNS_KEY_FILE
+Environment: NS_URL and NS_TOKEN (the Nightscout site and a read-only token), or
+NS_CREDENTIAL_SECRET (a Key Vault secret with a stored Nightscout credential), and APNS_KEY_FILE
 (the .p8 file) or KEY_VAULT_URL (secret apns-key-p8).`;
 
 type Env = Record<string, string | undefined>;
