@@ -14,7 +14,20 @@ public enum NightscoutError: Error, Equatable, Sendable {
     case status(Int)
     case notNightscout
 
-    public var message: String {
+    public var message: String { message(in: .en) }
+
+    public func message(in language: Language) -> String {
+        if language == .da {
+            switch self {
+            case .invalidAddress: return "Det ligner ikke en webadresse"
+            case .notHTTPS: return "Sidens adresse skal begynde med https://"
+            case .unreachable: return "Kunne ikke få forbindelse til siden"
+            case .timedOut: return "Siden var for længe om at svare"
+            case .tokenRefused: return "Tokenet blev afvist. Tjek det under Indstillinger"
+            case .status(let code): return "Siden svarede \(code)"
+            case .notNightscout: return "Siden svarede med noget, der ikke er Nightscout-data"
+            }
+        }
         switch self {
         case .invalidAddress: return "That doesn't look like a web address"
         case .notHTTPS: return "The site address must start with https://"

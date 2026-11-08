@@ -7,4 +7,9 @@ import Foundation
 enum AppLanguage {
     static var current: Language { Language.preferred(Locale.preferredLanguages) }
     static var locale: Locale { Locale(identifier: current.localeIdentifier) }
+
+    /// English or Danish by the app's language. Stage 3 moves the strings to a String Catalog.
+    static func say(_ english: String, _ danish: String) -> String {
+        current == .da ? danish : english
+    }
 }

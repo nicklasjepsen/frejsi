@@ -59,7 +59,7 @@ final class FollowModel: ObservableObject {
             readings = latest
             error = nil
         case .failure(let failure):
-            error = failure.message
+            error = failure.message(in: AppLanguage.current)
         }
         lastChecked = Date()
     }

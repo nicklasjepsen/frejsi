@@ -141,7 +141,10 @@ export class ApnsSender {
     return result;
   }
 
-  /** Closes the HTTP/2 connection; the next send opens a new one. */
+  /**
+   * Closes the HTTP/2 connection; the next send opens a new one. The open connection keeps the
+   * process alive (it is not unref'd, so a CLI cannot exit mid-send), so call this when done.
+   */
   close(): void {
     this.session?.close();
     this.session = undefined;
@@ -166,7 +169,6 @@ export class ApnsSender {
     session.on("close", () => {
       if (this.session === session) this.session = undefined;
     });
-    session.unref();
     this.session = session;
     return session;
   }

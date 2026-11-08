@@ -80,11 +80,11 @@ The version is `MARKETING_VERSION` in `project.yml` (0.1.0); the build number is
 The test that decides whether the app gets built: the Live Activity stays current with the app closed and the phone locked, across the 8-hour restart (plan §0, §7).
 
 1. Build and run `Naensom` in an iOS 17.2+ Simulator (Debug, so tokens come from the APNs sandbox). Type the Nightscout address and a read-only token, wait for the value, tap **Start Live Activity**.
-2. Read the two tokens from the Simulator's log (they are also on screen, with Copy):
+2. Copy the two tokens. They never go to the system log (it only says one arrived); they are on screen with **Copy**, and a debug build also writes them to `push-tokens.json` in the app group container:
    ```
-   xcrun simctl spawn booted log stream --level info --predicate 'subsystem == "ninja.jepsen.naensom"'
+   cat "$(xcrun simctl get_app_container booted ninja.jepsen.naensom group.ninja.jepsen.naensom)/push-tokens.json"
    ```
-   `activity push token: …` is the activity, `push-to-start push token: …` the restart.
+   `activity` is the activity's token, `push-to-start` the restart's.
 3. Write the activity token to a file and start the relay script from the repo root:
    ```
    echo <activity token> > /tmp/activity-token
@@ -93,7 +93,7 @@ The test that decides whether the app gets built: the Live Activity stays curren
      --push-to-start-token <push-to-start token> --csv push-test.csv
    ```
    Instead of `APNS_KEY_FILE`, `KEY_VAULT_URL` reads the key from Key Vault (`apns-key-p8`). `--help` lists every option.
-4. Swipe the app away and lock the Simulator. The script reads Nightscout every 30 seconds and sends one `update` push per new reading. At 7 h 45 min it sends `end` to the activity and `start` to the push-to-start token. The new activity's token appears in the Simulator log; write it to the same file and the script picks it up on its next pass (until then it records `update-skipped`).
+4. Swipe the app away and lock the Simulator. The script reads Nightscout every 30 seconds and sends one `update` push per new reading. At 7 h 45 min it sends `end` to the activity and `start` to the push-to-start token. On iOS 18 the start push asks for the new activity's own update token (`input-push-token`); it appears in `push-tokens.json` and on screen. Write it to the same file and the script picks it up on its next pass (until then it records `update-skipped`).
 5. Take a lock-screen screenshot every minute (`xcrun simctl io booted screenshot`) and compare it with the CSV: `sent_at`, `event`, `reading_at`, `reading_age_s`, the value, and Apple's status, reason and id.
 
 Pass: every reading reaches the lock screen within a minute of its push, across the restart, with the app never opened. Then the same on a real iPhone, because Apple's update budget there can differ.
