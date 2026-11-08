@@ -63,6 +63,7 @@ export {
   NightscoutSource,
   parseNightscoutCredential,
   serializeNightscoutCredential,
+  type NightscoutEntry,
   type NightscoutFetch,
   type NightscoutSourceOptions,
 } from "./glucose/nightscout/index";
