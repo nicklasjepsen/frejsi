@@ -1,6 +1,6 @@
 # Nænsom for iPhone
 
-A Nightscout follower for iPhone: the current glucose with its age, and a Live Activity on the lock screen, in the Dynamic Island and on CarPlay that stays current with the app closed, because our server updates it by Apple push. The plan is `docs/superpowers/plans/2026-11-08-ios-follower-app.md`; this folder is at **stage 3**: the app itself, on top of the stage-2 skeleton and push test (plan §7).
+A Nightscout follower for iPhone: the current glucose with its age, and a Live Activity on the lock screen, in the Dynamic Island and on CarPlay that stays current with the app closed, because our server updates it by Apple push. The plan is `docs/superpowers/plans/2026-11-08-ios-follower-app.md`; this folder is at **stage 5**: the app itself (stage 3) on top of the stage-2 skeleton and push test, with the finished Live Activity and the home and lock screen widgets (plan §7).
 
 Like the rest of Nænsom it only reads, shows every value with its age, and never says anything about insulin. Keep the CGM app and its alarms; this shows the glucose, it does not monitor it.
 
@@ -9,19 +9,24 @@ Like the rest of Nænsom it only reads, shows every value with its age, and neve
 ```
 project.yml              XcodeGen definition; the .xcodeproj, Info.plists and entitlements are generated
 Packages/FollowCore/     Swift package, no UIKit: Nightscout reader, units, arrows, ranges, ages,
-                         staleness, the follow link, the Live Activity content state. Tests run on Linux.
+                         staleness, the follow link, the Live Activity content state, the widget
+                         timelines. Tests run on Linux.
 App/                     the SwiftUI app: onboarding, main screen with curve, settings, relay registration,
                          reminders; da.lproj / en.lproj strings
-LiveActivity/            the widget extension: lock screen, Dynamic Island, small family (CarPlay, Watch)
-Shared/                  compiled into both: GlucoseActivityAttributes, range colours, thresholds and
-                         settings in the app group, the app's language
-scripts/check-strings.py every string key in both languages, none unused, nothing about insulin
+LiveActivity/            the widget extension's Live Activity: lock screen, Dynamic Island, small family
+                         (CarPlay, Watch)
+Widgets/                 the same extension's widgets (home screen, lock screen, StandBy, CarPlay), the
+                         extension's @main bundle, and the text pieces both share
+Shared/                  compiled into both: GlucoseActivityAttributes, range colours, thresholds,
+                         settings and the newest reading in the app group, the Keychain, the app's
+                         language, and the widgets' strings (da.lproj / en.lproj Widgets.strings)
+scripts/check-strings.py every string key in both languages and both tables, none unused, nothing about insulin
 ```
 
 | What                     | Value                                                                         |
 | ------------------------ | ----------------------------------------------------------------------------- |
 | App                      | `Naensom`, bundle ID `ninja.jepsen.naensom`, display name Nænsom              |
-| Live Activity extension  | `ninja.jepsen.naensom.liveactivity`                                           |
+| Widget extension         | `ninja.jepsen.naensom.liveactivity` (the Live Activity and the widgets)       |
 | App group                | `group.ninja.jepsen.naensom`                                                  |
 | Team                     | `B32HGH682W`                                                                  |
 | Minimum iOS              | 17.2 (push-to-start); the small family for CarPlay and the Watch needs iOS 18 |
@@ -117,6 +122,22 @@ The script logs outcome codes only; the address, the tokens and the values never
 
 **Follow-ups outside `ios/`:** the web side must serve `https://naensom.jepsen.ninja/.well-known/apple-app-site-association` with `applinks` for `B32HGH682W.ninja.jepsen.naensom` and the path `/follow` before tapping a link opens the app (until then the link opens Safari; QR and typing work). The associated-domains and time-sensitive-notification entitlements must be enabled for the app ID (automatic signing does it when Xcode is signed in).
 
-## What the stage-3 app is not yet
+## The Live Activity and widgets (stage 5)
 
-No widgets and no finished Live Activity design (stage 5), no privacy and support pages (stage 6). The relay's side of registration is stage 4.
+**One extension.** The widgets live in the Live Activity's extension (`NaensomLiveActivity`, bundle ID `ninja.jepsen.naensom.liveactivity`), not a separate `.widgets` target: one extension may host both, and it keeps one app ID, one profile and one signing step in `scripts/upload-testflight.sh`. `Widgets/NaensomWidgetBundle.swift` is the `@main` bundle; WidgetBundleBuilder allows no `if #available`, so the iOS 18 check for the small family stays inside `GlucoseLiveActivity`.
+
+**Widgets** (`Widgets/GlucoseWidget.swift`): home screen small and medium (the small one is also what StandBy shows and what iOS 26 puts on the CarPlay screen), and on the lock screen inline, round and rectangular. Each shows the value with its arrow in the threshold colour, and its age, ticking by itself in the app's language (`Text(_, style: .relative)` where there is room, a ticking m:ss in the round and inline ones). Fifteen minutes after the reading the value goes grey, a clock badge appears and, where there is room, "No new readings"; on the lock screen iOS draws accessory widgets in one tint, so the badge and words carry it there. Before there is any reading: "No data yet · Open Nænsom". The demo shows the demo curve, labelled "Demo".
+
+**Where the reading comes from.**
+
+- The app writes the newest reading and the one before it (`GlucoseSnapshot` in FollowCore, `GlucoseSnapshotStore` in the app group) whenever a fetch brings a newer one, the same path that updates the Live Activity, and asks WidgetKit to reload (`App/WidgetSync.swift`); also when the unit or thresholds change. Following another site or "Remove this phone" clears it.
+- When iOS asks for a timeline and the next reading is due (the newest is five minutes old, or there is none), the widget reads the site itself, with FollowCore's client: the same `GET /api/v1/entries/sgv.json`, the read-only token in the `api-secret` header, https only. For that the address and token are in the app group's Keychain access group (on iOS an app group is also an access group; no extra entitlement); the app moves a stage-3 copy there at launch (`KeychainStore.shareWithExtension`). The relay's subscription id and device secret stay in the app's own group. Before the first unlock after a restart the Keychain is closed and the widget shows the stored snapshot.
+- A timeline (`WidgetTimeline` in FollowCore, tested) is the reading now and the same reading grey from its stale moment (reading + 15 min, the Live Activity's `staleDate`), and asks for the next one a minute after the next reading is due (reading + 6 min), every 5 minutes while one is overdue and every 15 once the newest is 20 minutes old. iOS gives a widget a limited number of refreshes a day and may come later than asked; the grey entry and the ticking age keep it honest. The demo's timeline is the next hour of demo readings, one entry every five minutes.
+
+**Glanceability** (Live Activity): the value and arrow are the largest thing everywhere and bold. The small family (CarPlay, Watch Smart Stack) shows only the value with its arrow (44 pt, shrinking to fit) and the age under it, without unit or change. The lock screen has the value at 50 pt with the unit under it, the change and the age on the right, and "No new readings" when stale. The expanded Dynamic Island has the value at 40 pt on the left and the change and age on the right; the compact island the value with its arrow and a ticking m:ss; the minimal one the arrow in the range colour, or the clock badge once stale, so an old trend never looks current.
+
+**Not compiled on Linux.** The SwiftUI and WidgetKit code is checked by the Xcode build on the Mac; check it there in the Simulator and the CarPlay simulator (home screen, lock screen, StandBy, CarPlay), including the grey state (follow a site, wait 15 minutes with no new reading, or use a reading that is already old).
+
+## What is not here yet
+
+No privacy and support pages (stage 6).

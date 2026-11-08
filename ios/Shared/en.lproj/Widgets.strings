@@ -1,0 +1,9 @@
+/* Nænsom's widgets and Live Activity, English. Every key must also be in
+   da.lproj/Widgets.strings (scripts/check-strings.py). Never anything about insulin. */
+
+"widget.name" = "Glucose";
+"widget.description" = "The newest reading with its age. iOS decides how often widgets update, so the value goes grey when it is 15 minutes old.";
+"widget.noData" = "No data yet";
+"widget.noData.hint" = "Open Nænsom";
+"widget.stale" = "No new readings";
+"widget.demo" = "Demo";

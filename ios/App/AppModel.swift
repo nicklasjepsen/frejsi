@@ -34,9 +34,12 @@ final class AppModel: ObservableObject {
         }
         follow.onThresholdsChanged = { [weak self] in
             self?.live.redraw()
+            WidgetSync.reload()
             self?.scheduleSync()
         }
         live.observe()
+        // An address and token saved before the widgets existed move to the shared access group.
+        KeychainStore.shareWithExtension()
         if follow.settings.alertsOn {
             Task { await notifications.registerIfAllowed() }
         }
@@ -142,8 +145,12 @@ final class AppModel: ObservableObject {
         if on { Task { await autoStartIfWanted() } }
     }
 
+    /// A newer reading: to the Live Activity and to the widgets, so neither shows less than the app.
     private func newReading(_ current: Reading, _ previous: Reading?) {
         live.show(current: current, previous: previous)
+        if let source = follow.source {
+            WidgetSync.publish(current: current, previous: previous, source: source)
+        }
     }
 
     // MARK: - Settings
@@ -151,6 +158,7 @@ final class AppModel: ObservableObject {
     func setUnit(_ unit: GlucoseUnit) {
         guard unit != follow.settings.unit else { return }
         follow.update { $0.unit = unit }
+        WidgetSync.reload()
         // An activity's unit is fixed when it starts: start it again in the new unit.
         if live.isRunning, live.runningUnit != unit {
             Task { await startActivity() }
@@ -165,12 +173,14 @@ final class AppModel: ObservableObject {
     func step(_ kind: GlucoseThresholds.Kind, by steps: Int) {
         follow.step(kind, by: steps)
         live.redraw()
+        WidgetSync.reload()
         scheduleSync()
     }
 
     func resetThresholds() {
         follow.resetThresholds()
         live.redraw()
+        WidgetSync.reload()
         scheduleSync()
     }
 
