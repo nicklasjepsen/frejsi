@@ -805,7 +805,8 @@ describe("runPumpCycle: logs", () => {
       const parsed = JSON.parse(line) as Record<string, unknown>;
       for (const key of Object.keys(parsed)) expect(allowed, line).toContain(key);
     }
-    const output = h.lines.join("\n");
+    // The timestamp is left out: a clock reading such as 19:37:42.373 contains "2.37".
+    const output = h.lines.map((line) => line.replace(/"ts":"[^"]*",/, "")).join("\n");
     expect(output).toContain('"spaceId":"s1"');
     expect(output).toContain('"spaceId":"s-down"');
     expect(output).not.toMatch(/2\.37|0\.73|"count":47|47g|example-ns|token|secret/);
