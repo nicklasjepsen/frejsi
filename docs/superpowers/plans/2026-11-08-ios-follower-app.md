@@ -1,6 +1,6 @@
 # Nænsom for iPhone (formerly Frejsi) — a Nightscout follower with Live Activity and CarPlay
 
-**Status:** **Approved by the owner on 2026-11-08** ("let's go"). Drafted 2026-11-08, from the owner's request in the project thread "Build own iOS glucose app with CarPlay". The owner's decisions so far: build our own app instead of using Night Guard; other people (Freya's teachers, her mom, Susan, and later other families) install it from the App Store, not TestFlight; free at launch, a price may come later; the owner's Mac mini is the Mac for Xcode. §9 lists what is still open.
+**Status:** **Approved by the owner on 2026-11-08** ("let's go"). Drafted 2026-11-08, from the owner's request in the project thread "Build own iOS glucose app with CarPlay". The owner's decisions so far: build our own app instead of using Night Guard; other people (the child's school staff and family, and later other families) install it from the App Store, not TestFlight; free at launch, a price may come later; the owner's Mac mini is the Mac for Xcode. §9 lists what is still open.
 
 **Tags:** `ios-vX.Y.Z` (like `desktop-vX.Y.Z`; `release.yml` and the `vX.Y.Z` tags never touch it) · **Builds on:** `desktop/` (the Nightscout reader, read-only token, ages, ranges, arrows), the poller (Azure Functions timers), Key Vault, Azure SQL via Prisma · **Spec:** `docs/superpowers/specs/2026-10-14-frejsi-design.md` hard rules (age with every value, read-only sources, no insulin, no PII in logs).
 
@@ -61,7 +61,7 @@ The only way to keep a Live Activity current while the app is closed is a server
 - **Apple Push.** Token-based auth: one `.p8` key, in Key Vault, sent over HTTP/2 with Node's `http2`. The app sets `NSSupportsLiveActivitiesFrequentUpdates` because a reading every 5 minutes is 288 updates a day. Priority 10 for every new reading at first; the budget Apple actually gives is measured in stage 2 and the plan is adjusted (priority 5 for in-range readings) if updates get throttled.
 - **Demo source.** A subscription whose address is `demo` gets a made-up, plausible curve from the relay itself. App Review uses it, and so can the Simulator. No real person's data in it.
 - **Low/high notifications.** In the same `live-poll` pass, a new reading that crosses the subscription's threshold sends one `alert` push (interruption level `time-sensitive`), following the repeat rules in §1. The subscription keeps `lastAlertKind` and `lastAlertAt` for that.
-- **Cleanup.** A subscription whose push tokens Apple reports as invalid, or that has not registered for 30 days, is deleted with its Key Vault secret.
+- **Cleanup.** `lastSeenAt` moves forward every time Apple accepts a push for the subscription and every time the app registers (it re-registers on every launch and background wake), so an install-once phone that never opens the app stays alive as long as its pushes are delivered. A subscription is deleted with its Key Vault secret only when Apple reports its tokens invalid (HTTP 410 or `BadDeviceToken`), when it is removed from the app, or when no push has been accepted and the app has not registered for 30 days.
 - **Logs** carry the subscription id and outcomes, never the address, token or a value.
 
 ## 5. Data
@@ -91,7 +91,7 @@ Each stage is a PR (or a lane) with its own tests, and ends with something the o
 3. **The app.** Onboarding with the link and QR, the main screen with curve and ages, settings, da/en, the stale states.
 4. **The relay.** `LiveSubscription`, `live-register`, `live-poll`, the APNs sender, the 8-hour restart, the demo source, cleanup. Tests with recorded Nightscout and APNs fixtures.
 5. **The Live Activity and widgets, finished.** Lock screen, Dynamic Island, the small family for CarPlay and Watch, the widgets. Checked in Xcode's CarPlay simulator by Claude; the owner sees it in the car when he next drives.
-6. **Release.** `ios.yml`, privacy and support pages, the listing and screenshots, a few days of TestFlight on the owner's phone only, then submits to App Store review. `ios-v1.0.0` when approved; the teachers, Freya's mom and Susan install from the App Store.
+6. **Release.** `ios.yml`, privacy and support pages, the listing and screenshots, a few days of TestFlight on the owner's phone only, then submits to App Store review. `ios-v1.0.0` when approved; the school staff and family install it from the App Store.
 
 ## 8. Risks
 
