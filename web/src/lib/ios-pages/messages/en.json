@@ -55,7 +55,7 @@
           "Once the app is set up, it registers the phone with Nænsom's server, so the Live Activity and reminders work while the app is closed. The server keeps one record per phone with:"
         ],
         "list": [
-          "The Nightscout site's address and the token. They are kept encrypted in Azure Key Vault and used only to read the newest readings from the site. The server never writes anything to the site.",
+          "The Nightscout site's address and the token. They are kept encrypted in Azure Key Vault and used only to read the newest readings from the site. If you change the address or token, Key Vault keeps the earlier version beside it until the record is deleted; then every version goes. The server never writes anything to the site.",
           "The site's host name on its own, so we can limit the number of requests and help when something goes wrong.",
           "The push tokens Apple gives the app for the Live Activity and reminders. They are random codes that can only be used to reach the app on this phone.",
           "Your settings: unit, the four colour thresholds, whether reminders are on, and the language, so messages arrive in yours.",
@@ -190,7 +190,8 @@
       {
         "heading": "Remove this phone",
         "body": [
-          "“Remove this phone” in Settings stops the Live Activity and reminders, deletes the copy on Nænsom's server and removes the address and token from the phone. You can always set it up again with the link."
+          "“Remove this phone” in Settings stops the Live Activity and reminders, deletes the copy on Nænsom's server and removes the address and token from the phone. You can always set it up again with the link.",
+          "If Nænsom's server cannot be reached, you can remove everything from the phone alone. The server may then keep sending updates and reminders until 30 days pass without one getting through, or until the app is deleted. So do it while the phone is online if you can."
         ],
         "list": []
       },
