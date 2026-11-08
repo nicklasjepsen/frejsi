@@ -2,7 +2,13 @@ import { DefaultAzureCredential } from "@azure/identity";
 import { SecretClient } from "@azure/keyvault-secrets";
 
 import { FileSecrets } from "./file";
-import { assertSecretName, formatSecretRef, parseSecretRef, type Secrets } from "./types";
+import {
+  assertSecretName,
+  formatSecretRef,
+  parseSecretRef,
+  type SecretListing,
+  type Secrets,
+} from "./types";
 
 /** The slice of `SecretClient` the adapter uses; tests pass a fake. */
 export interface SecretClientLike {
@@ -13,6 +19,13 @@ export interface SecretClientLike {
   setSecret(name: string, value: string): Promise<{ properties: { version?: string | undefined } }>;
   /** Starts the deletion; the returned poller is not awaited (soft delete finishes on its own). */
   beginDeleteSecret(name: string): Promise<unknown>;
+  /** Every secret's properties, never a value; deleted secrets are not in it. */
+  listPropertiesOfSecrets(): AsyncIterable<{
+    name: string;
+    enabled?: boolean | undefined;
+    createdOn?: Date | undefined;
+    updatedOn?: Date | undefined;
+  }>;
 }
 
 function isNotFound(error: unknown): boolean {
@@ -60,6 +73,23 @@ export class KeyVaultSecrets implements Secrets {
       if (isNotFound(error)) return;
       throw error;
     }
+  }
+
+  /**
+   * Names and write times from the vault's secret list (metadata only: Key Vault Secrets Officer
+   * covers it). A disabled secret is skipped, and so is one without a time, which Key Vault always
+   * sets: a sweep never deletes what it cannot date.
+   */
+  async list(prefix: string): Promise<SecretListing[]> {
+    assertSecretName(prefix);
+    const listed: SecretListing[] = [];
+    for await (const properties of this.client.listPropertiesOfSecrets()) {
+      if (!properties.name.startsWith(prefix) || properties.enabled === false) continue;
+      const updatedOn = properties.updatedOn ?? properties.createdOn;
+      if (updatedOn === undefined) continue;
+      listed.push({ name: properties.name, updatedOn });
+    }
+    return listed;
   }
 }
 

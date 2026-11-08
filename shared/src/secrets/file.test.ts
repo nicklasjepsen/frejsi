@@ -98,4 +98,22 @@ describe("FileSecrets", () => {
     await expect(secrets.delete("live-a1")).resolves.toBeUndefined();
     await expect(new FileSecrets(path.join(dir, "absent")).delete("x")).resolves.toBeUndefined();
   });
+
+  it("lists the names under a prefix, by latest or version file, and skips temporary files", async () => {
+    const secrets = new FileSecrets(dir);
+    await secrets.set("live-a1", "first");
+    await secrets.set("live-a1", "second");
+    await secrets.set("glucose-s1", "other");
+    // A write that stopped after its version file, and a temporary file left by a crash.
+    writeFileSync(path.join(dir, "live-a2.0123abcd"), "half");
+    writeFileSync(path.join(dir, ".live-a3.0123.tmp"), "tmp");
+    const listed = await secrets.list("live-");
+    expect(listed.map((s) => s.name).sort()).toEqual(["live-a1", "live-a2"]);
+    for (const s of listed) expect(s.updatedOn.getTime()).toBeGreaterThan(0);
+    expect(JSON.stringify(listed)).not.toContain("second");
+    await secrets.delete("live-a1");
+    await expect(secrets.list("live-a1")).resolves.toEqual([]);
+    await expect(new FileSecrets(path.join(dir, "absent")).list("live-")).resolves.toEqual([]);
+    await expect(secrets.list("Live/")).rejects.toThrow(/^secret name is invalid$/);
+  });
 });

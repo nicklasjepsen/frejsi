@@ -4,11 +4,16 @@ import { FileSecrets } from "./file";
 import { createSecretsFromEnv, KeyVaultSecrets, type SecretClientLike } from "./keyvault";
 import type { Secrets } from "./types";
 
+const UPDATED = Date.UTC(2026, 10, 9, 10, 0, 0);
+
 /**
  * A vault as a map of `name` to its versions, newest last, and a record of what was asked for. A
  * version id is 32 hex characters, as Key Vault's are.
  */
-function fakeClient(store: Record<string, string[]>) {
+function fakeClient(
+  store: Record<string, string[]>,
+  extra: { name: string; enabled?: boolean; updatedOn?: Date; createdOn?: Date }[] = [],
+) {
   const asked: { name: string; version: string | undefined }[] = [];
   const client: SecretClientLike = {
     getSecret: (name, options) => {
@@ -33,6 +38,11 @@ function fakeClient(store: Record<string, string[]>) {
       // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
       delete store[name];
       return Promise.resolve({});
+    },
+    // eslint-disable-next-line @typescript-eslint/require-await
+    listPropertiesOfSecrets: async function* () {
+      for (const name of Object.keys(store)) yield { name, updatedOn: new Date(UPDATED) };
+      yield* extra;
     },
   };
   return { client, asked };
@@ -72,6 +82,9 @@ describe("KeyVaultSecrets", () => {
       getSecret: () => Promise.reject(new Error("unused")),
       setSecret: () => Promise.resolve({ properties: {} }),
       beginDeleteSecret: () => Promise.reject(new Error("unused")),
+      listPropertiesOfSecrets: () => ({
+        [Symbol.asyncIterator]: () => ({ next: () => Promise.reject(new Error("unused")) }),
+      }),
     };
     const secrets = new KeyVaultSecrets(client);
     await expect(secrets.set("glucose-s1", "v")).rejects.toThrow(/without a version/);
@@ -85,9 +98,15 @@ describe("KeyVaultSecrets", () => {
       setSecret: () => Promise.reject(new Error("unused")),
       beginDeleteSecret: () =>
         Promise.reject(Object.assign(new Error("forbidden"), { statusCode: 403 })),
+      listPropertiesOfSecrets: () => ({
+        [Symbol.asyncIterator]: () => ({
+          next: () => Promise.reject(Object.assign(new Error("forbidden"), { statusCode: 403 })),
+        }),
+      }),
     };
     await expect(new KeyVaultSecrets(client).get("x")).rejects.toThrow("forbidden");
     await expect(new KeyVaultSecrets(client).delete("x")).rejects.toThrow("forbidden");
+    await expect(new KeyVaultSecrets(client).list("live-")).rejects.toThrow("forbidden");
   });
 
   it("deletes a secret, and a missing one quietly", async () => {
@@ -97,6 +116,25 @@ describe("KeyVaultSecrets", () => {
     expect(Object.keys(store)).toEqual(["live-a2"]);
     await expect(secrets.delete("live-a1")).resolves.toBeUndefined();
     await expect(secrets.delete("Live/a1")).rejects.toThrow(/^secret name is invalid$/);
+  });
+});
+
+describe("KeyVaultSecrets.list", () => {
+  it("lists enabled secrets under a prefix with their write time, names only", async () => {
+    const created = new Date(UPDATED - 60_000);
+    const store: Record<string, string[]> = { "live-a1": ["x"], "glucose-s1": ["y"] };
+    const secrets = new KeyVaultSecrets(
+      fakeClient(store, [
+        { name: "live-off", enabled: false, updatedOn: new Date(UPDATED) },
+        { name: "live-created", createdOn: created },
+        { name: "live-undated" },
+      ]).client,
+    );
+    await expect(secrets.list("live-")).resolves.toEqual([
+      { name: "live-a1", updatedOn: new Date(UPDATED) },
+      { name: "live-created", updatedOn: created },
+    ]);
+    await expect(secrets.list("Live/")).rejects.toThrow(/^secret name is invalid$/);
   });
 });
 
