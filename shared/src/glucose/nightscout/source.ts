@@ -7,6 +7,7 @@ import {
   ENDPOINTS,
   EntriesResponse,
   judgeVerifyAuth,
+  MAX_COUNT,
   SgvEntry,
   toTrend,
 } from "./protocol";
@@ -38,6 +39,18 @@ export interface NightscoutSourceOptions extends Pick<NightscoutCredential, "url
  * (`"401"`) or one of `Timeout`, `Network`, `UnexpectedShape`; the message is the code, so an error
  * that reaches a log line carries no address and no response body.
  */
+/**
+ * One sensor entry as the site sent it, for the iPhone push relay (plan 2026-11-08-ios-follower-app
+ * §4): the push carries mg/dL and Nightscout's own direction word, not Frejsi's rounded mmol/L.
+ */
+export interface NightscoutEntry {
+  /** Unix milliseconds. */
+  date: number;
+  mgdl: number;
+  /** Nightscout's direction word ("Flat", "FortyFiveUp", …), or "" when the site sent none. */
+  direction: string;
+}
+
 export class NightscoutError extends Error {
   readonly code: string;
   readonly status: number;
@@ -94,6 +107,30 @@ export class NightscoutSource implements GlucoseSource {
       });
     }
     return [...byDate.entries()].sort(([a], [b]) => a - b).map(([, reading]) => reading);
+  }
+
+  /**
+   * The newest `count` sensor entries, newest first, one per timestamp: the same allow-listed
+   * `GET entries/sgv.json` as `fetchSince`, without a window.
+   */
+  async latestEntries(count: number): Promise<NightscoutEntry[]> {
+    const query = new URLSearchParams({ count: String(Math.min(MAX_COUNT, Math.max(1, count))) });
+    const body = await this.request(ENDPOINTS.entries, query);
+    const list = EntriesResponse.safeParse(body);
+    if (!list.success) throw new NightscoutError("UnexpectedShape", 200);
+
+    const byDate = new Map<number, NightscoutEntry>();
+    for (const raw of list.data) {
+      const entry = SgvEntry.safeParse(raw);
+      if (!entry.success || byDate.has(entry.data.date)) continue;
+      const direction = entry.data.direction;
+      byDate.set(entry.data.date, {
+        date: entry.data.date,
+        mgdl: Math.round(entry.data.sgv),
+        direction: typeof direction === "string" ? direction : "",
+      });
+    }
+    return [...byDate.values()].sort((a, b) => b.date - a.date);
   }
 
   /** "ok" means the site answered `verifyauth` with read access, with this credential or without one. */

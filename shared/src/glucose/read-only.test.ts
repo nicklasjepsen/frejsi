@@ -69,6 +69,7 @@ const SOURCES: Record<PolledSourceType | "fake", Registered> = {
       "decode", // parses a response body
       "fetch", // the injected fetch; only the transport calls it (lint)
       "now", // the injected clock
+      "latestEntries", // GET entries/sgv.json?count=N through request(), for the iPhone push test
     ],
   },
   fake: {

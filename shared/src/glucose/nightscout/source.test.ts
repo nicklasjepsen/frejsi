@@ -252,3 +252,48 @@ describe("NightscoutSource.probe", () => {
     expect(out).not.toMatch(/example-ns|fixture-token/);
   });
 });
+
+describe("NightscoutSource.latestEntries", () => {
+  const body = JSON.stringify([
+    { sgv: 145, date: 1793015700000, direction: "Flat", type: "sgv" },
+    { sgv: 151, date: 1793016000000, direction: "FortyFiveUp", type: "sgv" },
+    { sgv: 151, date: 1793016000000, direction: "FortyFiveUp", type: "sgv" },
+    { mbg: 120, date: 1793015800000, type: "mbg" },
+    { sgv: 99.6, date: 1793015400000 },
+  ]);
+
+  it("reads the newest entries from entries/sgv.json with count only, credential in the header", async () => {
+    const h = source({ body });
+    await h.source.latestEntries(2);
+    expect(h.calls).toHaveLength(1);
+    const call = h.calls[0];
+    if (call === undefined) throw new Error("no call");
+    expect(call.method).toBe("GET");
+    expect(call.url.pathname).toBe("/api/v1/entries/sgv.json");
+    expect([...call.url.searchParams.entries()]).toEqual([["count", "2"]]);
+    expect(call.headers["api-secret"]).toBe(SECRET_TOKEN);
+    expect(call.url.href).not.toContain(SECRET_TOKEN);
+    expect(call.redirect).toBe("manual");
+  });
+
+  it("keeps mg/dL and the direction word, newest first, one per timestamp, sgv entries only", async () => {
+    expect(await source({ body }).source.latestEntries(5)).toEqual([
+      { date: 1793016000000, mgdl: 151, direction: "FortyFiveUp" },
+      { date: 1793015700000, mgdl: 145, direction: "Flat" },
+      { date: 1793015400000, mgdl: 100, direction: "" },
+    ]);
+  });
+
+  it("clamps the count and refuses a body that is not entries", async () => {
+    const h = source({ body: "[]" });
+    await h.source.latestEntries(0);
+    await h.source.latestEntries(10_000);
+    expect(h.calls.map((c) => c.url.searchParams.get("count"))).toEqual(["1", "288"]);
+    await expect(source({ body: '{"status":"ok"}' }).source.latestEntries(2)).rejects.toThrow(
+      NightscoutError,
+    );
+    await expect(source({ status: 401, body: "" }).source.latestEntries(2)).rejects.toMatchObject({
+      code: "401",
+    });
+  });
+});
