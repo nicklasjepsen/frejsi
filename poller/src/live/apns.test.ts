@@ -27,6 +27,11 @@ async function apnsStub(
 ): Promise<{ origin: string; seen: Seen[]; close: () => Promise<void> }> {
   const seen: Seen[] = [];
   const server = http2.createServer();
+  const sessions = new Set<http2.ServerHttp2Session>();
+  server.on("session", (session) => {
+    sessions.add(session);
+    session.on("close", () => sessions.delete(session));
+  });
   server.on("stream", (stream, headers) => {
     const chunks: Buffer[] = [];
     stream.on("data", (c: Buffer) => chunks.push(c));
@@ -48,6 +53,8 @@ async function apnsStub(
         server.close(() => {
           resolve();
         });
+        // close() waits for open sessions; a test's client may still hold one.
+        for (const session of sessions) session.destroy();
       }),
   };
 }
@@ -63,7 +70,8 @@ beforeAll(() => {
 
 const closers: (() => Promise<void> | void)[] = [];
 afterEach(async () => {
-  for (const close of closers.splice(0)) await close();
+  // Last opened, first closed: the sender's connection before the server it talks to.
+  for (const close of closers.splice(0).reverse()) await close();
 });
 
 function sender(origin: string, now: () => number = () => 1793016000) {
@@ -120,7 +128,7 @@ describe("ApnsSender", () => {
   });
 
   it("refuses an RSA key", () => {
-    const rsa = generateKeyPairSync("rsa", { modulusLength: 1024 })
+    const rsa = generateKeyPairSync("rsa", { modulusLength: 2048 })
       .privateKey.export({ type: "pkcs8", format: "pem" })
       .toString();
     expect(() => loadApnsKey(rsa)).toThrow("the APNs key is not an EC key");
