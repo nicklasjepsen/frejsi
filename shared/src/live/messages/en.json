@@ -1,0 +1,16 @@
+{
+  "alert": {
+    "low": "Low: {value} {unit} · {age}",
+    "high": "High: {value} {unit} · {age}",
+    "stale": "No new readings for {minutes} min",
+    "body": "A reminder. The CGM app's alarms still apply."
+  },
+  "age": {
+    "now": "just now",
+    "minutes": "{minutes} min ago"
+  },
+  "restart": {
+    "title": "Live Activity",
+    "body": "Restarted"
+  }
+}

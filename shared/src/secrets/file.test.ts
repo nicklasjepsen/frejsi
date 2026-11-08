@@ -84,4 +84,18 @@ describe("FileSecrets", () => {
     // A directory where the secrets directory should be: reading under it is ENOTDIR, not "missing".
     await expect(new FileSecrets(file).get("x")).rejects.toThrow();
   });
+
+  it("deletes a name's latest and version files and leaves a longer name's alone", async () => {
+    const secrets = new FileSecrets(dir);
+    const ref = await secrets.set("live-a1", "first");
+    await secrets.set("live-a1", "second");
+    await secrets.set("live-a1-b", "other");
+    await secrets.delete("live-a1");
+    await expect(secrets.get(ref)).resolves.toBeUndefined();
+    await expect(secrets.get("live-a1")).resolves.toBeUndefined();
+    await expect(secrets.get("live-a1-b")).resolves.toBe("other");
+    expect(readdirSync(dir).filter((file) => file.startsWith("live-a1.")).length).toBe(0);
+    await expect(secrets.delete("live-a1")).resolves.toBeUndefined();
+    await expect(new FileSecrets(path.join(dir, "absent")).delete("x")).resolves.toBeUndefined();
+  });
 });

@@ -1,0 +1,16 @@
+{
+  "alert": {
+    "low": "Lav: {value} {unit} · {age}",
+    "high": "Høj: {value} {unit} · {age}",
+    "stale": "Ingen nye målinger i {minutes} min",
+    "body": "En påmindelse. CGM-appens alarmer gælder stadig."
+  },
+  "age": {
+    "now": "lige nu",
+    "minutes": "{minutes} min siden"
+  },
+  "restart": {
+    "title": "Live Activity",
+    "body": "Startet igen"
+  }
+}

@@ -103,6 +103,7 @@ describe("the database (SQL Server)", () => {
       "0004_theme",
       "0005_feel",
       "0006_pump",
+      "0007_live",
     ]);
     // Nothing left between the migrated database and schema.prisma: exit code 0, no script.
     const diff = await schemaDiff(scratch.url, db);
@@ -150,6 +151,7 @@ describe("the database (SQL Server)", () => {
         "0004_theme",
         "0005_feel",
         "0006_pump",
+        "0007_live",
       ]);
       const space = await olderDb.space.findUniqueOrThrow({ where: { id: "s-feel" } });
       expect(space.symptomKinds).toBe("[]");
@@ -212,6 +214,7 @@ describe("the database (SQL Server)", () => {
         "0004_theme",
         "0005_feel",
         "0006_pump",
+        "0007_live",
       ]);
       // The four Space columns with their defaults.
       const space = await olderDb.space.findUniqueOrThrow({ where: { id: "s-pump" } });

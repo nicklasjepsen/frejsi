@@ -1,4 +1,4 @@
-import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
+import { mkdir, readdir, readFile, rename, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { randomBytes } from "node:crypto";
 
@@ -32,6 +32,25 @@ export class FileSecrets implements Secrets {
     await this.write(this.fileFor(name, version), value);
     await this.write(this.fileFor(name), value);
     return ref;
+  }
+
+  /** Removes `<name>` and every `<name>.<version>`; a missing directory or file is fine. */
+  async delete(name: string): Promise<void> {
+    assertSecretName(name);
+    let files: string[];
+    try {
+      files = await readdir(this.directory);
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code === "ENOENT") return;
+      throw error;
+    }
+    const prefix = `${name}.`;
+    // A version is `[a-z0-9]`, so `<name>.<version>` never matches a longer name's files.
+    const own = files.filter(
+      (file) =>
+        file === name || (file.startsWith(prefix) && /^[a-z0-9]+$/.test(file.slice(prefix.length))),
+    );
+    await Promise.all(own.map((file) => rm(path.join(this.directory, file), { force: true })));
   }
 
   /** `<name>` is the latest; a version has its own file, which no plain name can be called. */

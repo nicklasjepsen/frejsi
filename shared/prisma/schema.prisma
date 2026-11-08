@@ -1,8 +1,9 @@
 // Enums are String columns validated by the Zod enums in
 // src/schemas/; JSON is NVarChar(Max) parsed with Zod (the SQL Server connector has no Json).
 // Foundation: 0001_foundation. Food: 0002_food. AI: 0003_ai. Theme: 0004_theme. Feel: 0005_feel.
-// Pump: 0006_pump. Each migration's end state is kept as a snapshot (foundation.prisma,
-// food.prisma, ai.prisma, theme.prisma, feel.prisma) so `prisma:check` can diff one step at a time.
+// Pump: 0006_pump. Live: 0007_live. Each migration's end state is kept as a snapshot
+// (foundation.prisma, food.prisma, ai.prisma, theme.prisma, feel.prisma, pump.prisma) so
+// `prisma:check` can diff one step at a time.
 
 generator client {
   provider      = "prisma-client-js"
@@ -353,4 +354,40 @@ model PushSubscription {
   @@unique([userId, endpoint])
   @@index([sessionId])
   @@index([spaceId])
+}
+
+/// One iPhone following one Nightscout site through the push relay (plan
+/// 2026-11-08-ios-follower-app §4, §5). Not tied to a space: the people who follow through the app
+/// are not Nænsom users. No reading history: only the newest reading's time. The site's address and
+/// token live in Key Vault (`tokenSecretRef`, a version of `live-<id>`); `nightscoutHost` is the
+/// host name only, for support. The device secret is kept as its SHA-256 only.
+model LiveSubscription {
+  id                String    @id @db.NVarChar(64)
+  deviceSecretHash  String    @db.NVarChar(64)
+  isDemo            Boolean   @default(false)
+  nightscoutHost    String?   @db.NVarChar(253)
+  tokenSecretRef    String?   @db.NVarChar(200)
+  apnsEnvironment   String    @db.NVarChar(12)
+  pushToStartToken  String?   @db.NVarChar(400)
+  activityPushToken String?   @db.NVarChar(400)
+  activityStartedAt DateTime?
+  deviceToken       String?   @db.NVarChar(400)
+  unit              String    @db.NVarChar(8)
+  language          String    @db.NVarChar(8)
+  urgentLowMgdl     Int
+  lowMgdl           Int
+  highMgdl          Int
+  urgentHighMgdl    Int
+  alertsOn          Boolean   @default(false)
+  lastAlertKind     String?   @db.NVarChar(10)
+  lastAlertAt       DateTime?
+  lastReadingAt     DateTime?
+  lastPushAt        DateTime?
+  nextCheckAt       DateTime  @default(now())
+  failures          Int       @default(0)
+  createdAt         DateTime  @default(now())
+  lastSeenAt        DateTime  @default(now())
+
+  @@index([nextCheckAt])
+  @@index([lastSeenAt])
 }

@@ -26,6 +26,14 @@ function fakeClient(store: Record<string, string[]>) {
       versions.push(value);
       return Promise.resolve({ properties: { version: String(versions.length - 1) } });
     },
+    beginDeleteSecret: (name) => {
+      if (!(name in store)) {
+        return Promise.reject(Object.assign(new Error("not found"), { statusCode: 404 }));
+      }
+      // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
+      delete store[name];
+      return Promise.resolve({});
+    },
   };
   return { client, asked };
 }
@@ -63,6 +71,7 @@ describe("KeyVaultSecrets", () => {
     const client: SecretClientLike = {
       getSecret: () => Promise.reject(new Error("unused")),
       setSecret: () => Promise.resolve({ properties: {} }),
+      beginDeleteSecret: () => Promise.reject(new Error("unused")),
     };
     const secrets = new KeyVaultSecrets(client);
     await expect(secrets.set("glucose-s1", "v")).rejects.toThrow(/without a version/);
@@ -74,8 +83,20 @@ describe("KeyVaultSecrets", () => {
     const client: SecretClientLike = {
       getSecret: () => Promise.reject(Object.assign(new Error("forbidden"), { statusCode: 403 })),
       setSecret: () => Promise.reject(new Error("unused")),
+      beginDeleteSecret: () =>
+        Promise.reject(Object.assign(new Error("forbidden"), { statusCode: 403 })),
     };
     await expect(new KeyVaultSecrets(client).get("x")).rejects.toThrow("forbidden");
+    await expect(new KeyVaultSecrets(client).delete("x")).rejects.toThrow("forbidden");
+  });
+
+  it("deletes a secret, and a missing one quietly", async () => {
+    const store: Record<string, string[]> = { "live-a1": ["x", "y"], "live-a2": ["z"] };
+    const secrets = new KeyVaultSecrets(fakeClient(store).client);
+    await secrets.delete("live-a1");
+    expect(Object.keys(store)).toEqual(["live-a2"]);
+    await expect(secrets.delete("live-a1")).resolves.toBeUndefined();
+    await expect(secrets.delete("Live/a1")).rejects.toThrow(/^secret name is invalid$/);
   });
 });
 

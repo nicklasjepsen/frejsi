@@ -11,6 +11,8 @@ export interface SecretClientLike {
     options?: { version?: string | undefined },
   ): Promise<{ value?: string | undefined }>;
   setSecret(name: string, value: string): Promise<{ properties: { version?: string | undefined } }>;
+  /** Starts the deletion; the returned poller is not awaited (soft delete finishes on its own). */
+  beginDeleteSecret(name: string): Promise<unknown>;
 }
 
 function isNotFound(error: unknown): boolean {
@@ -48,6 +50,16 @@ export class KeyVaultSecrets implements Secrets {
     // A version is what makes the reference immutable; without one the write is not usable.
     if (!properties.version) throw new Error("Key Vault answered a secret without a version");
     return formatSecretRef(name, properties.version);
+  }
+
+  async delete(name: string): Promise<void> {
+    assertSecretName(name);
+    try {
+      await this.client.beginDeleteSecret(name);
+    } catch (error) {
+      if (isNotFound(error)) return;
+      throw error;
+    }
   }
 }
 
