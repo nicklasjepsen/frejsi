@@ -64,6 +64,9 @@
 "settings.support" = "Hjælp";
 "settings.version" = "Version";
 "settings.debug.tokens" = "Push-tokens (debug-builds)";
+"settings.debug.activity" = "Live Activity";
+"settings.debug.pushToStart" = "Push-to-start";
+"settings.debug.device" = "Påmindelser (enhed)";
 "settings.remove" = "Fjern denne telefon";
 "settings.remove.footer" = "Stopper Live Activity og påmindelser, sletter kopien på Nænsoms server og fjerner adresse og token fra denne telefon.";
 "settings.remove.confirm.title" = "Fjern denne telefon?";
