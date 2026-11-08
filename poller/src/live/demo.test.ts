@@ -26,12 +26,22 @@ describe("the demo curve", () => {
     expect(must(second).date - must(third).date).toBe(DEMO_INTERVAL_MS);
   });
 
-  it("stays plausible over a day: 50-300 mg/dL, under 3 mg/dL a minute, some low and some high", () => {
+  it("is the app's DemoCurve: the same values at the same moments", () => {
+    // mgdl(t) = round(140 + 55 sin(2 pi t / 10800) + 18 sin(2 pi t / 2700 + 1)), t in Unix seconds.
+    expect(demoMgdl(0)).toBe(155);
+    expect(demoMgdl(2_700_000)).toBe(210);
+    expect(demoMgdl(8_100_000)).toBe(100);
+    expect(demoDirection(5)).toBe("FortyFiveUp");
+    expect(demoDirection(-5)).toBe("FortyFiveDown");
+    expect(demoDirection(4)).toBe("Flat");
+  });
+
+  it("stays plausible over a day: 50-300 mg/dL, under 5 mg/dL a minute, some low and some high", () => {
     const day = Array.from({ length: 288 }, (_, i) => demoMgdl(at + i * DEMO_INTERVAL_MS));
     expect(Math.min(...day)).toBeGreaterThanOrEqual(50);
     expect(Math.max(...day)).toBeLessThanOrEqual(300);
     for (let i = 1; i < day.length; i += 1) {
-      expect(Math.abs(must(day[i]) - must(day[i - 1])) / 5).toBeLessThan(3);
+      expect(Math.abs(must(day[i]) - must(day[i - 1])) / 5).toBeLessThan(5);
     }
     expect(day.some((v) => v < 80)).toBe(true);
     expect(day.some((v) => v > 180)).toBe(true);
