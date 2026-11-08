@@ -12,6 +12,7 @@ import {
   iosPageCopy,
   iosPageLocale,
   pageHeaders,
+  privacyController,
   textPage,
 } from "./pages";
 
@@ -51,7 +52,7 @@ describe("the iPhone app's pages: copy", () => {
     const da = iosPageCopy("da");
     expect(da.privacy.title).toMatch(DANISH);
     const en = iosPageCopy("en");
-    const english = strings({ ...en, common: { ...en.common, otherLanguage: "", controller: "" } })
+    const english = strings({ ...en, common: { ...en.common, otherLanguage: "" } })
       .map((text) => text.replaceAll("Nænsom", "").replace("Datatilsynet", ""))
       .filter((text) => DANISH.test(text));
     expect(english).toEqual([]);
@@ -131,6 +132,22 @@ describe("the iPhone app's pages: HTML", () => {
       }
     },
   );
+
+  it("names the data controller only from the deployment's setting, never from the repo", () => {
+    expect(privacyController({})).toBeNull();
+    expect(privacyController({ PRIVACY_CONTROLLER: "  " })).toBeNull();
+    expect(privacyController({ PRIVACY_CONTROLLER: " A. Person, Denmark " })).toBe(
+      "A. Person, Denmark",
+    );
+    for (const lang of LOCALES) {
+      const unnamed = textPage("privacy", lang);
+      expect(unnamed).toContain(escapeHtml(iosPageCopy(lang).common.controllerFallback));
+      expect(unnamed).not.toContain("{controller}");
+      const named = textPage("privacy", lang, "A. Person <Denmark>");
+      expect(named).toContain("A. Person &lt;Denmark&gt;");
+      expect(named).not.toContain(escapeHtml(iosPageCopy(lang).common.controllerFallback));
+    }
+  });
 
   it("escapes copy", () => {
     expect(escapeHtml(`<a href="x">'&'</a>`)).toBe(

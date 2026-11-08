@@ -24,8 +24,8 @@
 # move; one of those hosts), GITHUB_OUTPUT,
 # PHOTOS_STORAGE_ACCOUNT (dedicated photo account; creates blob-connection-string once),
 # SQL_SERVER_ID (resource ID of an existing SQL server holding the database; infra/README.md),
-# DEFAULT_LOCALE, FOOD_SOURCES, OFF_COUNTRY, OFF_CONTRIBUTE_HOST (written to the web app's settings
-# only when set; FOOD_SOURCES and OFF_COUNTRY also to the Function App).
+# DEFAULT_LOCALE, FOOD_SOURCES, OFF_COUNTRY, OFF_CONTRIBUTE_HOST, PRIVACY_CONTROLLER (written to the
+# web app's settings only when set; FOOD_SOURCES and OFF_COUNTRY also to the Function App).
 # Tools: az (logged in), sqlcmd (go-sqlcmd), pnpm (workspace installed), docker, curl, zip, openssl, jq.
 #
 # Nothing secret is ever printed. Secrets travel through files with mode 600 or environment
@@ -73,6 +73,7 @@ DEFAULT_LOCALE="${DEFAULT_LOCALE:-}"
 FOOD_SOURCES="${FOOD_SOURCES:-}"
 OFF_COUNTRY="${OFF_COUNTRY:-}"
 OFF_CONTRIBUTE_HOST="${OFF_CONTRIBUTE_HOST:-}"
+PRIVACY_CONTROLLER="${PRIVACY_CONTROLLER:-}"
 WEB_PUBSUB_HUB="${WEB_PUBSUB_HUB:-frejsi}"
 SQL_DATABASE="${SQL_DATABASE:-frejsi}"
 SQL_APP_USER="${SQL_APP_USER:-frejsi_app}"
@@ -503,10 +504,10 @@ for OFF_SETTING in OFF_CONTRIBUTE_USER OFF_CONTRIBUTE_PASSWORD; do
   )
 done
 # FOOD_SOURCES and OFF_COUNTRY also configure the poller's food enrichment, so they go to the Function
-# App too; the other two are read by the web app only.
+# App too; the others are read by the web app only.
 ( umask 077; printf '{}' > "$WORK/country-function.json" )
 COUNTRY_FUNCTION_COUNT=0
-for COUNTRY_SETTING in DEFAULT_LOCALE FOOD_SOURCES OFF_COUNTRY OFF_CONTRIBUTE_HOST; do
+for COUNTRY_SETTING in DEFAULT_LOCALE FOOD_SOURCES OFF_COUNTRY OFF_CONTRIBUTE_HOST PRIVACY_CONTROLLER; do
   COUNTRY_VALUE="${!COUNTRY_SETTING}"
   [ -n "$COUNTRY_VALUE" ] || continue
   ( umask 077
