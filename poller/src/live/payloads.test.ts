@@ -63,7 +63,7 @@ describe("payloads", () => {
       aps: Record<string, unknown> & { alert: { title: string; body: string } };
     };
     expect(payload.aps["attributes-type"]).toBe(ACTIVITY_ATTRIBUTES_TYPE);
-    expect(payload.aps.attributes).toEqual({ unit: "mmolL", lowMmolL: 3.9, highMmolL: 10 });
+    expect(payload.aps.attributes).toEqual({ unit: "mmolL" });
     expect(payload.aps.event).toBe("start");
     expect(JSON.stringify(payload.aps.alert)).not.toMatch(/\d/);
   });

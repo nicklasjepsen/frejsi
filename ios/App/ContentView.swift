@@ -17,6 +17,13 @@ struct ContentView: View {
                 if model.isConfigured {
                     Section { reading }
                     Section("Live Activity") { liveActivity }
+                    Section {
+                        thresholdSteppers
+                    } header: {
+                        Text("Colours")
+                    } footer: {
+                        Text("Green from low to high, yellow outside it, red at or beyond the urgent values, grey when the reading is more than 15 minutes old. Colours only: no alarms.")
+                    }
                     Section("Push tokens (for the push test)") { tokens }
                 }
                 Section("Nightscout") { connection }
@@ -37,13 +44,14 @@ struct ContentView: View {
             // TimelineView re-renders the age every 30 s; the value never appears without it.
             TimelineView(.periodic(from: .now, by: 30)) { context in
                 let stale = Glucose.isStale(latest, now: context.date)
+                let colour = Glucose.color(latest, thresholds: model.thresholds, now: context.date).color
                 let language = AppLanguage.current
                 VStack(alignment: .leading, spacing: 6) {
                     HStack(alignment: .firstTextBaseline) {
                         Text("\(Glucose.format(latest.mgdl, unit: .mmolL, locale: AppLanguage.locale)) \(Glucose.arrow(latest.direction))")
                             .font(.system(size: 56, weight: .semibold, design: .rounded))
                             .monospacedDigit()
-                            .foregroundStyle(stale ? .gray : .primary)
+                            .foregroundStyle(colour)
                         Text(GlucoseUnit.mmolL.label).foregroundStyle(.secondary)
                     }
                     HStack {
@@ -74,6 +82,39 @@ struct ContentView: View {
         }
         if let error = activities.error {
             Text(error).foregroundStyle(.orange)
+        }
+    }
+
+    @ViewBuilder private var thresholdSteppers: some View {
+        ForEach(GlucoseThresholds.Kind.allCases, id: \.self) { kind in
+            Stepper {
+                HStack {
+                    Text(Self.label(kind))
+                    Spacer()
+                    Text("\(model.thresholds.formatted(kind, unit: .mmolL, locale: AppLanguage.locale)) \(GlucoseUnit.mmolL.label)")
+                        .monospacedDigit()
+                        .foregroundStyle(.secondary)
+                }
+            } onIncrement: {
+                model.step(kind, by: 1, unit: .mmolL)
+                activities.redraw()
+            } onDecrement: {
+                model.step(kind, by: -1, unit: .mmolL)
+                activities.redraw()
+            }
+        }
+        Button("Use the Nightscout site's values") {
+            model.resetThresholds()
+            activities.redraw()
+        }
+    }
+
+    private static func label(_ kind: GlucoseThresholds.Kind) -> String {
+        switch kind {
+        case .urgentLow: return "Urgent low"
+        case .low: return "Low"
+        case .high: return "High"
+        case .urgentHigh: return "Urgent high"
         }
     }
 

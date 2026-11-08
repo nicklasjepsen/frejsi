@@ -34,7 +34,7 @@ func glucoseActivityConfiguration() -> ActivityConfiguration<GlucoseActivityAttr
             .activityBackgroundTint(nil)
     } dynamicIsland: { context in
         let state = context.state
-        let color = RangeColor.color(for: state, attributes: context.attributes, isStale: context.isStale)
+        let color = Glucose.color(state.mgdl, thresholds: ThresholdStore.current, isStale: context.isStale).color
         return DynamicIsland {
             DynamicIslandExpandedRegion(.leading) {
                 ValueText(state: state, unit: context.attributes.unit, color: color, size: 34)
@@ -101,7 +101,7 @@ private struct MediumView: View {
     let isStale: Bool
 
     var body: some View {
-        let color = RangeColor.color(for: state, attributes: attributes, isStale: isStale)
+        let color = Glucose.color(state.mgdl, thresholds: ThresholdStore.current, isStale: isStale).color
         HStack(alignment: .firstTextBaseline) {
             ValueText(state: state, unit: attributes.unit, color: color, size: 44)
             Text(attributes.unit.label)
@@ -124,7 +124,7 @@ private struct SmallView: View {
     let isStale: Bool
 
     var body: some View {
-        let color = RangeColor.color(for: state, attributes: attributes, isStale: isStale)
+        let color = Glucose.color(state.mgdl, thresholds: ThresholdStore.current, isStale: isStale).color
         VStack(spacing: 2) {
             ValueText(state: state, unit: attributes.unit, color: color, size: 30)
             AgeText(readingAt: state.readingAt, isStale: isStale)

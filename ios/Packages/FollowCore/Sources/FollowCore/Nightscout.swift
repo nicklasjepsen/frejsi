@@ -38,8 +38,9 @@ public protocol HTTPTransport: Sendable {
 /// `GET /api/v1/entries/sgv.json`, the same endpoint the desktop app and Nænsom's poller read. The
 /// token goes in the `api-secret` header, never in the URL, so it stays out of server logs.
 public struct NightscoutClient: Sendable {
-    /// The only path this client ever requests.
+    /// The only two paths this client ever requests, both `GET`.
     public static let entriesPath = "/api/v1/entries/sgv.json"
+    public static let statusPath = "/api/v1/status.json"
 
     private let transport: HTTPTransport
 
@@ -69,9 +70,18 @@ public struct NightscoutClient: Sendable {
 
     /// The request for the newest `count` readings; separate so tests can check exactly what is sent.
     public static func entriesRequest(baseURL: URL, token: String, count: Int) -> URLRequest {
+        getRequest(baseURL: baseURL, path: entriesPath, token: token, query: [URLQueryItem(name: "count", value: String(max(1, count)))])
+    }
+
+    /// The request for the site's status, which carries its colour thresholds.
+    public static func statusRequest(baseURL: URL, token: String) -> URLRequest {
+        getRequest(baseURL: baseURL, path: statusPath, token: token, query: nil)
+    }
+
+    private static func getRequest(baseURL: URL, path: String, token: String, query: [URLQueryItem]?) -> URLRequest {
         var components = URLComponents(url: baseURL, resolvingAgainstBaseURL: false)!
-        components.path = components.path + entriesPath
-        components.queryItems = [URLQueryItem(name: "count", value: String(max(1, count)))]
+        components.path = components.path + path
+        components.queryItems = query
         var request = URLRequest(url: components.url!)
         request.httpMethod = "GET"
         request.timeoutInterval = 20
@@ -88,6 +98,16 @@ public struct NightscoutClient: Sendable {
         if status == 401 || status == 403 { throw NightscoutError.tokenRefused }
         guard (200..<300).contains(status) else { throw NightscoutError.status(status) }
         return try Self.parseEntries(body)
+    }
+
+    /// The site's own colour thresholds (`settings.thresholds` in `status.json`), or nil when it
+    /// sends none that make sense; the app then uses Nightscout's defaults.
+    public func thresholds(site: String, token: String) async throws -> GlucoseThresholds? {
+        let base = try Self.normalizeBaseURL(site)
+        let (body, status) = try await transport.send(Self.statusRequest(baseURL: base, token: token))
+        if status == 401 || status == 403 { throw NightscoutError.tokenRefused }
+        guard (200..<300).contains(status) else { throw NightscoutError.status(status) }
+        return GlucoseThresholds.fromNightscoutStatus(body)
     }
 
     /// Nightscout's entries array, newest first, one per timestamp. Entries without an `sgv` of 1–720
