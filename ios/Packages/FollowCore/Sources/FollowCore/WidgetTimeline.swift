@@ -135,6 +135,20 @@ public enum WidgetTimeline {
         return GlucoseSnapshot.shouldReplace(stored, with: fresh) ? fresh : stored
     }
 
+    /// What a site read leads to, decided after it answered, against what is true then: the phone
+    /// may have been removed or switched to another site, or the app may have stored a newer
+    /// reading, while the widget waited. `source` and `stored` are read again after the answer.
+    /// Answers the snapshot to show and whether to store it: an answer for a site the phone no
+    /// longer follows is dropped, and the stored snapshot wins when it is as new or newer.
+    public static func afterFetch(
+        asked: FollowSource, fetched: [Reading], source: FollowSource?, stored: GlucoseSnapshot?
+    ) -> (show: GlucoseSnapshot?, store: Bool) {
+        let current = usable(stored, for: source)
+        guard source == asked else { return (current, false) }
+        let merged = merge(current, fetched: fetched, site: asked.stored.site)
+        return (merged, merged != current)
+    }
+
     /// When to ask for a new timeline: just after the next reading is due (reading + 5 min + 1 min),
     /// then every 5 minutes while it is overdue, every 15 once the newest is 20 minutes old. iOS
     /// may come later than asked; the stale entry covers that.
