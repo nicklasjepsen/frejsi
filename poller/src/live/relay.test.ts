@@ -547,8 +547,10 @@ describe("createEntryReader", () => {
     await reader(r, T0);
     expect(reads).toBe(1);
     expect(calls[0]?.method).toBe("GET");
-    expect(calls[0]?.url.startsWith(SITE)).toBe(true);
-    expect(calls[0]?.url.endsWith("/sgv.json?count=3")).toBe(true);
+    const url = new URL(calls[0]?.url ?? "");
+    expect(url.origin).toBe(new URL(SITE).origin);
+    expect(url.pathname.endsWith("/sgv.json")).toBe(true);
+    expect(url.search).toBe("?count=3");
     expect(calls[0]?.url).not.toContain("fixture-token");
     expect(Object.values(calls[0]?.headers ?? {})).toContain("fixture-token");
   });
