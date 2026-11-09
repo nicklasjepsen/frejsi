@@ -23,23 +23,23 @@ final class InviteScriptedTransport: HTTPTransport, @unchecked Sendable {
 
 final class NightscoutInvitesTests: XCTestCase {
     let site = URL(string: "https://ns.example.org")!
-    let ours = #"{"_id":"64b7f0c2a1b2c3d4e5f60718","name":"naensom Mor #k3x9a","roles":["readable"],"notes":"Created by nænsom","accessToken":"naensommor-0123456789abcdef"}"#
-    let ownersAdmin = #"{"_id":"64b7f0c2a1b2c3d4e5f60719","name":"admin","roles":["admin"],"notes":"","accessToken":"admin-fedcba9876543210"}"#
+    let ours = #"{"_id":"64b7f0c2a1b2c3d4e5f60718","name":"naensom Mor #k3x9a","roles":["readable"],"notes":"Created by nænsom","accessToken":"naensommor-fake"}"#
+    let ownersAdmin = #"{"_id":"64b7f0c2a1b2c3d4e5f60719","name":"admin","roles":["admin"],"notes":"","accessToken":"admin-fake"}"#
     let ownersReadable = #"{"_id":"64b7f0c2a1b2c3d4e5f6071a","name":"nightguard","roles":["readable"],"accessToken":"nightguard-c0ffee"}"#
     let markedButAdmin = #"{"_id":"64b7f0c2a1b2c3d4e5f6071b","name":"naensom X #1","roles":["readable","admin"],"notes":"Created by nænsom","accessToken":"x-1"}"#
 
     func testListsOnlyNaensomsReadOnlySubjects() throws {
         let invites = try NightscoutInvites.parseInvites(Data("[\(ours),\(ownersAdmin),\(ownersReadable),\(markedButAdmin)]".utf8))
-        XCTAssertEqual(invites, [Invite(id: "64b7f0c2a1b2c3d4e5f60718", name: "Mor", accessToken: "naensommor-0123456789abcdef", subjectName: "naensom Mor #k3x9a")])
+        XCTAssertEqual(invites, [Invite(id: "64b7f0c2a1b2c3d4e5f60718", name: "Mor", accessToken: "naensommor-fake", subjectName: "naensom Mor #k3x9a")])
     }
 
     func testSendsTheAdminTokenInTheHeaderNeverInTheURL() async throws {
         let transport = InviteScriptedTransport([(200, "[]")])
-        _ = try await NightscoutInvites(transport: transport).list(site: site, adminToken: " admin-fedcba9876543210 ")
+        _ = try await NightscoutInvites(transport: transport).list(site: site, adminToken: " admin-fake ")
         let request = try XCTUnwrap(transport.requests.first)
         XCTAssertEqual(request.httpMethod, "GET")
         XCTAssertEqual(request.url?.absoluteString, "https://ns.example.org/api/v2/authorization/subjects")
-        XCTAssertEqual(request.value(forHTTPHeaderField: "api-secret"), "admin-fedcba9876543210")
+        XCTAssertEqual(request.value(forHTTPHeaderField: "api-secret"), "admin-fake")
     }
 
     func testCreatesAReadOnlySubjectAndAnswersItsToken() async throws {

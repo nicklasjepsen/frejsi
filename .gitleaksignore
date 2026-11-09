@@ -12,3 +12,8 @@ infra/test/bicep.test.mjs:generic-api-key:128
 # test so the test does not compute a SHA-1 itself (CodeQL flags that). Public, derived from a
 # made-up value.
 shared/src/glucose/nightscout/pump-source.test.ts:generic-api-key:21
+
+# Made-up Nightscout access tokens in the FollowCore invite tests (an earlier version of the file
+# used hex-looking ones; the values are now plainly fake).
+ios/Packages/FollowCore/Tests/FollowCoreTests/NightscoutInvitesTests.swift:generic-api-key:26
+ios/Packages/FollowCore/Tests/FollowCoreTests/NightscoutInvitesTests.swift:generic-api-key:33
