@@ -22,9 +22,9 @@ struct SettingsView: View {
                 Section(L("settings.following")) {
                     if let host = follow.source?.displayHost {
                         Text(host)
-                        if case .nightscout(let site, let token) = follow.source {
+                        if case .nightscout(let site, _) = follow.source {
                             NavigationLink {
-                                InviteView(site: site, token: token)
+                                InviteView(site: site)
                             } label: {
                                 Label(L("invite.title"), systemImage: "person.badge.plus")
                             }

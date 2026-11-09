@@ -71,7 +71,7 @@ The product was called Frejsi until 2026-11-08. These names keep `frejsi` on pur
 - Raw readings never go to an AI model; only computed statistics. Photos/text only on an explicit user action. Per-space daily cap on AI calls.
 - No secrets in the repo; no real people in seed data or docs; no PII in logs.
 - Glucose sources and food sources are plugins behind interfaces (`GlucoseSource`, `FoodSource`). Nothing Danish is hard-coded.
-- Glucose sources are read-only: Nænsom never writes to a CGM or glucose service (no uploads, no follower or alert changes), even when the credential would allow it; the Dexcom adapter calls only allow-listed endpoints.
+- Glucose sources are read-only: Nænsom never writes to a CGM or glucose service (no uploads, no follower or alert changes), even when the credential would allow it; the Dexcom adapter calls only allow-listed endpoints. The one exception (owner, 2026-11-09) is the iPhone app's **invites**: with an admin token the owner adds on his own phone, it creates and deletes read-only (`readable`) Nightscout subjects marked as its own, through `/api/v2/authorization/subjects`, and nothing else (`ios/Packages/FollowCore/Sources/FollowCore/NightscoutInvites.swift`). That admin token stays in the phone's Keychain and never reaches the relay, the web app or a log.
 - Every write goes through `emit(spaceId, type, payload)` so it reaches the `events` table and Web PubSub.
 
 ## The owner's vault
