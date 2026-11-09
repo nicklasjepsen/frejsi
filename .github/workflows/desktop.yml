@@ -31,21 +31,36 @@ jobs:
       - name: Test
         run: dotnet test tests/BgTray.Core.Tests -c Release
 
-      - name: Publish single-file exe
+      # Two exes. The standalone one carries the .NET runtime, compressed (about 70 MB instead of
+      # about 150), and runs on any Windows machine. The small one (under 1 MB) uses the .NET 10
+      # Desktop Runtime installed on the machine; Windows offers the download when it is missing.
+      - name: Publish the standalone exe
         run: >
           dotnet publish src/BgTray -c Release -r win-x64 --self-contained
           -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true
+          -p:EnableCompressionInSingleFile=true
           -p:DebugType=none -o publish
+
+      - name: Publish the small exe
+        shell: pwsh
+        run: |
+          dotnet publish src/BgTray -c Release -r win-x64 --no-self-contained -p:PublishSingleFile=true -p:DebugType=none -o publish-small
+          Copy-Item publish-small/NaensomDesktop.exe publish/NaensomDesktop-small.exe
+          Get-ChildItem publish/*.exe | ForEach-Object { "{0}  {1:N1} MB" -f $_.Name, ($_.Length / 1MB) }
 
       - uses: actions/upload-artifact@v4
         with:
           name: NaensomDesktop-win-x64
-          path: desktop/publish/NaensomDesktop.exe
+          path: |
+            desktop/publish/NaensomDesktop.exe
+            desktop/publish/NaensomDesktop-small.exe
 
       - name: Release
         if: startsWith(github.ref, 'refs/tags/desktop-v')
         uses: softprops/action-gh-release@v2
         with:
-          files: desktop/publish/NaensomDesktop.exe
+          files: |
+            desktop/publish/NaensomDesktop.exe
+            desktop/publish/NaensomDesktop-small.exe
           generate_release_notes: false
-          body: "Nænsom desktop glance for Windows. Download `NaensomDesktop.exe`; see `desktop/README.md` for setup."
+          body: "Nænsom desktop glance for Windows. Download `NaensomDesktop.exe` (runs anywhere), or `NaensomDesktop-small.exe` if the .NET 10 Desktop Runtime is installed; see `desktop/README.md` for setup."

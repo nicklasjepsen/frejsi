@@ -151,7 +151,7 @@ vite.config.ts.timestamp-*
 # .NET build output (desktop/)
 desktop/**/bin/
 desktop/**/obj/
-desktop/publish/
+desktop/publish*/
 
 # iOS app (ios/README.md): XcodeGen generates the project, plists and entitlements from project.yml
 ios/*.xcodeproj/

@@ -8,7 +8,7 @@ Like the rest of Nænsom it only reads, has no alarms, and never says anything a
 
 ## Install
 
-1. Download `NaensomDesktop.exe` from the newest `desktop-v*` entry on the [releases page](https://github.com/nicklasjepsen/naensom/releases) and put it somewhere that stays, like `C:\Users\<you>\Apps\`.
+1. Download `NaensomDesktop.exe` from the newest `desktop-v*` entry on the [releases page](https://github.com/nicklasjepsen/naensom/releases) and put it somewhere that stays, like `C:\Users\<you>\Apps\`. It is about 70 MB because it carries the .NET runtime, so it runs on any Windows machine. `NaensomDesktop-small.exe` beside it is the same app at under 1 MB for a machine with the [.NET 10 Desktop Runtime](https://dotnet.microsoft.com/download/dotnet/10.0) installed; Windows offers the download when it is missing.
 2. Run it. Windows SmartScreen warns about an unknown publisher the first time: "More info" → "Run anyway".
 3. The settings window opens. Type the site's address, paste an access token, press **Test connection**, then **Save**.
 
@@ -29,7 +29,10 @@ Needs the .NET 10 SDK. From this folder:
 
 ```
 dotnet test tests/BgTray.Core.Tests
-dotnet publish src/BgTray -c Release -r win-x64 --self-contained -p:PublishSingleFile=true -o publish
+dotnet publish src/BgTray -c Release -r win-x64 --self-contained -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:EnableCompressionInSingleFile=true -o publish
+dotnet publish src/BgTray -c Release -r win-x64 --no-self-contained -p:PublishSingleFile=true -o publish-small
 ```
+
+The first is the standalone exe with the runtime inside, compressed; the second is the small one that uses the installed .NET 10 Desktop Runtime.
 
 `BgTray.Core` (the Nightscout reader, unit conversion, arrows, ranges, ages) builds and tests on any OS; the WPF app in `src/BgTray` compiles anywhere but runs on Windows. `.github/workflows/desktop.yml` runs the tests on every change under `desktop/`, keeps the exe as a workflow artifact on `main`, and publishes it as a GitHub release on a `desktop-vX.Y.Z` tag. It is outside the web app's CI and the `vX.Y.Z` release pipeline, and deploys nothing.
