@@ -115,7 +115,7 @@ struct OnboardingView: View {
                         .foregroundStyle(.secondary)
                 }
             }
-            .navigationTitle("Nænsom")
+            .navigationTitle(Text(verbatim: "nænsom"))
             .sheet(isPresented: $showScanner) {
                 ScannerSheet { text in
                     showScanner = false
