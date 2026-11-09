@@ -105,7 +105,7 @@
       {
         "heading": "Slet det hele med ét tryk",
         "body": [
-          "Tryk »Fjern denne telefon« under Indstillinger i appen. Det stopper Live Activity og påmindelser, sletter kopien på Nænsoms server og fjerner adresse og token fra telefonen. Kan serveren ikke nås lige da, kan du fjerne det hele fra telefonen alene. Så bliver serverens kopi slettet, når der er gået 30 dage, uden at en opdatering er nået frem til telefonen, eller når Apple melder, at appen er slettet. Vil du være sikker på, at den forsvinder med det samme, så tryk »Fjern denne telefon«, mens telefonen er på nettet. Sletter du appen, holder opdateringerne op, og posten bliver slettet, når Apple melder, at appen er væk."
+          "Tryk »Fjern denne telefon« under Indstillinger i appen. Det stopper Live Activity og påmindelser, sletter kopien på Nænsoms server og fjerner adresse og token fra telefonen. Kan serveren ikke nås lige da, kan du fjerne det hele fra telefonen alene. Så bliver appen ved med at prøve at slette serverens kopi, hver gang den åbner eller vågner, indtil serveren har bekræftet det. Lykkes det aldrig, bliver kopien slettet, når der er gået 30 dage, uden at en opdatering er nået frem til telefonen, eller når Apple melder, at appen er slettet. Sletter du appen, holder opdateringerne op, og posten bliver slettet, når Apple melder, at appen er væk."
         ],
         "list": []
       },
@@ -191,7 +191,7 @@
         "heading": "Fjern denne telefon",
         "body": [
           "»Fjern denne telefon« under Indstillinger stopper Live Activity og påmindelser, sletter kopien på Nænsoms server og fjerner adresse og token fra telefonen. Du kan altid sætte den op igen med linket.",
-          "Kan Nænsoms server ikke nås, kan du fjerne det hele fra telefonen alene. Så kan serveren blive ved med at sende opdateringer og påmindelser, indtil der er gået 30 dage, uden at en er nået frem, eller indtil appen er slettet. Gør det derfor, mens telefonen er på nettet, hvis du kan."
+          "Kan Nænsoms server ikke nås, kan du fjerne det hele fra telefonen alene. Appen bliver så ved med at prøve at fjerne telefonen fra serveren, hver gang den åbner eller vågner, indtil det lykkes. Indtil da kan der stadig komme opdateringer og påmindelser. Lykkes det aldrig, fjerner serveren den selv, når der er gået 30 dage, uden at noget er nået frem, eller når appen er slettet."
         ],
         "list": []
       },

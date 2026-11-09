@@ -105,7 +105,7 @@
       {
         "heading": "Delete everything with one tap",
         "body": [
-          "Tap “Remove this phone” in the app's Settings. It stops the Live Activity and reminders, deletes the copy on Nænsom's server and removes the address and token from the phone. If the server cannot be reached just then, you can remove everything from the phone alone. The server's copy is then deleted once 30 days pass without an update reaching the phone, or when Apple reports that the app was deleted. To be sure it goes at once, tap “Remove this phone” while the phone is online. If you delete the app, the updates stop, and the record is deleted when Apple reports that the app is gone."
+          "Tap “Remove this phone” in the app's Settings. It stops the Live Activity and reminders, deletes the copy on Nænsom's server and removes the address and token from the phone. If the server cannot be reached just then, you can remove everything from the phone alone. The app then keeps trying to delete the server's copy each time it opens or wakes, until the server confirms it. If that never succeeds, the copy is deleted once 30 days pass without an update reaching the phone, or when Apple reports that the app was deleted. If you delete the app, the updates stop, and the record is deleted when Apple reports that the app is gone."
         ],
         "list": []
       },
@@ -191,7 +191,7 @@
         "heading": "Remove this phone",
         "body": [
           "“Remove this phone” in Settings stops the Live Activity and reminders, deletes the copy on Nænsom's server and removes the address and token from the phone. You can always set it up again with the link.",
-          "If Nænsom's server cannot be reached, you can remove everything from the phone alone. The server may then keep sending updates and reminders until 30 days pass without one getting through, or until the app is deleted. So do it while the phone is online if you can."
+          "If Nænsom's server cannot be reached, you can remove everything from the phone alone. The app then keeps trying to remove the phone from the server each time it opens or wakes, until it succeeds. Until then, updates and reminders may still arrive. If it never succeeds, the server removes it by itself once 30 days pass without anything getting through, or when the app is deleted."
         ],
         "list": []
       },
