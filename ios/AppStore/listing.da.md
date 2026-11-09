@@ -12,7 +12,7 @@ screen", and there is nothing about medication or treatment advice.
 ## App name (max 30)
 
 ```text
-Nænsom
+nænsom
 ```
 
 ## Subtitle (max 30)
@@ -30,18 +30,18 @@ Følg blodsukkeret fra jeres egen Nightscout-side på låseskærmen, i Dynamic I
 ## Description (max 4000)
 
 ```text
-Nænsom viser blodsukkeret fra jeres egen Nightscout-side, så du kan følge med uden at åbne en app. Den er lavet til forældre, bedsteforældre, lærere, pædagoger og andre, der gerne vil kunne se, hvordan det går.
+nænsom viser blodsukkeret fra jeres egen Nightscout-side, så du kan følge med uden at åbne en app. Den er lavet til forældre, bedsteforældre, lærere, pædagoger og andre, der gerne vil kunne se, hvordan det går.
 
-Nænsom kræver en Nightscout-side, som en CGM sender målinger til.
+nænsom kræver en Nightscout-side, som en CGM sender målinger til.
 
 SÅDAN KOMMER DU I GANG
-Den, der passer Nightscout-siden, sender dig et link. Tryk på det på din iPhone, så sætter Nænsom sig selv op. Du kan også scanne linkets QR-kode eller skrive sidens adresse og et token, der kun kan læse.
+Den, der passer Nightscout-siden, sender dig et link. Tryk på det på din iPhone, så sætter nænsom sig selv op. Du kan også scanne linkets QR-kode eller skrive sidens adresse og et token, der kun kan læse.
 Vil du først se, hvordan det virker, så tryk på "Prøv demoen". Den viser opdigtede målinger.
 
-DET VISER NÆNSOM
+DET VISER nænsom
 • Den seneste måling med pil, ændringen siden sidst, og hvor gammel målingen er, fx "3 min siden".
 • En kurve over de seneste 3, 6 eller 12 timer.
-• En Live Activity på låseskærmen og i Dynamic Island. Nænsoms server holder den opdateret med hver ny måling, også når appen er lukket.
+• En Live Activity på låseskærmen og i Dynamic Island. nænsoms server holder den opdateret med hver ny måling, også når appen er lukket.
 • Den samme Live Activity i Smart Stack på Apple Watch og på CarPlay-skærmen, så du også kan se den der.
 • Widgets til hjemmeskærmen og låseskærmen.
 • Farver efter jeres egne grænser: grøn mellem lav og høj, gul uden for, rød ved eller forbi de akutte værdier og grå, når målingen er mere end 15 minutter gammel. Grænserne kommer fra Nightscout-siden, og du kan selv justere dem.
@@ -49,18 +49,18 @@ DET VISER NÆNSOM
 • Dansk og engelsk.
 
 PÅMINDELSER VED LAV OG HØJ
-Hvis du vil, sender Nænsom en besked, når blodsukkeret går under lav eller over høj, og når der ikke er kommet nye målinger i 20 minutter. Det er en påmindelse: den følger lydløs og Fokus som alle andre beskeder og erstatter ikke CGM-appens alarmer.
+Hvis du vil, sender nænsom en besked, når blodsukkeret går under lav eller over høj, og når der ikke er kommet nye målinger i 20 minutter. Det er en påmindelse: den følger lydløs og Fokus som alle andre beskeder og erstatter ikke CGM-appens alarmer.
 
 GODT AT VIDE
-• Nænsom viser data fra jeres egen Nightscout-side. Den læser kun og ændrer aldrig noget på siden.
-• Nænsom er ikke medicinsk udstyr. Den træffer ingen beslutninger om behandling og giver ingen råd om behandling.
-• Behold CGM-appen og dens alarmer. Nænsom viser blodsukkeret; den overvåger det ikke.
+• nænsom viser data fra jeres egen Nightscout-side. Den læser kun og ændrer aldrig noget på siden.
+• nænsom er ikke medicinsk udstyr. Den træffer ingen beslutninger om behandling og giver ingen råd om behandling.
+• Behold CGM-appen og dens alarmer. nænsom viser blodsukkeret; den overvåger det ikke.
 • Hver måling vises med sin alder, så en gammel værdi aldrig ligner en ny.
 
 PRIVATLIV
-Sidens adresse og tokenet ligger på din telefon og hos Nænsoms server i Vesteuropa, som holder Live Activity opdateret. Serveren gemmer ingen målinger, kun tidspunktet for den seneste. Ingen reklamer og ingen sporing. Med "Fjern denne telefon" i Indstillinger sletter du det hele igen med ét tryk.
+Sidens adresse og tokenet ligger på din telefon og hos nænsoms server i Vesteuropa, som holder Live Activity opdateret. Serveren gemmer ingen målinger, kun tidspunktet for den seneste. Ingen reklamer og ingen sporing. Med "Fjern denne telefon" i Indstillinger sletter du det hele igen med ét tryk.
 
-Nænsom er gratis.
+nænsom er gratis.
 ```
 
 ## Keywords (max 100, comma-separated, no spaces after commas)

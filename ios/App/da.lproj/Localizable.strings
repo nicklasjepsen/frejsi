@@ -5,13 +5,13 @@
 "common.copy" = "Kopiér";
 "common.done" = "Færdig";
 
-"disclaimer" = "Behold CGM-appen og dens alarmer. Nænsom viser blodsukkeret; den overvåger det ikke.";
+"disclaimer" = "Behold CGM-appen og dens alarmer. nænsom viser blodsukkeret; den overvåger det ikke.";
 
 "onboarding.title" = "Tryk på linket, du har fået";
-"onboarding.body" = "Den, der passer Nightscout-siden, kan sende dig et link. Tryk på det på denne telefon, så sætter Nænsom sig selv op.";
+"onboarding.body" = "Den, der passer Nightscout-siden, kan sende dig et link. Tryk på det på denne telefon, så sætter nænsom sig selv op.";
 "onboarding.scan" = "Scan QR-koden";
 "onboarding.manual" = "Skriv adresse og token";
-"onboarding.manual.footer" = "Brug et token, der kun kan læse. Det bliver på denne telefon og hos Nænsoms server, som holder Live Activity opdateret.";
+"onboarding.manual.footer" = "Brug et token, der kun kan læse. Det bliver på denne telefon og hos nænsoms server, som holder Live Activity opdateret.";
 "onboarding.site" = "Sidens adresse";
 "onboarding.token" = "Token kun til læsning";
 "onboarding.test" = "Test forbindelsen";
@@ -19,18 +19,18 @@
 "onboarding.connected.empty" = "Forbundet. Der er ingen målinger på siden endnu.";
 "onboarding.start" = "Begynd at følge";
 "onboarding.demo" = "Prøv demoen";
-"onboarding.demo.footer" = "Følger opdigtede målinger, så du kan se, hvordan Nænsom virker.";
+"onboarding.demo.footer" = "Følger opdigtede målinger, så du kan se, hvordan nænsom virker.";
 "onboarding.problem.missingAddress" = "Skriv sidens adresse.";
 "onboarding.problem.invalidAddress" = "Det ligner ikke en webadresse.";
 "onboarding.problem.notHTTPS" = "Sidens adresse skal begynde med https://";
 "onboarding.problem.missingToken" = "Skriv tokenet, der kun kan læse.";
-"onboarding.problem.notALink" = "Den QR-kode er ikke et Nænsom-link.";
+"onboarding.problem.notALink" = "Den QR-kode er ikke et nænsom-link.";
 
 "scanner.hint" = "Hold kameraet over QR-koden";
-"scanner.denied" = "Nænsom må ikke bruge kameraet. Du kan give lov i Indstillinger eller skrive adresse og token i stedet.";
+"scanner.denied" = "nænsom må ikke bruge kameraet. Du kan give lov i Indstillinger eller skrive adresse og token i stedet.";
 
 "link.replace.title" = "Følg en anden side?";
-"link.replace.message" = "Linket er til %@. Nænsom holder op med at følge den nuværende side på denne telefon og sætter den nye op.";
+"link.replace.message" = "Linket er til %@. nænsom holder op med at følge den nuværende side på denne telefon og sætter den nye op.";
 "link.replace.confirm" = "Følg den nye side";
 
 "main.loading" = "Henter…";
@@ -42,7 +42,7 @@
 "main.curve.empty" = "Ingen målinger i perioden";
 "main.demo" = "Det her er demoen. Målingerne er opdigtede.";
 
-"live.error.disabled" = "Live Activities er slået fra for Nænsom i iPhonens Indstillinger.";
+"live.error.disabled" = "Live Activities er slået fra for nænsom i iPhonens Indstillinger.";
 "live.error.start" = "Live Activity kunne ikke starte. Prøv igen om lidt.";
 
 "settings.title" = "Indstillinger";
@@ -55,10 +55,10 @@
 "settings.colours.resetDefaults" = "Brug standardværdierne";
 "settings.live" = "Live Activity";
 "settings.live.autoStart" = "Start Live Activity automatisk";
-"settings.live.footer" = "Viser blodsukkeret på låseskærmen og i Dynamic Island. Nænsoms server holder det opdateret, også når appen er lukket. Startes den automatisk, begynder den, hver gang appen åbnes og ingen vises.";
+"settings.live.footer" = "Viser blodsukkeret på låseskærmen og i Dynamic Island. nænsoms server holder det opdateret, også når appen er lukket. Startes den automatisk, begynder den, hver gang appen åbnes og ingen vises.";
 "settings.alerts" = "Påmindelser ved lav og høj";
 "settings.alerts.footer" = "En besked, når blodsukkeret går under lav eller over høj, og når der ikke er kommet nye målinger i 20 minutter. Det er en påmindelse: den følger lydløs og Fokus som alle andre beskeder og erstatter ikke CGM-appens alarmer.";
-"settings.alerts.denied" = "Beskeder er slået fra for Nænsom. Giv lov i Indstillinger.";
+"settings.alerts.denied" = "Beskeder er slået fra for nænsom. Giv lov i Indstillinger.";
 "settings.about" = "Om";
 "settings.privacy" = "Privatliv";
 "settings.support" = "Hjælp";
@@ -68,11 +68,11 @@
 "settings.debug.pushToStart" = "Push-to-start";
 "settings.debug.device" = "Påmindelser (enhed)";
 "settings.remove" = "Fjern denne telefon";
-"settings.remove.footer" = "Stopper Live Activity og påmindelser, sletter kopien på Nænsoms server og fjerner adresse og token fra denne telefon.";
+"settings.remove.footer" = "Stopper Live Activity og påmindelser, sletter kopien på nænsoms server og fjerner adresse og token fra denne telefon.";
 "settings.remove.confirm.title" = "Fjern denne telefon?";
 "settings.remove.confirm.message" = "Du kan altid sætte den op igen med linket.";
-"settings.remove.failed.title" = "Kunne ikke få fat i Nænsoms server";
-"settings.remove.failed.message" = "Du kan fjerne den fra denne telefon nu. Appen bliver ved med at prøve at fjerne den fra Nænsoms server. Lykkes det ikke, fjerner serveren den selv, når der ikke er kommet noget frem til telefonen i 30 dage.";
+"settings.remove.failed.title" = "Kunne ikke få fat i nænsoms server";
+"settings.remove.failed.message" = "Du kan fjerne den fra denne telefon nu. Appen bliver ved med at prøve at fjerne den fra nænsoms server. Lykkes det ikke, fjerner serveren den selv, når der ikke er kommet noget frem til telefonen i 30 dage.";
 "settings.remove.localOnly" = "Fjern fra denne telefon";
 
 "threshold.urgentLow" = "Akut lav";
@@ -80,18 +80,18 @@
 "threshold.high" = "Høj";
 "threshold.urgentHigh" = "Akut høj";
 
-"relay.error.unreachable" = "Kunne ikke få fat i Nænsoms server. Appen prøver igen.";
-"relay.error.rateLimited" = "Nænsoms server har travlt. Appen prøver igen om lidt.";
-"relay.error.nightscoutRefused" = "Nænsoms server kunne ikke læse siden med dette token.";
-"relay.error.nightscoutUnreachable" = "Nænsoms server kunne ikke få fat i siden.";
-"relay.error.refused" = "Nænsoms server tog ikke imod telefonens oplysninger.";
+"relay.error.unreachable" = "Kunne ikke få fat i nænsoms server. Appen prøver igen.";
+"relay.error.rateLimited" = "nænsoms server har travlt. Appen prøver igen om lidt.";
+"relay.error.nightscoutRefused" = "nænsoms server kunne ikke læse siden med dette token.";
+"relay.error.nightscoutUnreachable" = "nænsoms server kunne ikke få fat i siden.";
+"relay.error.refused" = "nænsoms server tog ikke imod telefonens oplysninger.";
 
 "invite.title" = "Inviter en person";
 "invite.site" = "Nightscout-side";
 "invite.token" = "Token med læseadgang";
 "invite.token.footer" = "Det er den token, denne telefon bruger. Bedre: giv hver person sin egen. Åbn Admin tools i Nightscout, tilføj et subject med rollen \"readable\", og indsæt dens token her. Så kan du fjerne én person senere uden at ændre den for alle.";
 "invite.share" = "Send invitationslink";
-"invite.share.footer" = "På en iPhone med Nænsom åbner linket appen og sætter den op. Uden appen siger linket, at man skal hente Nænsom i App Store og trykke på linket igen. Alle med linket kan se blodsukkeret, så send det kun til folk, du stoler på.";
-"invite.message" = "Tryk på linket på din iPhone for at følge blodsukkeret i Nænsom. Har du ikke appen endnu, så hent den og tryk på linket igen.";
+"invite.share.footer" = "På en iPhone med nænsom åbner linket appen og sætter den op. Uden appen siger linket, at man skal hente nænsom i App Store og trykke på linket igen. Alle med linket kan se blodsukkeret, så send det kun til folk, du stoler på.";
+"invite.message" = "Tryk på linket på din iPhone for at følge blodsukkeret i nænsom. Har du ikke appen endnu, så hent den og tryk på linket igen.";
 "invite.qr" = "QR-kode";
-"invite.qr.footer" = "Når I er sammen: de åbner Nænsom, vælger \"Scan QR-koden\" og peger kameraet herhen.";
+"invite.qr.footer" = "Når I er sammen: de åbner nænsom, vælger \"Scan QR-koden\" og peger kameraet herhen.";

@@ -7,7 +7,7 @@ localisation is `listing.da.md`, with the same content and the same copy rules.
 ## App name (max 30)
 
 ```text
-Nænsom
+nænsom
 ```
 
 ## Subtitle (max 30)
@@ -25,18 +25,18 @@ Follow the glucose from your own Nightscout site on the lock screen, in the Dyna
 ## Description (max 4000)
 
 ```text
-Nænsom shows the glucose from your own Nightscout site, so you can follow along without opening an app. It is made for parents, grandparents, teachers, carers and anyone else who would like to see how things are going.
+nænsom shows the glucose from your own Nightscout site, so you can follow along without opening an app. It is made for parents, grandparents, teachers, carers and anyone else who would like to see how things are going.
 
-Nænsom needs a Nightscout site that a CGM sends its readings to.
+nænsom needs a Nightscout site that a CGM sends its readings to.
 
 GETTING STARTED
-The person who looks after the Nightscout site sends you a link. Tap it on your iPhone and Nænsom sets itself up. You can also scan the link's QR code, or type the site's address and a token that can only read.
+The person who looks after the Nightscout site sends you a link. Tap it on your iPhone and nænsom sets itself up. You can also scan the link's QR code, or type the site's address and a token that can only read.
 To see how it works first, tap "Try the demo". It shows made-up readings.
 
-WHAT NÆNSOM SHOWS
+WHAT nænsom SHOWS
 • The newest reading with its arrow, the change since the one before, and how old the reading is, such as "3 min ago".
 • A curve over the last 3, 6 or 12 hours.
-• A Live Activity on the lock screen and in the Dynamic Island. Nænsom's server keeps it up to date with every new reading, even when the app is closed.
+• A Live Activity on the lock screen and in the Dynamic Island. nænsom's server keeps it up to date with every new reading, even when the app is closed.
 • The same Live Activity in the Apple Watch Smart Stack and on the CarPlay screen, so you can see it there too.
 • Widgets for the home screen and the lock screen.
 • Colours by your own thresholds: green between low and high, yellow outside, red at or beyond the urgent values, and grey when the reading is more than 15 minutes old. The thresholds come from the Nightscout site, and you can adjust them yourself.
@@ -44,18 +44,18 @@ WHAT NÆNSOM SHOWS
 • Danish and English.
 
 LOW AND HIGH REMINDERS
-If you like, Nænsom sends a notification when the glucose goes below low or above high, and when no new readings have come for 20 minutes. It is a reminder: it follows silent mode and Focus like any notification, and it does not replace the CGM app's alarms.
+If you like, nænsom sends a notification when the glucose goes below low or above high, and when no new readings have come for 20 minutes. It is a reminder: it follows silent mode and Focus like any notification, and it does not replace the CGM app's alarms.
 
 GOOD TO KNOW
-• Nænsom shows data from your own Nightscout site. It only reads, and never changes anything on the site.
-• Nænsom is not a medical device. It makes no treatment decisions and gives no treatment advice.
-• Keep the CGM app and its alarms. Nænsom shows the glucose; it does not monitor it.
+• nænsom shows data from your own Nightscout site. It only reads, and never changes anything on the site.
+• nænsom is not a medical device. It makes no treatment decisions and gives no treatment advice.
+• Keep the CGM app and its alarms. nænsom shows the glucose; it does not monitor it.
 • Every reading is shown with its age, so an old value never looks new.
 
 PRIVACY
-The site's address and the token stay on your phone and with Nænsom's server in Western Europe, which keeps the Live Activity up to date. The server stores no readings, only the time of the newest one. No ads and no tracking. "Remove this phone" in Settings deletes it all again in one tap.
+The site's address and the token stay on your phone and with nænsom's server in Western Europe, which keeps the Live Activity up to date. The server stores no readings, only the time of the newest one. No ads and no tracking. "Remove this phone" in Settings deletes it all again in one tap.
 
-Nænsom is free.
+nænsom is free.
 ```
 
 ## Keywords (max 100, comma-separated, no spaces after commas)

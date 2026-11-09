@@ -1,6 +1,7 @@
 import ActivityKit
 import FollowCore
 import SwiftUI
+import UIKit
 import WidgetKit
 
 // The Live Activity (plan §1): lock screen, Dynamic Island, and the small supplemental family that
@@ -114,10 +115,14 @@ private struct MediumView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            HStack(alignment: .firstTextBaseline, spacing: 10) {
+            // The change hangs from the top of the value's digits, not from the top of its line box
+            // (a 50 pt font has far more room above its digits than the smaller change does).
+            HStack(alignment: .capTop, spacing: 10) {
                 ValueText(state: state, unit: attributes.unit, color: GlucoseGlance.color(state, isStale: isStale), size: 50)
+                    .alignmentGuide(.capTop) { $0[.firstTextBaseline] - UIFont.systemFont(ofSize: 50, weight: .bold).capHeight }
                     .layoutPriority(1)
                 DeltaText(state: state, unit: attributes.unit, font: .title3.weight(.semibold))
+                    .alignmentGuide(.capTop) { $0[.firstTextBaseline] - UIFont.preferredFont(forTextStyle: .title3).capHeight }
                     .foregroundStyle(isStale ? .gray : .secondary)
                 Spacer(minLength: 0)
             }
@@ -158,4 +163,13 @@ private struct SmallView: View {
         .padding(.vertical, 4)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
+}
+
+private extension VerticalAlignment {
+    /// The top of the capital letters and digits of a line of text.
+    enum CapTop: AlignmentID {
+        static func defaultValue(in context: ViewDimensions) -> CGFloat { context[.top] }
+    }
+
+    static let capTop = VerticalAlignment(CapTop.self)
 }

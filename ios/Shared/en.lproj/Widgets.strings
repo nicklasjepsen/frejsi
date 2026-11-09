@@ -4,6 +4,6 @@
 "widget.name" = "Glucose";
 "widget.description" = "The newest reading with its age. iOS decides how often widgets update, so the value goes grey when it is 15 minutes old.";
 "widget.noData" = "No data yet";
-"widget.noData.hint" = "Open Nænsom";
+"widget.noData.hint" = "Open nænsom";
 "widget.stale" = "No new readings";
 "widget.demo" = "Demo";
