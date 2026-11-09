@@ -46,6 +46,9 @@ struct AgeText: View {
     let readingAt: Date
     let isStale: Bool
     var font: Font = .caption
+    /// Where the text sits in the space it is given. A ticking relative date reserves room for its
+    /// longest form and centres itself in it unless told otherwise.
+    var alignment: TextAlignment = .center
 
     var body: some View {
         HStack(spacing: 4) {
@@ -61,6 +64,16 @@ struct AgeText: View {
         .foregroundStyle(isStale ? .gray : .secondary)
         .lineLimit(1)
         .minimumScaleFactor(0.7)
+        .multilineTextAlignment(alignment)
+        .frame(maxWidth: alignment == .center ? nil : .infinity, alignment: frameAlignment)
+    }
+
+    private var frameAlignment: Alignment {
+        switch alignment {
+        case .leading: .leading
+        case .trailing: .trailing
+        default: .center
+        }
     }
 }
 
