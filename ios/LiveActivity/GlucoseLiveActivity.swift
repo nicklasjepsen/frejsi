@@ -37,15 +37,19 @@ func glucoseActivityConfiguration() -> ActivityConfiguration<GlucoseActivityAttr
         return DynamicIsland {
             DynamicIslandExpandedRegion(.leading) {
                 VStack(alignment: .leading, spacing: 0) {
-                    ValueText(state: state, unit: unit, color: color, size: 40)
-                    Text(unit.label).font(.caption2).foregroundStyle(.secondary)
+                    ValueText(state: state, unit: unit, color: color, size: 40, arrow: LiveActivityLayout.showArrow)
+                    if LiveActivityLayout.showUnit {
+                        Text(unit.label).font(.caption2).foregroundStyle(.secondary)
+                    }
                 }
                 .padding(.leading, 4)
             }
             DynamicIslandExpandedRegion(.trailing) {
                 VStack(alignment: .trailing, spacing: 2) {
-                    DeltaText(state: state, unit: unit, font: .title3)
-                    AgeText(readingAt: state.readingAt, isStale: context.isStale, font: .footnote)
+                    if LiveActivityLayout.showChange {
+                        DeltaText(state: state, unit: unit, font: .title3)
+                    }
+                    LayoutAgeText(readingAt: state.readingAt, isStale: context.isStale, font: .footnote)
                 }
                 .padding(.trailing, 4)
             }
@@ -53,7 +57,7 @@ func glucoseActivityConfiguration() -> ActivityConfiguration<GlucoseActivityAttr
                 if context.isStale { StaleLabel(font: .footnote) }
             }
         } compactLeading: {
-            ValueText(state: state, unit: unit, color: color, size: 17)
+            ValueText(state: state, unit: unit, color: color, size: 17, arrow: LiveActivityLayout.showArrow)
         } compactTrailing: {
             // The age as a ticking m:ss, the only form short enough for the compact island.
             ShortAgeText(readingAt: state.readingAt)
@@ -118,21 +122,25 @@ private struct MediumView: View {
             // The change hangs from the top of the value's digits, not from the top of its line box
             // (a 50 pt font has far more room above its digits than the smaller change does).
             HStack(alignment: .capTop, spacing: 10) {
-                ValueText(state: state, unit: attributes.unit, color: GlucoseGlance.color(state, isStale: isStale), size: 50)
+                ValueText(state: state, unit: attributes.unit, color: GlucoseGlance.color(state, isStale: isStale), size: 50, arrow: LiveActivityLayout.showArrow)
                     .alignmentGuide(.capTop) { $0[.firstTextBaseline] - UIFont.systemFont(ofSize: 50, weight: .bold).capHeight }
                     .layoutPriority(1)
-                DeltaText(state: state, unit: attributes.unit, font: .title3.weight(.semibold))
-                    .alignmentGuide(.capTop) { $0[.firstTextBaseline] - UIFont.preferredFont(forTextStyle: .title3).capHeight }
-                    .foregroundStyle(isStale ? .gray : .secondary)
+                if LiveActivityLayout.showChange {
+                    DeltaText(state: state, unit: attributes.unit, font: .title3.weight(.semibold))
+                        .alignmentGuide(.capTop) { $0[.firstTextBaseline] - UIFont.preferredFont(forTextStyle: .title3).capHeight }
+                        .foregroundStyle(isStale ? .gray : .secondary)
+                }
                 Spacer(minLength: 0)
             }
             HStack(alignment: .firstTextBaseline) {
-                Text(attributes.unit.label)
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
-                    .fixedSize()
+                if LiveActivityLayout.showUnit {
+                    Text(attributes.unit.label)
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                        .fixedSize()
+                }
                 Spacer(minLength: 8)
-                AgeText(readingAt: state.readingAt, isStale: isStale, font: .footnote, alignment: .trailing, badge: false)
+                LayoutAgeText(readingAt: state.readingAt, isStale: isStale, font: .footnote, alignment: .trailing, badge: false)
             }
             if isStale {
                 HStack {
@@ -156,8 +164,8 @@ private struct SmallView: View {
 
     var body: some View {
         VStack(spacing: 2) {
-            ValueText(state: state, unit: attributes.unit, color: GlucoseGlance.color(state, isStale: isStale), size: 44)
-            AgeText(readingAt: state.readingAt, isStale: isStale, font: .footnote.weight(.semibold))
+            ValueText(state: state, unit: attributes.unit, color: GlucoseGlance.color(state, isStale: isStale), size: 44, arrow: LiveActivityLayout.showArrow)
+            LayoutAgeText(readingAt: state.readingAt, isStale: isStale, font: .footnote.weight(.semibold))
         }
         .padding(.horizontal, 8)
         .padding(.vertical, 4)
@@ -172,4 +180,29 @@ private extension VerticalAlignment {
     }
 
     static let capTop = VerticalAlignment(CapTop.self)
+}
+
+/// The age in the form the user chose for the Live Activity: words ("5 min, 3 sec ago") or a
+/// ticking timer ("5:03"). Either way it is always there and ticks by itself.
+private struct LayoutAgeText: View {
+    let readingAt: Date
+    let isStale: Bool
+    var font: Font = .caption
+    var alignment: TextAlignment = .center
+    var badge: Bool = true
+
+    var body: some View {
+        switch LiveActivityLayout.ageStyle {
+        case .words:
+            AgeText(readingAt: readingAt, isStale: isStale, font: font, alignment: alignment, badge: badge)
+        case .timer:
+            HStack(spacing: 4) {
+                if isStale && badge { Image(systemName: GlucoseGlance.staleSymbol) }
+                ShortAgeText(readingAt: readingAt, alignment: alignment)
+            }
+            .font(font)
+            .foregroundStyle(isStale ? .gray : .secondary)
+            .frame(maxWidth: alignment == .center ? nil : .infinity, alignment: alignment == .trailing ? .trailing : (alignment == .leading ? .leading : .center))
+        }
+    }
 }

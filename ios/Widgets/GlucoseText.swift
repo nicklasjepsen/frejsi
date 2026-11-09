@@ -14,9 +14,11 @@ struct ValueText: View {
     let unit: GlucoseUnit
     let color: Color
     let size: CGFloat
+    /// The Live Activity hides the arrow when the user chose so (`LiveActivityLayout`).
+    var arrow: Bool = true
 
     var body: some View {
-        Text(GlucoseGlance.valueAndArrow(state, unit: unit))
+        Text(arrow ? GlucoseGlance.valueAndArrow(state, unit: unit) : Glucose.format(state.mgdl, unit: unit, locale: AppLanguage.locale))
             .font(.system(size: size, weight: .bold, design: .rounded))
             .monospacedDigit()
             .foregroundStyle(color)
@@ -85,11 +87,12 @@ struct AgeText: View {
 /// Dynamic Island, the round and the inline lock-screen widgets.
 struct ShortAgeText: View {
     let readingAt: Date
+    var alignment: TextAlignment = .center
 
     var body: some View {
         Text(readingAt, style: .timer)
             .monospacedDigit()
-            .multilineTextAlignment(.center)
+            .multilineTextAlignment(alignment)
             .environment(\.locale, AppLanguage.locale)
     }
 }
