@@ -21,6 +21,8 @@ No account or sign-in is needed.
 4. Settings (the gear button) shows the unit (mmol/L or mg/dL), the four colour thresholds, the Live Activity switches, the low and high reminders, the privacy and support links, the disclaimer, and "Remove this phone".
 5. To see a reminder: turn on "Low and high reminders" in Settings and allow notifications. The demo curve crosses the default high threshold (10.0 mmol/L) and low threshold (4.4 mmol/L) within each three-hour cycle, and the server then sends one notification.
 
+Settings also has "Invite someone", for the owner of a Nightscout site: with an admin token for their own site, it creates a separate read-only token for each person they invite and sends it as a link or QR code, and "Remove" deletes that token again. It works only with a real Nightscout site and the site owner's admin token, so it shows only the request for that token in the demo. It changes nothing on the site except creating and deleting those read-only tokens.
+
 The app follows the phone's language: Danish if Danish comes before English in the phone's preferred languages, otherwise English.
 
 HEALTH DISCLAIMER
