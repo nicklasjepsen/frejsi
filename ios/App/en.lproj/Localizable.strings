@@ -85,3 +85,13 @@
 "relay.error.nightscoutRefused" = "Nænsom's server couldn't read the site with this token.";
 "relay.error.nightscoutUnreachable" = "Nænsom's server couldn't reach the site.";
 "relay.error.refused" = "Nænsom's server didn't accept this phone's details.";
+
+"invite.title" = "Invite someone";
+"invite.site" = "Nightscout site";
+"invite.token" = "Read-only token";
+"invite.token.footer" = "This is the token this phone uses. Better: give each person their own. In Nightscout, open Admin tools, add a subject with the role \"readable\", and paste its token here. Then you can remove one person later without changing it for everyone.";
+"invite.share" = "Send invite link";
+"invite.share.footer" = "On an iPhone with Nænsom, tapping the link opens the app and sets it up. Without the app, the link says to install Nænsom from the App Store and tap the link again. Anyone with the link can see the glucose, so send it only to people you trust.";
+"invite.message" = "Tap this link on your iPhone to follow the glucose in Nænsom. If you don't have the app yet, install it and tap the link again.";
+"invite.qr" = "QR code";
+"invite.qr.footer" = "When you are together: they open Nænsom, choose \"Scan the QR code\" and point the camera here.";
