@@ -5,13 +5,13 @@
 "common.copy" = "Copy";
 "common.done" = "Done";
 
-"disclaimer" = "Keep the CGM app and its alarms. Nænsom shows the glucose; it does not monitor it.";
+"disclaimer" = "Keep the CGM app and its alarms. nænsom shows the glucose; it does not monitor it.";
 
 "onboarding.title" = "Tap the link you were sent";
-"onboarding.body" = "The person who looks after the Nightscout site can send you a link. Tap it on this phone and Nænsom sets itself up.";
+"onboarding.body" = "The person who looks after the Nightscout site can send you a link. Tap it on this phone and nænsom sets itself up.";
 "onboarding.scan" = "Scan the QR code";
 "onboarding.manual" = "Type the address and token";
-"onboarding.manual.footer" = "Use a token that can only read. It stays on this phone and with Nænsom's server, which keeps the Live Activity up to date.";
+"onboarding.manual.footer" = "Use a token that can only read. It stays on this phone and with nænsom's server, which keeps the Live Activity up to date.";
 "onboarding.site" = "Site address";
 "onboarding.token" = "Read-only token";
 "onboarding.test" = "Test connection";
@@ -19,18 +19,18 @@
 "onboarding.connected.empty" = "Connected. The site has no readings yet.";
 "onboarding.start" = "Start following";
 "onboarding.demo" = "Try the demo";
-"onboarding.demo.footer" = "Follows made-up readings, so you can see how Nænsom works.";
+"onboarding.demo.footer" = "Follows made-up readings, so you can see how nænsom works.";
 "onboarding.problem.missingAddress" = "Type the site's address.";
 "onboarding.problem.invalidAddress" = "That doesn't look like a web address.";
 "onboarding.problem.notHTTPS" = "The site address must start with https://";
 "onboarding.problem.missingToken" = "Type the read-only token.";
-"onboarding.problem.notALink" = "That QR code isn't a Nænsom link.";
+"onboarding.problem.notALink" = "That QR code isn't a nænsom link.";
 
 "scanner.hint" = "Point the camera at the QR code";
-"scanner.denied" = "Nænsom may not use the camera. You can allow it in Settings, or type the address and token instead.";
+"scanner.denied" = "nænsom may not use the camera. You can allow it in Settings, or type the address and token instead.";
 
 "link.replace.title" = "Follow another site?";
-"link.replace.message" = "This link is for %@. Nænsom stops following the current site on this phone and sets up the new one.";
+"link.replace.message" = "This link is for %@. nænsom stops following the current site on this phone and sets up the new one.";
 "link.replace.confirm" = "Follow the new site";
 
 "main.loading" = "Reading…";
@@ -42,7 +42,7 @@
 "main.curve.empty" = "No readings in this period";
 "main.demo" = "This is the demo. The readings are made up.";
 
-"live.error.disabled" = "Live Activities are turned off for Nænsom in the iPhone's Settings.";
+"live.error.disabled" = "Live Activities are turned off for nænsom in the iPhone's Settings.";
 "live.error.start" = "The Live Activity couldn't start. Try again in a moment.";
 
 "settings.title" = "Settings";
@@ -55,10 +55,10 @@
 "settings.colours.resetDefaults" = "Use the standard values";
 "settings.live" = "Live Activity";
 "settings.live.autoStart" = "Start Live Activity automatically";
-"settings.live.footer" = "Shows the glucose on the lock screen and in the Dynamic Island, kept up to date by Nænsom's server even when the app is closed. Started automatically, it begins whenever the app opens and none is showing.";
+"settings.live.footer" = "Shows the glucose on the lock screen and in the Dynamic Island, kept up to date by nænsom's server even when the app is closed. Started automatically, it begins whenever the app opens and none is showing.";
 "settings.alerts" = "Low and high reminders";
 "settings.alerts.footer" = "A notification when the glucose goes below low or above high, and when no new readings have come for 20 minutes. It is a reminder: it follows silent mode and Focus like any notification, and it does not replace the CGM app's alarms.";
-"settings.alerts.denied" = "Notifications are off for Nænsom. Allow them in Settings.";
+"settings.alerts.denied" = "Notifications are off for nænsom. Allow them in Settings.";
 "settings.about" = "About";
 "settings.privacy" = "Privacy";
 "settings.support" = "Support";
@@ -68,11 +68,11 @@
 "settings.debug.pushToStart" = "Push-to-start";
 "settings.debug.device" = "Reminders (device)";
 "settings.remove" = "Remove this phone";
-"settings.remove.footer" = "Stops the Live Activity and reminders, deletes the copy on Nænsom's server and clears the address and token from this phone.";
+"settings.remove.footer" = "Stops the Live Activity and reminders, deletes the copy on nænsom's server and clears the address and token from this phone.";
 "settings.remove.confirm.title" = "Remove this phone?";
 "settings.remove.confirm.message" = "You can set it up again with the link at any time.";
-"settings.remove.failed.title" = "Couldn't reach Nænsom's server";
-"settings.remove.failed.message" = "You can remove it from this phone now. The app keeps trying to remove it from Nænsom's server. If that doesn't work, the server removes it by itself once nothing has reached the phone for 30 days.";
+"settings.remove.failed.title" = "Couldn't reach nænsom's server";
+"settings.remove.failed.message" = "You can remove it from this phone now. The app keeps trying to remove it from nænsom's server. If that doesn't work, the server removes it by itself once nothing has reached the phone for 30 days.";
 "settings.remove.localOnly" = "Remove from this phone";
 
 "threshold.urgentLow" = "Urgent low";
@@ -80,18 +80,18 @@
 "threshold.high" = "High";
 "threshold.urgentHigh" = "Urgent high";
 
-"relay.error.unreachable" = "Couldn't reach Nænsom's server. The app keeps trying.";
-"relay.error.rateLimited" = "Nænsom's server is busy. The app tries again shortly.";
-"relay.error.nightscoutRefused" = "Nænsom's server couldn't read the site with this token.";
-"relay.error.nightscoutUnreachable" = "Nænsom's server couldn't reach the site.";
-"relay.error.refused" = "Nænsom's server didn't accept this phone's details.";
+"relay.error.unreachable" = "Couldn't reach nænsom's server. The app keeps trying.";
+"relay.error.rateLimited" = "nænsom's server is busy. The app tries again shortly.";
+"relay.error.nightscoutRefused" = "nænsom's server couldn't read the site with this token.";
+"relay.error.nightscoutUnreachable" = "nænsom's server couldn't reach the site.";
+"relay.error.refused" = "nænsom's server didn't accept this phone's details.";
 
 "invite.title" = "Invite someone";
 "invite.site" = "Nightscout site";
 "invite.token" = "Read-only token";
 "invite.token.footer" = "This is the token this phone uses. Better: give each person their own. In Nightscout, open Admin tools, add a subject with the role \"readable\", and paste its token here. Then you can remove one person later without changing it for everyone.";
 "invite.share" = "Send invite link";
-"invite.share.footer" = "On an iPhone with Nænsom, tapping the link opens the app and sets it up. Without the app, the link says to install Nænsom from the App Store and tap the link again. Anyone with the link can see the glucose, so send it only to people you trust.";
-"invite.message" = "Tap this link on your iPhone to follow the glucose in Nænsom. If you don't have the app yet, install it and tap the link again.";
+"invite.share.footer" = "On an iPhone with nænsom, tapping the link opens the app and sets it up. Without the app, the link says to install nænsom from the App Store and tap the link again. Anyone with the link can see the glucose, so send it only to people you trust.";
+"invite.message" = "Tap this link on your iPhone to follow the glucose in nænsom. If you don't have the app yet, install it and tap the link again.";
 "invite.qr" = "QR code";
-"invite.qr.footer" = "When you are together: they open Nænsom, choose \"Scan the QR code\" and point the camera here.";
+"invite.qr.footer" = "When you are together: they open nænsom, choose \"Scan the QR code\" and point the camera here.";

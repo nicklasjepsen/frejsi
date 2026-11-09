@@ -8,10 +8,10 @@ Keep the notes in English. They state facts the reviewer can check in the build;
 the app changes (a new screen, a new push, a feature that moves).
 
 ```text
-WHAT NÆNSOM IS
-Nænsom shows the glucose readings from the user's own Nightscout site, on the iPhone, in a Live Activity on the lock screen and in the Dynamic Island, and (through the Live Activity) in the Apple Watch Smart Stack and on the CarPlay screen. It is meant for family members and carers who follow a person with diabetes.
+WHAT nænsom IS
+nænsom shows the glucose readings from the user's own Nightscout site, on the iPhone, in a Live Activity on the lock screen and in the Dynamic Island, and (through the Live Activity) in the Apple Watch Smart Stack and on the CarPlay screen. It is meant for family members and carers who follow a person with diabetes.
 
-Nightscout is a free, open-source web app that people with diabetes run themselves (their own website). Their CGM uploads a glucose reading to it every five minutes. The data on a Nightscout site belongs to its owner; Nænsom only reads it, with a read-only token the site's owner creates and shares in a link. Nænsom never writes to the site.
+Nightscout is a free, open-source web app that people with diabetes run themselves (their own website). Their CGM uploads a glucose reading to it every five minutes. The data on a Nightscout site belongs to its owner; nænsom only reads it, with a read-only token the site's owner creates and shares in a link. nænsom never writes to the site.
 
 HOW TO TRY IT WITHOUT A NIGHTSCOUT SITE
 No account or sign-in is needed.
@@ -24,7 +24,7 @@ No account or sign-in is needed.
 The app follows the phone's language: Danish if Danish comes before English in the phone's preferred languages, otherwise English.
 
 HEALTH DISCLAIMER
-Nænsom is not a medical device. It shows readings; it does not diagnose, does not monitor, and makes no treatment decisions. It gives no treatment advice of any kind and never calculates insulin. The app says, on the first screen, in Settings and in the store listing: "Keep the CGM app and its alarms. Nænsom shows the glucose; it does not monitor it." Every value is shown with its age ("3 min ago"), and turns grey with "No new readings" when the newest reading is more than 15 minutes old, so an old value never looks current. The colours (green, yellow, red, grey) follow thresholds from the user's Nightscout site or the user's own settings; they are colours only.
+nænsom is not a medical device. It shows readings; it does not diagnose, does not monitor, and makes no treatment decisions. It gives no treatment advice of any kind and never calculates insulin. The app says, on the first screen, in Settings and in the store listing: "Keep the CGM app and its alarms. nænsom shows the glucose; it does not monitor it." Every value is shown with its age ("3 min ago"), and turns grey with "No new readings" when the newest reading is more than 15 minutes old, so an old value never looks current. The colours (green, yellow, red, grey) follow thresholds from the user's Nightscout site or the user's own settings; they are colours only.
 
 WHY THE LIVE ACTIVITY USES FREQUENT UPDATES (NSSupportsLiveActivitiesFrequentUpdates)
 A CGM produces a new reading every five minutes, which is 288 readings a day. The Live Activity is the main way people use the app: it must show the newest reading with the app closed and the phone locked. The app does not run in the background to do this; our server reads the Nightscout site and sends one ActivityKit push per new reading, and nothing more often than that. Before an activity reaches Apple's 8-hour limit, the server ends it and starts a new one with a push-to-start push, so the lock screen keeps the current reading. The user can turn the Live Activity off in Settings at any time.

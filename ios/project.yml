@@ -35,7 +35,7 @@ targets:
     info:
       path: App/Info.plist
       properties:
-        CFBundleDisplayName: Nænsom
+        CFBundleDisplayName: nænsom
         CFBundleShortVersionString: $(MARKETING_VERSION)
         CFBundleVersion: $(CURRENT_PROJECT_VERSION)
         CFBundleDevelopmentRegion: da
@@ -50,7 +50,7 @@ targets:
         # Portrait only: App Store validation then wants the app to opt out of iPad multitasking.
         UIRequiresFullScreen: true
         # The QR code in onboarding. Translated in App/{da,en}.lproj/InfoPlist.strings.
-        NSCameraUsageDescription: Nænsom bruger kameraet til at læse QR-koden med linket, du har fået.
+        NSCameraUsageDescription: nænsom bruger kameraet til at læse QR-koden med linket, du har fået.
     entitlements:
       path: App/Naensom.entitlements
       properties:
@@ -88,7 +88,7 @@ targets:
     info:
       path: LiveActivity/Info.plist
       properties:
-        CFBundleDisplayName: Nænsom
+        CFBundleDisplayName: nænsom
         # An extension's versions must match the app's for App Store Connect.
         CFBundleShortVersionString: $(MARKETING_VERSION)
         CFBundleVersion: $(CURRENT_PROJECT_VERSION)

@@ -1,6 +1,6 @@
 # Submission checklist
 
-The steps from an uploaded build to "Submit for Review", in order, for Nænsom 0.1.0. Plan
+The steps from an uploaded build to "Submit for Review", in order, for nænsom 0.1.0. Plan
 `docs/superpowers/plans/2026-11-08-ios-follower-app.md` §6 and §7 (stage 6). **Owner** marks the
 steps only the owner can do: they need the Account Holder or Admin role in App Store Connect, a
 legal judgement, or his name.
@@ -50,10 +50,10 @@ legal judgement, or his name.
 ## In App Store Connect
 
 1. **Create the app record** (Apps → +, New App). **Owner.**
-   - Platform iOS; name **Nænsom**; primary language **Danish**; bundle ID `ninja.jepsen.naensom`;
+   - Platform iOS; name **nænsom**; primary language **Danish**; bundle ID `ninja.jepsen.naensom`;
      SKU `naensom-ios`; user access Full Access.
-   - If "Nænsom" is taken, App Store Connect says so here; the owner chooses a variant (for example
-     "Nænsom – blodsukker"), and the listings change to match.
+   - If "nænsom" is taken, App Store Connect says so here; the owner chooses a variant (for example
+     "nænsom – blodsukker"), and the listings change to match.
 2. **App Information** (General → App Information).
    - Localisations: Danish (primary) and English (U.K.); add English (U.S.) with the same text if
      wanted. Subtitle per `listing.*.md`.
