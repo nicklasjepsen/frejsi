@@ -22,6 +22,13 @@ struct SettingsView: View {
                 Section(L("settings.following")) {
                     if let host = follow.source?.displayHost {
                         Text(host)
+                        if case .nightscout(let site, let token) = follow.source {
+                            NavigationLink {
+                                InviteView(site: site, token: token)
+                            } label: {
+                                Label(L("invite.title"), systemImage: "person.badge.plus")
+                            }
+                        }
                     } else {
                         Text(L("settings.following.demo"))
                     }

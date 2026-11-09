@@ -85,3 +85,13 @@
 "relay.error.nightscoutRefused" = "Nænsoms server kunne ikke læse siden med dette token.";
 "relay.error.nightscoutUnreachable" = "Nænsoms server kunne ikke få fat i siden.";
 "relay.error.refused" = "Nænsoms server tog ikke imod telefonens oplysninger.";
+
+"invite.title" = "Inviter en person";
+"invite.site" = "Nightscout-side";
+"invite.token" = "Token med læseadgang";
+"invite.token.footer" = "Det er den token, denne telefon bruger. Bedre: giv hver person sin egen. Åbn Admin tools i Nightscout, tilføj et subject med rollen \"readable\", og indsæt dens token her. Så kan du fjerne én person senere uden at ændre den for alle.";
+"invite.share" = "Send invitationslink";
+"invite.share.footer" = "På en iPhone med Nænsom åbner linket appen og sætter den op. Uden appen siger linket, at man skal hente Nænsom i App Store og trykke på linket igen. Alle med linket kan se blodsukkeret, så send det kun til folk, du stoler på.";
+"invite.message" = "Tryk på linket på din iPhone for at følge blodsukkeret i Nænsom. Har du ikke appen endnu, så hent den og tryk på linket igen.";
+"invite.qr" = "QR-kode";
+"invite.qr.footer" = "Når I er sammen: de åbner Nænsom, vælger \"Scan QR-koden\" og peger kameraet herhen.";
