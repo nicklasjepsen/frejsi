@@ -101,6 +101,7 @@ Each stage is a PR (or a lane) with its own tests, and ends with something the o
 - **Update budget.** If Apple throttles 288 pushes a day, some readings arrive late on the lock screen. Measured in stage 2; the age on the activity keeps it honest either way.
 - **Nightscout upload lag.** The app can never be faster than the uploader (Dexcom → Nightscout); the age always shows how old it is.
 - **App Review** may ask about medical claims. The copy in §6 is written to avoid them.
+- **A subscription outliving its Live Activity** (Codex, accepted 2026-11-09). If Apple rejects push-to-start at the moment the app registers a new activity token, nothing records that rejection; once that activity ends, a remaining reminder token can keep the subscription alive. It still goes when Apple rejects that token or after 30 days without delivery. Closing it needs a new `LiveSubscription` column and a migration; left as rare and capped at 30 days.
 - **Licence.** Frejsi is AGPL-3.0, which conflicts with the App Store's terms for third-party distributors. The owner holds the copyright and can publish the App Store build himself; contributions to `ios/` from others then need their agreement to App Store distribution (a line in `CONTRIBUTING.md`), or `ios/` gets its own licence (§9, decision 4).
 
 ## 9. Decisions
