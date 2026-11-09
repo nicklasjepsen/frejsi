@@ -93,7 +93,7 @@ The version is `MARKETING_VERSION` in `project.yml` (0.1.0); the build number is
 
 ## The push test (stage 2)
 
-The test that decides whether the app gets built: the Live Activity stays current with the app closed and the phone locked, across the 8-hour restart (plan §0, §7).
+The test that decides whether the app gets built: the Live Activity stays current with the app closed and the phone locked (plan §0, §7). Across the 8-hour restart that is the aim, not a pass condition (plan §9 decision 6).
 
 1. Build and run `Naensom` in an iOS 17.2+ Simulator (Debug, so tokens come from the APNs sandbox). Set it up with the address and a read-only token; the Live Activity starts by itself.
 2. Copy the two tokens. They never go to the system log (it only says one arrived); a debug build shows them under Settings → Push tokens with **Copy**, and writes them to `push-tokens.json` in the app group container:

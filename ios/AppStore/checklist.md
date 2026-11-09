@@ -31,7 +31,8 @@ legal judgement, or his name.
         (CarPlay). Check once in Xcode's CarPlay simulator.
   - [ ] **Low and high reminders**: the relay sends them in production.
 - [ ] **TestFlight on the owner's own iPhone** for a few days (plan §7, stage 6), including the push
-      test across the 8-hour restart on a real phone. **Owner** (his phone).
+      test through the 8-hour restart on a real phone (current after it is the aim; plainly stale is
+      acceptable, plan §9 decision 6). **Owner** (his phone).
 - [ ] **Screenshots captured** per `screenshots.md`, both languages, both sizes.
 - [ ] **Copy check by hand**: the listing, review notes and screenshot captions contain none of the
       words in `shared/src/dosing-vocabulary.ts` (`insulin`, `dosis`, `dose`, `dosing`, `ratio`,
