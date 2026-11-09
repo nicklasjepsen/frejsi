@@ -50,6 +50,7 @@ final class FollowModel: ObservableObject {
     func forget() {
         KeychainStore.delete("site")
         KeychainStore.delete("token")
+        InviteAdminStore.clear()
         ThresholdStore.clear()
         SettingsStore.clear()
         WidgetSync.clear()

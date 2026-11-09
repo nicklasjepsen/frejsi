@@ -114,5 +114,6 @@ Decided by the owner on 2026-11-08:
 4. **Where the code lives.** `ios/` in this repo, like `desktop/`, with the contributor line from §8.
 5. **Who runs the code.** Claude, on the Mac mini through Remote Control, Simulator included. The owner signs in to Xcode once.
 6. **Past the 8-hour limit** (owner, 2026-11-09). The Live Activity may go stale after about 8 hours, as long as it plainly shows that its value is stale: the ticking age, the grey value and the clock badge. Staying current across the restart by push-to-start remains the aim, not a pass or release condition.
+7. **Invites with an admin token** (owner, 2026-11-09). The app may create and delete read-only Nightscout subjects for the people the owner invites, with an admin token kept only on his phone and never sent to the relay; the one exception to "glucose sources are read-only".
 
 The plan as a whole: approved 2026-11-08.
