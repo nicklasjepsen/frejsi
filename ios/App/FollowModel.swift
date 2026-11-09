@@ -51,6 +51,7 @@ final class FollowModel: ObservableObject {
         KeychainStore.delete("site")
         KeychainStore.delete("token")
         InviteAdminStore.clear()
+        LiveActivityLayout.clear()
         ThresholdStore.clear()
         SettingsStore.clear()
         WidgetSync.clear()

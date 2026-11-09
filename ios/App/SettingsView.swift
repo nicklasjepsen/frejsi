@@ -12,6 +12,11 @@ struct SettingsView: View {
     @EnvironmentObject private var notifications: NotificationController
     @Environment(\.dismiss) private var dismiss
 
+    @AppStorage(LiveActivityLayout.arrowKey, store: LiveActivityLayout.defaults) private var showArrow = true
+    @AppStorage(LiveActivityLayout.changeKey, store: LiveActivityLayout.defaults) private var showChange = true
+    @AppStorage(LiveActivityLayout.unitKey, store: LiveActivityLayout.defaults) private var showUnit = true
+    @AppStorage(LiveActivityLayout.ageStyleKey, store: LiveActivityLayout.defaults) private var ageStyle = LiveActivityLayout.AgeStyle.words.rawValue
+
     @State private var confirmRemove = false
     @State private var removeFailed = false
     @State private var removing = false
@@ -58,6 +63,23 @@ struct SettingsView: View {
                 } footer: {
                     Text(L("settings.live.footer"))
                 }
+
+                Section {
+                    Toggle(L("settings.layout.arrow"), isOn: $showArrow)
+                    Toggle(L("settings.layout.change"), isOn: $showChange)
+                    Toggle(L("settings.layout.unit"), isOn: $showUnit)
+                    Picker(L("settings.layout.age"), selection: $ageStyle) {
+                        Text(L("settings.layout.age.words")).tag(LiveActivityLayout.AgeStyle.words.rawValue)
+                        Text(L("settings.layout.age.timer")).tag(LiveActivityLayout.AgeStyle.timer.rawValue)
+                    }
+                } header: {
+                    Text(L("settings.layout"))
+                } footer: {
+                    Text(L("settings.layout.footer"))
+                }
+                .disabled(!follow.settings.liveActivityOn)
+                .onChange(of: [showArrow, showChange, showUnit]) { live.redraw() }
+                .onChange(of: ageStyle) { live.redraw() }
 
                 Section {
                     Toggle(L("settings.alerts"), isOn: Binding(get: { follow.settings.alertsOn }, set: { app.setAlerts($0) }))

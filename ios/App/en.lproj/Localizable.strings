@@ -110,3 +110,11 @@
 "invite.remove.footer" = "Their token is deleted in Nightscout, so their app stops showing the glucose at once.";
 "invite.done" = "Done";
 "invite.share.footer" = "On an iPhone with nænsom, tapping the link opens the app and sets it up. Without the app, the link says to install nænsom from the App Store and tap the link again. Send it only to this person: anyone with the link can see the glucose until you remove them.";
+"settings.layout" = "Live Activity shows";
+"settings.layout.arrow" = "Trend arrow";
+"settings.layout.change" = "Change since last reading";
+"settings.layout.unit" = "Unit (mmol/L or mg/dL)";
+"settings.layout.age" = "Age";
+"settings.layout.age.words" = "In words (5 min ago)";
+"settings.layout.age.timer" = "As a timer (5:03)";
+"settings.layout.footer" = "The value and its age are always shown, so an old value never looks current. Changes show on the lock screen at once.";

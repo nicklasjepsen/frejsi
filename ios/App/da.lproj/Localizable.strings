@@ -110,3 +110,11 @@
 "invite.remove.footer" = "Deres token slettes i Nightscout, så deres app holder op med at vise blodsukkeret med det samme.";
 "invite.done" = "Færdig";
 "invite.share.footer" = "På en iPhone med nænsom åbner linket appen og sætter den op. Uden appen siger linket, at man skal hente nænsom i App Store og trykke på linket igen. Send det kun til denne person: alle med linket kan se blodsukkeret, indtil du fjerner dem.";
+"settings.layout" = "Live Activity viser";
+"settings.layout.arrow" = "Pil for retning";
+"settings.layout.change" = "Ændring siden sidste måling";
+"settings.layout.unit" = "Enhed (mmol/L eller mg/dL)";
+"settings.layout.age" = "Alder";
+"settings.layout.age.words" = "Med ord (5 min. siden)";
+"settings.layout.age.timer" = "Som ur (5:03)";
+"settings.layout.footer" = "Værdien og dens alder vises altid, så en gammel værdi aldrig ligner en ny. Ændringer ses på låseskærmen med det samme.";
