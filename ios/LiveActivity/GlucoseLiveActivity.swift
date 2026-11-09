@@ -132,7 +132,7 @@ private struct MediumView: View {
                     .foregroundStyle(.secondary)
                     .fixedSize()
                 Spacer(minLength: 8)
-                AgeText(readingAt: state.readingAt, isStale: isStale, font: .footnote, alignment: .trailing)
+                AgeText(readingAt: state.readingAt, isStale: isStale, font: .footnote, alignment: .trailing, badge: false)
             }
             if isStale {
                 HStack {

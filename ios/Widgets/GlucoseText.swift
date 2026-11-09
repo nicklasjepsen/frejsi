@@ -49,10 +49,14 @@ struct AgeText: View {
     /// Where the text sits in the space it is given. A ticking relative date reserves room for its
     /// longest form and centres itself in it unless told otherwise.
     var alignment: TextAlignment = .center
+    /// The clock badge before the age when stale. A layout that puts the badge on its own
+    /// "No new readings" line turns this off: a ticking relative date reserves room for its longest
+    /// form, so with leading or trailing alignment the badge would sit far from the words.
+    var badge = true
 
     var body: some View {
         HStack(spacing: 4) {
-            if isStale {
+            if isStale && badge {
                 Image(systemName: GlucoseGlance.staleSymbol)
             }
             // iOS ticks the relative time forward itself, in the environment's locale: the app's
