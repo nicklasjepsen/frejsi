@@ -312,7 +312,14 @@ private struct SelectedReadingLabel: View {
         .environment(\.locale, AppLanguage.locale)
         .padding(.horizontal, 8)
         .padding(.vertical, 4)
-        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 8))
+        // Opaque and in the plain text colour: inside a chart annotation the mark's colour would
+        // otherwise tint the background and the secondary text, leaving green on green.
+        .foregroundStyle(Color.primary)
+        .background {
+            RoundedRectangle(cornerRadius: 8)
+                .fill(Color(uiColor: .systemBackground))
+                .shadow(color: .black.opacity(0.15), radius: 4, y: 1)
+        }
         .accessibilityElement(children: .combine)
     }
 }
