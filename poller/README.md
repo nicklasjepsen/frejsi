@@ -218,6 +218,11 @@ the `update`, `end` and push-to-start payloads; their content state is pinned by
 Swift package tests against. The log carries outcome codes only (`update:200`,
 `update:400:BadDeviceToken`); times and values go only to the local CSV the operator names.
 
+A fixed `--activity-token` is retired at the restart and ignored after it, so a run started that way
+writes `update-skipped` for every reading after 7 h 45 min. To cross the restart, give
+`--activity-token-file` and write the new activity's token there; the tool re-reads it on every pass
+([first real-iPhone run](../ios/README.md#first-run-on-a-real-iphone-2026-11-0809)).
+
 ## Build
 
 ```

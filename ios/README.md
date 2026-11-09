@@ -58,6 +58,8 @@ open Naensom.xcodeproj
 
 Sign in to the Apple ID of team `B32HGH682W` in Xcode (Settings → Accounts) once; signing is automatic. The app ID, the app group and the push capability must exist in the developer account (plan §7, stage 1).
 
+**The Mac mini** (set up 2026-11-08) has Xcode 27.2, the iOS 27.2 Simulator runtime, an iPhone 17 Simulator, and `xcodes`, XcodeGen, xcbeautify and fastlane from Homebrew. Over SSH its login keychain stays locked (`security` answers "User interaction is not allowed"), so gh's token and the Apple ID session `xcodes` keeps do not work from an SSH shell (gh gets a 401), and code signing should be expected to fail the same way. Sign-ins, signing and `git push` go through Terminal on the Mac or the Remote Control session. An SSH shell there is a non-login zsh without Homebrew on `PATH`: export `PATH=/opt/homebrew/bin:$PATH` first. `xcrun simctl bootstatus` returns before the home screen is drawn; wait until `xcrun simctl launch <udid> com.apple.Preferences` succeeds before taking a screenshot.
+
 **Simulator builds from the command line need ad-hoc signing**, not none: `CODE_SIGNING_ALLOWED=NO` strips the entitlements, and without them `Activity.request` fails. Use
 
 ```
@@ -110,9 +112,24 @@ The test that decides whether the app gets built: the Live Activity stays curren
 4. Swipe the app away and lock the Simulator. The script reads Nightscout every 30 seconds and sends one `update` push per new reading. At 7 h 45 min it sends `end` to the activity and `start` to the push-to-start token. On iOS 18 the start push asks for the new activity's own update token (`input-push-token`); it appears in `push-tokens.json` and on screen. Write it to the same file and the script picks it up on its next pass (until then it records `update-skipped`).
 5. Take a lock-screen screenshot every minute (`xcrun simctl io booted screenshot`) and compare it with the CSV: `sent_at`, `event`, `reading_at`, `reading_age_s`, the value, and Apple's status, reason and id.
 
-Pass: every reading reaches the lock screen within a minute of its push, across the restart, with the app never opened. Then the same on a real iPhone, because Apple's update budget there can differ.
+Pass: every reading reaches the lock screen within a minute of its push, with the app never opened. Then the same on a real iPhone, because Apple's update budget there can differ. Staying current across the restart is the aim but no longer a pass condition: past the 8-hour limit the activity may go stale, as long as it plainly shows that it is stale (owner, 2026-11-09; plan §9 decision 6).
 
 The script logs outcome codes only; the address, the tokens and the values never reach the log. The CSV holds times and values and stays on the machine that ran it (`push-test*.csv` is ignored by git).
+
+### First run on a real iPhone (2026-11-08/09)
+
+The owner's iPhone with the TestFlight build, `--env production`, priority 10, run overnight from the Mac mini (23:31 to 07:45 CET), the APNs key read from Key Vault.
+
+- **Delivery.** One `--once` push showed on the lock screen straight away (checked by the owner). Overnight Apple accepted all 93 pushes with 200: 91 `update`, then the `end` and the push-to-start `start`. No 4xx, 429 or 5xx. Updates went out every 5 minutes, typically 45 s after the reading. Nobody compared the phone with the CSV overnight, so whether iOS showed every update (the update budget, plan §8) is still unmeasured: a 200 means Apple accepted the push, not that the phone drew it.
+- **Gaps come from upstream.** One 20-minute stretch had no pushes because Nightscout had no readings for 15 minutes and the next one arrived almost 6 minutes late. The ticking age on the lock screen covers it.
+- **The restart ran on time** (7 h 45 min 12 s): Apple accepted the `end` and the push-to-start. **No update reached the new activity**, because the run was started with a fixed `--activity-token`. The tool retires that token at the restart and ignores it from then on (`poller/src/live/push-test-run.ts`), so it had no way to learn the new activity's token and wrote `update-skipped` for every later reading. Only `--activity-token-file` brings a new token in, and in stage 2 someone has to copy it from the app into that file. An unattended overnight run therefore cannot test updates after the restart; in stage 4 the app registers the new token with the relay itself (plan §4).
+- **Stale shows.** 36 minutes after the last pushed reading the lock screen showed the value with its age, ticking with no push. Still to check on the phone: the grey stale look with the clock badge, and whether the activity on screen after the restart was the new one push-to-start began (the `end` push dismisses the old one at once, and the start push arrives with a "Restarted" alert).
+
+Lessons for the next run:
+
+- To cross the restart, start with `--activity-token-file` and be there to copy the new token into it, or stop the run before 7 h 45 min.
+- Pass the Nightscout credential with `NS_CREDENTIAL_SECRET`, not `NS_TOKEN`: a token on a command line (for example `tmux new-session -e NS_TOKEN=…`) stays visible in the process list (`ps`) for the whole run.
+- Run it in a `tmux` session under `caffeinate -dimsu`, so it survives the SSH session closing and the Mac staying awake is not left to its settings.
 
 ## The app (stage 3)
 
