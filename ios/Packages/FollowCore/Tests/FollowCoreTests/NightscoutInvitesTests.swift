@@ -33,6 +33,14 @@ final class NightscoutInvitesTests: XCTestCase {
         XCTAssertEqual(invites, [Invite(id: "64b7f0c2a1b2c3d4e5f60718", name: "Mor", accessToken: "naensommor-fake", subjectName: "naensom Mor #k3x9a")])
     }
 
+    func testRecognisesItsSubjectsWhenTheSiteSendsNoNotes() throws {
+        // Nightscout releases before the notes fix list subjects without `notes`.
+        let old = #"{"_id":"64b7f0c2a1b2c3d4e5f60721","name":"naensom Lærer Anne #9zq1","roles":["readable"],"accessToken":"naensomlrer-fake"}"#
+        let someoneElses = #"{"_id":"64b7f0c2a1b2c3d4e5f60722","name":"naensom backup","roles":["readable"],"accessToken":"naensombackup-fake"}"#
+        let invites = try NightscoutInvites.parseInvites(Data("[\(old),\(someoneElses)]".utf8))
+        XCTAssertEqual(invites.map(\.name), ["Lærer Anne"])
+    }
+
     func testSendsTheAdminTokenInTheHeaderNeverInTheURL() async throws {
         let transport = InviteScriptedTransport([(200, "[]")])
         _ = try await NightscoutInvites(transport: transport).list(site: site, adminToken: " admin-fake ")
