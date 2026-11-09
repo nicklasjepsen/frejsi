@@ -110,6 +110,8 @@ describe("the iPhone app's pages: HTML", () => {
     expect(html).toContain(escapeHtml(iosPageCopy("da").follow.title));
     expect(html).toContain(escapeHtml(iosPageCopy("en").follow.title));
     expect(html).toContain(`href="${APP_STORE_URL}"`);
+    expect(APP_STORE_URL).toBe("https://apps.apple.com/app/id6832337396");
+    expect(html).toContain('<meta name="apple-itunes-app" content="app-id=6832337396">');
     // The fragment carries a token: no script, no handler, nothing that reads the location.
     expect(html).not.toMatch(/<script|<iframe|<form|<img|\bon[a-z]+=|location|hash|javascript:/i);
   });

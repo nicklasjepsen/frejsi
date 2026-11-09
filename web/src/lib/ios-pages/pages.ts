@@ -15,8 +15,10 @@ import en from "./messages/en.json";
 export type IosPageCopy = typeof da;
 const COPY: Record<AppLocale, IosPageCopy> = { da, en };
 
-/** The App Store page. A placeholder until the app is approved (plan §6). */
-export const APP_STORE_URL = "https://apps.apple.com/app/id0000000000";
+/** The app's Apple ID in App Store Connect. */
+export const APP_STORE_ID = "6832337396";
+/** The App Store page. It answers once the app is approved and released (plan §6). */
+export const APP_STORE_URL = `https://apps.apple.com/app/id${APP_STORE_ID}`;
 /** Where support and privacy questions go. A placeholder the owner confirms before launch. */
 export const SUPPORT_EMAIL = "naensom@jepsen.ninja";
 export const SOURCE_URL = "https://github.com/nicklasjepsen/naensom";
@@ -97,6 +99,7 @@ function documentHtml(
   header: string,
   body: string,
   footer: string,
+  head = "",
 ) {
   return `<!doctype html>
 <html lang="${lang}">
@@ -106,7 +109,7 @@ function documentHtml(
 <meta name="referrer" content="no-referrer">
 <meta name="robots" content="noindex">
 <title>${escapeHtml(title)} · ${escapeHtml(APP_NAME)}</title>
-<link rel="icon" href="/icons/icon.svg" type="image/svg+xml">
+<link rel="icon" href="/icons/icon.svg" type="image/svg+xml">${head}
 <style>${STYLE}</style>
 </head>
 <body>
@@ -146,7 +149,10 @@ export function followPage(): string {
 </section>`;
   };
   const body = part("da") + part("en");
-  return documentHtml("da", COPY.da.follow.pageTitle, "", body, footerLinks(COPY.da, "da"));
+  // Safari's Smart App Banner: on an iPhone without the app, Safari offers it from the App Store
+  // above the page. It is a meta tag, so the no-script policy is untouched.
+  const banner = `\n<meta name="apple-itunes-app" content="app-id=${APP_STORE_ID}">`;
+  return documentHtml("da", COPY.da.follow.pageTitle, "", body, footerLinks(COPY.da, "da"), banner);
 }
 
 /** `/privacy` and `/support`, in one language with a link to the other. */
