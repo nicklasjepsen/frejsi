@@ -89,7 +89,7 @@ Apple charges nothing per push or Live Activity update. The cost is the relay: p
 Each stage is a PR (or a lane) with its own tests, and ends with something the owner can try.
 
 1. **Accounts and keys (owner).** Join the Apple Developer Program (99 USD a year, §9 decision 2), create the app ID with the app group and push capability, the APNs `.p8` key and an App Store Connect API key. Claude walks through each step and puts the keys in Key Vault and GitHub secrets; none goes in the repo.
-2. **Skeleton and the push test.** `ios/` with XcodeGen, `FollowCore` with the Nightscout reader and tests, a bare main screen and a bare Live Activity; a one-off script that sends a push to it. Claude runs it in the iOS Simulator on the Mac mini, which receives real sandbox pushes from Apple. The test is the Night Guard failure: start the activity, swipe the app away, lock the phone, and leave it for 9 hours while a script on the relay pushes every real reading from ns.jepsen.ninja. Pass means every reading reaches the lock screen within a minute of the push, across the 8-hour restart, with the app never opened. The script logs push time and Claude compares it with Simulator screenshots of the lock screen taken every minute. The same test runs once on the owner's iPhone before App Review, because Apple's update budget on a real phone can differ. Stages 3–6 start only when this passes.
+2. **Skeleton and the push test.** `ios/` with XcodeGen, `FollowCore` with the Nightscout reader and tests, a bare main screen and a bare Live Activity; a one-off script that sends a push to it. Claude runs it in the iOS Simulator on the Mac mini, which receives real sandbox pushes from Apple. The test is the Night Guard failure: start the activity, swipe the app away, lock the phone, and leave it for 9 hours while a script on the relay pushes every real reading from ns.jepsen.ninja. Pass means every reading reaches the lock screen within a minute of the push, across the 8-hour restart, with the app never opened (across the restart relaxed on 2026-11-09, §9 decision 6). The script logs push time and Claude compares it with Simulator screenshots of the lock screen taken every minute. The same test runs once on the owner's iPhone before App Review, because Apple's update budget on a real phone can differ. Stages 3–6 start only when this passes.
 3. **The app.** Onboarding with the link and QR, the main screen with curve and ages, settings, da/en, the stale states.
 4. **The relay.** `LiveSubscription`, `live-register`, `live-poll`, the APNs sender, the 8-hour restart, the demo source, cleanup. Tests with recorded Nightscout and APNs fixtures.
 5. **The Live Activity and widgets, finished.** Lock screen, Dynamic Island, the small family for CarPlay and Watch, the widgets. Checked in Xcode's CarPlay simulator by Claude; the owner sees it in the car when he next drives.
@@ -97,7 +97,7 @@ Each stage is a PR (or a lane) with its own tests, and ends with something the o
 
 ## 8. Risks
 
-- **Push-to-start after 8 hours** is the least proven part (iOS may decline to start an activity in some states). Stage 2 tests it first; the fallback is a clear "tap to restart" in the app.
+- **Push-to-start after 8 hours** is the least proven part (iOS may decline to start an activity in some states). Stage 2 tests it first; the fallback is a clear "tap to restart" in the app. First real-iPhone run (2026-11-09): Apple accepted the `end` and the push-to-start at 7 h 45 min; updates to the new activity were not tested, because the run had no way to learn its token (`ios/README.md`, "First run on a real iPhone"). Going stale after the limit is acceptable when it shows (§9 decision 6).
 - **Update budget.** If Apple throttles 288 pushes a day, some readings arrive late on the lock screen. Measured in stage 2; the age on the activity keeps it honest either way.
 - **Nightscout upload lag.** The app can never be faster than the uploader (Dexcom → Nightscout); the age always shows how old it is.
 - **App Review** may ask about medical claims. The copy in §6 is written to avoid them.
@@ -113,5 +113,6 @@ Decided by the owner on 2026-11-08:
 3. **Alarms.** A simple low/high notification in the first release (§1, §4). No critical alerts yet.
 4. **Where the code lives.** `ios/` in this repo, like `desktop/`, with the contributor line from §8.
 5. **Who runs the code.** Claude, on the Mac mini through Remote Control, Simulator included. The owner signs in to Xcode once.
+6. **Past the 8-hour limit** (owner, 2026-11-09). The Live Activity may go stale after about 8 hours, as long as it plainly shows that its value is stale: the ticking age, the grey value and the clock badge. Staying current across the restart by push-to-start remains the aim, not a pass or release condition.
 
 The plan as a whole: approved 2026-11-08.
