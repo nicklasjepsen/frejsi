@@ -123,12 +123,22 @@ public struct NightscoutInvites: Sendable {
             guard let id = subject["_id"] as? String, isSubjectId(id),
                   let name = subject["name"] as? String,
                   let token = subject["accessToken"] as? String, !token.isEmpty,
-                  let notes = subject["notes"] as? String, notes.contains(marker),
-                  let roles = subject["roles"] as? [String], roles == [readableRole]
+                  let roles = subject["roles"] as? [String], roles == [readableRole],
+                  isOurs(name: name, notes: subject["notes"] as? String)
             else { continue }
             invites.append(Invite(id: id, name: displayName(name), accessToken: token, subjectName: name))
         }
         return invites
+    }
+
+    /// A subject nænsom made: the marker in its notes, or, because Nightscout releases before the
+    /// notes fix do not send `notes` in the subject list, a name in nænsom's own shape
+    /// ("naensom <name> #<suffix>").
+    static func isOurs(name: String, notes: String?) -> Bool {
+        if let notes, notes.contains(marker) { return true }
+        guard name.hasPrefix(namePrefix), let hash = name.range(of: " #", options: .backwards) else { return false }
+        let suffix = name[hash.upperBound...]
+        return !suffix.isEmpty && suffix.allSatisfy { $0.isLetter || $0.isNumber }
     }
 
     /// "naensom Mor #k3x9a" → "Mor": the name the owner typed.
