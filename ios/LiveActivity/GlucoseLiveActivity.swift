@@ -104,26 +104,37 @@ private struct FamilyAwareView: View {
     }
 }
 
-/// The lock screen: big value and arrow, the unit under it; the change, the age and (when stale)
-/// "No new readings" on the right.
+/// The lock screen: the big value and arrow with the change right beside it, since the change is
+/// about that value; under them the unit on the left and the age on the right, on one line; and
+/// (when stale) "No new readings" under the age.
 private struct MediumView: View {
     let state: LiveGlucoseState
     let attributes: GlucoseActivityAttributes
     let isStale: Bool
 
     var body: some View {
-        HStack(alignment: .center) {
-            VStack(alignment: .leading, spacing: 0) {
+        VStack(alignment: .leading, spacing: 0) {
+            HStack(alignment: .firstTextBaseline, spacing: 10) {
                 ValueText(state: state, unit: attributes.unit, color: GlucoseGlance.color(state, isStale: isStale), size: 50)
+                    .layoutPriority(1)
+                DeltaText(state: state, unit: attributes.unit, font: .title3.weight(.semibold))
+                    .foregroundStyle(isStale ? .gray : .secondary)
+                Spacer(minLength: 0)
+            }
+            HStack(alignment: .firstTextBaseline) {
                 Text(attributes.unit.label)
                     .font(.footnote)
                     .foregroundStyle(.secondary)
+                    .fixedSize()
+                Spacer(minLength: 8)
+                AgeText(readingAt: state.readingAt, isStale: isStale, font: .footnote, alignment: .trailing)
             }
-            Spacer()
-            VStack(alignment: .trailing, spacing: 4) {
-                DeltaText(state: state, unit: attributes.unit, font: .title3)
-                AgeText(readingAt: state.readingAt, isStale: isStale, font: .subheadline)
-                if isStale { StaleLabel(font: .footnote) }
+            if isStale {
+                HStack {
+                    Spacer()
+                    StaleLabel(font: .footnote)
+                }
+                .padding(.top, 2)
             }
         }
         .padding()
