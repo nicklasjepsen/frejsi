@@ -6,7 +6,7 @@ import XCTest
 @testable import FollowCore
 
 /// Answers each request in turn from a list of canned (status, body) pairs.
-final class ScriptedTransport: HTTPTransport, @unchecked Sendable {
+final class InviteScriptedTransport: HTTPTransport, @unchecked Sendable {
     private var answers: [(Int, Data)]
     private(set) var requests: [URLRequest] = []
 
@@ -34,7 +34,7 @@ final class NightscoutInvitesTests: XCTestCase {
     }
 
     func testSendsTheAdminTokenInTheHeaderNeverInTheURL() async throws {
-        let transport = ScriptedTransport([(200, "[]")])
+        let transport = InviteScriptedTransport([(200, "[]")])
         _ = try await NightscoutInvites(transport: transport).list(site: site, adminToken: " admin-fedcba9876543210 ")
         let request = try XCTUnwrap(transport.requests.first)
         XCTAssertEqual(request.httpMethod, "GET")
@@ -43,7 +43,7 @@ final class NightscoutInvitesTests: XCTestCase {
     }
 
     func testCreatesAReadOnlySubjectAndAnswersItsToken() async throws {
-        let transport = ScriptedTransport([(200, "{}"), (200, "PLACEHOLDER")])
+        let transport = InviteScriptedTransport([(200, "{}"), (200, "PLACEHOLDER")])
         // The list after the POST is built from the name the POST sent, so read it back first.
         let invites = NightscoutInvites(transport: RecordingCreate(inner: transport))
         let invite = try await invites.create(site: site, adminToken: "admin-1", name: "  Mor\n ")
@@ -60,12 +60,12 @@ final class NightscoutInvitesTests: XCTestCase {
 
     func testRemovesOnlyItsOwnSubjects() async throws {
         let list = "[\(ours),\(ownersAdmin)]"
-        let transport = ScriptedTransport([(200, list), (200, "{}")])
+        let transport = InviteScriptedTransport([(200, list), (200, "{}")])
         try await NightscoutInvites(transport: transport).remove(site: site, adminToken: "admin-1", id: "64b7f0c2a1b2c3d4e5f60718")
         XCTAssertEqual(transport.requests.last?.httpMethod, "DELETE")
         XCTAssertEqual(transport.requests.last?.url?.path, "/api/v2/authorization/subjects/64b7f0c2a1b2c3d4e5f60718")
 
-        let refusing = ScriptedTransport([(200, list)])
+        let refusing = InviteScriptedTransport([(200, list)])
         do {
             try await NightscoutInvites(transport: refusing).remove(site: site, adminToken: "admin-1", id: "64b7f0c2a1b2c3d4e5f60719")
             XCTFail("deleted the owner's own admin subject")
@@ -74,8 +74,8 @@ final class NightscoutInvitesTests: XCTestCase {
     }
 
     func testTellsAnAdminTokenFromAReadOnlyOne() async throws {
-        let yes = try await NightscoutInvites(transport: ScriptedTransport([(200, "[]")])).isAdmin(site: site, adminToken: "a")
-        let no = try await NightscoutInvites(transport: ScriptedTransport([(401, "")])).isAdmin(site: site, adminToken: "r")
+        let yes = try await NightscoutInvites(transport: InviteScriptedTransport([(200, "[]")])).isAdmin(site: site, adminToken: "a")
+        let no = try await NightscoutInvites(transport: InviteScriptedTransport([(401, "")])).isAdmin(site: site, adminToken: "r")
         XCTAssertTrue(yes)
         XCTAssertFalse(no)
     }
@@ -89,10 +89,10 @@ final class NightscoutInvitesTests: XCTestCase {
 
 /// Lets the POST through, then answers the list with a subject named as the POST asked.
 final class RecordingCreate: HTTPTransport, @unchecked Sendable {
-    let inner: ScriptedTransport
+    let inner: InviteScriptedTransport
     private var postedName: String?
 
-    init(inner: ScriptedTransport) { self.inner = inner }
+    init(inner: InviteScriptedTransport) { self.inner = inner }
 
     func send(_ request: URLRequest) async throws -> (Data, Int) {
         let answer = try await inner.send(request)
