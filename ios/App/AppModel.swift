@@ -66,13 +66,12 @@ final class AppModel: ObservableObject {
         syncNow(force: false)
     }
 
-    /// "Start Live Activity automatically" (on by default), at launch and on every return to the
-    /// foreground: reuse a running activity (the newest; others end) or start one. A new
-    /// activity's push token reaches the relay through `onTokensChanged`.
+    /// With the Live Activity on, at launch and on every return to the foreground: reuse a running
+    /// activity (the newest; others end) or start one. A new activity's push token reaches the
+    /// relay through `onTokensChanged`.
     func autoStartIfWanted() async {
         guard follow.source != nil else { return }
         let decision = LiveActivitySync.autoStart(
-            autoStartOn: follow.settings.autoStartLiveActivity,
             liveActivityOn: follow.settings.liveActivityOn,
             systemAllows: live.systemAllows,
             running: live.running(),
@@ -141,11 +140,6 @@ final class AppModel: ObservableObject {
             }
             scheduleSync()
         }
-    }
-
-    func setAutoStart(_ on: Bool) {
-        follow.update { $0.autoStartLiveActivity = on }
-        if on { Task { await autoStartIfWanted() } }
     }
 
     /// A newer reading: to the Live Activity and to the widgets, so neither shows less than the app.

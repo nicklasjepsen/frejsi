@@ -58,8 +58,6 @@ struct SettingsView: View {
 
                 Section {
                     Toggle(L("settings.live"), isOn: Binding(get: { follow.settings.liveActivityOn }, set: { app.setLiveActivity($0) }))
-                    Toggle(L("settings.live.autoStart"), isOn: Binding(get: { follow.settings.autoStartLiveActivity }, set: { app.setAutoStart($0) }))
-                        .disabled(!follow.settings.liveActivityOn)
                 } footer: {
                     Text(L("settings.live.footer"))
                 }
