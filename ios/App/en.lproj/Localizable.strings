@@ -54,8 +54,7 @@
 "settings.colours.reset" = "Use the Nightscout site's values";
 "settings.colours.resetDefaults" = "Use the standard values";
 "settings.live" = "Live Activity";
-"settings.live.autoStart" = "Start Live Activity automatically";
-"settings.live.footer" = "Shows the glucose on the lock screen and in the Dynamic Island, kept up to date by nænsom's server even when the app is closed. Started automatically, it begins whenever the app opens and none is showing.";
+"settings.live.footer" = "Shows the glucose on the lock screen and in the Dynamic Island, kept up to date by nænsom's server even when the app is closed. While it is on, it starts again whenever the app opens and none is showing.";
 "settings.alerts" = "Low and high reminders";
 "settings.alerts.footer" = "A notification when the glucose goes below low or above high, and when no new readings have come for 20 minutes. It is a reminder: it follows silent mode and Focus like any notification, and it does not replace the CGM app's alarms.";
 "settings.alerts.denied" = "Notifications are off for nænsom. Allow them in Settings.";

@@ -46,17 +46,17 @@ public enum LiveActivitySync {
 
     /// What to do when the app launches or comes back to the foreground. With the Live Activity
     /// switched off nothing happens; a running one is reused (the newest kept, the rest ended);
-    /// otherwise a new one starts when "Start Live Activity automatically" is on, iOS allows Live
-    /// Activities and there is a reading to show.
+    /// otherwise a new one starts whenever iOS allows Live Activities and there is a reading to
+    /// show. "Live Activity" on means one is always there; there is no separate automatic switch.
     public static func autoStart(
-        autoStartOn: Bool, liveActivityOn: Bool, systemAllows: Bool, running: [RunningActivity], haveReading: Bool
+        liveActivityOn: Bool, systemAllows: Bool, running: [RunningActivity], haveReading: Bool
     ) -> AutoStart {
         guard liveActivityOn else { return .nothing }
         if let newest = running.max(by: { ($0.startedAt, $0.id) < ($1.startedAt, $1.id) }) {
             let others = running.filter { $0.id != newest.id }.map(\.id).sorted()
             return .reuse(keep: newest.id, end: others)
         }
-        guard autoStartOn, systemAllows, haveReading else { return .nothing }
+        guard systemAllows, haveReading else { return .nothing }
         return .start
     }
 }

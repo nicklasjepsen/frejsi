@@ -5,11 +5,9 @@ import Foundation
 public struct FollowSettings: Codable, Equatable, Sendable {
     /// mmol/L unless the user picks mg/dL.
     public var unit: GlucoseUnit
-    /// On by default after onboarding (plan §3).
+    /// On by default after onboarding (plan §3). On means one is always showing: the app starts one
+    /// at launch and on every return to the foreground when none is running.
     public var liveActivityOn: Bool
-    /// "Start Live Activity automatically": at launch and on every return to the foreground, when
-    /// none is running. On by default.
-    public var autoStartLiveActivity: Bool
     /// Off until the user turns it on and allows notifications.
     public var alertsOn: Bool
     public var curveWindow: CurveWindow
@@ -17,17 +15,17 @@ public struct FollowSettings: Codable, Equatable, Sendable {
     public static let defaults = FollowSettings(unit: .mmolL, liveActivityOn: true, alertsOn: false, curveWindow: .sixHours)
 
     public init(
-        unit: GlucoseUnit, liveActivityOn: Bool, alertsOn: Bool, curveWindow: CurveWindow, autoStartLiveActivity: Bool = true
+        unit: GlucoseUnit, liveActivityOn: Bool, alertsOn: Bool, curveWindow: CurveWindow
     ) {
         self.unit = unit
         self.liveActivityOn = liveActivityOn
-        self.autoStartLiveActivity = autoStartLiveActivity
         self.alertsOn = alertsOn
         self.curveWindow = curveWindow
     }
 
+    /// A copy saved by an earlier build may still hold `autoStartLiveActivity`; it is ignored.
     private enum CodingKeys: String, CodingKey {
-        case unit, liveActivityOn, autoStartLiveActivity, alertsOn, curveWindow
+        case unit, liveActivityOn, alertsOn, curveWindow
     }
 
     public init(from decoder: Decoder) throws {
@@ -35,8 +33,6 @@ public struct FollowSettings: Codable, Equatable, Sendable {
         let fallback = Self.defaults
         unit = (try? container.decodeIfPresent(GlucoseUnit.self, forKey: .unit)) ?? fallback.unit
         liveActivityOn = (try? container.decodeIfPresent(Bool.self, forKey: .liveActivityOn)) ?? fallback.liveActivityOn
-        autoStartLiveActivity = (try? container.decodeIfPresent(Bool.self, forKey: .autoStartLiveActivity))
-            ?? fallback.autoStartLiveActivity
         alertsOn = (try? container.decodeIfPresent(Bool.self, forKey: .alertsOn)) ?? fallback.alertsOn
         curveWindow = (try? container.decodeIfPresent(CurveWindow.self, forKey: .curveWindow)) ?? fallback.curveWindow
     }
