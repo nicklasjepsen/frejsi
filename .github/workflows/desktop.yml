@@ -48,7 +48,7 @@ jobs:
           Copy-Item publish-small/NaensomDesktop.exe publish/NaensomDesktop-small.exe
           Get-ChildItem publish/*.exe | ForEach-Object { "{0}  {1:N1} MB" -f $_.Name, ($_.Length / 1MB) }
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: NaensomDesktop-win-x64
           path: |
